@@ -31,15 +31,11 @@ export default function PriorityVisitPanel({
   const includedVisits = currentPlan ? PRIORITY_VISITS_PER_MONTH[currentPlan] : undefined;
 
   return (
-    <section className="mx-auto w-full max-w-[1280px] px-4 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8 lg:px-8">
-      <div className="max-w-[600px]">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
-          Priority Visit
-        </p>
-        <h1 className="mt-3 text-[26px] font-semibold leading-[1.1] tracking-[-0.035em] text-[#0B1628] sm:text-[32px]">
-          Need help sooner?
-        </h1>
-        <p className="mt-3 text-[15px] leading-6 text-[#4A5462] sm:text-[17px] sm:leading-7">
+    <section className="ui-container pg-book__head pb-12 sm:pb-16">
+      <div className="max-w-[560px]">
+        <p className="ui-eyebrow ui-eyebrow--accent">Priority Visit</p>
+        <h1 className="pg-book__title">Need help sooner?</h1>
+        <p className="pg-book__sub">
           For urgent handyman needs, same-day or next-day service may be available.
         </p>
 
@@ -48,26 +44,26 @@ export default function PriorityVisitPanel({
           soon, and is it certain" in a glance, and the honest answer to the
           second half is "subject to availability" in both cases.
         */}
-        <div className="mt-6 overflow-hidden rounded-[8px] border border-[#E4E9F2]">
+        <div className="mt-5 overflow-hidden rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-white">
           {[
             { when: "Same day", note: "Subject to availability" },
             { when: "Next day", note: "Subject to availability" },
           ].map((row) => (
             <div
               key={row.when}
-              className="flex items-baseline justify-between gap-3 border-b border-[#EDF1F7] px-4 py-3.5 last:border-b-0"
+              className="flex items-baseline justify-between gap-3 border-b border-[color:var(--ui-line)] px-4 py-3 last:border-b-0"
             >
-              <span className="text-[15px] font-semibold text-[#0B1628]">{row.when}</span>
-              <span className="text-[13px] text-[#6E6E73]">{row.note}</span>
+              <span className="text-[15px] font-medium text-[color:var(--ui-ink)]">{row.when}</span>
+              <span className="text-[14px] text-[color:var(--ui-text-3)]">{row.note}</span>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <a
             href={CUSTOMER_CARE.callHref}
             aria-label={`Call ProFixter at ${CUSTOMER_CARE.phoneDisplay}`}
-            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-[8px] bg-[#0B1628] px-6 text-[15px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:min-w-[210px]"
+            className="ui-btn ui-btn--primary sm:min-w-[200px]"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -82,13 +78,13 @@ export default function PriorityVisitPanel({
           <a
             href={`sms:${CUSTOMER_CARE.phoneE164}`}
             aria-label={`Text ProFixter at ${CUSTOMER_CARE.phoneDisplay}`}
-            className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#D7DEE9] bg-white px-6 text-[15px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
+            className="ui-btn ui-btn--secondary"
           >
             Text ProFixter
           </a>
         </div>
 
-        <p className="mt-3 text-[16px] font-semibold tracking-[-0.01em] text-[#0B1628]">
+        <p className="ui-num mt-3 text-[15px] font-semibold text-[color:var(--ui-ink)]">
           {CUSTOMER_CARE.phoneDisplay}
         </p>
 
@@ -100,25 +96,25 @@ export default function PriorityVisitPanel({
             that does not exist yet, and a number we cannot stand behind is
             worse than no number.
           */
-          <div className="mt-5 rounded-[8px] border border-[#D9E7D2] bg-[#F4F9F1] px-4 py-3.5">
-            <p className="text-[14px] font-semibold text-[#1E4620]">
+          <div className="mt-5 rounded-[var(--ui-r-md)] border border-[#cfe8d8] bg-[#f2faf5] px-4 py-3">
+            <p className="text-[14px] font-semibold text-[#1f6b3d]">
               Included with your {planLabel(currentPlan)} plan
             </p>
-            <p className="mt-1 text-[13px] leading-5 text-[#41603F]">
+            <p className="mt-0.5 text-[14px] leading-5 text-[#2f5d40]">
               Your membership includes {includedVisits} Priority Visit
               {includedVisits === 1 ? "" : "s"} per month.
             </p>
           </div>
         ) : null}
 
-        <p className="mt-5 text-[13px] leading-5 text-[#6E6E73]">
+        <p className="ui-small mt-5">
           Priority Visits are arranged directly with our team and cannot be booked
           online.
           {includedVisits ? "" : " Priority Visits may have an additional service fee."}
         </p>
 
         {/* Priority is a plan benefit, so the suggestion here is Premium or Elite. */}
-        <MembershipUpgradePrompt currentPlan={currentPlan} variant="priority" className="mt-7" />
+        <MembershipUpgradePrompt currentPlan={currentPlan} variant="priority" className="mt-6" />
 
         {/*
          * For somebody without a membership, the upgrade prompt above renders
@@ -128,11 +124,11 @@ export default function PriorityVisitPanel({
          * the Book Fixter tab already makes.
          */}
         {!isMember && (
-          <p className="mt-7 text-[13.5px] leading-6 text-[#4A5462]">
+          <p className="ui-small mt-5">
             Priority Visits are included every month on the Premium and Elite plans.{" "}
             <Link
               href="/membership/plans"
-              className="font-semibold text-[#306EEC] underline underline-offset-2 hover:text-[#2558C9]"
+              className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2"
             >
               See plans
             </Link>

@@ -152,10 +152,10 @@ function SectionHeading({
 }) {
   return (
     <div className={centered ? "mx-auto max-w-[760px] text-center" : "max-w-[680px]"}>
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#2F6FED] sm:text-[12px]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2F6FED] sm:text-[12px]">
         {eyebrow}
       </p>
-      <h2 className="mt-3 text-[26px] font-bold leading-[1.08] tracking-[-0.035em] text-[#101828] sm:text-[34px]">
+      <h2 className="ui-h2 mt-3 text-[#101828]">
         {title}
       </h2>
       {description ? (
@@ -209,12 +209,12 @@ export default function July4Page() {
 
         <div className="relative z-10 mx-auto grid w-full max-w-[1240px] gap-9 px-5 sm:px-5 lg:grid-cols-[1.25fr_0.75fr] lg:items-center lg:gap-10 lg:px-8">
           <div className="max-w-[700px] pt-[38vh] sm:pt-[32vh] lg:pt-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#FFD98F]/30 bg-[#F59E0B]/15 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#FFE8B6] backdrop-blur-md sm:text-[12px]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#FFD98F]/30 bg-[#F59E0B]/15 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#FFE8B6] backdrop-blur-md sm:text-[12px]">
               <MapPinIcon className="h-4 w-4" />
               Local help for Babylon-area homeowners
             </div>
 
-            <h1 className="mt-5 max-w-[690px] text-[34px] font-bold leading-[1.01] tracking-[-0.045em] sm:text-[43px] lg:text-[46px]">
+            <h1 className="ui-display mt-5 max-w-[690px] text-inherit">
               One less thing to worry about at home.
             </h1>
             <p className="mt-5 max-w-[640px] text-[16px] leading-7 text-white/78 sm:text-[19px] sm:leading-8">
@@ -251,12 +251,12 @@ export default function July4Page() {
           <aside className="rounded-[8px] border border-white/15 bg-white/[0.1] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:p-6 lg:p-7">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#9DB9FF]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9DB9FF]">
                   JULY4 offer
                 </p>
                 <h2 className="mt-2 text-2xl font-bold">Try Basic for $0</h2>
               </div>
-              <span className="rounded-[6px] bg-[#DCFCE7] px-3 py-1.5 text-[11px] font-extrabold text-[#166534]">
+              <span className="rounded-[6px] bg-[#DCFCE7] px-3 py-1.5 text-[11px] font-semibold text-[#166534]">
                 First month free
               </span>
             </div>
@@ -301,7 +301,7 @@ export default function July4Page() {
             ["Flexible", "Month-to-month"],
           ].map(([title, text]) => (
             <div key={title} className="text-center sm:border-l sm:border-[#E4E7EC] sm:first:border-l-0">
-              <p className="text-[12px] font-extrabold text-[#101828] sm:text-[13px]">{title}</p>
+              <p className="text-[12px] font-semibold text-[#101828] sm:text-[13px]">{title}</p>
               <p className="mt-1 text-[10px] font-medium text-[#667085] sm:text-[11px]">{text}</p>
             </div>
           ))}
@@ -354,8 +354,8 @@ export default function July4Page() {
 
           <ol className="mt-7 grid gap-4 lg:grid-cols-3">
             {steps.map((step, index) => (
-              <li key={step.title} className="relative rounded-[8px] border border-[#E4E7EC] bg-[#F9FAFB] p-6 sm:p-7">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2F6FED] text-sm font-extrabold text-white">
+              <li key={step.title} className="relative rounded-[8px] border border-[#E4E7EC] bg-[color:var(--ui-bg-soft)] p-6 sm:p-7">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2F6FED] text-sm font-semibold text-white">
                   {index + 1}
                 </span>
                 <h3 className="mt-5 text-[18px] font-bold">{step.title}</h3>
@@ -401,24 +401,24 @@ export default function July4Page() {
 
           <aside className="rounded-[8px] border-2 border-[#2F6FED] bg-white p-6 shadow-[0_24px_70px_rgba(47,111,237,0.15)] sm:p-8 lg:sticky lg:top-6">
             <div className="text-center">
-              <p className="text-[12px] font-extrabold uppercase tracking-[0.18em] text-[#2F6FED]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#2F6FED]">
                 Profixter Basic
               </p>
-              <p className="mt-4 text-[18px] font-extrabold uppercase tracking-[0.08em] text-[#166534]">
+              <p className="mt-4 text-[18px] font-semibold uppercase tracking-[0.08em] text-[#166534]">
                 First month
               </p>
               <div className="mt-1 flex items-end justify-center gap-3">
                 <span className="text-[43px] font-bold leading-none tracking-[-0.06em] text-[#101828] sm:text-[46px]">
                   FREE
                 </span>
-                <span className="mb-1.5 rounded-[6px] bg-[#DCFCE7] px-3 py-1.5 text-[13px] font-extrabold text-[#166534]">
+                <span className="mb-1.5 rounded-[6px] bg-[#DCFCE7] px-3 py-1.5 text-[13px] font-semibold text-[#166534]">
                   $0
                 </span>
               </div>
               <div className="mx-auto mt-5 flex max-w-[330px] items-center justify-between gap-3 rounded-[8px] border border-[#C9D7FA] bg-[#F2F6FF] p-2 pl-4 text-left">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#667085]">Coupon code</p>
-                  <p className="mt-0.5 text-[18px] font-extrabold tracking-[0.12em] text-[#2F6FED]">JULY4</p>
+                  <p className="mt-0.5 text-[18px] font-semibold tracking-[0.12em] text-[#2F6FED]">JULY4</p>
                 </div>
                 <CopyCouponButton />
               </div>
@@ -504,10 +504,10 @@ export default function July4Page() {
             </div>
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#9DB9FF] sm:text-[12px]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9DB9FF] sm:text-[12px]">
               Local means accountable
             </p>
-            <h2 className="mt-3 text-[26px] font-bold leading-[1.08] tracking-[-0.035em] sm:text-[34px]">
+            <h2 className="ui-h2 mt-3 text-inherit">
               Built here, for the way local homeowners actually need help.
             </h2>
             <p className="mt-6 text-[16px] leading-8 text-white/72 sm:text-[18px]">
@@ -566,7 +566,7 @@ export default function July4Page() {
             {faqs.map((faq) => (
               <details
                 key={faq.question}
-                className="group rounded-[8px] border border-[#E1E5ED] bg-[#FCFCFD] shadow-[0_8px_28px_rgba(15,23,42,0.025)] open:border-[#B9CBF8] open:bg-white"
+                className="group rounded-[8px] border border-[#E1E5ED] bg-[#FCFCFD] shadow-[var(--ui-shadow-1)] open:border-[#B9CBF8] open:bg-white"
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-5 text-[14px] font-bold marker:content-none sm:px-6 sm:text-[16px]">
                   {faq.question}
@@ -584,11 +584,11 @@ export default function July4Page() {
       <section className="relative overflow-hidden bg-[#07111F] px-5 py-10 text-center text-white sm:px-5 sm:py-15 lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(47,111,237,0.34),transparent_48%)]" />
         <div className="relative mx-auto max-w-[780px]">
-          <span className="inline-flex items-center gap-2 rounded-[6px] border border-[#FFD98F]/25 bg-[#F59E0B]/12 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.17em] text-[#FFE8B6] sm:text-[11px]">
+          <span className="inline-flex items-center gap-2 rounded-[6px] border border-[#FFD98F]/25 bg-[#F59E0B]/12 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.17em] text-[#FFE8B6] sm:text-[11px]">
             <SparklesIcon className="h-4 w-4" />
             JULY4 · Basic first month free
           </span>
-          <h2 className="mt-5 text-[30px] font-bold leading-[1.05] tracking-[-0.04em] sm:text-[40px]">
+          <h2 className="ui-h2 mt-5 text-inherit">
             Your home will keep making a list. You do not have to handle it alone.
           </h2>
           <p className="mx-auto mt-5 max-w-[620px] text-[15px] leading-7 text-white/68 sm:text-[17px]">

@@ -65,12 +65,12 @@ export default function PhotoLibraryPicker({ value, onChange, context, compact =
   return (
     <>
       {selected ? (
-        <div className="mt-2.5 flex items-center gap-3 rounded-[8px] border border-[#306EEC]/35 bg-[#F3F7FF] p-2 pr-2.5">
+        <div className="mt-2.5 flex items-center gap-3 rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line-2)] bg-[color:var(--ui-bg-soft)] p-2 pr-2.5">
           <LibraryThumb itemKey={selected.key} label={selected.label} className="h-14 w-14 flex-none rounded-[6px]" />
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#306EEC]">Profixter example</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--ui-text-3)]">Profixter example</div>
             <div className="truncate text-[14px] font-semibold text-[#0B1628]">{selected.label}</div>
-            <div className="text-[11px] leading-4 text-[#64748B]">You can add real photos later.</div>
+            <div className="text-[13px] leading-[1.35] text-[color:var(--ui-text-3)]">You can add real photos later.</div>
           </div>
           <button
             type="button"
@@ -92,9 +92,9 @@ export default function PhotoLibraryPicker({ value, onChange, context, compact =
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mt-2 flex min-h-[48px] w-full items-center gap-3 rounded-[6px] border border-dashed border-[#AFC3EE] bg-white px-3 py-2 text-left transition hover:border-[#306EEC] hover:bg-[#F8FAFF] active:scale-[0.995]"
+          className="mt-2 flex min-h-[48px] w-full items-center gap-3 rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line-2)] bg-white px-3 py-1.5 text-left transition-colors hover:border-[#b9c1cd] hover:bg-[#fbfbfa]"
         >
-          <span className="flex h-8 w-8 flex-none items-center justify-center rounded-[6px] bg-[#EEF3FF] text-[#306EEC]">
+          <span className="flex h-8 w-8 flex-none items-center justify-center rounded-[7px] bg-[color:var(--ui-bg-soft)] text-[color:var(--ui-ink)]">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
               <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
@@ -103,8 +103,8 @@ export default function PhotoLibraryPicker({ value, onChange, context, compact =
             </svg>
           </span>
           <span className="min-w-0">
-            <span className="block text-[13px] font-semibold text-[#0B1628]">Choose from Profixter Library</span>
-            <span className="block text-[11px] leading-4 text-[#64748B]">
+            <span className="block text-[14px] font-semibold leading-[1.3] text-[color:var(--ui-ink)]">Choose from Profixter Library</span>
+            <span className="block text-[13px] leading-[1.25] text-[color:var(--ui-text-3)]">
               No photo right now? Pick the closest example.
             </span>
           </span>
@@ -204,7 +204,7 @@ function LibrarySheet({
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#EEF1F7] px-5 pb-4 pt-5 sm:px-7">
           <div>
-            <h2 id="profixter-library-title" className="text-[19px] font-bold leading-tight text-[#0B1628] sm:text-[21px]">
+            <h2 id="profixter-library-title" className="ui-h3">
               Choose the closest example
             </h2>
             <p className="mt-1 text-[13px] leading-5 text-[#64748B]">

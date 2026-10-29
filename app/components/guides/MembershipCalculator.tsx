@@ -43,15 +43,15 @@ export default function MembershipCalculator({ oneTimePrice = 99 }: { oneTimePri
   const membershipCheaper = result.basicAnnualTotal < cheapestPerVisit;
 
   return (
-    <div className="my-8 rounded-[12px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] sm:p-7">
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">Calculator</p>
-      <p className="mt-2 text-[20px] font-black leading-tight text-[#0B1628] sm:text-[23px]">
+    <div className="my-8 rounded-[12px] border border-[color:var(--ui-line)] bg-white p-5 shadow-[var(--ui-shadow-1)] sm:p-7">
+      <p className="ui-eyebrow ui-eyebrow--accent !mb-0">Calculator</p>
+      <p className="mt-2 text-[20px] font-semibold leading-tight text-[color:var(--ui-ink)] sm:text-[23px]">
         Per visit or membership: what would a year cost you?
       </p>
 
       <div className="mt-5 grid gap-5 sm:grid-cols-2">
         <label htmlFor={`${id}-visits`} className="block">
-          <span className="text-[14px] font-semibold text-[#334155]">
+          <span className="text-[14px] font-semibold text-[color:var(--ui-text-2)]">
             Times a year you need someone to come out
           </span>
           <div className="mt-2 flex items-center gap-3">
@@ -64,15 +64,15 @@ export default function MembershipCalculator({ oneTimePrice = 99 }: { oneTimePri
               onChange={(e) => setVisits(Number(e.target.value))}
               className="w-full accent-[#306EEC]"
             />
-            <span className="w-12 text-right text-[18px] font-black tabular-nums text-[#0B1628]">{visits}</span>
+            <span className="w-12 text-right text-[18px] font-semibold tabular-nums text-[color:var(--ui-ink)]">{visits}</span>
           </div>
         </label>
         <label htmlFor={`${id}-cost`} className="block">
-          <span className="text-[14px] font-semibold text-[#334155]">
+          <span className="text-[14px] font-semibold text-[color:var(--ui-text-2)]">
             What a short handyman visit usually costs you, minimum included
           </span>
           <div className="mt-2 flex items-center gap-2">
-            <span className="text-[18px] font-black text-[#0B1628]">$</span>
+            <span className="text-[18px] font-semibold text-[color:var(--ui-ink)]">$</span>
             <input
               id={`${id}-cost`}
               type="number"
@@ -82,7 +82,7 @@ export default function MembershipCalculator({ oneTimePrice = 99 }: { oneTimePri
               step={5}
               value={perVisit}
               onChange={(e) => setPerVisit(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))}
-              className="h-11 w-28 rounded-[8px] border border-[#D7DEE9] px-3 text-[16px] font-semibold tabular-nums text-[#0B1628] focus:border-[#306EEC] focus:outline-none"
+              className="h-11 w-28 rounded-[8px] border border-[color:var(--ui-line)] px-3 text-[16px] font-semibold tabular-nums text-[color:var(--ui-ink)] focus:border-[#306EEC] focus:outline-none"
             />
           </div>
         </label>
@@ -95,14 +95,14 @@ export default function MembershipCalculator({ oneTimePrice = 99 }: { oneTimePri
           { label: `Basic membership, billed monthly (${money(basic.price)}/mo)`, value: result.basicMonthlyTotal },
           { label: "Basic membership, billed annually (12 months for 10)", value: result.basicAnnualTotal },
         ].map((row) => (
-          <div key={row.label} className="flex items-baseline justify-between gap-4 rounded-[8px] bg-[#F6F8FC] px-4 py-3">
-            <dt className="text-[14px] leading-5 text-[#475569]">{row.label}</dt>
-            <dd className="text-[17px] font-black tabular-nums text-[#0B1628]">{money(row.value)}</dd>
+          <div key={row.label} className="flex items-baseline justify-between gap-4 rounded-[8px] bg-[color:var(--ui-bg-soft)] px-4 py-3">
+            <dt className="text-[14px] leading-5 text-[color:var(--ui-text-2)]">{row.label}</dt>
+            <dd className="text-[17px] font-semibold tabular-nums text-[color:var(--ui-ink)]">{money(row.value)}</dd>
           </div>
         ))}
       </dl>
 
-      <p className="mt-5 text-[15px] leading-7 text-[#334155]" aria-live="polite">
+      <p className="mt-5 text-[15px] leading-7 text-[color:var(--ui-text-2)]" aria-live="polite">
         {membershipCheaper ? (
           <>
             At {visits} visits a year, a Basic membership paid annually ({money(result.basicAnnualTotal)}) costs less than
@@ -121,11 +121,11 @@ export default function MembershipCalculator({ oneTimePrice = 99 }: { oneTimePri
         ) : null}
         .
       </p>
-      <p className="mt-3 text-[13px] leading-6 text-[#64748B]">
+      <p className="mt-3 text-[13px] leading-6 text-[color:var(--ui-text-3)]">
         What the numbers leave out: a One-Time Visit is built around one small job from a set list, while a member visit
         can cover several tasks in its 90 minutes. Plus and higher plans add small supplies, Priority Visits and project
         time. Prices are Profixter&apos;s published prices; sales tax is not included.{" "}
-        <Link href="/membership/plans" className="font-semibold text-[#306EEC] underline underline-offset-2">
+        <Link href="/membership/plans" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
           All plan prices
         </Link>
         .

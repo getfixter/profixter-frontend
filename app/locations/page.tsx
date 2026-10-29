@@ -80,7 +80,7 @@ export default function LocationsPage() {
           return (
             <section key={county} className="px-4 py-8 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-[1180px]">
-                <h2 className="text-[26px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[32px]">
+                <h2 className="ui-h2">
                   {county}
                 </h2>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -90,12 +90,12 @@ export default function LocationsPage() {
                       <Link
                         key={area.slug}
                         href={`/locations/${area.slug}`}
-                        className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:border-[#BFD2FF]"
+                        className="rounded-[8px] border border-[color:var(--ui-line)] bg-white p-5 shadow-[var(--ui-shadow-1)] transition hover:-translate-y-0.5 hover:border-[#BFD2FF]"
                       >
-                        <span className="block text-[19px] font-black text-[#0B1628]">{area.name}</span>
-                        <span className="mt-1 block text-[13px] font-semibold text-[#64748B]">{area.municipality}</span>
+                        <span className="block text-[19px] font-semibold text-[color:var(--ui-ink)]">{area.name}</span>
+                        <span className="mt-1 block text-[13px] font-semibold text-[color:var(--ui-text-3)]">{area.municipality}</span>
                         {record ? (
-                          <span className="mt-3 block text-[14px] text-[#334155]">
+                          <span className="mt-3 block text-[14px] text-[color:var(--ui-text-2)]">
                             {record.visits}+ completed visits, {record.customers} customers
                           </span>
                         ) : null}
@@ -103,8 +103,8 @@ export default function LocationsPage() {
                     );
                   })}
                 </div>
-                <p className="mt-5 text-[14px] leading-6 text-[#64748B]">
-                  <span className="font-bold text-[#0B1628]">Other {county} towns with repeated Profixter visits: </span>
+                <p className="mt-5 text-[14px] leading-6 text-[color:var(--ui-text-3)]">
+                  <span className="font-bold text-[color:var(--ui-ink)]">Other {county} towns with repeated Profixter visits: </span>
                   {TOWNS_WITH_COMPLETED_WORK[county]
                     .filter((town) => !areas.some((area) => area.name === town))
                     .join(", ")}
@@ -116,7 +116,7 @@ export default function LocationsPage() {
         })}
 
         <section className="px-4 pb-4 sm:px-6 lg:px-8">
-          <p className="mx-auto max-w-[1180px] text-[12px] text-[#94A3B8]">
+          <p className="mx-auto max-w-[1180px] text-[12px] text-[color:var(--ui-text-3)]">
             Figures from Profixter&apos;s completed-visit records, {DATA_SINCE} to {DATA_AS_OF}. Town figures are shown
             only where at least three customers are behind them.
           </p>

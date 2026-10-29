@@ -54,6 +54,8 @@ const ONE_TIME_SERVICE_OPTIONS = [
 ];
 
 const AUTO_SELECT_MONTHS_TO_CHECK = 6;
+/* Signing in from the One-Time tab comes back to the One-Time tab. */
+const ONE_TIME_RETURN_PATH = "/book?visit=additional";
 const FALLBACK_DAYS_TO_CHECK = 120;
 const CUSTOMER_MOBILE_NAV_HEIGHT_PX = 76;
 
@@ -219,31 +221,6 @@ function addDays(date: Date, days: number) {
   next.setDate(next.getDate() + days);
   return next;
 }
-
-function StepHeader({
-  step,
-  title,
-  subtitle,
-}: {
-  step: string;
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <div className="mb-4">
-      <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
-        {step}
-      </div>
-      <h2 className="text-[19px] font-extrabold leading-tight text-[#0B1628]">
-        {title}
-      </h2>
-      {subtitle && (
-        <p className="mt-1 text-[13px] leading-5 text-[#64748B]">{subtitle}</p>
-      )}
-    </div>
-  );
-}
-
 
 /**
  * The existing $99 one-time / extra visit flow, unchanged.
@@ -725,743 +702,504 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
     }
   }
 
+  const changeMonth = (delta: number) =>
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + delta, 1));
+
   return (
-    <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
+    <main className="pg-book pg-flow">
       <Header />
       {navSlot}
 
-      <section className="relative w-full overflow-hidden pb-5 pt-3 sm:pb-12 sm:pt-10 lg:pt-12">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-          {/*
-           * Title left, membership alternative right on a wide screen.
-           *
-           * Somebody booking a one-time visit may well be deciding between one
-           * visit and ongoing help, and this page used to make that decision
-           * for them by only offering the one. It sits beside the headline
-           * rather than above the form, so on desktop it fills width that was
-           * empty and on a phone it is one quiet line after the subtitle
-           * instead of a panel between the customer and the calendar.
-           */}
-          <div className="mb-3 flex flex-col gap-3 sm:mb-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-            <div className="max-w-[820px]">
-              <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#306EEC] sm:text-[11px]">
-                {hasActiveMembership ? "Extra Visit" : "One-Time Visit"}
-              </div>
-              {/* A shade under the marketing pages: this headline runs long and
-                  the calendar below it is what the customer came for. */}
-              <h1 className="text-[26px] font-black leading-tight tracking-[-0.035em] text-[#071325] sm:text-[36px] lg:text-[40px]">
-                {hasActiveMembership ? "Book an Extra Visit" : "Book a one-time handyman visit"}
-              </h1>
-              <p className="mt-1 max-w-[640px] text-[11px] font-semibold leading-4 text-[#475569] sm:text-[14px] sm:leading-5">
-                {hasActiveMembership
-                  ? "Book an additional visit anytime before your membership renews."
-                  : "One 90-minute visit, no membership needed. We bring the tools."}
-              </p>
-              {hasActiveMembership && <Link href="/book?visit=membership" className="mt-1 inline-flex text-[10px] font-bold text-[#306EEC] sm:text-[12px]">Need your included visit? Book here</Link>}
+      <section className="ui-container pg-book__head pb-10 sm:pb-14">
+        {/*
+         * Title left, membership alternative right on a wide screen; one quiet
+         * line under the subtitle on a phone. Somebody booking one visit may be
+         * deciding between one visit and ongoing help, so the other door is
+         * named - but never as a panel between the customer and the calendar.
+         */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
+          <div className="max-w-[720px]">
+            <p className="ui-eyebrow ui-eyebrow--accent">
+              {hasActiveMembership ? "Extra Visit" : "One-Time Visit"}
+            </p>
+            <h1 className="pg-book__title">
+              {hasActiveMembership ? "Book an Extra Visit" : "Book a one-time handyman visit"}
+            </h1>
+            <p className="pg-book__sub">
+              <span className="ui-num font-semibold text-[color:var(--ui-ink)]">{priceLabel}</span>
+              {" · "}
+              {hasActiveMembership
+                ? "Book an additional visit anytime before your membership renews."
+                : "One 90-minute visit, no membership needed. We bring the tools."}
+            </p>
+            {hasActiveMembership && (
+              <Link href="/book?visit=membership" className="ui-link mt-1">
+                Need your included visit? Book here
+              </Link>
+            )}
+          </div>
+
+          {!hasActiveMembership && (
+            <p className="ui-small shrink-0">
+              Prefer ongoing help? Membership from $149/mo.{" "}
+              <Link
+                href="/membership/plans"
+                onClick={() => trackEvent("see_plans_clicked", { placement: "book_one_time" })}
+                className="font-semibold text-[color:var(--ui-accent-ink)] hover:underline"
+              >
+                See plans
+              </Link>
+            </p>
+          )}
+        </div>
+
+        {configError && <p className="pg-note mt-4">{configError}</p>}
+
+        {hasActiveMembership && (
+          <MembershipUpgradePrompt currentPlan={currentPlanKey} className="mt-4" />
+        )}
+
+        <div
+          id="booking-form"
+          className="mt-5 grid scroll-mt-6 grid-cols-[minmax(0,1fr)] gap-3 sm:mt-6 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:items-start lg:gap-6"
+        >
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:gap-4">
+            {/* ------------------------- who and what ------------------------- */}
+            <div className="pg-panel">
+              {isLoading ? (
+                <p className="py-6 text-center text-[15px] text-[color:var(--ui-text-3)]">Loading your account...</p>
+              ) : !isAuthenticated ? (
+                <div className="py-2 text-center sm:py-4">
+                  <p className="ui-eyebrow">Home profile</p>
+                  <h2 className="ui-h3">Sign in to book</h2>
+                  <p className="mx-auto mt-1.5 max-w-[46ch] text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
+                    We need a home profile for your address, photos, payment status, reminders, and booking history.
+                  </p>
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                    <Link href={`/signin?next=${encodeURIComponent(ONE_TIME_RETURN_PATH)}`} className="ui-btn ui-btn--primary">
+                      Log In
+                    </Link>
+                    <Link href={`/signup?next=${encodeURIComponent(ONE_TIME_RETURN_PATH)}`} className="ui-btn ui-btn--secondary">
+                      Create Account
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  <div>
+                    <span className="pg-label">Address</span>
+                    {selectedAddress ? (
+                      <div className="flex min-h-11 items-center gap-2">
+                        <span className="min-w-0 flex-1 truncate text-[15px] text-[color:var(--ui-ink)]">
+                          {addressLabel(selectedAddress)}
+                        </span>
+                        {addresses.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setAddressPickerOpen((open) => !open)}
+                            className="min-h-11 shrink-0 px-1 text-[14px] font-semibold text-[color:var(--ui-accent-ink)]"
+                          >
+                            {addressPickerOpen ? "Done" : "Change"}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[14px] text-[color:var(--ui-text-3)]">Choose an address</p>
+                    )}
+                    {(addressPickerOpen || !selectedAddress) && (
+                      <select
+                        value={addressId}
+                        onChange={(event) => setAddressId(event.target.value)}
+                        aria-label="Booking address"
+                        className="pg-input mt-1"
+                      >
+                        <option value="">Choose address</option>
+                        {addresses.map((address) => (
+                          <option key={address._id} value={address._id}>
+                            {addressLabel(address)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {!addresses.length && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const home = await requestHome();
+                          if (home?.address?._id) setAddressId(String(home.address._id));
+                        }}
+                        className="ui-link mt-1"
+                      >
+                        Add your home
+                      </button>
+                    )}
+                  </div>
+
+                  <div ref={servicePickerRef} className="relative">
+                    <span className="pg-label">Small job</span>
+                    <button
+                      ref={servicePickerTriggerRef}
+                      type="button"
+                      onClick={() => setServicePickerOpen((open) => !open)}
+                      aria-expanded={servicePickerOpen}
+                      className="pg-input flex items-center justify-between gap-2 text-left"
+                    >
+                      <span className={`min-w-0 truncate ${selectedTask ? "text-[color:var(--ui-ink)]" : "text-[#8a94a6]"}`}>
+                        {selectedTask || "Choose a small job"}
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0 text-[color:var(--ui-text-3)]">
+                        <path
+                          d={servicePickerOpen ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"}
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    </button>
+
+                    {servicePickerOpen && (
+                      <>
+                        <button
+                          type="button"
+                          className="fixed inset-0 z-[80] bg-[#0B1628]/30 sm:hidden"
+                          aria-label="Close service picker"
+                          onClick={() => setServicePickerOpen(false)}
+                        />
+                        <div
+                          role="dialog"
+                          aria-modal="true"
+                          aria-labelledby="service-picker-title"
+                          style={{ "--customer-nav-height": `${CUSTOMER_MOBILE_NAV_HEIGHT_PX}px` } as CSSProperties}
+                          className="fixed inset-x-3 bottom-[calc(var(--customer-nav-height)_+_env(safe-area-inset-bottom,0px)_+_8px)] z-[90] flex max-h-[calc(100dvh_-_var(--customer-nav-height)_-_env(safe-area-inset-bottom,0px)_-_24px)] flex-col overflow-hidden rounded-[var(--ui-r-lg)] bg-white shadow-[var(--ui-shadow-3)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+8px)] sm:z-30 sm:max-h-[420px] sm:rounded-[var(--ui-r-md)] sm:border sm:border-[color:var(--ui-line)]"
+                        >
+                          <div className="flex flex-shrink-0 items-center justify-between border-b border-[color:var(--ui-line)] px-4 py-2">
+                            <div id="service-picker-title" className="text-[15px] font-semibold text-[color:var(--ui-ink)]">
+                              Select service
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setServicePickerOpen(false)}
+                              className="flex h-11 w-11 items-center justify-center rounded-full text-[20px] text-[color:var(--ui-text-2)] hover:bg-[color:var(--ui-bg-soft)]"
+                              aria-label="Close service picker"
+                            >
+                              &times;
+                            </button>
+                          </div>
+                          <div
+                            className="grid min-h-0 grid-cols-2 gap-2 overflow-y-auto overscroll-contain p-3 touch-pan-y"
+                            style={{ WebkitOverflowScrolling: "touch" }}
+                          >
+                            {ONE_TIME_SERVICE_OPTIONS.map((task) => {
+                              const active = selectedTask === task;
+                              return (
+                                <button
+                                  key={task}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedTask(task);
+                                    setServicePickerOpen(false);
+                                  }}
+                                  className={[
+                                    "min-h-[48px] whitespace-normal break-words rounded-[var(--ui-r-sm)] border px-3 py-2 text-left text-[14px] font-medium leading-[1.3] transition-colors",
+                                    active
+                                      ? "border-[color:var(--ui-ink)] bg-[color:var(--ui-ink)] text-white"
+                                      : "border-[color:var(--ui-line)] bg-white text-[color:var(--ui-ink)] hover:border-[color:var(--ui-line-2)]",
+                                  ].join(" ")}
+                                >
+                                  {task}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <p className="flex items-center justify-between gap-2 border-t border-[color:var(--ui-line)] pt-3 text-[14px] text-[color:var(--ui-text-3)]">
+                    Larger project? Request a free estimate.
+                    <Link
+                      href="/projects#estimate"
+                      onClick={() =>
+                        trackEvent("estimate_cta_clicked", {
+                          placement: "book_service_selector_note",
+                        })
+                      }
+                      className="shrink-0 font-semibold text-[color:var(--ui-accent-ink)]"
+                    >
+                      Get Estimate
+                    </Link>
+                  </p>
+                </div>
+              )}
             </div>
 
-            {!hasActiveMembership && (
-              <div className="shrink-0 rounded-[8px] border border-[#D9E4FF] bg-[#F4F8FF] px-4 py-3 lg:max-w-[300px]">
-                <p className="text-[13.5px] font-semibold leading-5 text-[#0B1628]">
-                  Prefer ongoing home help?
-                </p>
-                <p className="mt-0.5 text-[12.5px] leading-[18px] text-[#4A5462]">
-                  Membership books visits whenever you need them, from $149/mo.
-                </p>
-                <Link
-                  href="/membership/plans"
-                  onClick={() => trackEvent("see_plans_clicked", { placement: "book_one_time" })}
-                  className="mt-2 inline-flex min-h-[36px] items-center text-[13.5px] font-bold text-[#306EEC] transition hover:text-[#2558C9]"
-                >
-                  See plans
-                  <span aria-hidden="true" className="ml-1.5">&rarr;</span>
-                </Link>
+            {/* ------------------------------ when ------------------------------ */}
+            <div className="pg-panel">
+              {isAuthenticated && <h2 className="pg-panel__title">When</h2>}
+              <div className="pg-cal__head">
+                <button type="button" aria-label="Previous month" onClick={() => changeMonth(-1)} className="pg-cal__nav">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </button>
+                <div className="pg-cal__month">{monthLabel(currentMonth)}</div>
+                <button type="button" aria-label="Next month" onClick={() => changeMonth(1)} className="pg-cal__nav">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </button>
+              </div>
+
+              <div className="pg-cal__wd" aria-hidden="true">
+                {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+                  <div key={`${day}-${index}`}>{day}</div>
+                ))}
+              </div>
+
+              <div className="pg-cal__grid">
+                {days.map((day) => {
+                  const knownSlots = availabilityByDate[day.ymd];
+                  const disabled =
+                    day.ymd < today ||
+                    (knownSlots !== undefined && knownSlots.length === 0);
+                  const selected = day.ymd === selectedDate;
+                  return (
+                    <button
+                      key={day.ymd}
+                      type="button"
+                      data-booking-date={day.ymd}
+                      data-booking-date-muted={day.muted ? "true" : "false"}
+                      data-booking-date-selected={selected ? "true" : "false"}
+                      disabled={disabled}
+                      onClick={() => chooseDate(day.ymd)}
+                      className={[
+                        "pg-cal__day",
+                        day.muted ? "is-muted" : "",
+                        selected ? "is-selected" : !disabled ? "is-open" : "",
+                      ].join(" ")}
+                    >
+                      {day.date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isAuthenticated && (
+                <div className="mt-4 border-t border-[color:var(--ui-line)] pt-4">
+                  <p className="pg-label">
+                    {selectedDate ? `Times on ${dayLabel(selectedDate)}` : "Time"}
+                  </p>
+                  {autoSelectingDate ? (
+                    <p className="py-3 text-[14px] text-[color:var(--ui-text-3)]">
+                      Finding the soonest available appointment...
+                    </p>
+                  ) : noAvailabilityMessage ? (
+                    <p className="pg-note">{noAvailabilityMessage}</p>
+                  ) : loadingSlots ? (
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {[1, 2, 3, 4].map((item) => (
+                        <div key={item} className="h-12 animate-pulse rounded-[var(--ui-r-sm)] bg-[color:var(--ui-bg-soft)]" />
+                      ))}
+                    </div>
+                  ) : slots.length ? (
+                    <TimeSlotGrid
+                      slotOptions={slotOptions}
+                      selectedTime={selectedTime}
+                      onSelect={setSelectedTime}
+                    />
+                  ) : (
+                    <p className="py-3 text-[14px] text-[color:var(--ui-text-3)]">
+                      Choose an available date to see times.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ----------------------------- details ----------------------------- */}
+            {isAuthenticated && (
+              <div className="pg-panel">
+                <h2 className="pg-panel__title">Task details</h2>
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  rows={3}
+                  placeholder="Describe your task. If we need to bring any materials or special tools, please let us know."
+                  className="pg-input min-h-[96px] resize-y"
+                />
+
+                <div className="mt-4">
+                  <p className="pg-label !mb-0.5">Photos required</p>
+                  <p className="pg-hint">A photo of the actual issue helps your Fixter arrive prepared.</p>
+                  <div className="pg-photo-row">
+                    <button type="button" onClick={() => cameraInputRef.current?.click()} className="pg-photo-btn">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                        <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="1.8" />
+                      </svg>
+                      Take Photo
+                    </button>
+                    <button type="button" onClick={() => galleryInputRef.current?.click()} className="pg-photo-btn">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                        <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.8" />
+                        <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                      </svg>
+                      Choose Photos{photos.length > 0 ? ` (${photos.length})` : ""}
+                    </button>
+                  </div>
+                  <PhotoLibraryPicker
+                    value={libraryReference}
+                    context="one_time"
+                    onChange={(key) => {
+                      setLibraryReference(key);
+                      if (key) setError((current) => (current.includes("Profixter Library") ? "" : current));
+                    }}
+                  />
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(event) => {
+                      handleFiles(event.target.files);
+                      event.currentTarget.value = "";
+                    }}
+                    className="hidden"
+                  />
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(event) => {
+                      handleFiles(event.target.files);
+                      event.currentTarget.value = "";
+                    }}
+                    className="hidden"
+                  />
+                  {photos.length > 0 && (
+                    <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">
+                      {photos.map((_photo, index) => (
+                        <div
+                          key={`${_photo.name}-${index}`}
+                          className="relative overflow-hidden rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-sunk)]"
+                          style={{ aspectRatio: "1" }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={photoUrls[index] || ""} alt={`Task photo ${index + 1}`} className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(index)}
+                            aria-label="Remove photo"
+                            className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-[14px] leading-none text-white transition hover:bg-black/75"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          {configError && (
-            <div className="mb-4 rounded-[8px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
-              {configError}
-            </div>
-          )}
-
-          {false && !hasActiveMembership && (
-            <div className="mb-5 overflow-hidden rounded-[8px] border border-[#E5E9F2] bg-white/92 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:mb-7 sm:rounded-[10px] sm:p-6 lg:p-7">
-              <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
-                <div>
-                  <h2 className="text-[23px] font-black leading-[1.02] tracking-[-0.035em] text-[#0B1628] sm:text-[30px] sm:tracking-[-0.045em]">
-                    Own your home?
-                  </h2>
-                  <p className="mt-3 max-w-[760px] text-[14px] font-semibold leading-6 text-[#475569] sm:text-[16px] sm:leading-7">
-                    If you expect to need help more than once, a Profixter Membership is usually the better value.
-                  </p>
-                  <p className="mt-2 max-w-[780px] text-[14px] font-semibold leading-6 text-[#475569] sm:text-[16px] sm:leading-7">
-                    Members don&apos;t pay for every visit, receive priority scheduling, and can request handyman service throughout the year.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
-                  <Link
-                    href="/membership/plans"
-                    onClick={() =>
-                      trackEvent("membership_cta_clicked", {
-                        placement: "book_non_member_recommendation",
-                      })
-                    }
-                    className="inline-flex h-12 items-center justify-center rounded-[8px] bg-[#0B1628] px-6 text-[14px] font-black text-white shadow-[0_14px_34px_rgba(11,22,40,0.18)] transition hover:-translate-y-0.5 hover:bg-[#1B2A44] active:translate-y-0"
-                  >
-                    Become a Member
-                  </Link>
-                  <a
-                    href="#booking-form"
-                    onClick={() =>
-                      trackEvent("one_time_continue_clicked", {
-                        placement: "book_non_member_recommendation",
-                      })
-                    }
-                    className="inline-flex h-12 items-center justify-center rounded-[8px] border border-[#D7DEEA] bg-white px-6 text-[14px] font-black text-[#0B1628] transition hover:border-[#C6D7FF] hover:bg-[#F8FAFF]"
-                  >
-                    Continue with One-Time Visit
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {hasActiveMembership && (
-            <MembershipUpgradePrompt currentPlan={currentPlanKey} className="mb-3 sm:mb-5" />
-          )}
-
-          <h2 className="mb-2 text-[16px] font-black text-[#0B1628] sm:mb-3 sm:text-[21px]">{pageCopy.formHeading}</h2>
-
-          <div id="booking-form" className="grid grid-cols-1 gap-3 scroll-mt-6 sm:gap-4 lg:grid-cols-12 lg:gap-6">
-            <div className="order-2 lg:order-1 lg:col-span-5">
-              <div className="rounded-[6px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[8px] sm:p-4">
-                <div className="mb-1 flex items-center justify-between sm:mb-3">
-                  <button
-                    type="button"
-                    aria-label="Previous month"
-                    onClick={() =>
-                      setCurrentMonth(
-                        new Date(
-                          currentMonth.getFullYear(),
-                          currentMonth.getMonth() - 1,
-                          1
-                        )
-                      )
-                    }
-                    className="grid h-[34px] w-[34px] place-items-center rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] text-[12px] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-10 sm:w-10"
-                  >
-                    &lt;
-                  </button>
-                  <div className="text-[11px] font-extrabold text-[#0B1628] sm:text-[17px]">
-                    {monthLabel(currentMonth)}
+          {/* ------------------------- summary and pay ------------------------- */}
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:sticky lg:top-[88px]">
+            {isAuthenticated && (
+              <div className="pg-panel">
+                <h2 className="pg-panel__title">Payment summary</h2>
+                <div className="pg-rows">
+                  <div>
+                    <span className="text-[color:var(--ui-text-3)]">{pageCopy.visitLabel}</span>
+                    <strong className="text-right font-medium text-[color:var(--ui-ink)]">
+                      {priceLabel} / {config.durationMinutes} minutes
+                    </strong>
                   </div>
-                  <button
-                    type="button"
-                    aria-label="Next month"
-                    onClick={() =>
-                      setCurrentMonth(
-                        new Date(
-                          currentMonth.getFullYear(),
-                          currentMonth.getMonth() + 1,
-                          1
-                        )
-                      )
-                    }
-                    className="grid h-[34px] w-[34px] place-items-center rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] text-[12px] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-10 sm:w-10"
-                  >
-                    &gt;
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-7 text-center sm:mb-1">
-                  {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day, index) => (
-                    <div
-                      key={day}
-                      className={`text-[8px] font-bold sm:text-[11px] ${
-                        index === 0 ? "text-[#EF4444]" : "text-[#94A3B8]"
-                      }`}
-                    >
-                      {day}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-7">
-                  {days.map((day) => {
-                    const knownSlots = availabilityByDate[day.ymd];
-                    const disabled =
-                      day.ymd < today ||
-                      (knownSlots !== undefined && knownSlots.length === 0);
-                    const selected = day.ymd === selectedDate;
-                    return (
-                      <button
-                        key={day.ymd}
-                        type="button"
-                        data-booking-date={day.ymd}
-                        data-booking-date-muted={day.muted ? "true" : "false"}
-                        data-booking-date-selected={selected ? "true" : "false"}
-                        disabled={disabled}
-                        onClick={() => chooseDate(day.ymd)}
-                        className={[
-                          "mx-auto grid h-7 w-7 place-items-center rounded-[6px] text-[10px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:text-[14px]",
-                          day.muted ? "text-[#C5CBD8]" : "",
-                          disabled ? "cursor-not-allowed text-[#C5CBD8]" : "",
-                          !disabled && !selected
-                            ? "bg-[#EEF5FF] text-[#1D4ED8] hover:scale-105 hover:bg-[#DBEAFE]"
-                            : "",
-                          selected
-                            ? "scale-105 bg-[#306EEC] text-white shadow-[0_8px_24px_rgba(48,110,236,0.35)]"
-                            : "",
-                        ].join(" ")}
-                      >
-                        {day.date.getDate()}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
-              <div className="order-1 rounded-[6px] border border-[#E5E9F2] bg-white/95 p-2 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[8px] sm:p-4 lg:order-none">
-                {isLoading ? (
-                  <div className="py-8 text-center text-[14px] font-semibold text-[#64748B]">
-                    Loading your account...
+                  <div>
+                    <span className="text-[color:var(--ui-text-3)]">Task</span>
+                    <strong className="text-right font-medium text-[color:var(--ui-ink)]">{selectedTask || "Not selected"}</strong>
                   </div>
-                ) : !isAuthenticated ? (
-                  <div className="space-y-4 py-6 text-center">
-                    <StepHeader
-                      step="Home profile"
-                      title="Add your property first"
-                      subtitle="We need a home profile for your address, photos, payment status, reminders, and booking history."
-                    />
-                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-                      <Link
-                        href="/signin"
-                        className="rounded-[8px] bg-[#306EEC] px-5 py-3 text-[14px] font-extrabold text-white"
-                      >
-                        Log In
-                      </Link>
-                      <Link
-                        href="/signup"
-                        className="rounded-[8px] border border-[#C5CBD8] px-5 py-3 text-[14px] font-extrabold text-[#0B1628]"
-                      >
-                        Create Account
-                      </Link>
-                    </div>
+                  <div>
+                    <span className="text-[color:var(--ui-text-3)]">Date &amp; time</span>
+                    <strong className="text-right font-medium text-[color:var(--ui-ink)]">
+                      {selectedDate ? dayLabel(selectedDate) : "Not selected"}
+                      {selectedTime ? ` at ${formatTime12(selectedTime)}` : ""}
+                    </strong>
                   </div>
-                ) : (
-                  <div className="space-y-2 sm:space-y-3">
-
+                  {selectedAddress && (
                     <div>
-                      {selectedAddress ? (
-                        <div className="flex min-h-9 items-center gap-1">
-                          <span className="text-[#306EEC]" aria-hidden="true">⌖</span>
-                          <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-[#0B1628] sm:text-[13px]">{addressLabel(selectedAddress)}</span>
-                          {addresses.length > 1 && <button type="button" onClick={() => setAddressPickerOpen((open) => !open)} className="h-9 text-[9px] font-bold text-[#306EEC] sm:text-[11px]">{addressPickerOpen ? "Done" : "Change"}</button>}
-                        </div>
-                      ) : <div className="text-[10px] font-semibold text-[#64748B]">Choose an address</div>}
-                      {(addressPickerOpen || !selectedAddress) && <select
-                        value={addressId}
-                        onChange={(event) => setAddressId(event.target.value)}
-                        aria-label="Booking address"
-                        className="mt-1 min-h-9 w-full rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[10px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-11 sm:text-[13px]"
-                      ><option value="">Choose address</option>{addresses.map((address) => <option key={address._id} value={address._id}>{addressLabel(address)}</option>)}</select>}
-                      {!addresses.length && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const home = await requestHome();
-                            if (home?.address?._id) setAddressId(String(home.address._id));
-                          }}
-                          className="mt-2 inline-flex text-[13px] font-bold text-[#306EEC]"
-                        >
-                          Add your home -&gt;
-                        </button>
-                      )}
+                      <span className="text-[color:var(--ui-text-3)]">Home</span>
+                      <strong className="min-w-0 truncate text-right font-medium text-[color:var(--ui-ink)]">
+                        {[selectedAddress.line1, selectedAddress.city].filter(Boolean).join(", ")}
+                      </strong>
                     </div>
+                  )}
+                </div>
 
-                    <div ref={servicePickerRef} className="relative">
-                      <div className="mb-1 text-[10px] font-semibold text-[#0B1628] sm:text-[12px]">
-                        Small job
-                      </div>
-                      <button
-                        ref={servicePickerTriggerRef}
-                        type="button"
-                        onClick={() => setServicePickerOpen((open) => !open)}
-                        aria-expanded={servicePickerOpen}
-                        className={[
-                          "group flex min-h-10 w-full items-center justify-between gap-2 rounded-[6px] bg-[#F7F8FB] px-2 py-1 text-left transition duration-200 hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-12 sm:rounded-[8px] sm:px-3",
-                          selectedTask ? "ring-1 ring-[#D7E4FF]" : "ring-1 ring-[#E5E9F2]",
-                        ].join(" ")}
-                      >
-                        <span className="min-w-0">
-                          <span className={`block truncate text-[10px] font-bold sm:text-[13px] ${selectedTask ? "text-[#0B1628]" : "text-[#7C879A]"}`}>
-                            {selectedTask || "Choose a small job"}
-                          </span>
-                        </span>
-                        <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#0B1628] transition sm:h-9 sm:w-9">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path
-                              d={servicePickerOpen ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"}
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2.2"
-                            />
-                          </svg>
-                        </span>
-                      </button>
+                <p className="mt-3 text-[13px] leading-[1.5] text-[color:var(--ui-text-3)]">
+                  Materials are separate. Let us know in the task description if you want us to bring anything.
+                </p>
 
-                      {servicePickerOpen && (
-                        <>
-                          <button
-                            type="button"
-                            className="fixed inset-0 z-[80] bg-[#071325]/20 backdrop-blur-[2px] sm:hidden"
-                            aria-label="Close service picker"
-                            onClick={() => setServicePickerOpen(false)}
-                          />
-                          <div
-                            role="dialog"
-                            aria-modal="true"
-                            aria-labelledby="service-picker-title"
-                            style={{ "--customer-nav-height": `${CUSTOMER_MOBILE_NAV_HEIGHT_PX}px` } as CSSProperties}
-                            className="fixed inset-x-3 bottom-[calc(var(--customer-nav-height)_+_env(safe-area-inset-bottom,0px)_+_8px)] z-[90] flex max-h-[calc(100dvh_-_var(--customer-nav-height)_-_env(safe-area-inset-bottom,0px)_-_24px)] flex-col overflow-hidden rounded-[8px] bg-white shadow-[0_30px_90px_rgba(7,19,37,0.28)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+10px)] sm:z-30 sm:max-h-[420px] sm:rounded-[10px]"
-                          >
-                            <div className="flex flex-shrink-0 items-center justify-between border-b border-[#E5E9F2] px-3 py-2.5">
-                              <div>
-                                <div id="service-picker-title" className="text-[11px] font-black uppercase tracking-[0.16em] text-[#306EEC]">
-                                  Select service
-                                </div>
-                                <div className="mt-0.5 text-[13px] font-semibold text-[#64748B]">
-                                  One tap to choose.
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setServicePickerOpen(false)}
-                                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F4F6FA] text-[#34435C]"
-                                aria-label="Close service picker"
-                              >
-                                &times;
-                              </button>
-                            </div>
-                            <div
-                              className="grid min-h-0 grid-cols-2 gap-2 overflow-y-auto overscroll-contain p-2 pb-4 touch-pan-y"
-                              style={{ WebkitOverflowScrolling: "touch" }}
-                            >
-                              {ONE_TIME_SERVICE_OPTIONS.map((task) => {
-                                const active = selectedTask === task;
-                                return (
-                                  <button
-                                    key={task}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedTask(task);
-                                      setServicePickerOpen(false);
-                                    }}
-                                    className={[
-                                      "min-h-[46px] whitespace-normal break-words rounded-[8px] px-3 py-2 text-left text-[12px] font-black leading-4 transition duration-150 active:scale-[0.98] sm:min-h-[58px] sm:text-[13px]",
-                                      active
-                                        ? "bg-[#0B1628] text-white shadow-[0_16px_34px_rgba(11,22,40,0.22)]"
-                                        : "bg-[#F5F7FA] text-[#0B1628] hover:bg-[#EEF4FF]",
-                                    ].join(" ")}
-                                  >
-                                    {task}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                {error && <p className="pg-error mt-3">{error}</p>}
 
-                    <div className="flex items-center justify-between gap-2 border-t border-[#E5E9F2] pt-2">
-                      <p className="text-[10px] font-semibold text-[#64748B] sm:text-[12px]">Larger project? Request a free estimate.</p>
-                      <Link
-                        href="/projects#estimate"
-                        onClick={() =>
-                          trackEvent("estimate_cta_clicked", {
-                            placement: "book_service_selector_note",
-                          })
-                        }
-                        className="flex-shrink-0 text-[9px] font-bold text-[#306EEC] sm:text-[11px]"
-                      >
-                        Get Estimate
-                      </Link>
-                    </div>
+                {serviceTextsOptIn ? <div className="mt-3">{serviceTextsOptIn}</div> : null}
 
-                    <div className="hidden">
-                      {hasActiveMembership ? (
-                        <>
-                          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
-                            Extra visit
-                          </div>
-                          <h3 className="mt-2 text-[19px] font-black leading-[1.05] tracking-[-0.03em] sm:text-[21px] sm:leading-[1.02] sm:tracking-[-0.035em]">
-                            Use this when you need another visit before your membership renews.
-                          </h3>
-                          <p className="mt-3 text-[13px] font-semibold leading-5 text-white/72">
-                            Your included membership visits stay available through the normal membership booking flow.
-                          </p>
-                          <Link
-                            href="/book?visit=membership"
-                            className="mt-4 inline-flex h-11 items-center justify-center rounded-[8px] bg-white px-5 text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF]"
-                          >
-                            Book included visit
-                          </Link>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
-                                Need regular help?
-                              </div>
-                              <h3 className="mt-2 text-[19px] font-black leading-[1.05] tracking-[-0.03em] sm:text-[21px] sm:leading-[1.02] sm:tracking-[-0.035em]">
-                                A membership may be better if you expect ongoing visits.
-                              </h3>
-                            </div>
-                            <Link
-                              href="/membership/plans"
-                              onClick={() =>
-                                trackEvent("membership_cta_clicked", {
-                                  placement: "book_service_selector_card",
-                                })
-                              }
-                              className="hidden flex-shrink-0 rounded-[6px] bg-white px-4 py-2 text-[12px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:inline-flex"
-                            >
-                              Compare
-                            </Link>
-                          </div>
-                          <div className="mt-4 grid gap-2">
-                            {[
-                              "Better long-term value",
-                              "Included member visits",
-                              "Priority scheduling and project discounts may be included",
-                            ].map((benefit) => (
-                              <div key={benefit} className="flex items-center gap-2 text-[13px] font-semibold text-white/78">
-                                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-[#86EFAC]">
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                    <path
-                                      d="M5 12.5l4 4 10-10"
-                                      stroke="currentColor"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth="2.6"
-                                    />
-                                  </svg>
-                                </span>
-                                {benefit}
-                              </div>
-                            ))}
-                          </div>
-                          <Link
-                            href="/membership/plans"
-                            onClick={() =>
-                              trackEvent("membership_cta_clicked", {
-                                placement: "book_service_selector_card_mobile",
-                              })
-                            }
-                            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-[8px] bg-white text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:hidden"
-                          >
-                            Compare Membership
-                          </Link>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={submit}
+                  disabled={loading || !config.enabled}
+                  className="ui-btn ui-btn--primary ui-btn--lg ui-btn--block mt-4"
+                >
+                  {loading
+                    ? "Opening secure checkout..."
+                    : config.enabled
+                      ? "Continue to payment"
+                      : "Booking temporarily unavailable"}
+                </button>
               </div>
+            )}
 
-              {isAuthenticated && (
-                <>
-                  <div className="order-3 rounded-[6px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[8px] sm:p-4 lg:order-none">
-                    <h2 className="mb-1 text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Time</h2>
-
-                    {autoSelectingDate ? (
-                      <div className="rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-4 py-5 text-center text-[14px] font-semibold text-[#475569]">
-                        Finding the soonest available appointment...
-                      </div>
-                    ) : noAvailabilityMessage ? (
-                      <div className="rounded-[8px] border border-amber-200 bg-amber-50 px-4 py-5 text-center text-[14px] font-semibold text-amber-800">
-                        {noAvailabilityMessage}
-                      </div>
-                    ) : loadingSlots ? (
-                      <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-2">
-                        {[1, 2, 3, 4, 5, 6].map((item) => (
-                          <div key={item} className="h-9 animate-pulse rounded-[6px] bg-[#F1F5F9] sm:h-11" />
-                        ))}
-                      </div>
-                    ) : slots.length ? (
-                      <TimeSlotGrid
-                        slotOptions={slotOptions}
-                        selectedTime={selectedTime}
-                        onSelect={setSelectedTime}
-                      />
-                    ) : (
-                      <div className="rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-5 text-center text-[14px] text-[#64748B]">
-                        Choose an available date to see times.
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="order-4 rounded-[6px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[8px] sm:p-4 lg:order-none">
-                    <h2 className="mb-1 text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Task details</h2>
-
-                    <textarea
-                      value={note}
-                      onChange={(event) => setNote(event.target.value)}
-                      rows={3}
-                      placeholder="Describe your task. If we need to bring any materials or special tools, please let us know."
-                      className="min-h-12 w-full resize-y rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] p-1 text-[10px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-[82px] sm:p-2.5 sm:text-[14px]"
-                    />
-
-                    <div className="mt-1">
-                      <div className="text-[9px] font-semibold text-[#64748B] sm:mb-1 sm:text-[11px]">
-                        Photos required
-                      </div>
-                      <p className="mb-1 text-[9px] leading-[13px] text-[#94A3B8] sm:text-[11px] sm:leading-4">
-                        A photo of the actual issue helps your Fixter arrive prepared.
-                      </p>
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => cameraInputRef.current?.click()}
-                          className="flex h-9 flex-1 items-center justify-center gap-1 rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:text-[13px]"
-                        >
-                          <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            aria-hidden="true"
-                          >
-                            <path
-                              d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="1.8"
-                            />
-                            <circle
-                              cx="12"
-                              cy="13"
-                              r="4"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                            />
-                          </svg>
-                          Take Photo
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => galleryInputRef.current?.click()}
-                          className="flex h-9 flex-1 items-center justify-center gap-1 rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:text-[13px]"
-                        >
-                          <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            aria-hidden="true"
-                          >
-                            <rect
-                              x="3"
-                              y="3"
-                              width="18"
-                              height="18"
-                              rx="2"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                            />
-                            <circle
-                              cx="8.5"
-                              cy="8.5"
-                              r="1.5"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                            />
-                            <path
-                              d="M21 15l-5-5L5 21"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="1.8"
-                            />
-                          </svg>
-                          Choose Photos{photos.length > 0 ? ` (${photos.length})` : ""}
-                        </button>
-                      </div>
-                      <PhotoLibraryPicker
-                        value={libraryReference}
-                        context="one_time"
-                        onChange={(key) => {
-                          setLibraryReference(key);
-                          if (key) setError((current) => (current.includes("Profixter Library") ? "" : current));
-                        }}
-                      />
-                      <input
-                        ref={cameraInputRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={(event) => {
-                          handleFiles(event.target.files);
-                          event.currentTarget.value = "";
-                        }}
-                        className="hidden"
-                      />
-                      <input
-                        ref={galleryInputRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(event) => {
-                          handleFiles(event.target.files);
-                          event.currentTarget.value = "";
-                        }}
-                        className="hidden"
-                      />
-                      {photos.length > 0 && (
-                        <div className="mt-1 grid grid-cols-3 gap-1 sm:mt-3 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5">
-                          {photos.map((_photo, index) => (
-                            <div
-                              key={`${_photo.name}-${index}`}
-                              className="relative overflow-hidden rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF]"
-                              style={{ aspectRatio: "1" }}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={photoUrls[index] || ""}
-                                alt={`Task photo ${index + 1}`}
-                                className="h-full w-full object-cover"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removePhoto(index)}
-                                aria-label="Remove photo"
-                                className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[12px] font-bold leading-none text-white transition hover:bg-black/75"
-                              >
-                                &times;
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="order-5 rounded-[6px] border border-[#E5E9F2] bg-white/95 p-2 pb-[calc(76px+env(safe-area-inset-bottom,0px))] shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[8px] sm:p-4 lg:order-none">
-                    <h2 className="mb-1 text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Payment summary</h2>
-
-                    <div className="mb-1 grid gap-1 text-[9px] text-[#475569] sm:text-[12px]">
-                      <div className="flex justify-between gap-2 rounded-[6px] bg-[#F8FAFF] px-2 py-1.5">
-                        <span>Extra Visit</span>
-                        <strong className="text-right text-[#0B1628]">
-                          {priceLabel} / {config.durationMinutes} minutes
-                        </strong>
-                      </div>
-                      <div className="flex justify-between gap-2 rounded-[6px] bg-[#F8FAFF] px-2 py-1.5">
-                        <span>Task</span>
-                        <strong className="text-right text-[#0B1628]">
-                          {selectedTask || "Not selected"}
-                        </strong>
-                      </div>
-                      <div className="flex justify-between gap-2 rounded-[6px] bg-[#F8FAFF] px-2 py-1.5">
-                        <span>Date &amp; time</span>
-                        <strong className="text-right text-[#0B1628]">
-                          {selectedDate ? dayLabel(selectedDate) : "Not selected"}
-                          {selectedTime ? ` at ${formatTime12(selectedTime)}` : ""}
-                        </strong>
-                      </div>
-                      {selectedAddress && (
-                        <div className="truncate rounded-[6px] bg-[#F8FAFF] px-2 py-1.5 font-semibold text-[#64748B]">
-                          {addressLabel(selectedAddress)}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mb-1 text-[9px] leading-3 text-[#64748B] sm:text-[11px] sm:leading-4">
-                      Materials are separate. Let us know in the task description if you want us to bring anything.
-                    </div>
-
-                    {error && (
-                      <div className="mb-1 rounded-[6px] border border-red-200 bg-red-50 px-2 py-1.5 text-[10px] font-semibold text-red-700 sm:text-[13px]">
-                        {error}
-                      </div>
-                    )}
-
-                    {serviceTextsOptIn ? <div className="mb-1.5">{serviceTextsOptIn}</div> : null}
-
-                    <button
-                      type="button"
-                      onClick={submit}
-                      disabled={loading || !config.enabled}
-                      className="h-11 w-full rounded-[6px] bg-[#306EEC] text-[12px] font-extrabold text-white transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-[54px] sm:rounded-[8px] sm:text-[15px]"
-                      style={{ boxShadow: !loading && config.enabled ? "0 16px 48px rgba(48,110,236,0.30)" : undefined }}
-                    >
-                      {loading
-                        ? "Opening secure checkout..."
-                        : config.enabled
-                          ? "Continue to payment"
-                          : "Booking temporarily unavailable"}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            {/* What a customer needs before paying, beside the button, one tap away. */}
+            <details className="pg-more">
+              <summary>What&rsquo;s included &amp; refunds</summary>
+              <div className="pg-more__body">
+                <p><strong className="font-semibold text-[color:var(--ui-ink)]">What&rsquo;s included:</strong> {pageCopy.includeText}</p>
+                <p><strong className="font-semibold text-[color:var(--ui-ink)]">Materials:</strong> Materials are separate.</p>
+                {/* Owner rule (2026-10-27): the site never says a job is excluded or
+                    rejected. The owner reviews every request and decides. */}
+                <p><strong className="font-semibold text-[color:var(--ui-ink)]">After payment:</strong> Your appointment request will be reviewed by our team. We&rsquo;ll contact you if we need any additional details. If we can&rsquo;t take it on, you receive a full refund.</p>
+                <p>
+                  <strong className="font-semibold text-[color:var(--ui-ink)]">Changes:</strong> {pageCopy.changeText}{" "}
+                  <a href={`tel:${config.cancellationPhone}`} className="font-semibold text-[color:var(--ui-accent-ink)]">
+                    {config.cancellationPhone}
+                  </a>
+                  .
+                </p>
+                {/* Straight to the visit list. */}
+                {isAuthenticated && <Link href="#your-visits" className="ui-link">View Visits</Link>}
+              </div>
+            </details>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1280px] px-4 pb-8 sm:px-6 lg:px-8">
-        <details className="rounded-[8px] border border-[#E5E9F2] bg-white px-3 py-2 text-[#0B1628]">
-          <summary className="cursor-pointer text-[11px] font-extrabold sm:text-[13px]">Important information</summary>
-          <div className="mt-2 grid gap-2 border-t border-[#E5E9F2] pt-2 text-[10px] leading-4 text-[#64748B] sm:grid-cols-3 sm:text-[12px]">
-            <p><strong className="text-[#0B1628]">What&rsquo;s included:</strong> {pageCopy.includeText}</p>
-            <p><strong className="text-[#0B1628]">Materials:</strong> Materials are separate.</p>
-            {/* Owner rule (2026-10-27): the site never says a job is excluded or
-                rejected. The owner reviews every request and decides. */}
-            <p><strong className="text-[#0B1628]">After payment:</strong> Your appointment request will be reviewed by our team. We&rsquo;ll contact you if we need any additional details. If we can&rsquo;t take it on, you receive a full refund.</p>
-            {/* Straight to the visit list. This used to leave Book for an
-                Account tab whose only remaining content was a link back to
-                Book. */}
-            {isAuthenticated && <Link href="#your-visits" className="font-bold text-[#306EEC]">View Visits</Link>}
-          </div>
-        </details>
-      </section>
-
       {/*
-       * The invitation to show what we did.
-       *
-       * After booking and its fine print, before the visit list. It is not
-       * part of booking and it is not part of history, which is the whole
-       * point: asking somebody to show their finished kitchen is a different
-       * request from either, so it gets its own small line on the page.
+       * The invitation to show what we did. After booking and its fine print,
+       * before the visit list: it is neither, which is the whole point.
        */}
       {isAuthenticated && (
-        <section className="mx-auto w-full max-w-[1280px] px-4 pb-8 sm:px-6 lg:px-8">
+        <section className="ui-container pb-8">
           <ShareFinishedProject />
         </section>
       )}
 
       {/*
-       * Visits, for people who are not members.
-       *
-       * The visit list only ever rendered on the membership branch, so somebody
-       * who paid for a one-time visit could not see it again anywhere: Account
-       * sends them here, and here had nothing to show them. Same component and
-       * same anchor the member page uses, so there is still one visit history
-       * on the site, and it is still under Book.
+       * Visits, for people who are not members. Same component and same
+       * anchor the member page uses, so there is still one visit history on
+       * the site, and it is still under Book.
        */}
       {isAuthenticated && (
-        <section
-          id="your-visits"
-          className="mx-auto w-full max-w-[1280px] scroll-mt-[84px] px-4 pb-10 pt-2 sm:scroll-mt-[96px] sm:px-6 sm:pb-12 lg:px-8"
-        >
+        <section id="your-visits" className="ui-container scroll-mt-[84px] pb-12 pt-2 sm:scroll-mt-[96px]">
           <BookingsSection />
         </section>
       )}
@@ -1484,10 +1222,7 @@ function FullDayVisitHistory() {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return null;
   return (
-    <section
-      id="your-visits"
-      className="mx-auto w-full max-w-[1280px] scroll-mt-[84px] px-4 pb-10 sm:scroll-mt-[96px] sm:px-6 sm:pb-12 lg:px-8"
-    >
+    <section id="your-visits" className="ui-container scroll-mt-[84px] pb-12 sm:scroll-mt-[96px]">
       <BookingsSection />
     </section>
   );
@@ -1537,18 +1272,19 @@ function BookExperience() {
    */
   if (visit === "full-day") {
     return (
-      <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
+      <main className="pg-book pg-flow">
         <Header />
         {nav}
-        <section className="mx-auto w-full max-w-[1280px] px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
+        <FullDayVisitPanel />
+        <FullDayVisitHistory />
+        {/* After the booking, not above it: the day is why they came. */}
+        <section className="ui-container pb-12">
           <GiftCallout
             variant="bar"
             audience={isMember ? "member" : "public"}
             headingId="fullday-gift-heading"
           />
         </section>
-        <FullDayVisitPanel />
-        <FullDayVisitHistory />
         <Footer />
       </main>
     );
@@ -1574,25 +1310,25 @@ function BookExperience() {
      */
     const showFreeVisit = isAnonymous || freeVisit === "eligible";
     return (
-      <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
+      <main className="pg-book pg-flow">
         <Header />
         {nav}
         <h1 className="sr-only">{BOOK_HEADING}</h1>
-        <section className="mx-auto w-full max-w-[640px] px-4 pb-10 pt-5 sm:pt-8">
-          <div className="fv-card p-4 sm:p-6">
+        <section className="ui-container ui-container--narrow pb-12 pt-5 sm:pt-8">
+          <div className="pg-panel !p-4 sm:!p-6">
             <PlansSection picker />
           </div>
           {showFreeVisit ? (
             <Link
               href="/book/free"
-              className="mt-3 flex items-center justify-between gap-3 rounded-[16px] border border-[#E3E8F1] bg-white px-4 py-3.5 text-[14px] transition hover:border-[#C9D6EE]"
+              className="ui-card ui-card--link mt-3 flex items-center justify-between gap-3 !py-3.5 text-[14px]"
               onClick={() => trackEvent("free_visit_cta_clicked", { placement: "book_tab" })}
               data-book-free-visit
             >
-              <span className="text-[#3b4658]">
-                <b className="text-[#0B1628]">Try us first.</b> Your first 90-minute visit is free.
+              <span className="text-[color:var(--ui-text-2)]">
+                <b className="font-semibold text-[color:var(--ui-ink)]">Try us first.</b> Your first 90-minute visit is free.
               </span>
-              <span className="shrink-0 font-semibold text-[#306EEC]">Book it →</span>
+              <span className="shrink-0 font-semibold text-[color:var(--ui-accent-ink)]">Book it →</span>
             </Link>
           ) : freeVisit === "needs_address" ? (
             /*
@@ -1601,11 +1337,11 @@ function BookExperience() {
              * server decides whether it becomes the link above.
              */
             <div
-              className="mt-3 flex flex-col gap-2 rounded-[16px] border border-[#E3E8F1] bg-white px-4 py-3.5 text-[14px] sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+              className="ui-card mt-3 flex flex-col gap-2 !py-3.5 text-[14px] sm:flex-row sm:items-center sm:justify-between sm:gap-3"
               data-book-free-visit="needs-address"
             >
-              <span className="text-[#3b4658]">
-                <b className="text-[#0B1628]">Try us first.</b> Your first 90-minute visit is free.
+              <span className="text-[color:var(--ui-text-2)]">
+                <b className="font-semibold text-[color:var(--ui-ink)]">Try us first.</b> Your first 90-minute visit is free.
               </span>
               <button
                 type="button"
@@ -1613,7 +1349,7 @@ function BookExperience() {
                   trackEvent("free_visit_cta_clicked", { placement: "book_tab_add_home" });
                   openHome();
                 }}
-                className="shrink-0 text-left font-semibold text-[#306EEC]"
+                className="min-h-11 shrink-0 text-left font-semibold text-[color:var(--ui-accent-ink)]"
               >
                 Add your home to check availability →
               </button>
@@ -1628,7 +1364,7 @@ function BookExperience() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
+    <main className="pg-book pg-flow">
       <Header />
       {nav}
       {visit === "priority" ? (
@@ -1652,7 +1388,7 @@ function BookExperience() {
            * A banner, not a dialog: nothing here interrupts, blocks, or has to
            * be dismissed before a member can book.
            */}
-          <section className="mx-auto w-full max-w-[1280px] px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
+          <section className="ui-container pt-4 sm:pt-5">
             {/*
              * The pitch follows the reader. This branch also serves the
              * one-time tab, which a non-member reaches from /on-demand, and
@@ -1677,7 +1413,7 @@ function BookExperience() {
            */}
           <BookingSection />
 
-          <section className="mx-auto w-full max-w-[1280px] px-4 pt-1 sm:px-6 lg:px-8">
+          <section className="ui-container pt-1">
             <YourFixterRow />
           </section>
 
@@ -1687,7 +1423,7 @@ function BookExperience() {
            * visit list rather than inside it: sharing a finished project is
            * not an action on a booking, and it stopped being one here.
            */}
-          <section className="mx-auto w-full max-w-[1280px] px-4 pt-5 sm:px-6 lg:px-8">
+          <section className="ui-container pt-5">
             <ShareFinishedProject />
           </section>
 
@@ -1698,7 +1434,7 @@ function BookExperience() {
            */}
           <section
             id="your-visits"
-            className="mx-auto w-full max-w-[1280px] scroll-mt-[84px] px-4 pt-6 sm:scroll-mt-[96px] sm:px-6 sm:pt-8 lg:px-8"
+            className="ui-container scroll-mt-[84px] pt-6 sm:scroll-mt-[96px] sm:pt-8"
           >
             {/*
               No heading of my own here: BookingsSection already opens with
@@ -1709,7 +1445,7 @@ function BookExperience() {
           </section>
 
           {/* After booking, not before it: the task comes first. */}
-          <section className="mx-auto w-full max-w-[1280px] px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+          <section className="ui-container pb-12 pt-6">
             <MembershipUpgradePrompt currentPlan={currentPlanKey} className="max-w-[420px]" />
           </section>
         </>

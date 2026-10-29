@@ -34,7 +34,7 @@ export default async function BookConfirmationPage({
   const params = await searchParams;
 
   return (
-    <main className="min-h-screen bg-[#F6F8FC] text-[#0B1628]">
+    <main className="min-h-screen bg-[color:var(--ui-bg-soft)] text-[color:var(--ui-ink)]">
       <BookConfirmationTracker
         bookingId={params.booking_id}
         sessionId={params.session_id}
@@ -42,136 +42,85 @@ export default async function BookConfirmationPage({
       <OneTimeBookingConfirmation bookingId={params.booking_id} />
       <Header />
 
-      <section className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 sm:py-9 lg:px-8 lg:py-12">
-        <div className="mb-5 inline-flex items-center gap-2.5 rounded-[6px] border border-emerald-200 bg-white px-3 py-2">
-          <span
-            className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500"
-            style={{ boxShadow: "0 0 8px rgba(16,185,129,0.7)" }}
-          />
-          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700">
-            One-Time Visit
-          </span>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-12 lg:gap-6">
-          <div className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-7 lg:col-span-7">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-[12px] font-black uppercase tracking-[0.12em] text-emerald-700">
-              Paid
+      <section className="ui-section ui-section--tight">
+        <div className="ui-container ui-container--narrow">
+          <div className="ui-card ui-card--raised !p-6 sm:!p-9">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[#e7f5ec] text-[#1f8a4c]" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <p className="ui-eyebrow !mb-0">One-Time Visit · Paid</p>
             </div>
-            <h1 className="text-[26px] font-black leading-[1.04] text-[#0B1628] sm:text-[34px]">
-              Payment received. Your request is pending approval.
-            </h1>
-            <p className="mt-4 max-w-[640px] text-[15px] leading-7 text-[#475569] sm:text-[16px]">
+            <h1 className="ui-h2 mt-5">Payment received. Your request is pending approval.</h1>
+            <p className="ui-body mt-3 max-w-[60ch]">
               Thank you. Your paid One-Time Handyman Visit request is now with Profixter for approval. If approved, Profixter will come at the scheduled visit time and you will receive confirmation shortly.
             </p>
 
-            <div className="mt-6 rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-4 py-4 text-[14px] leading-6 text-[#475569]">
+            {/* The customer's right, in plain sight. */}
+            <p className="mt-4 rounded-[var(--ui-r-sm)] bg-[color:var(--ui-bg-soft)] px-4 py-3 text-[14px] leading-[1.55] text-[color:var(--ui-text-2)]">
               If we cannot approve the job, cannot complete it within the One-Time Visit scope, or need to cancel before service, you will receive a full refund.
-            </div>
+            </p>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/book#your-visits"
-                className="inline-flex h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
-                style={{ boxShadow: "0 16px 48px rgba(48,110,236,0.30)" }}
-              >
+            <ol className="mt-6 grid gap-0 border-t border-[color:var(--ui-line)]">
+              {nextSteps.map((step, index) => (
+                <li key={step.label} className="flex gap-3 border-b border-[color:var(--ui-line)] py-3">
+                  <span className="ui-num w-5 flex-none pt-px text-[13px] font-semibold text-[color:var(--ui-text-3)]">{index + 1}</span>
+                  <span>
+                    <span className="block text-[15px] font-medium text-[color:var(--ui-ink)]">{step.label}</span>
+                    <span className="block text-[14px] leading-[1.5] text-[color:var(--ui-text-3)]">{step.body}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+
+            {params.booking_id && (
+              <p className="mt-4 text-[14px] text-[color:var(--ui-text-3)]">
+                Booking reference{" "}
+                <span className="break-all font-medium text-[color:var(--ui-ink)]">{params.booking_id}</span>
+              </p>
+            )}
+
+            <div className="pg-actions pg-actions--stack">
+              <Link href="/book#your-visits" className="ui-btn ui-btn--primary">
                 View my bookings
               </Link>
-              <Link
-                href="/membership/plans"
-                className="inline-flex h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-5 text-[15px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] active:scale-[0.99]"
-              >
+              <Link href="/membership/plans" className="ui-btn ui-btn--secondary">
                 See membership plans
               </Link>
             </div>
           </div>
 
-          <aside className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-6 lg:col-span-5">
-            <h2 className="text-[19px] font-extrabold text-[#0B1628]">
-              Calm next steps
-            </h2>
-            <div className="mt-4 space-y-3">
-              {nextSteps.map((step, index) => (
-                <div
-                  key={step.label}
-                  className="rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-3"
-                >
-                  <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#306EEC]">
-                    Step {index + 1}
-                  </div>
-                  <div className="mt-1 text-[14px] font-extrabold text-[#0B1628]">
-                    {step.label}
-                  </div>
-                  <p className="mt-1 text-[13px] leading-5 text-[#64748B]">
-                    {step.body}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {params.booking_id && (
-              <div className="mt-4 rounded-[8px] border border-[#E5E9F2] bg-white px-4 py-3 text-[13px] font-semibold text-[#64748B]">
-                Booking reference
-                <div className="mt-1 break-all text-[14px] font-extrabold text-[#0B1628]">
-                  {params.booking_id}
-                </div>
+          <div className="mt-4 grid gap-3">
+            <details className="pg-more">
+              <summary>Before the visit</summary>
+              <div className="pg-more__body">
+                <ul className="ui-checks">
+                  {prepNotes.map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </ul>
               </div>
-            )}
-          </aside>
-        </div>
-
-        <div className="mt-4 grid gap-4 lg:grid-cols-3">
-          <div className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] lg:col-span-2">
-            <h2 className="text-[18px] font-extrabold text-[#0B1628]">
-              Before the visit
-            </h2>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {prepNotes.map((note) => (
-                <div key={note} className="flex gap-2 rounded-[8px] bg-[#F8FAFF] px-4 py-3">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                    className="mt-0.5 flex-shrink-0 text-[#306EEC]"
-                  >
-                    <path
-                      d="M5 12.5l4 4 10-10"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.4"
-                    />
-                  </svg>
-                  <span className="text-[13px] font-semibold leading-5 text-[#475569]">
-                    {note}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)]">
-            <h2 className="text-[18px] font-extrabold text-[#0B1628]">
-              Need to change something?
-            </h2>
-            <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
-              Call{" "}
-              <a href="tel:631-599-1363" className="font-extrabold text-[#306EEC]">
-                631-599-1363
-              </a>
-              . One-Time Visit cancellation or reschedule requests require admin approval and are not handled with a one-click cancel button in your account.
-            </p>
-            <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
-              Your appointment request will be reviewed by our team. We&rsquo;ll contact you if we need any additional details. Planning a bigger project as well? A free Project Estimate is available too.
-            </p>
-            <Link
-              href="/projects"
-              className="mt-4 inline-flex h-[44px] items-center rounded-[8px] border border-[#C5CBD8] px-4 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC]"
-            >
-              Request a Project Estimate
-            </Link>
+            </details>
+            <details className="pg-more">
+              <summary>Need to change something?</summary>
+              <div className="pg-more__body">
+                <p>
+                  Call{" "}
+                  <a href="tel:631-599-1363" className="font-semibold text-[color:var(--ui-accent-ink)]">
+                    631-599-1363
+                  </a>
+                  . One-Time Visit cancellation or reschedule requests require admin approval and are not handled with a one-click cancel button in your account.
+                </p>
+                <p>
+                  Your appointment request will be reviewed by our team. We&rsquo;ll contact you if we need any additional details. Planning a bigger project as well? A free Project Estimate is available too.
+                </p>
+                <Link href="/projects" className="ui-link">
+                  Request a Project Estimate
+                </Link>
+              </div>
+            </details>
           </div>
         </div>
       </section>

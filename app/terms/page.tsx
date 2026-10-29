@@ -1,6 +1,8 @@
 // app/terms/page.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
+import Header from "@/app/components/sections/Header";
+import Footer from "@/app/components/sections/Footer";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
@@ -33,30 +35,28 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
+    <div className="min-h-screen bg-white text-[color:var(--ui-ink)]">
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
       <div
-        className="max-w-5xl mx-auto rounded-[8px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
-          boxShadow: "0px 0px 90px 0px rgba(0,0,0,0.55)",
-        }}
+        className="ui-container ui-container--narrow pb-16 pt-8 sm:pb-20 sm:pt-12"
       >
-        <h1 className="text-3xl sm:text-4xl font-semibold mb-3 text-center tracking-tight">
+        <h1 className="ui-display mb-3 text-center">
           Terms of Service
         </h1>
 
-        <p className="text-sm sm:text-base text-white/65 text-center mb-8 leading-relaxed">
+        <p className="text-[15px] sm:text-base text-[color:var(--ui-text-2)] text-center mb-8 leading-relaxed">
           Effective Date: January 9, 2026 &middot; Company:{" "}
           <span className="font-semibold">Premium Island Homes Inc.</span>, doing business as{" "}
           <span className="font-semibold">&quot;Profixter&quot;</span> and/or{" "}
           <span className="font-semibold">&quot;Mr. Fixter&quot;</span> (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;).
         </p>
 
-        <div className="space-y-10 text-sm sm:text-base text-white/85 leading-relaxed">
+        <div className="space-y-10 text-[15px] sm:text-base text-[color:var(--ui-text-2)] leading-relaxed">
           {/* 1 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">1. Agreement to Terms</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">1. Agreement to Terms</h2>
             <p>
               By creating an account, booking a visit, requesting service, purchasing a membership plan, or using any part of our
               website, software, SMS/email communications, or services (collectively, the{" "}
@@ -76,7 +76,7 @@ export default function TermsPage() {
 
           {/* 2 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">2. Definitions (Important)</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">2. Definitions (Important)</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>
                 <span className="font-semibold">“Membership” / “Plan”</span> means a{" "}
@@ -106,23 +106,23 @@ export default function TermsPage() {
 
           {/* 3 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">3. Membership &amp; Billing (Month-to-Month)</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">3. Membership &amp; Billing (Month-to-Month)</h2>
 
             <div className="space-y-4">
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <h3 className="text-lg font-semibold mb-2">3.1 Month-to-Month Auto-Renewal</h3>
+              <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+                <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)] mb-2">3.1 Month-to-Month Auto-Renewal</h3>
                 <p>
                   Memberships renew <span className="font-semibold">automatically month-to-month</span> unless you cancel before your
                   next renewal date. Your renewal date is typically the same calendar day of each month as your original purchase
                   (or the nearest possible date if a month has fewer days).
                 </p>
-                <p className="mt-2 text-white/70">
+                <p className="mt-2 text-[color:var(--ui-text-2)]">
                   We may send renewal reminders, but you are responsible for managing your membership and cancellation timing.
                 </p>
               </div>
 
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <h3 className="text-lg font-semibold mb-2">3.2 Payment Authorization</h3>
+              <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+                <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)] mb-2">3.2 Payment Authorization</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
                     You authorize us (and our payment processors) to charge your selected payment method for recurring monthly
@@ -140,8 +140,8 @@ export default function TermsPage() {
                 </ul>
               </div>
 
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <h3 className="text-lg font-semibold mb-2">3.3 Cancellation</h3>
+              <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+                <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)] mb-2">3.3 Cancellation</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
                     You can cancel anytime before the next renewal. Your membership remains active through the end of the
@@ -157,21 +157,21 @@ export default function TermsPage() {
                 </ul>
               </div>
 
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <h3 className="text-lg font-semibold mb-2">3.4 No Refunds for Partial Months (General Rule)</h3>
+              <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+                <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)] mb-2">3.4 No Refunds for Partial Months (General Rule)</h3>
                 <p>
                   To the maximum extent permitted by law, membership fees are charged in advance and are generally{" "}
                   <span className="font-semibold">non-refundable</span> once a billing period starts, including partial-month refunds.
                   This is because time and capacity are reserved for members.
                 </p>
-                <p className="mt-2 text-white/70">
+                <p className="mt-2 text-[color:var(--ui-text-2)]">
                   If a refund is granted in our discretion (or required by law), it may be reduced by the value of visits already
                   used, processing fees, and costs already incurred.
                 </p>
               </div>
 
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <h3 className="text-lg font-semibold mb-2">3.5 Promotions / Promo Codes</h3>
+              <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+                <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)] mb-2">3.5 Promotions / Promo Codes</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
                     Promo codes (when offered) typically provide a fixed discount (e.g., $50 off) and may have limits or expiration.
@@ -185,11 +185,11 @@ export default function TermsPage() {
 
           {/* 4 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">4. What’s Covered vs. Not Covered (Scope Control)</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">4. What’s Covered vs. Not Covered (Scope Control)</h2>
 
             <div className="space-y-4">
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <h3 className="text-lg font-semibold mb-2">4.1 Standard Visit Time Window</h3>
+              <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+                <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)] mb-2">4.1 Standard Visit Time Window</h3>
                 <p>
                   Unless your Plan states otherwise, a standard Visit is intended to be up to{" "}
                   <span className="font-semibold">90 minutes</span> of labor on typical handyman tasks.
@@ -200,21 +200,21 @@ export default function TermsPage() {
                 </ul>
               </div>
 
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <h3 className="text-lg font-semibold mb-2">4.2 Covered Tasks (General)</h3>
+              <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+                <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)] mb-2">4.2 Covered Tasks (General)</h3>
                 <p>
                   Covered Tasks are generally small to medium home maintenance and repairs that do not require a licensed trade
                   where legally required, do not involve major structural work, and are safe/feasible under the conditions at your
                   Service Address.
                 </p>
-                <p className="mt-2 text-white/70">
+                <p className="mt-2 text-[color:var(--ui-text-2)]">
                   Exact coverage depends on the Plan description and our reasonable judgment based on safety, code requirements,
                   and the nature of the work.
                 </p>
               </div>
 
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <h3 className="text-lg font-semibold mb-2">4.3 Exclusions (Not Covered / Separate Quote)</h3>
+              <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+                <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)] mb-2">4.3 Exclusions (Not Covered / Separate Quote)</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
                     Work requiring licensed professionals where legally required (including certain electrical, plumbing, HVAC, gas
@@ -239,7 +239,7 @@ export default function TermsPage() {
 
           {/* 5 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">5. Scheduling, Availability, Access, Cancellations</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">5. Scheduling, Availability, Access, Cancellations</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>
                 <span className="font-semibold">Availability:</span> Visits are scheduled based on technician availability, route
@@ -272,7 +272,7 @@ export default function TermsPage() {
 
           {/* 6 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">6. Fair Use Policy (Abuse Protection)</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">6. Fair Use Policy (Abuse Protection)</h2>
             <p>
               Membership is designed for normal, reasonable household use. To protect fairness and service speed for all customers,
               we may review and limit usage that appears abusive, fraudulent, or inconsistent with normal residential needs.
@@ -293,7 +293,7 @@ export default function TermsPage() {
 
           {/* 7 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">7. Materials, Parts, Store Runs, Customer Responsibilities</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">7. Materials, Parts, Store Runs, Customer Responsibilities</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>
                 <span className="font-semibold">Materials:</span> You may supply materials/parts, or we may purchase them with your
@@ -316,7 +316,7 @@ export default function TermsPage() {
 
           {/* 8 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">8. Third-Party Contractors, Referrals, Licensed Work</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">8. Third-Party Contractors, Referrals, Licensed Work</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>
                 If a request requires licensed trade work or falls outside membership coverage, we may provide a separate estimate
@@ -332,7 +332,7 @@ export default function TermsPage() {
 
           {/* 9 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">9. Workmanship, Disclaimers, No Guaranteed Outcomes</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">9. Workmanship, Disclaimers, No Guaranteed Outcomes</h2>
             <p>
               We aim to do high-quality work. However, repairs can involve hidden conditions and unpredictable factors. To the maximum
               extent permitted by law, the Service is provided <span className="font-semibold">“as is”</span> and{" "}
@@ -346,7 +346,7 @@ export default function TermsPage() {
 
           {/* 10 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">10. Damage Claims, Risk Allocation, Indemnification</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">10. Damage Claims, Risk Allocation, Indemnification</h2>
             <p>
               You agree to notify us promptly of any concern about damage or workmanship, ideally within 48 hours of the Visit, so we
               can investigate while conditions are recent.
@@ -370,8 +370,8 @@ export default function TermsPage() {
 
           {/* 11 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">11. Limitation of Liability</h2>
-            <p className="uppercase font-semibold text-white">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">11. Limitation of Liability</h2>
+            <p className="uppercase font-semibold text-[color:var(--ui-ink)]">
               To the maximum extent permitted by law, our total liability for any claim arising out of or related to the Service will
               not exceed the amount you paid to us for your membership during the one (1) month prior to the event giving rise to the
               claim, or $500, whichever is greater.
@@ -385,7 +385,7 @@ export default function TermsPage() {
 
           {/* 12 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">12. Disputes, Class Action Waiver, Venue</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">12. Disputes, Class Action Waiver, Venue</h2>
             <p>
               These Terms are governed by New York law. Before filing a claim, you agree to contact us and allow 30 days for good-faith
               resolution. Unless required otherwise by law, disputes will be resolved in courts located in Suffolk County, New York (or
@@ -399,7 +399,7 @@ export default function TermsPage() {
 
           {/* 13 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">13. Electronic Communications (Email, SMS, Phone)</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">13. Electronic Communications (Email, SMS, Phone)</h2>
             <p>
   Text messages are optional. Creating an account asks for no SMS consent: a
   phone sign-up sends only a one-time verification code that you request. Service
@@ -424,9 +424,9 @@ export default function TermsPage() {
 
           {/* 14 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">14. SMS Program Terms</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">14. SMS Program Terms</h2>
 
-            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5 space-y-3">
+            <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5 space-y-3">
               <p className="font-semibold">
   Program Name: Premium Island Homes Inc. (ProFixter) SMS Alerts &amp; Updates
 </p>
@@ -459,7 +459,7 @@ export default function TermsPage() {
                   If you experience issues with the messaging program, reply with the keyword{" "}
                   <span className="font-semibold">HELP</span> for more assistance, or reach our customer-service line directly on{" "}
                   <span className="font-semibold">631-599-1363</span> or{" "}
-                  <a href={PUBLIC_CONTACT_MAILTO} className="text-[#93c5fd] underline underline-offset-2">
+                  <a href={PUBLIC_CONTACT_MAILTO} className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                     {PUBLIC_CONTACT_EMAIL}
                   </a>
                   .
@@ -471,7 +471,7 @@ export default function TermsPage() {
                 </li>
                 <li>
                   For privacy-related inquiries, please refer to our Privacy Policy:{" "}
-                  <Link href="/privacy" className="text-[#93c5fd] underline underline-offset-2">
+                  <Link href="/privacy" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                     https://www.profixter.com/privacy
                   </Link>
                   .
@@ -479,11 +479,11 @@ export default function TermsPage() {
                 <li>
                   The full SMS programme terms — message categories, frequency, opt-out and HELP behaviour, and how consent is
                   recorded — are set out in our Communication Consent &amp; SMS Terms:{" "}
-                  <Link href="/communication-consent" className="text-[#93c5fd] underline underline-offset-2">
+                  <Link href="/communication-consent" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                     https://www.profixter.com/communication-consent
                   </Link>
                   . How we collect that consent, with screenshots of the sign-up form, is shown at{" "}
-                  <Link href="/sms-consent-example" className="text-[#93c5fd] underline underline-offset-2">
+                  <Link href="/sms-consent-example" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                     https://www.profixter.com/sms-consent-example
                   </Link>
                   .
@@ -494,11 +494,11 @@ export default function TermsPage() {
 
           {/* 15 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">15. Photos/Video + Marketing Use</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">15. Photos/Video + Marketing Use</h2>
             <p>
               We may take reasonable before/after photos or short clips of work areas for documentation, training, and marketing. We try
               to avoid faces/identifying information and may blur/crop. If you want to opt out of marketing use, email{" "}
-              <a href={PUBLIC_CONTACT_MAILTO} className="text-[#93c5fd] underline underline-offset-2">
+              <a href={PUBLIC_CONTACT_MAILTO} className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                 {PUBLIC_CONTACT_EMAIL}
               </a>{" "}
               and we will honor it going forward.
@@ -507,7 +507,7 @@ export default function TermsPage() {
 
           {/* 16 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">16. Prohibited Use, Fraud, Termination</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">16. Prohibited Use, Fraud, Termination</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>Do not provide false info, impersonate others, or misuse promotions.</li>
               <li>Do not request illegal work or create unsafe/hostile conditions.</li>
@@ -518,7 +518,7 @@ export default function TermsPage() {
 
           {/* 17 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">17. Force Majeure</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">17. Force Majeure</h2>
             <p>
               We are not liable for delays or inability to perform due to events outside our reasonable control (weather, disasters, supply
               shortages, outages, government actions, emergencies). We will reschedule as soon as practical.
@@ -527,7 +527,7 @@ export default function TermsPage() {
 
           {/* 18 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">18. Miscellaneous</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">18. Miscellaneous</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>
                 <span className="font-semibold">Severability:</span> If any part is unenforceable, the rest remains effective.
@@ -546,35 +546,36 @@ export default function TermsPage() {
 
           {/* 19 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">19. Contact</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">19. Contact</h2>
             <p className="mt-1">
               Phone: <span className="font-semibold">631-599-1363</span>
               <br />
               Email:{" "}
-              <a href={PUBLIC_CONTACT_MAILTO} className="text-[#93c5fd] underline underline-offset-2">
+              <a href={PUBLIC_CONTACT_MAILTO} className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                 {PUBLIC_CONTACT_EMAIL}
               </a>
             </p>
           </section>
 
           <div className="pt-2">
-            <p className="text-xs sm:text-sm text-white/55 mt-6 text-center">Last Updated: January 9, 2026</p>
+            <p className="text-[13px] sm:text-sm text-[color:var(--ui-text-3)] mt-6 text-center">Last Updated: January 9, 2026</p>
 
             {/* See the note on the privacy policy: neighbouring documents, not a CTA. */}
-            <nav aria-label="Related legal documents" className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-white/55">
-              <Link href="/privacy" className="underline underline-offset-4 transition hover:text-white">
+            <nav aria-label="Related legal documents" className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[13px] sm:text-sm text-[color:var(--ui-text-3)]">
+              <Link href="/privacy" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
                 Privacy Policy
               </Link>
-              <Link href="/communication-consent" className="underline underline-offset-4 transition hover:text-white">
+              <Link href="/communication-consent" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
                 Communication Consent &amp; SMS Terms
               </Link>
-              <Link href="/sms-consent-example" className="underline underline-offset-4 transition hover:text-white">
+              <Link href="/sms-consent-example" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
                 How we collect SMS consent
               </Link>
             </nav>
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

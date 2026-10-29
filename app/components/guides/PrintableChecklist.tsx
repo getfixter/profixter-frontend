@@ -23,7 +23,7 @@ export default function PrintableChecklist({
 }) {
   const id = useId();
   return (
-    <div className="pf-printable my-8 rounded-[12px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] sm:p-7">
+    <div className="pf-printable my-8 rounded-[12px] border border-[color:var(--ui-line)] bg-white p-5 shadow-[var(--ui-shadow-1)] sm:p-7">
       <style>{`@media print {
   body * { visibility: hidden !important; }
   .pf-printable, .pf-printable * { visibility: visible !important; }
@@ -32,26 +32,26 @@ export default function PrintableChecklist({
 }`}</style>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">Printable checklist</p>
-          <p className="mt-2 text-[20px] font-black leading-tight text-[#0B1628] sm:text-[23px]">{title}</p>
+          <p className="ui-eyebrow ui-eyebrow--accent !mb-0">Printable checklist</p>
+          <p className="mt-2 text-[20px] font-semibold leading-tight text-[color:var(--ui-ink)] sm:text-[23px]">{title}</p>
         </div>
         <button
           type="button"
           onClick={() => window.print()}
-          className="pf-no-print inline-flex min-h-[44px] items-center justify-center rounded-[8px] border border-[#D7DEE9] bg-white px-4 text-[14px] font-bold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC]"
+          className="pf-no-print inline-flex min-h-[44px] items-center justify-center rounded-[8px] border border-[color:var(--ui-line)] bg-white px-4 text-[14px] font-bold text-[color:var(--ui-ink)] transition hover:border-[#306EEC] hover:text-[color:var(--ui-accent-ink)]"
         >
           Print this list
         </button>
       </div>
-      {intro ? <p className="mt-3 text-[14px] leading-6 text-[#64748B]">{intro}</p> : null}
+      {intro ? <p className="mt-3 text-[14px] leading-6 text-[color:var(--ui-text-3)]">{intro}</p> : null}
       <div className="mt-5 grid gap-6 sm:grid-cols-2">
         {groups.map((group, g) => (
           <fieldset key={group.name} className="min-w-0">
-            <legend className="text-[13px] font-black uppercase tracking-[0.1em] text-[#0B1628]">{group.name}</legend>
+            <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[color:var(--ui-ink)]">{group.name}</legend>
             <ul className="mt-2 grid gap-1.5">
               {group.items.map((item, i) => (
                 <li key={item}>
-                  <label htmlFor={`${id}-${g}-${i}`} className="flex cursor-pointer gap-2.5 text-[14px] leading-6 text-[#334155]">
+                  <label htmlFor={`${id}-${g}-${i}`} className="flex cursor-pointer gap-2.5 text-[14px] leading-6 text-[color:var(--ui-text-2)]">
                     <input id={`${id}-${g}-${i}`} type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-[#306EEC]" />
                     {item}
                   </label>
@@ -63,12 +63,12 @@ export default function PrintableChecklist({
       </div>
       {blankLines > 0 ? (
         <div className="mt-6">
-          <p className="text-[13px] font-black uppercase tracking-[0.1em] text-[#0B1628]">Your own items</p>
+          <p className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[color:var(--ui-ink)]">Your own items</p>
           <ul className="mt-2 grid gap-3" aria-hidden="true">
             {Array.from({ length: blankLines }).map((_, i) => (
               <li key={i} className="flex items-end gap-2.5">
                 <span className="mb-0.5 h-4 w-4 shrink-0 rounded-[3px] border border-[#94A3B8]" />
-                <span className="h-6 flex-1 border-b border-[#CBD5E1]" />
+                <span className="h-6 flex-1 border-b border-[color:var(--ui-line-2)]" />
               </li>
             ))}
           </ul>

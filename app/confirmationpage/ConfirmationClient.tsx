@@ -212,24 +212,21 @@ export default function ConfirmationClient() {
   const cycleLabel = subscription?.billingCycle === "annual" ? "Annual" : "Monthly";
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#F5F7FB] px-5 py-10 sm:px-6 sm:py-13">
-      <div className="relative w-full max-w-xl overflow-hidden rounded-[8px] border border-[#DCE3F8] bg-white p-7 text-center shadow-[0_28px_80px_rgba(15,23,42,0.12)] animate-fadeIn sm:p-10">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#306EEC] via-[#86EFAC] to-[#D4A574]" />
+    <main className="flex min-h-screen items-center justify-center bg-[color:var(--ui-bg-soft)] px-4 py-10 sm:px-6 sm:py-14">
+      <div className="ui-rise relative w-full max-w-[520px] rounded-[var(--ui-r-lg)] bg-white p-6 text-center shadow-[var(--ui-shadow-3)] sm:p-9">
 
         {phase === "confirming" && (
           <>
-            <div className="mb-6 flex justify-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#E8F1FF]">
-                <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[#306EEC] border-t-transparent" />
-              </div>
+            <div className="mb-5 flex justify-center">
+              <div className="h-9 w-9 animate-spin rounded-full border-[2.5px] border-[color:var(--ui-ink)] border-t-transparent" />
             </div>
-            <h1 className="mb-3 text-[26px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[30px]">
+            <h1 className="ui-h2 mb-2">
               Payment received.
             </h1>
-            <p className="mx-auto mb-2 max-w-[420px] text-[15px] font-semibold leading-relaxed text-[#64748B] sm:text-base">
+            <p className="mx-auto mb-2 max-w-[420px] text-[15px] leading-[1.6] text-[color:var(--ui-text-2)]">
               Setting up your membership &mdash; this usually takes a few seconds.
             </p>
-            <p className="mx-auto max-w-[420px] text-sm text-[#8A9099]">
+            <p className="ui-small mx-auto max-w-[420px]">
               You can leave this page open. Nothing else needs paying.
             </p>
           </>
@@ -237,28 +234,31 @@ export default function ConfirmationClient() {
 
         {phase === "slow" && (
           <>
-            <div className="mb-6 flex justify-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FFF4E5]">
-                <span aria-hidden="true" className="text-[34px]">⏳</span>
+            <div className="mb-5 flex justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#fdf3e3] text-[#9a5b00]" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+                  <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </div>
             </div>
-            <h1 className="mb-3 text-[26px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[30px]">
+            <h1 className="ui-h2 mb-2">
               Your payment went through.
             </h1>
-            <p className="mx-auto mb-6 max-w-[440px] text-[15px] font-semibold leading-relaxed text-[#64748B] sm:text-base">
+            <p className="mx-auto mb-6 max-w-[440px] text-[15px] leading-[1.6] text-[color:var(--ui-text-2)]">
               Your membership is taking a little longer than usual to switch on. Nothing
               has gone wrong and you will not be charged again &mdash; it should appear in
               your account shortly.
             </p>
             <button
               onClick={() => setAttempt((n) => n + 1)}
-              className="h-[48px] w-full rounded-[8px] bg-[#0B1628] text-base font-black text-white transition-all hover:bg-[#17263D]"
+              className="ui-btn ui-btn--primary ui-btn--block"
             >
               Check again
             </button>
             <Link
               href="/account"
-              className="mt-3 inline-flex h-[46px] w-full items-center justify-center rounded-[8px] border border-[#D7DEE9] bg-white text-[15px] font-bold text-[#0B1628] transition hover:bg-[#F8FAFF]"
+              className="ui-btn ui-btn--secondary ui-btn--block mt-2"
             >
               Go to my account
             </Link>
@@ -267,17 +267,15 @@ export default function ConfirmationClient() {
 
         {phase === "confirmed" && (
           <>
-            <div className="mb-6 flex justify-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#E8F1FF] shadow-inner">
-                <CheckCircleIcon className="h-14 w-14 text-[#306EEC]" />
-              </div>
+            <div className="mb-5 flex justify-center">
+              <CheckCircleIcon className="h-12 w-12 text-[color:var(--ui-success)]" aria-hidden="true" />
             </div>
 
-            <h1 className="mb-3 text-[30px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[36px]">
+            <h1 className="ui-h2 mb-2">
               Your home is now taken care of.
             </h1>
 
-            <p className="mx-auto mb-6 max-w-[420px] text-[15px] font-semibold leading-relaxed text-[#64748B] sm:text-base">
+            <p className="mx-auto mb-6 max-w-[420px] text-[15px] leading-[1.6] text-[color:var(--ui-text-2)]">
               Your Membership is active. Book your first Member visit and we&apos;ll start
               learning your home, your priorities, and your running list.
             </p>
@@ -288,31 +286,31 @@ export default function ConfirmationClient() {
               the URL.
             */}
             {(planLabel || property) && (
-              <dl className="mb-6 grid gap-px overflow-hidden rounded-[8px] border border-[#D7E0F5] bg-[#D7E0F5] text-left">
+              <dl className="mb-5 grid gap-px overflow-hidden rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-[color:var(--ui-line)] text-left">
                 {planLabel && (
                   <div className="bg-white px-5 py-3">
-                    <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A9099]">
+                    <dt className="text-[12px] font-medium text-[color:var(--ui-text-3)]">
                       Your plan
                     </dt>
-                    <dd className="mt-0.5 text-[15px] font-black text-[#0B1628]">
+                    <dd className="mt-0.5 text-[15px] font-semibold text-[color:var(--ui-ink)]">
                       {planLabel} &middot; {cycleLabel}
                     </dd>
                   </div>
                 )}
                 {property && (
                   <div className="bg-white px-5 py-3">
-                    <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A9099]">
+                    <dt className="text-[12px] font-medium text-[color:var(--ui-text-3)]">
                       Your home
                     </dt>
-                    <dd className="mt-0.5 text-[15px] font-black text-[#0B1628]">{property}</dd>
+                    <dd className="mt-0.5 text-[15px] font-semibold text-[color:var(--ui-ink)]">{property}</dd>
                   </div>
                 )}
               </dl>
             )}
 
-            <div className="mb-6 rounded-[8px] border border-[#D7E0F5] bg-[#F8FAFF] p-5 text-left shadow-sm">
-              <h3 className="mb-3 text-base font-black text-[#0B1628]">What&apos;s next</h3>
-              <ul className="space-y-3 text-sm font-semibold text-[#64748B]">
+            <div className="mb-5 rounded-[var(--ui-r-md)] bg-[color:var(--ui-bg-soft)] p-4 text-left">
+              <h3 className="mb-2 text-[14px] font-semibold text-[color:var(--ui-ink)]">What&apos;s next</h3>
+              <ul className="space-y-1.5 text-[14px] text-[color:var(--ui-text-2)]">
                 <li>1. Choose your first visit time</li>
                 <li>2. Add notes and photos for the work</li>
                 <li>3. Profixter confirms the appointment</li>
@@ -321,7 +319,7 @@ export default function ConfirmationClient() {
 
             <button
               onClick={handleBookClick}
-              className="h-[48px] w-full rounded-[8px] bg-[#0B1628] text-base font-black text-white shadow-[0_18px_44px_rgba(11,22,40,0.24)] transition-all hover:bg-[#17263D]"
+              className="ui-btn ui-btn--primary ui-btn--lg ui-btn--block"
             >
               Book your Fixter
             </button>
@@ -333,9 +331,9 @@ export default function ConfirmationClient() {
             */}
             <YourFixter variant="welcome" className="mt-4 text-left" />
 
-            <div className="mt-4 rounded-[8px] border border-[#E5E7EB] bg-white p-4 text-left">
-              <p className="text-sm font-black text-[#0B1628]">How booking works as a Member</p>
-              <p className="mt-2 text-sm leading-relaxed text-[#6A6D71]">
+            <div className="mt-4 border-t border-[color:var(--ui-line)] pt-4 text-left">
+              <p className="text-[14px] font-semibold text-[color:var(--ui-ink)]">How booking works as a Member</p>
+              <p className="mt-1 text-[14px] leading-[1.55] text-[color:var(--ui-text-2)]">
                 There&rsquo;s no monthly visit allowance. Book as often as you need &mdash;
                 your plan simply determines how many visits you can have booked at the same
                 time, and scheduling is subject to availability.
@@ -344,9 +342,9 @@ export default function ConfirmationClient() {
           </>
         )}
 
-        <p className="mt-4 text-sm text-[#6A6D71]">
+        <p className="ui-small mt-5">
           Need help? Email{" "}
-          <a href={PUBLIC_CONTACT_MAILTO} className="text-[#306EEC] underline">
+          <a href={PUBLIC_CONTACT_MAILTO} className="text-[color:var(--ui-accent-ink)] underline">
             {PUBLIC_CONTACT_EMAIL}
           </a>
         </p>

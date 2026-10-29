@@ -66,6 +66,10 @@ async function main() {
         _id: "user-1",
         name: "One Time",
         email: "one-time@example.com",
+        /* Complete contact (Registration 2.0), so checkout is not held behind the contact sheet. */
+        phone: "+16315550123",
+        phoneVerified: true,
+        emailVerified: true,
         role: "customer",
         defaultAddressId: "addr-1",
         addresses: [{ _id: "addr-1", label: "Home", line1: "1 Test Ave", city: "Lindenhurst", state: "NY", zip: "11757" }],

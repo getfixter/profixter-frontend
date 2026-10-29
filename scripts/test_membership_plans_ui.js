@@ -12,8 +12,9 @@
  *     taps), that nothing is ever marked with a cross, and that Elite is the
  *     only complete state.
  *  3. THE GUARDS. Signed out goes to signup with the plan preserved, a signed-in
- *     non-member reaches Stripe, and a member's plan-change labels are left
- *     alone.
+ *     non-member with complete contact reaches Stripe, one missing a phone is
+ *     asked for it first (Registration 2.0) with nothing sent to Stripe behind
+ *     the sheet, and a member's plan-change labels are left alone.
  *
  *   node scripts/test_membership_plans_ui.js [baseUrl]
  */
@@ -157,7 +158,15 @@ const asMember = (plan) => async (ctx) => {
   await ctx.addInitScript(() => { try { localStorage.setItem("token", "t"); } catch {} });
 };
 
-const asRegistered = async (ctx) => {
+/*
+ * A registered non-member. Registration 2.0 lets an account exist with only
+ * one verified identifier, and checkout asks for whatever contact is missing
+ * (ContactCompletion) before it creates a Stripe session. `complete` is an
+ * account with name, verified mobile and email: it goes straight to Stripe.
+ * Without a phone, the contact sheet must come first and no checkout session
+ * may be requested behind it.
+ */
+const asRegistered = (complete = true) => async (ctx) => {
   await ctx.route("**/api/subscriptions/**", (r) =>
     r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ subscription: null }) })
   );
@@ -167,6 +176,7 @@ const asRegistered = async (ctx) => {
       contentType: "application/json",
       body: JSON.stringify({
         _id: "u", name: "U", email: "u@e.com", role: "customer",
+        ...(complete ? { phone: "+16315550123", phoneVerified: true, emailVerified: true } : {}),
         addresses: [{ _id: "a1", label: "Home", line1: "1 Main St", city: "Babylon", state: "NY", zip: "11702", hasActiveSubscription: false }],
       }),
     })
@@ -405,7 +415,7 @@ const asRegistered = async (ctx) => {
 
   /* ============ 8. guard: registered non-member reaches Stripe ============ */
   {
-    const { ctx, page } = await open(browser, 390, 844, asRegistered);
+    const { ctx, page } = await open(browser, 390, 844, asRegistered(true));
     let checkoutBody = null;
     await ctx.route("**/api/stripe/checkout/create-checkout-session", (r) => {
       try { checkoutBody = JSON.parse(r.request().postData() || "{}"); } catch { checkoutBody = {}; }
@@ -426,6 +436,29 @@ const asRegistered = async (ctx) => {
       JSON.stringify(checkoutBody || {}).toLowerCase().includes("premium"),
       JSON.stringify(checkoutBody || {}).slice(0, 120)
     );
+    await ctx.close();
+  }
+
+  /* ============ 8b. guard: missing contact is asked for before Stripe ============ */
+  {
+    const { ctx, page } = await open(browser, 390, 844, asRegistered(false));
+    let requested = false;
+    await ctx.route("**/api/stripe/checkout/create-checkout-session", (r) => {
+      requested = true;
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: BASE + "/membership/plans?canceled=true" }) });
+    });
+    await selectPlan(page, "Plus");
+    check("no phone on file: CTA still names the plan", (await readActive(page)).cta === "Choose Plus", "");
+    await page.click(".plan-box__cta");
+    const sheet = page.locator('.pf-sheet[role="dialog"]');
+    await sheet.waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
+    check("no phone on file: the contact sheet opens first", await sheet.isVisible(), "");
+    check("no phone on file: it asks for the mobile number", /mobile number/i.test((await sheet.innerText().catch(() => "")) || ""), "");
+    await page.waitForTimeout(1500);
+    check("no phone on file: no checkout session behind the sheet", !requested, "");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(800);
+    check("closing the sheet does not start checkout", !requested && !/stripe|canceled=true/.test(page.url()), page.url());
     await ctx.close();
   }
 
