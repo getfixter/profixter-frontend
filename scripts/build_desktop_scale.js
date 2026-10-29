@@ -64,7 +64,12 @@ const SHARED = [
   [".lx-h1", 64],
   [".lx-h2", 48],
   [".mk-h2", 52],
-  [".plan-box__figure", 64],
+  /*
+   * Kept at its designed size: on the plans page the price is meant to be the
+   * biggest thing on screen (pinned by test_membership_plans_ui), and it is a
+   * number, not a headline.
+   */
+  [".plan-box__figure", 64, { keep: true }],
 ];
 // Section bottom padding at or above this is scaled down on short screens.
 // Top padding is left alone: on hero sections it clears the fixed header.
@@ -81,8 +86,8 @@ function target(s) {
   return s;
 }
 
-function fluidType(size) {
-  const s = target(size);
+function fluidType(size, { keep = false } = {}) {
+  const s = keep ? size : target(size);
   const floor = Math.round(Math.max(0.7 * s, Math.min(s, 28)));
   if (floor >= s) return s < size ? `${s}px` : null;
   const width = `calc(${floor}px + (100vw - 640px) * ${Math.round(((s - floor) / 800) * 10000) / 10000})`;
@@ -136,7 +141,7 @@ function build() {
   ];
   const sel = (cls) => `:root[data-surface="site"] .${escape(cls)}`;
   for (const [bp, min] of BREAKPOINTS) {
-    const rules = bp ? [] : SHARED.map(([cls, size]) => `  :root[data-surface="site"] ${cls} { font-size: ${fluidType(size)}; }`);
+    const rules = bp ? [] : SHARED.map(([cls, size, opts]) => `  :root[data-surface="site"] ${cls} { font-size: ${fluidType(size, opts)}; }`);
     for (const [cls, v] of [...type].filter(([, v]) => v.bp === bp).sort((a, b) => a[1].size - b[1].size || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))) {
       const value = fluidType(v.size);
       if (value) rules.push(`  ${sel(cls)} { font-size: ${value}; }`);
