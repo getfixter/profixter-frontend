@@ -78,7 +78,7 @@ export default function RenovationsPage() {
 
         <ConversionBand
           title="Not sure if it is a small task or a renovation?"
-          description="Use Profixter AI for a first-pass recommendation, Book Handyman for one small job, or request a renovation estimate for larger work."
+          description="Book Handyman for one small job, choose Membership for an ongoing list, or request a renovation estimate for larger work."
         />
       </main>
     </SeoPageShell>

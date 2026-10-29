@@ -757,11 +757,6 @@ export const renovationServices: SeoPageContent[] = [
           "No. Bathroom remodeling is larger project work and should start with a renovation estimate.",
       },
       {
-        question: "Can Profixter help review a bathroom quote?",
-        answer:
-          "Yes. Profixter AI can help you think through a quote or agreement as practical opinion, not legal advice.",
-      },
-      {
         question: "Do Members get renovation benefits?",
         answer:
           "Members may receive project discounts, and some larger projects may qualify for up to 12 months of Profixter Membership.",
@@ -769,7 +764,7 @@ export const renovationServices: SeoPageContent[] = [
     ],
     primaryCta: { label: "Request Bathroom Estimate", href: "/projects?type=bathroom#estimate" },
     secondaryCta: { label: "Become a Member", href: "/membership/plans" },
-    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    tertiaryCta: { label: "See Kitchen & Bath Work", href: "/kitchen-bathroom" },
     relatedRenovationSlugs: ["kitchen-remodeling", "full-home-renovation"],
     relatedLocationSlugs: ["babylon", "lindenhurst", "west-islip"],
   },
@@ -807,11 +802,6 @@ export const renovationServices: SeoPageContent[] = [
           "No. Profixter can coordinate renovation planning around appliances, but does not offer appliance repair.",
       },
       {
-        question: "Can I ask Profixter AI to review a kitchen quote?",
-        answer:
-          "Yes. Upload a quote or agreement for practical homeowner guidance, not legal advice.",
-      },
-      {
         question: "What if I only need one small kitchen fix?",
         answer:
           "A focused small task may fit Book Handyman. Larger layout or finish work belongs in the renovation estimate path.",
@@ -819,7 +809,7 @@ export const renovationServices: SeoPageContent[] = [
     ],
     primaryCta: { label: "Request Kitchen Estimate", href: "/projects?type=kitchen#estimate" },
     secondaryCta: { label: "Become a Member", href: "/membership/plans" },
-    tertiaryCta: { label: "Review a Quote with AI", href: "/home-support" },
+    tertiaryCta: { label: "See Kitchen & Bath Work", href: "/kitchen-bathroom" },
     relatedRenovationSlugs: ["bathroom-remodeling", "full-home-renovation"],
     relatedLocationSlugs: ["west-babylon", "bay-shore", "islip"],
   },
@@ -869,7 +859,7 @@ export const renovationServices: SeoPageContent[] = [
     ],
     primaryCta: { label: "Request Roofing Estimate", href: "/projects?type=roofing#estimate" },
     secondaryCta: { label: "Become a Member", href: "/membership/plans" },
-    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    tertiaryCta: { label: "See Recent Work", href: "/recent-work" },
     relatedRenovationSlugs: ["siding", "full-home-renovation"],
     relatedLocationSlugs: ["babylon", "west-islip", "amityville"],
   },
@@ -919,7 +909,7 @@ export const renovationServices: SeoPageContent[] = [
     ],
     primaryCta: { label: "Request Siding Estimate", href: "/projects?type=siding#estimate" },
     secondaryCta: { label: "Become a Member", href: "/membership/plans" },
-    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    tertiaryCta: { label: "See Recent Work", href: "/recent-work" },
     relatedRenovationSlugs: ["roofing", "full-home-renovation"],
     relatedLocationSlugs: ["lindenhurst", "copiague", "bay-shore"],
   },
@@ -948,7 +938,7 @@ export const renovationServices: SeoPageContent[] = [
     prepNotes: [
       "Start with priorities: which rooms matter most, what must change, and what can wait.",
       "Gather photos, inspiration, and any existing contractor notes or quotes.",
-      "Use Profixter AI to organize questions before requesting a renovation estimate if the scope feels unclear.",
+      "If the scope feels unclear, request a renovation estimate so scope, photos, timeline, and the right next step can be reviewed.",
     ],
     faq: [
       {
@@ -969,7 +959,7 @@ export const renovationServices: SeoPageContent[] = [
     ],
     primaryCta: { label: "Request Renovation Estimate", href: "/projects?type=other#estimate" },
     secondaryCta: { label: "Become a Member", href: "/membership/plans" },
-    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    tertiaryCta: { label: "See Recent Work", href: "/recent-work" },
     relatedRenovationSlugs: ["kitchen-remodeling", "bathroom-remodeling", "new-home-construction"],
     relatedLocationSlugs: ["babylon", "west-babylon", "west-islip"],
   },
@@ -1019,7 +1009,7 @@ export const renovationServices: SeoPageContent[] = [
     ],
     primaryCta: { label: "Discuss New Construction", href: "/projects?type=build-new-house#estimate" },
     secondaryCta: { label: "Become a Member", href: "/membership/plans" },
-    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    tertiaryCta: { label: "See Recent Work", href: "/recent-work" },
     relatedRenovationSlugs: ["full-home-renovation", "roofing", "siding"],
     relatedLocationSlugs: ["babylon", "lindenhurst", "bay-shore"],
   },

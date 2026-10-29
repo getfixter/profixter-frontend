@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Local Shower Studio demo builds go to their own folder (BackEnd/scripts/studio_demo_env.js --demo); unset everywhere else.
+  // Lets a local side-by-side build use its own output folder; unset everywhere else.
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   turbopack: {
     root: __dirname,
@@ -86,6 +86,19 @@ const nextConfig: NextConfig = {
        * consolidate the search signal onto the comparison page.
        */
       { source: "/membership-info", destination: "/membership/plans", permanent: true },
+
+      /*
+       * Retired for good (2026-10). /home-support was the standalone "Profixter
+       * AI" page; the services hub answers the same "where do I start" question
+       * and the floating support chat is on every customer page. The Shower
+       * Studio never launched (it was noindex throughout); its URLs go to the
+       * kitchen and bath page, which sells the real work. Permanent so any
+       * signal moves across and nobody lands on a 404.
+       */
+      { source: "/home-support", destination: "/services", permanent: true },
+      { source: "/home-support/:path*", destination: "/services", permanent: true },
+      { source: "/shower-studio", destination: "/kitchen-bathroom", permanent: true },
+      { source: "/shower-studio/:path*", destination: "/kitchen-bathroom", permanent: true },
     ];
   },
 };

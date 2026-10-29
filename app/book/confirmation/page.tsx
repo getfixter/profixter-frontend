@@ -78,10 +78,10 @@ export default async function BookConfirmationPage({
                 View my bookings
               </Link>
               <Link
-                href="/home-support"
+                href="/membership/plans"
                 className="inline-flex h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-5 text-[15px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] active:scale-[0.99]"
               >
-                Ask Profixter AI
+                See membership plans
               </Link>
             </div>
           </div>
