@@ -24,7 +24,8 @@ function formatTime(value: string) {
 function detailsText(details?: Record<string, unknown>) {
   if (!details) return "";
   return Object.entries(details)
-    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    // Nested values (a customer edit's change list) read as "[object Object]"; their summary is shown instead.
+    .filter(([, value]) => value !== undefined && value !== null && value !== "" && typeof value !== "object")
     .slice(0, 8)
     .map(([key, value]) => `${key}: ${String(value)}`)
     .join(" · ");
