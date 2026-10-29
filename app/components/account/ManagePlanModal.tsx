@@ -66,14 +66,14 @@ function Meter({ counted, target }: { counted: number; target: number }) {
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[13px] font-semibold text-[#475569]">
+        <span className="text-[13px] font-semibold text-[color:var(--ui-text-2)]">
           {counted} of {target} months completed
         </span>
-        <span className="text-[12.5px] font-semibold text-[#64748B]">{pct}%</span>
+        <span className="text-[12.5px] font-semibold text-[color:var(--ui-text-3)]">{pct}%</span>
       </div>
       <div aria-hidden="true" className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#E3EAF7]">
         <div
-          className="h-full rounded-full bg-[#306EEC] transition-[width] duration-500 motion-reduce:transition-none"
+          className="h-full rounded-full bg-[color:var(--ui-ink)] transition-[width] duration-500 motion-reduce:transition-none"
           style={{ width: `${Math.max(pct, counted > 0 ? 6 : 0)}%` }}
         />
       </div>
@@ -93,13 +93,13 @@ function RewardBlock({
 }) {
   return (
     <div className="rounded-[10px] border border-[#A7C6F7] bg-[#F2F7FF] px-4 py-4 text-left">
-      <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">
+      <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-accent-ink)]">
         {eyebrow}
       </div>
-      <div className="mt-1.5 text-[19px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#0B1628] sm:text-[21px]">
+      <div className="mt-1.5 text-[19px] font-semibold leading-[1.25] tracking-[-0.015em] text-[color:var(--ui-ink)] sm:text-[21px]">
         {headline}
       </div>
-      {note ? <div className="mt-1.5 text-[13.5px] leading-6 text-[#475569]">{note}</div> : null}
+      {note ? <div className="mt-1.5 text-[13.5px] leading-6 text-[color:var(--ui-text-2)]">{note}</div> : null}
     </div>
   );
 }
@@ -188,22 +188,22 @@ function LoyaltyBody({
 
       {/* Where they are headed next. */}
       {status.nextMilestone && status.nextReward ? (
-        <div className="rounded-[10px] border border-[#D7E0F5] bg-white px-4 py-4">
+        <div className="rounded-[10px] border border-[color:var(--ui-line)] bg-white px-4 py-4">
           <Meter counted={status.countedMonths} target={status.nextMilestone} />
           <div className="mt-3.5 border-t border-[#EDF1F7] pt-3.5">
-            <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#64748B]">
+            <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-text-3)]">
               Your next Loyalty Benefit
             </div>
-            <div className="mt-1.5 text-[19px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#0B1628] sm:text-[21px]">
+            <div className="mt-1.5 text-[19px] font-semibold leading-[1.25] tracking-[-0.015em] text-[color:var(--ui-ink)] sm:text-[21px]">
               {status.nextReward.headline}
             </div>
             {proximity(status) || status.estimatedUnlockDate ? (
-              <div className="mt-1.5 text-[13.5px] font-semibold text-[#306EEC]">
+              <div className="mt-1.5 text-[13.5px] font-semibold text-[color:var(--ui-accent-ink)]">
                 {proximity(status)}
                 {status.estimatedUnlockDate ? ` — around ${formatDate(status.estimatedUnlockDate)}` : ""}
               </div>
             ) : null}
-            <p className="mt-2 text-[13px] leading-6 text-[#475569]">
+            <p className="mt-2 text-[13px] leading-6 text-[color:var(--ui-text-2)]">
               {status.countedMonths === 0
                 ? "Your Loyalty journey has started. Keep your membership active and it unlocks automatically."
                 : "Keep your membership active and it unlocks automatically."}
@@ -323,18 +323,18 @@ export default function ManagePlanModal({
           <div className="min-w-0">
             <h2
               id="manage-plan-title"
-              className="text-[21px] font-semibold tracking-[-0.02em] text-[#0B1628] sm:text-[24px]"
+              className="text-[21px] font-semibold tracking-[-0.02em] text-[color:var(--ui-ink)] sm:text-[24px]"
             >
               Manage your membership
             </h2>
             {plan ? (
-              <p className="mt-1 text-[13.5px] text-[#64748B]">
+              <p className="mt-1 text-[13.5px] text-[color:var(--ui-text-3)]">
                 {plan} · {cycle}
                 {renewal ? ` · Renews ${renewal}` : ""}
               </p>
             ) : null}
             {address ? (
-              <p className="mt-0.5 truncate text-[13px] text-[#94A3B8]">{address}</p>
+              <p className="mt-0.5 truncate text-[13px] text-[color:var(--ui-text-3)]">{address}</p>
             ) : null}
           </div>
           <button
@@ -343,7 +343,7 @@ export default function ManagePlanModal({
             onClick={() => {
               if (!busy) onClose();
             }}
-            className="-mr-1 -mt-1 flex h-9 w-9 flex-none items-center justify-center rounded-full text-[#64748B] transition hover:bg-[#F1F5F9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
+            className="-mr-1 -mt-1 flex h-9 w-9 flex-none items-center justify-center rounded-full text-[color:var(--ui-text-3)] transition hover:bg-[#F1F5F9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -358,7 +358,7 @@ export default function ManagePlanModal({
         ) : null}
 
         {error ? (
-          <div className="mt-4 rounded-[8px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-[13.5px] font-semibold text-[#B91C1C]">
+          <div className="mt-4 rounded-[10px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-[13.5px] font-semibold text-[#B91C1C]">
             {error}
           </div>
         ) : null}
@@ -374,7 +374,7 @@ export default function ManagePlanModal({
             type="button"
             onClick={onContinue}
             disabled={busy}
-            className="min-h-[48px] rounded-[9px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] disabled:opacity-60"
+            className="min-h-[48px] rounded-[10px] bg-[color:var(--ui-ink)] px-5 text-[15px] font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] disabled:opacity-60"
           >
             {busy ? "Opening…" : "Continue to Manage Plan"}
           </button>
@@ -382,13 +382,13 @@ export default function ManagePlanModal({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="min-h-[48px] rounded-[9px] border border-[#CBD6E8] bg-white px-5 text-[15px] font-semibold text-[#0F172A] transition hover:bg-[#F5F8FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] disabled:opacity-60"
+            className="min-h-[48px] rounded-[10px] border border-[#CBD6E8] bg-white px-5 text-[15px] font-semibold text-[color:var(--ui-ink)] transition hover:bg-[#F5F8FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] disabled:opacity-60"
           >
             Stay on My Account
           </button>
         </div>
 
-        <p className="mt-3 text-center text-[12.5px] leading-5 text-[#94A3B8]">
+        <p className="mt-3 text-center text-[12.5px] leading-5 text-[color:var(--ui-text-3)]">
           Manage Plan opens our secure billing portal, where you can update your card,
           view invoices and change your plan.
         </p>

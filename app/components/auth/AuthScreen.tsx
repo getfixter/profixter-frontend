@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import Wordmark from "@/app/components/ui/Wordmark";
 
 /**
  * The shell every auth screen sits in.
@@ -30,9 +31,9 @@ export default function AuthScreen({
   return (
     <div className="auth-screen">
       <div className="auth-screen__bar">
+        {/* The same inline wordmark as the site header: navy and blue, no chip. */}
         <Link href="/" className="auth-brand" aria-label="Profixter home">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/logo-footer.svg" alt="Profixter" width={113} height={24} />
+          <Wordmark tone="dark" title="Profixter" />
         </Link>
 
         {altHref ? (

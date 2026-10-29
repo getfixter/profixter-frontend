@@ -40,7 +40,7 @@ const TONE = {
   good: "bg-[#E7F6EA] text-[#1F5D2C]",
   warn: "bg-[#FDF3E4] text-[#8A5A1E]",
   info: "bg-[#EAF1FE] text-[#2A4F9B]",
-  muted: "bg-[#F1F2F4] text-[#6A6D71]",
+  muted: "bg-[#F1F2F4] text-[color:var(--ui-text-2)]",
 };
 
 export default function GiftsSentSection() {
@@ -68,9 +68,9 @@ export default function GiftsSentSection() {
   if (!loaded || !gifts.length) return null;
 
   return (
-    <section className="mt-6 rounded-[10px] border border-[#E0E6F5] bg-white p-5">
-      <h3 className="text-[16px] font-semibold text-[#313234]">Gifts you have sent</h3>
-      <p className="mt-1 text-[13px] leading-relaxed text-[#6A6D71]">
+    <section className="mt-6 rounded-[10px] border border-[color:var(--ui-line)] bg-white p-5">
+      <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)]">Gifts you have sent</h3>
+      <p className="mt-1 text-[13px] leading-relaxed text-[color:var(--ui-text-2)]">
         {gifts.length === 1 ? "One gift" : `${gifts.length} gifts`}, and where each has got to.
       </p>
 
@@ -87,16 +87,16 @@ export default function GiftsSentSection() {
           const dead = gift.status === "cancelled" || gift.refundStatus === "full";
 
           return (
-            <li key={gift.giftNumber} className="rounded-[10px] border border-[#EEF2FF] p-4">
+            <li key={gift.giftNumber} className="rounded-[10px] border border-[color:var(--ui-line)] p-4">
               <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
                 <div className="min-w-0">
-                  <p className="text-[15px] font-semibold text-[#313234]">
+                  <p className="text-[15px] font-semibold text-[color:var(--ui-ink)]">
                     {planLabel(gift.plan)} &middot; {monthsLabel(gift.durationMonths)}
                   </p>
-                  <p className="mt-0.5 break-words text-[13px] text-[#6A6D71]">
+                  <p className="mt-0.5 break-words text-[13px] text-[color:var(--ui-text-2)]">
                     For {gift.recipientName || gift.recipientEmail}
                   </p>
-                  <p className="mt-0.5 text-[12.5px] text-[#8A8F98]">
+                  <p className="mt-0.5 text-[12.5px] text-[color:var(--ui-text-3)]">
                     {gift.purchasedAt
                       ? new Date(gift.purchasedAt).toLocaleDateString("en-US", DATE)
                       : ""}

@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/lib/useAuth";
+import { buttonClass } from "@/app/components/ui/Button";
 
 type ApiError = {
   response?: {
@@ -12,6 +14,9 @@ type ApiError = {
     };
   };
 };
+
+/* The server's own floor (routes/auth.js /change-password); checked here first so the message is instant. */
+const MIN_PASSWORD = 8;
 
 function PasswordField({
   id,
@@ -30,7 +35,7 @@ function PasswordField({
 
   return (
     <div>
-      <label htmlFor={id} className="block text-[13px] font-semibold text-[#6A6D71] mb-1.5">
+      <label htmlFor={id} className="mb-1.5 block text-[14px] font-medium text-[color:var(--ui-text-2)]">
         {label}
       </label>
       <div className="relative">
@@ -40,12 +45,12 @@ function PasswordField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
-          className="w-full px-4 py-3.5 bg-white border border-[#D7E0F5] rounded-[8px] text-[15px] text-[#313234] focus:outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/10 transition pr-12"
+          className="auth-input auth-input--trailing"
         />
         <button
           type="button"
           onClick={() => setShow(!show)}
-          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6A6D71] transition"
+          className="auth-reveal"
           aria-label={show ? "Hide password" : "Show password"}
           tabIndex={-1}
         >
@@ -75,17 +80,23 @@ function DeleteAccountModal({
   userEmail: string;
   onClose: () => void;
 }) {
-  const [emailInput, setEmailInput] = useState("");
+  const [confirmInput, setConfirmInput] = useState("");
   const [phase, setPhase] = useState<"confirm" | "deleting" | "error">("confirm");
   const [errorMsg, setErrorMsg] = useState("");
   const router = useRouter();
   const { logout } = useAuth();
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
-  const emailMatches = emailInput.trim().toLowerCase() === userEmail.trim().toLowerCase();
+  /*
+   * What has to be typed to confirm. The email when there is one; an account
+   * opened with a phone may have none, and comparing an empty box with an
+   * empty email used to enable Delete without typing anything at all.
+   */
+  const phrase = userEmail.trim() || "DELETE";
+  const matches = confirmInput.trim().toLowerCase() === phrase.toLowerCase();
 
   const handleDelete = async () => {
-    if (!emailMatches) return;
+    if (!matches) return;
 
     setPhase("deleting");
     setErrorMsg("");
@@ -110,105 +121,86 @@ function DeleteAccountModal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-[2px] flex items-end sm:items-center justify-center sm:p-4"
+      className="fixed inset-0 z-[9999] flex items-end justify-center bg-[rgba(11,22,40,0.5)] sm:items-center sm:p-4"
       onClick={phase === "deleting" ? undefined : onClose}
     >
       <div
-        className="w-full sm:max-w-[460px] bg-white rounded-t-[10px] sm:rounded-[10px] shadow-[0_-8px_60px_rgba(0,0,0,0.2)] sm:shadow-[0_32px_100px_rgba(0,0,0,0.3)]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-account-title"
+        className="max-h-[calc(100svh-24px)] w-full overflow-y-auto rounded-t-[20px] bg-white shadow-[var(--ui-shadow-3)] sm:max-w-[460px] sm:rounded-[20px]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag handle (mobile) */}
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full bg-[#E2E8F0]" />
-        </div>
-
-        <div className="px-6 pt-5 pb-6 sm:px-5 sm:pt-7">
-          {/* Icon */}
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-              <path d="M10 11v6M14 11v6" />
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-            </svg>
-          </div>
-
-          <h3 className="text-[19px] font-black text-[#313234] mb-1">Delete your account?</h3>
-          <p className="text-[13px] text-[#6A6D71] leading-relaxed mb-5">
+        <div className="px-5 pb-6 pt-6 sm:px-6 sm:pt-7">
+          <h3 id="delete-account-title" className="text-[20px] font-semibold tracking-[-0.02em] text-[color:var(--ui-ink)]">
+            Delete your account?
+          </h3>
+          <p className="mt-1.5 text-[14px] leading-relaxed text-[color:var(--ui-text-2)]">
             This is permanent and cannot be undone. Your profile, booking history, and all account
             data will be removed immediately.
           </p>
 
           {/* What gets deleted */}
-          <div className="rounded-[8px] bg-red-50 border border-red-100 p-4 mb-5">
-            <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-red-700 mb-2.5">
-              What will be deleted
-            </div>
-            <ul className="space-y-1.5 text-[12px] text-red-800">
+          <div className="mt-4 rounded-[var(--ui-r-sm)] bg-[#fdeeec] p-4">
+            <div className="text-[12px] font-medium uppercase tracking-[0.14em] text-[#8f2a22]">What will be deleted</div>
+            <ul className="mt-2 space-y-1 text-[14px] text-[#7a241d]">
               {[
                 "Your name, email, and contact info",
                 "Your saved addresses",
                 "Your full booking history",
                 "Your Profixter login",
               ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <span className="mt-px flex-shrink-0 text-red-500">✕</span>
-                  {item}
-                </li>
+                <li key={item}>{item}</li>
               ))}
             </ul>
           </div>
 
           {/* Error from server */}
-          {phase === "error" && (
-            <div className="rounded-[8px] bg-red-50 border border-red-200 px-4 py-3 text-[13px] text-red-700 font-semibold mb-4">
-              {errorMsg}
-            </div>
-          )}
+          {phase === "error" && <p className="auth-error auth-error--form">{errorMsg}</p>}
 
-          {/* Email confirmation input */}
-          <div className="mb-5">
-            <label className="block text-[12px] font-bold text-[#6A6D71] mb-1.5">
-              Type your email to confirm
+          {/* Confirmation input */}
+          <div className="mt-4">
+            <label htmlFor="delete-confirm" className="mb-1.5 block text-[14px] font-medium text-[color:var(--ui-text-2)]">
+              {userEmail.trim() ? "Type your email to confirm" : "Type DELETE to confirm"}
             </label>
             <input
-              type="email"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              placeholder={userEmail}
+              id="delete-confirm"
+              type={userEmail.trim() ? "email" : "text"}
+              value={confirmInput}
+              onChange={(e) => setConfirmInput(e.target.value)}
+              placeholder={phrase}
+              autoComplete="off"
               disabled={phase === "deleting"}
-              className="w-full px-4 py-3 rounded-[8px] border border-[#D7E0F5] text-[14px] text-[#313234] focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              className="auth-input disabled:opacity-60"
             />
-            {emailInput.length > 0 && (
-              <div className={`mt-1.5 text-[11px] font-semibold ${emailMatches ? "text-[#10B981]" : "text-red-500"}`}>
-                {emailMatches ? "✓ Email confirmed" : "✗ Email does not match"}
-              </div>
-            )}
+            {confirmInput.length > 0 && !matches ? (
+              <p className="auth-error">{userEmail.trim() ? "That email does not match." : "Type DELETE exactly."}</p>
+            ) : null}
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="mt-5 flex gap-2">
             <button
               type="button"
               onClick={onClose}
               disabled={phase === "deleting"}
-              className="flex-1 py-3 rounded-[8px] border border-[#E0E6F5] bg-white text-[#313234] text-[14px] font-semibold hover:bg-[#F8FAFF] transition disabled:opacity-60"
+              className={buttonClass({ variant: "secondary", className: "flex-1 disabled:opacity-60" })}
             >
               Keep account
             </button>
             <button
               type="button"
               onClick={handleDelete}
-              disabled={!emailMatches || phase === "deleting"}
-              className="flex-1 py-3 rounded-[8px] bg-red-600 text-white text-[14px] font-semibold hover:bg-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={!matches || phase === "deleting"}
+              className="ui-btn flex-1 bg-[#b4342b] text-white hover:bg-[#9a2c24] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {phase === "deleting" ? "Deleting…" : "Delete account"}
             </button>
           </div>
 
-          <p className="mt-3 text-[11px] text-[#9CA3AF] text-center">
+          <p className="mt-3 text-center text-[13px] text-[color:var(--ui-text-3)]">
             Need help instead?{" "}
-            <a href="tel:631-599-1363" className="text-[#306EEC] font-semibold">
+            <a href="tel:631-599-1363" className="font-semibold text-[color:var(--ui-accent-ink)]">
               Call 631-599-1363
             </a>
           </p>
@@ -229,15 +221,23 @@ export function PasswordForm() {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  /*
+   * Registration 2.0 accounts (phone or email code, Google, Apple) have no
+   * password, so there is no current password to type and the change form
+   * could only ever fail. They are told how they sign in instead. Only an
+   * explicit false counts: an older session without the flag keeps the form.
+   */
+  const passwordless = user?.hasPassword === false;
+
   const strength =
     newPassword.length === 0 ? 0
-    : newPassword.length < 6 ? 1
+    : newPassword.length < MIN_PASSWORD ? 1
     : newPassword.length < 10 ? 2
     : /[A-Z]/.test(newPassword) && /[0-9]/.test(newPassword) ? 4
     : 3;
 
   const strengthLabel = ["", "Too short", "Weak", "Good", "Strong"][strength];
-  const strengthColor = ["", "#EF4444", "#F59E0B", "#10B981", "#306EEC"][strength];
+  const strengthColor = ["", "#B4342B", "#B7791F", "#1F8A4C", "#306EEC"][strength];
 
   const handleSave = async () => {
     setMessage("");
@@ -249,9 +249,9 @@ export function PasswordForm() {
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < MIN_PASSWORD) {
       setStatus("error");
-      setMessage("New password must be at least 6 characters.");
+      setMessage(`New password must be at least ${MIN_PASSWORD} characters.`);
       return;
     }
 
@@ -292,151 +292,149 @@ export function PasswordForm() {
 
   return (
     <>
-      <div>
-        {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-[21px] font-bold text-[#313234]">Security</h2>
-          <p className="text-[13px] text-[#6A6D71] mt-0.5">Update your account password</p>
-        </div>
+      <div className="acct-stack">
+        {passwordless ? (
+          <section className="acct-card" aria-labelledby="acct-password" data-acct-password="none">
+            <h2 id="acct-password" className="acct-card__title">
+              No password needed
+            </h2>
+            <p className="acct-card__text">
+              Your account signs in without a password (a one-time code, Google or Apple), so there is nothing to
+              change here.
+              {user?.email ? " If you would like a password as well, you can create one from Forgot password." : ""}
+            </p>
+            {user?.email ? (
+              <div className="acct-card__actions">
+                <Link href="/forgot-password" className={buttonClass({ variant: "secondary", size: "sm" })}>
+                  Create a password
+                </Link>
+              </div>
+            ) : null}
+          </section>
+        ) : (
+          <section className="acct-card" aria-labelledby="acct-password">
+            <h2 id="acct-password" className="acct-card__title">
+              Change password
+            </h2>
+            <form className="mt-4 space-y-4" onSubmit={(e) => e.preventDefault()}>
+              <PasswordField
+                id="current-password"
+                label="Current password"
+                value={currentPassword}
+                onChange={setCurrentPassword}
+                autoComplete="current-password"
+              />
 
-        <div className="bg-white border border-[#E0E6F5] rounded-[8px] p-5 sm:p-6 max-w-[480px]">
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-            <PasswordField
-              id="current-password"
-              label="Current Password"
-              value={currentPassword}
-              onChange={setCurrentPassword}
-              autoComplete="current-password"
-            />
+              <PasswordField
+                id="new-password"
+                label="New password"
+                value={newPassword}
+                onChange={setNewPassword}
+                autoComplete="new-password"
+              />
 
-            <PasswordField
-              id="new-password"
-              label="New Password"
-              value={newPassword}
-              onChange={setNewPassword}
-              autoComplete="new-password"
-            />
-
-            {/* Strength meter */}
-            {newPassword.length > 0 && (
-              <div>
-                <div className="flex gap-1 mb-1">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="h-1 flex-1 rounded-full transition-all duration-300"
-                      style={{ backgroundColor: i <= strength ? strengthColor : "#E5E7EB" }}
-                    />
-                  ))}
+              {/* Strength meter */}
+              {newPassword.length > 0 && (
+                <div>
+                  <div className="mb-1 flex gap-1">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className="h-1 flex-1 rounded-full transition-all duration-300"
+                        style={{ backgroundColor: i <= strength ? strengthColor : "#E6E8EC" }}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-[13px] font-medium" style={{ color: strengthColor }}>
+                    {strengthLabel}
+                  </div>
                 </div>
-                <div className="text-[11px] font-semibold" style={{ color: strengthColor }}>
-                  {strengthLabel}
+              )}
+
+              <PasswordField
+                id="confirm-password"
+                label="Confirm new password"
+                value={confirm}
+                onChange={setConfirm}
+                autoComplete="new-password"
+              />
+
+              {/* Match indicator */}
+              {confirm.length > 0 && newPassword.length > 0 && (
+                <div className={`text-[13px] font-medium ${confirm === newPassword ? "text-[color:var(--ui-success)]" : "text-[#b4342b]"}`}>
+                  {confirm === newPassword ? "Passwords match" : "Passwords do not match"}
                 </div>
-              </div>
-            )}
+              )}
 
-            <PasswordField
-              id="confirm-password"
-              label="Confirm New Password"
-              value={confirm}
-              onChange={setConfirm}
-              autoComplete="new-password"
-            />
-
-            {/* Match indicator */}
-            {confirm.length > 0 && newPassword.length > 0 && (
-              <div className={`text-[12px] font-semibold ${confirm === newPassword ? "text-[#10B981]" : "text-[#EF4444]"}`}>
-                {confirm === newPassword ? "✓ Passwords match" : "✗ Passwords do not match"}
-              </div>
-            )}
-
-            {/* Status message */}
-            {message && (
-              <div
-                className={`rounded-[8px] px-4 py-3 text-[13px] font-semibold ${
-                  status === "success"
-                    ? "bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534]"
-                    : "bg-red-50 border border-red-200 text-red-700"
-                }`}
-              >
-                {message}
-              </div>
-            )}
-
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleDiscard}
-                disabled={status === "loading"}
-                className="flex-1 py-3 rounded-[8px] border border-[#D7E0F5] bg-white text-[#313234] text-[14px] font-semibold hover:bg-[#F8FAFF] transition disabled:opacity-60"
-              >
-                Discard
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={status === "loading"}
-                className="flex-1 py-3 rounded-[8px] bg-[#306EEC] text-white text-[14px] font-semibold hover:bg-[#2557C7] transition disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {status === "loading" ? "Saving…" : "Save Password"}
-              </button>
-            </div>
-          </form>
-
-          {/* Security tips */}
-          <div className="mt-5 pt-5 border-t border-[#F0F4FF]">
-            <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF] mb-2.5">
-              Tips for a strong password
-            </div>
-            <ul className="space-y-1.5 text-[12px] text-[#6A6D71]">
-              <li className="flex items-start gap-1.5">
-                <span className="text-[#306EEC] mt-px">•</span>
-                Use at least 10 characters with uppercase, numbers, and symbols
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="text-[#306EEC] mt-px">•</span>
-                Avoid using the same password on multiple sites
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="text-[#306EEC] mt-px">•</span>
-                Never share your password with anyone, including Profixter staff
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* ── Danger Zone ── */}
-        <div className="mt-6 max-w-[480px]">
-          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-red-400 mb-3">
-            Danger Zone
-          </div>
-          <div className="bg-white border border-red-200 rounded-[8px] p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-[14px] font-bold text-[#313234]">Delete Account</div>
-                <div className="text-[12px] text-[#6A6D71] mt-0.5 leading-relaxed">
-                  Permanently remove your account and all data.
-                  Only available when you have no active Membership.
+              {/* Status message */}
+              {message && (
+                <div
+                  role={status === "error" ? "alert" : "status"}
+                  className={`rounded-[var(--ui-r-sm)] px-3.5 py-2.5 text-[14px] font-medium ${
+                    status === "success" ? "bg-[#eaf6ef] text-[#17643a]" : "bg-[#fdeeec] text-[#9a2c24]"
+                  }`}
+                >
+                  {message}
                 </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleDiscard}
+                  disabled={status === "loading"}
+                  className={buttonClass({ variant: "secondary", className: "flex-1 disabled:opacity-60" })}
+                >
+                  Discard
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={status === "loading"}
+                  className={buttonClass({ variant: "primary", className: "flex-1 disabled:opacity-60" })}
+                >
+                  {status === "loading" ? "Saving…" : "Save password"}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(true)}
-                className="flex-shrink-0 px-4 py-2 rounded-[8px] border border-red-300 bg-white text-red-600 text-[13px] font-semibold hover:bg-red-50 transition"
-              >
-                Delete
-              </button>
+            </form>
+
+            {/* Security tips */}
+            <div className="mt-5 border-t border-[color:var(--ui-line)] pt-4">
+              <p className="acct-label">Tips for a strong password</p>
+              <ul className="ui-checks mt-2">
+                <li>Use at least 10 characters with uppercase, numbers, and symbols</li>
+                <li>Avoid using the same password on multiple sites</li>
+                <li>Never share your password with anyone, including Profixter staff</li>
+              </ul>
             </div>
+          </section>
+        )}
+
+        {/* Delete account: kept apart from everything else on the page. */}
+        <section className="acct-card" aria-labelledby="acct-delete">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 id="acct-delete" className="acct-card__title">
+                Delete account
+              </h2>
+              <p className="acct-card__text !mt-1">
+                Permanently remove your account and all data. Only available when you have no active Membership.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              className={buttonClass({ variant: "secondary", size: "sm", className: "!border-[#e8b4ae] !text-[#b4342b]" })}
+            >
+              Delete
+            </button>
           </div>
-        </div>
+        </section>
       </div>
 
       {/* Delete account modal */}
       {showDeleteModal && (
-        <DeleteAccountModal
-          userEmail={user?.email || ""}
-          onClose={() => setShowDeleteModal(false)}
-        />
+        <DeleteAccountModal userEmail={user?.email || ""} onClose={() => setShowDeleteModal(false)} />
       )}
     </>
   );
