@@ -1396,6 +1396,23 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   }
 }
 
+/* A small phone with the keyboard up (~310px left): the field and its button first. */
+@media (max-height: 420px) {
+  .auth-screen__bar {
+    min-height: 48px;
+  }
+  .auth-screen__column {
+    padding-top: 8px;
+  }
+  .auth-back {
+    margin-bottom: 2px;
+  }
+  .auth-fields {
+    margin-top: 12px;
+    gap: 8px;
+  }
+}
+
 .auth-back {
   display: inline-flex;
   align-items: center;

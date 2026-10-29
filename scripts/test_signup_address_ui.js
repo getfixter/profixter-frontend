@@ -1,5 +1,22 @@
 /*
- * The signup address step, driven through a real browser.
+ * The address field, driven through a real browser - in the "Add your home"
+ * sheet.
+ *
+ * UPDATED 2026-10-29. Registration 2.0 took the address out of /signup: a home
+ * is now asked for only when something needs one, through AddHomeSheet (the
+ * account page, booking, the free visit, a plan), which renders the same
+ * AddressField. The suite used to open /signup and wait for #pf-address, which
+ * no longer exists there, so it failed before its first check. It now opens
+ * /account as a signed-in customer with no home and presses "Add your home".
+ * Every AddressField protection is kept (suggestions, verified state, units,
+ * NYC sublocality, typed text refused, outage, manual entry, request shape,
+ * layout). What changed with the flow:
+ *   - "Continue advances" is now "the home is saved and the sheet closes";
+ *   - the payload checked is POST /api/users/me/addresses (unit in line1,
+ *     placeId, coordinates, no county) instead of /api/auth/register;
+ *   - the free-visit line lived on the signup step and went with it; the sheet
+ *     must simply never promise one, and an out-of-area home is still saved
+ *     with a plain note (accounts stay open).
  *
  * Google is stubbed at the network edge: the request for the Maps JS bundle is
  * fulfilled with a fake that implements the exact surface lib/places.ts uses -
@@ -122,7 +139,7 @@ if (typeof window.__pfMapsReady === "function") window.__pfMapsReady();
 `;
 }
 
-async function newPage(browser, width, height) {
+async function newPage(browser, width, height, opts = {}) {
   const ctx = await browser.newContext({
     viewport: { width, height: height || 844 },
     isMobile: width < 700,
@@ -144,15 +161,54 @@ async function newPage(browser, width, height) {
     });
   });
 
+  await signedInWithoutHome(ctx, opts.onSave);
   const page = await ctx.newPage();
-  await page.goto(BASE + "/signup", { waitUntil: "domcontentloaded" });
-  await page.waitForSelector("#pf-address", { timeout: 20000 });
+  await openSheet(page);
   return { ctx, page };
+}
+
+/* A signed-in customer with no home yet, and an API that saves one. */
+const NO_HOME = { _id: "c1", name: "Pat", email: "pat@example.com", phone: "+16315551234", role: "customer", addresses: [], hasPassword: false };
+async function signedInWithoutHome(ctx, onSave) {
+  await ctx.addInitScript((u) => {
+    localStorage.setItem("token", "test-token");
+    localStorage.setItem("user", JSON.stringify(u));
+  }, NO_HOME);
+  let saved = null;
+  await ctx.route(/localhost:5001\/api\/(?!service-area)/, (route) => {
+    const req = route.request();
+    const p = new URL(req.url()).pathname;
+    const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "GET,POST,PUT,PATCH,OPTIONS" };
+    if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
+    const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", headers: cors, body: JSON.stringify(body) });
+    if (p === "/api/users/me/addresses" && req.method() === "POST") {
+      const body = JSON.parse(req.postData() || "{}");
+      if (onSave) onSave(body);
+      const inArea = ["11702", "11735"].includes(String(body.zip));
+      saved = { _id: "a-new", ...body };
+      return json({ address: saved, user: { ...NO_HOME, addresses: [saved] }, serviceArea: { inArea } });
+    }
+    if (p === "/api/auth/me") return json(saved ? { ...NO_HOME, addresses: [saved] } : NO_HOME);
+    if (p === "/api/subscriptions/my") return json({ subscriptions: [] });
+    return json({});
+  });
+}
+
+async function openSheet(page) {
+  await page.goto(BASE + "/account", { waitUntil: "domcontentloaded" });
+  await page.click('[data-acct-prompt="home"] button:has-text("Add your home")', { timeout: 30000 });
+  await page.waitForSelector("#pf-address", { timeout: 20000 });
+}
+
+/* The sheet, never the page behind it: the account itself offers a free visit. */
+async function sheetText(page) {
+  const t = await page.evaluate(() => (document.querySelector(".pf-sheet") || document.body).innerText);
+  return String(t || "").replace(/’/g, "'");
 }
 
 const FIELD = "#pf-address";
 const OPTION = '[role="option"]';
-const CONTINUE = 'form button[type="submit"]';
+const CONTINUE = '.pf-sheet form button[type="submit"]';
 
 async function typeAddress(page, text) {
   await page.fill(FIELD, "");
@@ -160,8 +216,9 @@ async function typeAddress(page, text) {
   await page.waitForTimeout(600);
 }
 
+/* Still on the address: the sheet's form (and its field) has not gone. */
 async function stepIsOne(page) {
-  return page.evaluate(() => document.body.innerText.includes("What's your home address?"));
+  return page.evaluate(() => !!document.querySelector(".pf-sheet #pf-address"));
 }
 
 (async () => {
@@ -184,12 +241,11 @@ async function stepIsOne(page) {
     check(`${pick.city}: field shows the full verified address`, state.value.includes(pick.city) && state.value.includes(pick.zip), state.value);
     check(`${pick.city}: optional unit appears only after selection`, state.unitVisible, "");
 
-    const inAreaBadge = await page.evaluate(() => document.body.innerText.includes("First visit free"));
-    check(`${pick.city}: free-visit promise stays for an eligible address`, inAreaBadge, "");
+    check(`${pick.city}: the sheet promises nothing it cannot check`, !(await sheetText(page)).includes("First visit free"), "");
 
     await page.click(CONTINUE);
     await page.waitForTimeout(700);
-    check(`${pick.city}: Continue advances past the address step`, !(await stepIsOne(page)), "");
+    check(`${pick.city}: Save home saves it and closes the sheet`, !(await stepIsOne(page)), "");
     await ctx.close();
   }
 
@@ -200,17 +256,17 @@ async function stepIsOne(page) {
     await page.locator(OPTION).first().click();
     await page.waitForTimeout(700);
 
-    const text = (await page.evaluate(() => document.body.innerText)).replace(/’/g, "'");
+    const text = await sheetText(page);
     check(`${c.label}: shown the short out-of-area note`, text.includes("We're not in your area yet") && text.includes("Profixter currently serves Long Island"), "");
     check(`${c.label}: note is short - no modal, no essay`, !text.includes("Check whether we serve") && !text.includes("residents only"), "");
-    check(`${c.label}: free-visit promise is withdrawn, not left contradicting it`, !text.includes("First visit free"), "");
+    check(`${c.label}: no free-visit promise left contradicting it`, !text.includes("First visit free"), "");
 
     await page.click(CONTINUE);
-    await page.waitForTimeout(700);
-    check(`${c.label}: registration is NOT blocked (accounts stay open)`, !(await stepIsOne(page)), "");
+    await page.waitForTimeout(900);
+    check(`${c.label}: the home is still saved (accounts stay open)`, !(await stepIsOne(page)), "");
 
-    const laterStep = await page.evaluate(() => document.body.innerText.includes("First visit free"));
-    check(`${c.label}: and stays withdrawn on the following step`, !laterStep, "");
+    const after = await sheetText(page);
+    check(`${c.label}: and the customer is told plainly`, after.includes("serve this area yet") && !after.includes("First visit free"), after.slice(0, 80));
     await ctx.close();
   }
 
@@ -241,9 +297,9 @@ async function stepIsOne(page) {
     await typeAddress(page, "123 whatever street babylon");
     await page.click(CONTINUE);
     await page.waitForTimeout(500);
-    const text = (await page.evaluate(() => document.body.innerText)).replace(/’/g, "'");
+    const text = await sheetText(page);
     check("typed text alone cannot continue", await stepIsOne(page), "");
-    check("and says what to do about it", text.includes("Select your address from the list."), "");
+    check("and says what to do about it", /Select your address from the list\.|Choose your address from the list/.test(text), "");
     await ctx.close();
   }
 
@@ -254,12 +310,9 @@ async function stepIsOne(page) {
     await page.locator(OPTION).first().click();
     await page.waitForTimeout(400);
 
-    await page.click(CONTINUE);
-    await page.waitForTimeout(600);
-    check("baseline: verified address continues", !(await stepIsOne(page)), "");
+    const verified = await page.evaluate(() => !!document.querySelector('input[placeholder="Apt / Unit (optional)"]'));
+    check("baseline: a picked suggestion is verified", verified, "");
 
-    await page.click('button:has-text("Back")').catch(() => {});
-    await page.waitForTimeout(500);
     await page.focus(FIELD);
     await page.keyboard.press("End");
     await page.keyboard.type("7");
@@ -271,9 +324,10 @@ async function stepIsOne(page) {
     /*
      * Editing re-opens the suggestion list, and the list is an overlay - it sits
      * over the button, as any autocomplete does. Dismiss it first, which is what
-     * a customer does by tapping away or pressing Escape.
+     * a customer does by tapping away. (Not Escape: in the sheet, Escape closes
+     * the sheet itself.)
      */
-    await page.keyboard.press("Escape");
+    await page.click(".pf-sheet__title");
     await page.waitForTimeout(300);
     await page.click(CONTINUE);
     await page.waitForTimeout(500);
@@ -343,58 +397,37 @@ async function stepIsOne(page) {
     );
     // The service-area lookup itself is down.
     await ctx.route("**/api/service-area/check**", (route) => route.abort());
+    await signedInWithoutHome(ctx);
     const page = await ctx.newPage();
-    await page.goto(BASE + "/signup", { waitUntil: "domcontentloaded" });
-    await page.waitForSelector(FIELD, { timeout: 20000 });
+    await openSheet(page);
 
     await typeAddress(page, "125 main");
     await page.locator(OPTION).first().click();
     await page.waitForTimeout(900);
 
-    const t = (await page.evaluate(() => document.body.innerText)).replace(/’/g, "'");
-    check("a failed service-area check does not withdraw the offer", t.includes("First visit free"), "");
-    check("and does not accuse an eligible customer of being out of area", !t.includes("We're not in your area yet"), "");
+    const t = await sheetText(page);
+    check("a failed service-area check does not accuse an eligible customer of being out of area", !t.includes("We're not in your area yet"), "");
+    await page.click(CONTINUE);
+    await page.waitForTimeout(800);
+    check("and does not stop them saving their home", !(await stepIsOne(page)), "");
     await ctx.close();
   }
 
   // ---------- 9. What reaches the API ----------
   {
-    const { ctx, page } = await newPage(browser, 390);
     let body = null;
-    await ctx.route("**/api/auth/register", (route) => {
-      body = JSON.parse(route.request().postData() || "{}");
-      route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "stub" }) });
-    });
+    const { ctx, page } = await newPage(browser, 390, 844, { onSave: (b) => { body = b; } });
 
     await typeAddress(page, "125 main");
     await page.locator(OPTION).first().click();
     await page.waitForTimeout(400);
     await page.fill('input[placeholder="Apt / Unit (optional)"]', "Apt 4B");
     await page.click(CONTINUE);
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1200);
 
-    await page.fill("#name", "Test Person");
-    await page.click(CONTINUE);
-    await page.waitForTimeout(400);
-    await page.fill("#email", "addr-test@example.com");
-    await page.fill("#phone", "6315551234");
-    await page.check("#sms-service-consent", { force: true }).catch(() => {});
-    await page.click(CONTINUE);
-    await page.waitForTimeout(400);
-    await page.fill("#password", "supersecret1");
-    /*
-     * Service SMS and Terms are conditions of registration, so the form will
-     * not submit without them. `force` because these inputs are visually
-     * replaced by their own styled boxes, which Playwright refuses to click
-     * through by default - nothing to do with the address step.
-     */
-    await page.check("#agree-terms", { force: true }).catch(() => {});
-    await page.click(CONTINUE);
-    await page.waitForTimeout(1500);
-
-    check("register is called with the structured address", Boolean(body), body ? "" : "no request captured");
+    check("the home is saved with the structured address", Boolean(body), body ? "" : "no request captured");
     if (body) {
-      check("street line carries the unit", body.address === "125 Main St Apt 4B", String(body.address));
+      check("street line carries the unit", body.line1 === "125 Main St Apt 4B", String(body.line1));
       check("city and ZIP are the looked-up ones", body.city === "Babylon" && body.zip === "11702", `${body.city} ${body.zip}`);
       check("placeId is sent", body.placeId === "p_babylon", String(body.placeId));
       check("coordinates are sent", body.lat === 40.6959 && body.lng === -73.3262, `${body.lat},${body.lng}`);
@@ -403,28 +436,7 @@ async function stepIsOne(page) {
     await ctx.close();
   }
 
-  // ---------- 10. Back and forward keep the address ----------
-  {
-    const { ctx, page } = await newPage(browser, 390);
-    await typeAddress(page, "125 main");
-    await page.locator(OPTION).first().click();
-    await page.waitForTimeout(400);
-    await page.click(CONTINUE);
-    await page.waitForTimeout(600);
-    await page.click('button:has-text("Back")').catch(() => {});
-    await page.waitForTimeout(600);
-
-    const kept = await page.evaluate(() => ({
-      value: document.querySelector("#pf-address")?.value || "",
-      unit: !!document.querySelector('input[placeholder="Apt / Unit (optional)"]'),
-    }));
-    check("going back keeps the chosen address in the field", kept.value.includes("Babylon"), kept.value);
-
-    await page.click(CONTINUE);
-    await page.waitForTimeout(600);
-    check("and forward still works without reselecting", !(await stepIsOne(page)), "");
-    await ctx.close();
-  }
+  // ---------- 10. (Back and forward: the sheet has no steps to go back through) ----------
 
   // ---------- 11. Request shape: bias not restriction, session tokens ----------
   {
@@ -451,7 +463,7 @@ async function stepIsOne(page) {
     const m = await page.evaluate(() => {
       const f = document.querySelector("#pf-address").getBoundingClientRect();
       const opts = Array.from(document.querySelectorAll('[role="option"] button'));
-      const btn = document.querySelector('form button[type="submit"]')?.getBoundingClientRect();
+      const btn = document.querySelector('.pf-sheet form button[type="submit"]')?.getBoundingClientRect();
       return {
         vw: window.innerWidth,
         scrollW: document.documentElement.scrollWidth,
