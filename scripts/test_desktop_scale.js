@@ -101,9 +101,11 @@ const probe = (page, cls) => page.evaluate((c) => {
   console.log("\n--- staff surfaces are not scaled ---");
   for (const [url, surface] of [["/about", "site"], ["/event", "staff"], ["/admin", "staff"]]) {
     const { ctx, page } = await open(browser, 1024, 600, url, { admin: url === "/admin" });
-    const p = await probe(page, "lg:text-[54px]");
-    if (surface === "site") check(`${url}: a 54px heading is fluid`, p.surface === "site" && p.size < 54, `${p.size}px`);
-    else check(`${url}: a 54px heading stays 54px`, p.surface === "staff" && p.size === 54, `${p.surface} ${p.size}px`);
+    /* 46px: a large legacy size still in the generated map (54px no longer is, since
+       the restyled pages moved onto ui-display). Same contract either way. */
+    const p = await probe(page, "lg:text-[46px]");
+    if (surface === "site") check(`${url}: a 46px heading is fluid`, p.surface === "site" && p.size < 46, `${p.size}px`);
+    else check(`${url}: a 46px heading stays 46px`, p.surface === "staff" && p.size === 46, `${p.surface} ${p.size}px`);
     await ctx.close();
   }
 
