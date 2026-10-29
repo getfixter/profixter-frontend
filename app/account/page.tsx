@@ -1,17 +1,19 @@
 "use client";
 
-
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
+import "../components/account/account.css";
 
 import { ActiveTab, AccountFormData } from "../components/account/types";
 import { initialAccountFormData } from "../data/account";
 
-import { AccountHeader } from "../components/account/AccountHeader";
+import Header from "../components/sections/Header";
+import Footer from "../components/sections/Footer";
 import { PersonalInfoForm } from "../components/account/PersonalInfoForm";
 import { PlanSection } from "../components/account/PlanSection";
 import { PasswordForm } from "../components/account/PasswordForm";
-import AccountOverview, { AccountAside } from "../components/account/AccountOverview";
+import AccountOverview from "../components/account/AccountOverview";
 
 import { useAuth } from "@/lib/useAuth";
 import { getRoleLandingPath } from "@/lib/auth-routing";
@@ -27,11 +29,18 @@ function TabSync({ onTab }: { onTab: (tab: string) => void }) {
   return null;
 }
 
+const TAB_TITLES: Partial<Record<ActiveTab, string>> = {
+  personal: "Personal information",
+  password: "Password & security",
+};
+
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
 
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
+  /* Set on Log out, so the signed-out redirect below does not add ?next=. */
+  const loggingOut = useRef(false);
   const applyTab = useCallback((tab: string) => {
     if (tab === "overview") setActiveTab("overview");
     else if (tab === "bookings") setActiveTab("bookings");
@@ -45,6 +54,7 @@ export default function AccountPage() {
     (tab: ActiveTab) => {
       setActiveTab(tab);
       router.replace(`/account?tab=${tab}`, { scroll: false });
+      if (typeof window !== "undefined") window.scrollTo({ top: 0 });
     },
     [router],
   );
@@ -62,9 +72,16 @@ export default function AccountPage() {
     }
   }, [activeTab, router]);
 
+  /*
+   * Signed out: to sign-in, and BACK here afterwards. Without ?next= a
+   * non-member who opened a link to their account (an email, a bookmark, the
+   * tab bar after a session expired) signed in and was dropped somewhere else.
+   * The tab they asked for comes along.
+   */
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/signin");
+    if (!isLoading && !isAuthenticated && !loggingOut.current) {
+      const back = `${window.location.pathname}${window.location.search}`;
+      router.push(`/signin?next=${encodeURIComponent(back || "/account")}`);
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -113,16 +130,17 @@ export default function AccountPage() {
   }, [user]);
 
   const handleLogout = () => {
+    loggingOut.current = true;
     logout();
     router.replace("/signin");
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F8FC]">
+      <div className="acct flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-[3px] border-[#306EEC] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#6A6D71] text-[14px] font-medium">Loading your account…</p>
+          <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-[3px] border-[color:var(--ui-ink)] border-t-transparent" />
+          <p className="ui-small">Loading your account…</p>
         </div>
       </div>
     );
@@ -132,72 +150,68 @@ export default function AccountPage() {
   if (user && getRoleLandingPath(user) !== "/account") return null;
 
   return (
-    <div className="min-h-screen bg-[#F6F8FC]">
-      <AccountHeader
-        userName={formData.name}
-        activeTab={activeTab}
-        onSelectTab={selectTab}
-        onLogout={handleLogout}
-      />
+    <>
+      {/*
+        The site header, not a header of its own. Account used to draw a
+        second one (logo chip, nav, account menu), so the signed-in half of
+        the site looked like a different product. The shell header already
+        knows a signed-in customer and a member, and carries Log out.
+      */}
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
 
       <Suspense fallback={null}>
         <TabSync onTab={applyTab} />
       </Suspense>
 
-      <main className="mx-auto max-w-[1180px] px-4 py-5 sm:px-5 sm:py-8 lg:py-9">
-        {/*
-          ONE WAY IN, ONE WAY BACK.
-
-          There used to be three navigations to the same four screens: a
-          260px sidebar, a dropdown in the header, and the tools grid on the
-          overview. Two of them are gone. The overview's tools grid is the
-          way in, and the row below is the way back — a control centre should
-          not ask which of its menus you meant.
-        */}
-        {activeTab !== "overview" ? (
-          <button
-            type="button"
-            onClick={() => selectTab("overview")}
-            className="mb-4 -ml-1 inline-flex min-h-[40px] items-center gap-1.5 rounded-[8px] px-2 text-[14px] font-semibold text-[#306EEC] transition hover:bg-[#EEF5FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
-          >
-            <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none">
-              <path d="m15 18-6-6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            My Account
-          </button>
-        ) : null}
-
-        <div className="flex flex-col gap-5 xl:flex-row xl:gap-6">
-
-          <div className="min-w-0 flex-1">
-            {activeTab === "overview" && (
-              <AccountOverview formData={formData} onSwitchTab={selectTab} />
-            )}
-            {activeTab === "personal" && <PersonalInfoForm formData={formData} />}
-            {activeTab === "plan" && <PlanSection />}
-            {/* The redirect above is already running; this is what shows for
-                the instant before it lands. */}
-            {activeTab === "bookings" && (
-              <div id="my-bookings" className="rounded-[8px] border border-[#D7DEE9] bg-white p-5">
-                <p className="text-[13.5px] leading-5 text-[#6E6E73]">Opening your visits...</p>
-              </div>
-            )}
-            {activeTab === "password" && <PasswordForm />}
-          </div>
-
+      <div className="acct">
+        <main className="acct-main ui-container">
           {/*
-            The third column, on the overview only. Useful but never the
-            reason somebody opened the page, so it sits beside the main
-            content on a wide screen and after it on a phone.
+            ONE WAY IN, ONE WAY BACK.
+
+            The overview's Account list is the way into every sub-page, and
+            this link is the way back - a control centre should not ask which
+            of its menus you meant.
           */}
-          {activeTab === "overview" ? (
-            <aside className="w-full shrink-0 xl:w-[320px]">
-              <AccountAside />
-            </aside>
+          {activeTab !== "overview" ? (
+            <button type="button" onClick={() => selectTab("overview")} className="acct-back">
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="m15 18-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              My Account
+            </button>
           ) : null}
 
-        </div>
-      </main>
-    </div>
+          {TAB_TITLES[activeTab] ? <h1 className="acct-page-title">{TAB_TITLES[activeTab]}</h1> : null}
+          {/* PlanSection draws its own visible "My plan" heading (it is shared with /membership). */}
+          {activeTab === "plan" ? <h1 className="sr-only">Membership details</h1> : null}
+
+          {activeTab === "overview" && (
+            <AccountOverview formData={formData} onSwitchTab={selectTab} onLogout={handleLogout} />
+          )}
+          {activeTab === "personal" && (
+            <div className="max-w-[760px]">
+              <PersonalInfoForm formData={formData} />
+            </div>
+          )}
+          {activeTab === "plan" && <PlanSection />}
+          {/* The redirect above is already running; this is what shows for
+              the instant before it lands. */}
+          {activeTab === "bookings" && (
+            <div id="my-bookings" className="acct-card">
+              <p className="ui-small">Opening your visits...</p>
+            </div>
+          )}
+          {activeTab === "password" && (
+            <div className="max-w-[560px]">
+              <PasswordForm />
+            </div>
+          )}
+        </main>
+      </div>
+
+      <Footer compact />
+    </>
   );
 }

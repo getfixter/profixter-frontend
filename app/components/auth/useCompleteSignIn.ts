@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
-import { getAutomaticEntryPath, getRoleLandingKind, safeReturnPath } from "@/lib/auth-routing";
+import { getAutomaticEntryPath, getRoleLandingKind, hasActiveMembership, safeReturnPath } from "@/lib/auth-routing";
 import { trackEvent } from "@/lib/analytics";
 import { identify } from "@/lib/meta";
 import { clearPendingFlow } from "@/lib/auth2";
@@ -22,9 +22,13 @@ export type AuthMethod = "phone" | "email" | "google" | "apple" | "password";
  * the event id minted before the request, relay:false because the server sends
  * the Conversions API copy) - only for a NEW account.
  *
- * Routing: a carried intent (?next=, a pending plan or promo) wins; otherwise a
- * new customer lands on their account and a returning one goes where password
- * sign-in has always sent them. Nobody is forced to pick a plan or an address.
+ * Routing: a carried intent (?next=, a pending plan or promo) wins. Otherwise a
+ * member goes to Book (getAutomaticEntryPath), and every other customer - new
+ * or returning - lands on their account, whose first screen is the list of
+ * things they can do next (free visit when eligible, plans, One-Time, Full
+ * Day, gift). Returning non-members used to be dropped on the marketing
+ * homepage, which asked them to start over as if they had never signed up.
+ * Nobody is forced to pick a plan or an address.
  */
 export function useCompleteSignIn() {
   const router = useRouter();
@@ -69,8 +73,8 @@ export function useCompleteSignIn() {
       if (returnPath) destination = returnPath;
       else if (getRoleLandingKind(user) !== "customer") destination = getAutomaticEntryPath(user);
       else if (planPending || promo) destination = "/membership";
-      else if (input.created) destination = "/account";
-      else destination = getAutomaticEntryPath(user);
+      else if (hasActiveMembership(user)) destination = getAutomaticEntryPath(user);
+      else destination = "/account";
 
       router.replace(destination);
       return user;

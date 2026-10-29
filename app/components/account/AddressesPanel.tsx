@@ -5,6 +5,7 @@ import API from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
 import { readApiError } from "@/lib/auth2";
 import { useAddHome } from "@/app/components/address/AddHomeSheet";
+import { buttonClass } from "@/app/components/ui/Button";
 
 type Address = {
   _id: string;
@@ -68,76 +69,68 @@ export function AddressesPanel({
   };
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="text-lg sm:text-xl font-semibold text-[#313234]">Addresses</h3>
-
-        <button
-          type="button"
-          onClick={openHome}
-          className="h-[44px] px-4 rounded-[8px] bg-[#306EEC] hover:bg-[#2558c9] text-white font-bold transition"
-        >
+    <section className="acct-card" aria-labelledby="acct-homes">
+      <div className="acct-card__head !items-center">
+        <h2 id="acct-homes" className="acct-card__title">
+          Homes
+        </h2>
+        <button type="button" onClick={openHome} className={buttonClass({ variant: "secondary", size: "sm" })}>
           Add address
         </button>
       </div>
 
       {homeSheet}
 
-      {/* List */}
-      <div className="space-y-3">
+      <ul className="mt-3 grid gap-2">
         {addresses.map((a) => {
           const isDefault = String(a._id) === String(defaultAddressId);
 
           return (
-            <div
+            <li
               key={a._id}
-              className="bg-[#EEF2FF] border border-[#C5CBD8] rounded-[8px] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+              className="flex flex-col gap-3 rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line)] p-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-4"
             >
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-[#313234] font-semibold">{a.label || "Address"}</p>
-
-                  {isDefault && (
-                    <span className="text-xs font-bold px-2 py-1 rounded-[6px] bg-[#86EFAC] text-[#064E3B]">
-                      Default
-                    </span>
-                  )}
+                  <p className="text-[15px] font-semibold text-[color:var(--ui-ink)]">{a.label || "Address"}</p>
+                  {isDefault && <span className="ui-tag !min-h-[22px]">Default</span>}
                 </div>
-
-                <p className="text-[#313234] opacity-80">{addressText(a) || "Address details missing"}</p>
+                <p className="mt-0.5 break-words text-[14px] text-[color:var(--ui-text-2)]">
+                  {addressText(a) || "Address details missing"}
+                </p>
               </div>
 
-              <div className="flex flex-col gap-2 sm:flex-row">
-                {!isDefault && (
+              {/* The default home cannot be deleted, so it offers nothing to press. */}
+              {!isDefault ? (
+                <div className="flex shrink-0 gap-2">
                   <button
                     type="button"
                     onClick={() => setDefault(a._id)}
                     disabled={loadingId === a._id}
-                    className="h-[42px] px-4 rounded-[8px] bg-white border border-[#C5CBD8] text-[#313234] font-bold hover:bg-gray-50 transition disabled:opacity-60"
+                    className={buttonClass({ variant: "secondary", size: "sm", className: "flex-1 disabled:opacity-60 sm:flex-none" })}
                   >
                     {loadingId === a._id ? "Setting..." : "Set default"}
                   </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => removeAddress(a._id, isDefault)}
-                  disabled={deletingId === a._id || isDefault}
-                  className="h-[42px] px-4 rounded-[8px] bg-white border border-[#FCA5A5] text-[#B91C1C] font-bold hover:bg-red-50 transition disabled:opacity-60"
-                >
-                  {isDefault ? "Default" : deletingId === a._id ? "Deleting..." : "Delete"}
-                </button>
-              </div>
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => removeAddress(a._id, isDefault)}
+                    disabled={deletingId === a._id}
+                    className={buttonClass({ variant: "ghost", size: "sm", className: "flex-1 !text-[#b4342b] disabled:opacity-60 sm:flex-none" })}
+                  >
+                    {deletingId === a._id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              ) : null}
+            </li>
           );
         })}
 
         {addresses.length === 0 && (
-          <div className="rounded-[8px] border border-dashed border-[#C5CBD8] bg-white p-4 text-sm text-[#6A6D71] sm:p-5">
+          <li className="rounded-[var(--ui-r-sm)] border border-dashed border-[color:var(--ui-line-2)] p-4 text-[14px] text-[color:var(--ui-text-2)]">
             No home saved yet. Add it when you&apos;re ready to book. We&apos;ll check we serve your area.
-          </div>
+          </li>
         )}
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 }

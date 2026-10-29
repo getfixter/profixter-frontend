@@ -72,7 +72,7 @@ export function MethodChooser({
       <AppleAuth onCredential={onApple} onError={onProviderError} onStart={onAppleStart} disabled={busy} />
 
       <button type="button" className="auth-method" onClick={onEmail} disabled={busy}>
-        <span className="auth-method__icon text-[#306EEC]" aria-hidden="true">
+        <span className="auth-method__icon text-[color:var(--ui-accent)]" aria-hidden="true">
           <MailGlyph />
         </span>
         Continue with email
@@ -98,7 +98,7 @@ export function MethodChooser({
           <>
             {" "}
             Have a password?{" "}
-            <button type="button" className="font-semibold text-[#306EEC] underline underline-offset-[3px]" onClick={onPassword}>
+            <button type="button" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-[3px]" onClick={onPassword}>
               Sign in with it
             </button>
             .
@@ -132,7 +132,7 @@ export function EmailStep({
     <form onSubmit={handle} className="auth-fields" noValidate>
       {maskedHint ? (
         <p className="auth-sub !mt-0">
-          Type the email on that account (<b className="text-[#0B1628]">{maskedHint}</b>) and we&apos;ll send it a code.
+          Type the email on that account (<b className="font-semibold text-[color:var(--ui-ink)]">{maskedHint}</b>) and we&apos;ll send it a code.
         </p>
       ) : null}
       <AuthInput
@@ -241,9 +241,9 @@ export function PasswordStep({
       />
 
       {choices.length > 0 ? (
-        <div className="rounded-[12px] border border-[#DDE4F0] bg-white p-4">
-          <p className="text-[14px] font-bold text-[#0B1628]">This email has more than one account</p>
-          <p className="mt-1 text-[13px] text-[#6B7688]">Choose which one to open.</p>
+        <div className="ui-card !p-4">
+          <p className="text-[15px] font-semibold text-[color:var(--ui-ink)]">This email has more than one account</p>
+          <p className="mt-1 text-[14px] text-[color:var(--ui-text-2)]">Choose which one to open.</p>
           <div className="mt-3 space-y-2">
             {choices.map((choice) => (
               <button
@@ -251,7 +251,7 @@ export function PasswordStep({
                 type="button"
                 disabled={loading}
                 onClick={() => onChoose(choice.accountRole, password)}
-                className="min-h-[46px] w-full rounded-[10px] bg-[#0B1628] px-4 text-[14px] font-bold text-white transition hover:bg-[#172033] disabled:opacity-50"
+                className="ui-btn ui-btn--primary ui-btn--block disabled:opacity-50"
               >
                 {choice.label}
               </button>
