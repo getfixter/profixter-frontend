@@ -47,3 +47,14 @@ lib.zip
 
 # local Shower Studio demo build
 /.next-studio-demo/
+
+# Local editor workspaces and logs (a workspace file once carried a database URL)
+*.code-workspace
+*.log
+# Keys, dumps and local data never belong in the repo
+*.pem
+*.key
+*.p8
+*.sql
+*.bak
+*.dump
