@@ -112,6 +112,21 @@
     background: var(--ui-bg-soft);
   }
 
+  /* The narrowest phones: wordmark, "Account" and Menu must still fit in 320px. */
+  @media (max-width: 359px) {
+    .hd__bar {
+      gap: 12px;
+    }
+    .hd__textlink {
+      padding: 0 6px;
+    }
+    .hd__menu {
+      gap: 6px;
+      margin-left: 0;
+      padding: 0 11px;
+    }
+  }
+
   @media (min-width: 640px) {
     .hd__mark {
       height: 17px;
