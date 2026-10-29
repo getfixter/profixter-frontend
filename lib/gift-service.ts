@@ -231,6 +231,11 @@ export async function createGiftCheckoutSession(
     durationMonths: number;
     recipient: GiftRecipientInput;
     address: GiftAddressInput;
+    /*
+     * Admin only: the registered customer the owner is buying for. The server
+     * takes the recipient email from that account and returns to Admin.
+     */
+    forCustomer?: { userId: string; addressId?: string | null };
   } & Partial<GiftPresentationInput>
 ): Promise<{ url: string; sessionId: string }> {
   try {
