@@ -1481,17 +1481,16 @@ if (next?.date) {
       data-visible-month={visibleMonthKey}
       data-selected-date={ymdSelected}
       data-available-times={displayedTimes.join(",")}
-      className="relative w-full overflow-hidden bg-[#F6F8FC] pb-2 pt-1 scroll-mt-[96px] sm:pb-10 sm:pt-8 lg:pb-14 lg:pt-12"
+      className="relative w-full scroll-mt-[96px] pb-6 pt-4 sm:pb-10 sm:pt-6"
     >
-      <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="ui-container relative">
 
         {/* ── Header ── */}
-        <div className="mb-0.5 flex items-center justify-between gap-1 sm:mb-5 sm:gap-3">
+        <div className="flex items-end justify-between gap-3">
           {/* For a member this is the heading above the form they came for,
               and at 16px it was the same size as the body copy under it. */}
-          <h2 className="text-[22px] font-black leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[30px] lg:text-[32px]">
-            Book Your Visit
-          </h2>
+          {/* The page's one H1 on the member tab. */}
+          <h1 className="pg-book__title">Book Your Visit</h1>
           {isAuthenticated && hasSubscription && (
             /*
              * On Book, the visit list is now directly below this form, so
@@ -1508,14 +1507,14 @@ if (next?.date) {
                   .getElementById("your-visits")
                   ?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
-              className="inline-flex min-h-8 flex-shrink-0 items-center text-[9px] font-semibold text-[#64748B] underline decoration-[#CBD5E1] underline-offset-2 transition hover:text-[#306EEC] sm:min-h-11 sm:text-[13px] sm:underline-offset-4"
+              className="inline-flex min-h-11 flex-shrink-0 items-center text-[14px] font-semibold text-[color:var(--ui-accent-ink)]"
             >
               Manage visits
             </a>
           )}
         </div>
 
-        <p className="mb-1.5 text-[10px] leading-4 text-[#64748B] sm:-mt-3 sm:mb-4 sm:text-[13px]">
+        <p className="pg-book__sub mb-4 !mt-1">
           Choose a date and time, describe the task, and add at least one photo.
         </p>
 
@@ -1529,13 +1528,13 @@ if (next?.date) {
           Booking must not wait for this.
         */}
         {loyalty ? (
-          <div className="mb-2 sm:mb-4">
+          <div className="mb-4">
             <LoyaltyBenefitsPanel status={loyalty} variant="compact" />
           </div>
         ) : null}
 
         {/* ── Main grid ── */}
-        <div className="grid grid-cols-1 gap-0.5 sm:gap-3 lg:grid-cols-12 lg:gap-5">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:gap-4 lg:grid-cols-12 lg:gap-6">
 
           {/* ── Calendar (left) ── */}
           <div className="order-2 lg:order-1 lg:col-span-5">
@@ -1547,24 +1546,24 @@ if (next?.date) {
               tabIndex={-1}
               aria-labelledby="booking-date-label"
               aria-describedby={fieldErrors.date ? "booking-date-error" : undefined}
-              className={`rounded-[6px] border bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[8px] sm:p-4 ${fieldErrors.date ? "border-red-300" : "border-[#D7DEE9]"}`}
+              className={`pg-panel outline-none ${fieldErrors.date ? "!border-red-300" : ""}`}
             >
               {/* Month navigation */}
-              <div className="mb-1 flex items-center justify-between sm:mb-4">
+              <div className="pg-cal__head">
                 <button
                   aria-label="Prev month"
                   disabled={calendarMode === "initializing"}
                   onClick={() => navigateCalendarMonth(-1)}
-                  className="grid h-[34px] w-[34px] place-items-center rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:[&_svg]:h-5 sm:[&_svg]:w-5"
+                  className="pg-cal__nav [&_svg]:h-4 [&_svg]:w-4"
                 >
                   <ChevronLeft />
                 </button>
 
                 <div className="text-center">
-                  <div id="booking-date-label" className="text-[8px] font-bold text-[#64748B] sm:text-[10px]">
+                  <div id="booking-date-label" className="text-[12px] font-medium text-[color:var(--ui-text-3)]">
                     Date<RequiredAsterisk />
                   </div>
-                  <div className="text-[11px] font-extrabold text-[#0B1628] sm:text-[18px]">
+                  <div className="pg-cal__month">
                     {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                   </div>
                 </div>
@@ -1573,19 +1572,19 @@ if (next?.date) {
                   aria-label="Next month"
                   disabled={calendarMode === "initializing"}
                   onClick={() => navigateCalendarMonth(1)}
-                  className="grid h-[34px] w-[34px] place-items-center rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:[&_svg]:h-5 sm:[&_svg]:w-5"
+                  className="pg-cal__nav [&_svg]:h-4 [&_svg]:w-4"
                 >
                   <ChevronRight />
                 </button>
               </div>
               {fieldErrors.date ? (
-                <p id="booking-date-error" role="alert" className="mt-1 px-1 text-[10px] font-semibold text-red-600 sm:mt-2 sm:text-[12px]">
+                <p id="booking-date-error" role="alert" className="mt-1 px-1 text-[13px] font-medium text-red-700">
                   {fieldErrors.date}
                 </p>
               ) : null}
 
               {loadingMonthKey === visibleMonthKey && (
-                <div className="mb-4 rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2 text-[12px] font-semibold text-[#475569]">
+                <div className="mb-3 text-[13px] text-[color:var(--ui-text-3)]">
                   Checking availability...
                 </div>
               )}
@@ -1609,19 +1608,14 @@ if (next?.date) {
               )}
 
               {/* Week headers */}
-              <div className="grid grid-cols-7 text-center sm:mb-1">
-                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
-                  <div
-                    key={d}
-                    className={`text-[8px] font-bold sm:text-[10px] ${i === 0 ? "text-[#EF4444]" : "text-[#94A3B8]"}`}
-                  >
-                    {d}
-                  </div>
+              <div className="pg-cal__wd" aria-hidden="true">
+                {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                  <div key={`${d}-${i}`}>{d}</div>
                 ))}
               </div>
 
               {/* Days grid */}
-              <div className="grid grid-cols-7 gap-y-0 sm:gap-y-px">
+              <div className="pg-cal__grid">
                 {days.map((day, i) => {
                   const disabled =
                     day.muted ||
@@ -1645,12 +1639,11 @@ if (next?.date) {
                       onClick={() => handleDayClick(day.date, day.muted)}
                       disabled={disabled}
                       className={[
-                        "mx-auto grid h-7 w-7 place-items-center rounded-[6px] text-[10px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:text-[15px]",
-                        day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
-                        disabled && !day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
-                        !disabled && !isSelected ? "bg-[#EEF5FF] text-[#1D4ED8] hover:bg-[#DBEAFE] hover:scale-105" : "",
-                        isSelected ? "bg-[#306EEC] text-white shadow-[0_8px_24px_rgba(48,110,236,0.35)] scale-105" : "",
-                        isToday && !disabled && !isSelected ? "ring-2 ring-[#306EEC]/30" : "",
+                        "pg-cal__day",
+                        day.muted ? "is-muted cursor-not-allowed" : "",
+                        disabled && !day.muted ? "cursor-not-allowed" : "",
+                        isSelected ? "is-selected" : !disabled ? "is-open" : "",
+                        isToday && !disabled && !isSelected ? "ring-1 ring-inset ring-[color:var(--ui-accent)]/40" : "",
                       ].join(" ")}
                     >
                       <span className={isCheckingDay ? "opacity-40" : ""}>{day.date.getDate()}</span>
@@ -1659,14 +1652,14 @@ if (next?.date) {
                 })}
               </div>
               {showNoAvailabilityThisMonth && (
-                <div className="mt-4 rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] px-3 py-3 text-center">
-                  <div className="text-[13px] font-semibold text-[#64748B]">
+                <div className="mt-4 rounded-[var(--ui-r-sm)] bg-[color:var(--ui-bg-soft)] px-3 py-3 text-center">
+                  <div className="text-[14px] text-[color:var(--ui-text-2)]">
                     No available appointments in this month.
                   </div>
                   <button
                     type="button"
                     onClick={moveToNextAvailableMonth}
-                    className="mt-2 rounded-[6px] border border-[#306EEC] px-3 py-2 text-[12px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF]"
+                    className="ui-btn ui-btn--secondary ui-btn--sm mt-2"
                   >
                     Next available month
                   </button>
@@ -1676,12 +1669,12 @@ if (next?.date) {
 
             {/* Selected date label */}
             {selectedDate && (
-              <div className="flex items-center gap-1 px-0.5 py-px sm:mt-2 sm:px-1 sm:py-1">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[#306EEC] sm:h-[15px] sm:w-[15px]" aria-hidden="true">
+              <div className="mt-2 flex items-center gap-1.5 px-1">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[color:var(--ui-text-3)]" aria-hidden="true">
                   <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
                   <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
-                <span className="text-[10px] font-semibold text-[#0B1628] sm:text-[13px]">{selectedDateLabel}</span>
+                <span className="text-[14px] font-medium text-[color:var(--ui-ink)]">{selectedDateLabel}</span>
               </div>
             )}
 
@@ -1695,21 +1688,21 @@ if (next?.date) {
               role="group"
               tabIndex={-1}
               aria-describedby={fieldErrors.address ? "booking-address-error" : undefined}
-              className={`order-1 rounded-[6px] border bg-white px-1 py-0.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[8px] sm:p-3.5 lg:order-none ${fieldErrors.address ? "border-red-300" : "border-[#D7DEE9]"}`}
+              className={`pg-panel order-1 !py-2 outline-none lg:order-none ${fieldErrors.address ? "!border-red-300" : ""}`}
             >
               {selectedAddressLabel ? (
                 <>
-                  <div className="flex min-h-[34px] items-center gap-0.5 sm:min-h-11 sm:gap-1.5">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[#306EEC] sm:h-[17px] sm:w-[17px]" aria-hidden="true">
+                  <div className="flex min-h-11 items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[color:var(--ui-text-3)]" aria-hidden="true">
                       <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" strokeWidth="1.8" />
                       <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.8" />
                     </svg>
-                    <span className="flex-none text-[8px] font-bold text-[#64748B] sm:text-[10px]">Address<RequiredAsterisk /></span>
-                    <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-[#0B1628] sm:text-[14px]" title={selectedAddressLabel}>
+                    <span className="sr-only">Address<RequiredAsterisk /></span>
+                    <span className="min-w-0 flex-1 truncate text-[15px] text-[color:var(--ui-ink)]" title={selectedAddressLabel}>
                       {selectedAddressLabel}
                     </span>
                     {addresses.length >= 2 && (
-                      <button type="button" onClick={() => setShowAddressPicker((open) => !open)} className="h-[34px] flex-shrink-0 px-0.5 text-[10px] font-bold text-[#306EEC] sm:h-11 sm:px-1 sm:text-[12px]">
+                      <button type="button" onClick={() => setShowAddressPicker((open) => !open)} className="h-11 flex-shrink-0 px-1 text-[14px] font-semibold text-[color:var(--ui-accent-ink)]">
                         {showAddressPicker ? "Done" : "Change"}
                       </button>
                     )}
@@ -1724,7 +1717,7 @@ if (next?.date) {
                         clearFieldError("address");
                       }}
                       aria-required="true"
-                      className="mt-px min-h-[34px] w-full rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] px-1.5 text-[10px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:mt-2 sm:min-h-11 sm:px-2.5 sm:text-[13px]"
+                      className="pg-input mb-2 mt-1"
                     >
                       {addresses.map((address) => (
                         <option key={address._id} value={address._id}>
@@ -1740,7 +1733,7 @@ if (next?.date) {
                 </div>
               )}
               {fieldErrors.address ? (
-                <p id="booking-address-error" role="alert" className="mt-1 px-1 text-[10px] font-semibold text-red-600 sm:mt-2 sm:text-[12px]">
+                <p id="booking-address-error" role="alert" className="mt-1 text-[13px] font-medium text-red-700">
                   {fieldErrors.address}
                 </p>
               ) : null}
@@ -1753,17 +1746,17 @@ if (next?.date) {
               tabIndex={-1}
               aria-labelledby="booking-time-label"
               aria-describedby={fieldErrors.time ? "booking-time-error" : undefined}
-              className={`order-3 rounded-[6px] border bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[8px] sm:p-4 lg:order-none ${fieldErrors.time ? "border-red-300" : "border-[#D7DEE9]"}`}
+              className={`pg-panel order-3 outline-none lg:order-none ${fieldErrors.time ? "!border-red-300" : ""}`}
             >
-              <div className="flex items-center justify-between gap-0.5 sm:mb-2 sm:gap-1">
-                <h3 id="booking-time-label" className="text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Time<RequiredAsterisk /></h3>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 id="booking-time-label" className="pg-panel__title !mb-0">Time<RequiredAsterisk /></h3>
                 <button
                   type="button"
                   onClick={() => setQuickBookOpen(true)}
                   disabled={checkingAccess || loadingMonthKey === visibleMonthKey}
-                  className="inline-flex h-[34px] flex-shrink-0 items-center gap-px rounded-[6px] border border-[#306EEC] px-0.5 text-[9px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF] disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:gap-1 sm:px-2.5 sm:text-[12px]"
+                  className="ui-btn ui-btn--secondary ui-btn--sm shrink-0"
                 >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:h-[13px] sm:w-[13px]">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   Quick Book
@@ -1772,9 +1765,9 @@ if (next?.date) {
 
               {selectedDate && config ? (
                 loadingSelectedDate && displayedTimes.length === 0 ? (
-                  <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-1.5">
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                     {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <div key={n} className="h-9 animate-pulse rounded-[6px] bg-[#F1F5F9] sm:h-11" />
+                      <div key={n} className="h-12 animate-pulse rounded-[var(--ui-r-sm)] bg-[color:var(--ui-bg-soft)]" />
                     ))}
                   </div>
                 ) : slotOptions.length > 0 ? (
@@ -1798,10 +1791,10 @@ if (next?.date) {
               )}
 
               {loadingSelectedDate && displayedTimes.length > 0 && (
-                <div className="mt-1 text-[10px] text-[#94A3B8] sm:mt-2 sm:text-[11px]">Updating times...</div>
+                <div className="mt-2 text-[13px] text-[color:var(--ui-text-3)]">Updating times...</div>
               )}
               {fieldErrors.time ? (
-                <p id="booking-time-error" role="alert" className="mt-1 text-[10px] font-semibold text-red-600 sm:mt-2 sm:text-[12px]">
+                <p id="booking-time-error" role="alert" className="mt-2 text-[13px] font-medium text-red-700">
                   {fieldErrors.time}
                 </p>
               ) : null}
@@ -1809,8 +1802,8 @@ if (next?.date) {
             </div>
 
             {/* Task details card */}
-            <div className="order-4 rounded-[6px] border border-[#D7DEE9] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[8px] sm:p-4 lg:order-none">
-              <h3 className="mb-0.5 text-[11px] font-extrabold text-[#0B1628] sm:mb-2 sm:text-[15px]">Task details<RequiredAsterisk /></h3>
+            <div className="pg-panel order-4 lg:order-none">
+              <h3 className="pg-panel__title">Task details<RequiredAsterisk /></h3>
 
               <textarea
                 ref={noteFieldRef}
@@ -1824,14 +1817,10 @@ if (next?.date) {
                 aria-describedby={fieldErrors.note ? "booking-note-error" : undefined}
                 placeholder="Describe your task. If we need to bring any materials or special tools, please let us know."
                 rows={3}
-                className={`w-full min-h-12 max-h-[140px] rounded-[6px] border bg-[#F8FAFF] p-1 text-[10px] text-[#0B1628] placeholder-[#94A3B8] resize-y transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[82px] sm:p-2.5 sm:text-[14px] ${
-                  fieldErrors.note
-                    ? "border-red-300"
-                    : "border-[#C5CBD8]"
-                }`}
+                className={`pg-input min-h-[96px] max-h-[200px] resize-y ${fieldErrors.note ? "!border-red-300" : ""}`}
               />
               {fieldErrors.note ? (
-                <p id="booking-note-error" role="alert" className="mt-1 text-[10px] font-semibold text-red-600 sm:text-[12px]">
+                <p id="booking-note-error" role="alert" className="mt-1 text-[13px] font-medium text-red-700">
                   {fieldErrors.note}
                 </p>
               ) : null}
@@ -1841,20 +1830,20 @@ if (next?.date) {
                 role="group"
                 tabIndex={-1}
                 aria-describedby={fieldErrors.photos ? "booking-photos-error" : undefined}
-                className="mt-0.5 outline-none sm:mt-2.5"
+                className="mt-4 outline-none"
               >
-                <div className="text-[11px] font-semibold leading-tight text-[#64748B] sm:mb-1.5 sm:text-[12px]">
+                <div className="pg-label !mb-0.5">
                   Photos<RequiredAsterisk />
                 </div>
-                <p className="mb-1.5 text-[11px] leading-4 text-[#94A3B8] sm:text-[12px]">
+                <p className="pg-hint">
                   A photo of the actual issue helps your Fixter arrive prepared.
                 </p>
                 {fieldErrors.photos ? (
-                  <p id="booking-photos-error" role="alert" className="mt-1 text-[10px] font-semibold text-red-600 sm:text-[12px]">
+                  <p id="booking-photos-error" role="alert" className="mb-2 text-[13px] font-medium text-red-700">
                     {fieldErrors.photos}
                   </p>
                 ) : null}
-                <div className="flex gap-2 sm:gap-2.5">
+                <div className="pg-photo-row">
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
@@ -1911,13 +1900,13 @@ if (next?.date) {
 
                 {/* Photo previews */}
                 {uploadedPhotos.length > 0 && (
-                  <div className="mt-2.5 grid grid-cols-3 gap-2 sm:mt-3 sm:grid-cols-4 lg:grid-cols-5">
+                  <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">
                     {uploadedPhotos.map((_file, idx) => {
                       const url = photoUrls[idx];
                       return (
                         <div
                           key={idx}
-                          className="relative overflow-hidden rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] sm:rounded-[8px]"
+                          className="relative overflow-hidden rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-sunk)]"
                           style={{ aspectRatio: "1" }}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1944,17 +1933,17 @@ if (next?.date) {
 
             {/* First Visit Free, eligible non-members only. Members never see this. */}
             {isAuthenticated && !checkingAccess && !hasSubscription && freeFirstVisitAvailable && (
-              <div className="order-5 rounded-[6px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[8px] sm:p-5 lg:order-none">
-                <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#306EEC] sm:text-[11px]">
+              <div className="pg-panel order-5 lg:order-none">
+                <div className="ui-eyebrow ui-eyebrow--accent !mb-1">
                   First Visit Free
                 </div>
-                <div className="mt-1.5 text-[13px] font-black leading-tight text-[#0B1628] sm:text-[18px]">
+                <div className="text-[16px] font-semibold leading-tight text-[color:var(--ui-ink)]">
                   Your first 90-minute handyman visit is on us.
                 </div>
-                <div className="mt-1.5 text-[10px] leading-4 text-[#64748B] sm:text-[13px] sm:leading-5">
+                <div className="mt-1 text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
                   $0 due for your first eligible visit. No membership required, and no credit card needed to book.
                 </div>
-                <div className="mt-2 text-[9px] leading-4 text-[#94A3B8] sm:text-[11px]">
+                <div className="mt-1.5 text-[13px] leading-[1.45] text-[color:var(--ui-text-3)]">
                   One free visit per customer. Standard handyman labor, up to 90 minutes. Materials not included. Subject to availability.
                 </div>
               </div>
@@ -1962,11 +1951,11 @@ if (next?.date) {
 
             {/* Property outside the service area: friendly, not an error. */}
             {isAuthenticated && !checkingAccess && !hasSubscription && outOfServiceArea && (
-              <div className="order-5 rounded-[6px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[8px] sm:p-5 lg:order-none">
-                <div className="text-[13px] font-black leading-tight text-[#0B1628] sm:text-[16px]">
+              <div className="pg-panel order-5 lg:order-none">
+                <div className="text-[16px] font-semibold leading-tight text-[color:var(--ui-ink)]">
                   We don&rsquo;t reach this address yet
                 </div>
-                <div className="mt-1.5 text-[10px] leading-4 text-[#64748B] sm:text-[13px] sm:leading-5">
+                <div className="mt-1 text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
                   We currently offer First Visit Free for homes in Nassau and Suffolk Counties.
                   If you have another property on Long Island, add it to your account and
                   we&rsquo;ll take it from there.
@@ -1976,24 +1965,24 @@ if (next?.date) {
 
             {/* Free visit completed: natural next step into the existing membership funnel. */}
             {isAuthenticated && !checkingAccess && !hasSubscription && introVisitConsumed && (
-              <div className="order-5 rounded-[6px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[8px] sm:p-5 lg:order-none">
-                <div className="text-[13px] font-black leading-tight text-[#0B1628] sm:text-[18px]">
+              <div className="pg-panel order-5 lg:order-none">
+                <div className="text-[16px] font-semibold leading-tight text-[color:var(--ui-ink)]">
                   Your first visit is complete.
                 </div>
-                <div className="mt-1.5 text-[12px] font-bold text-[#0B1628] sm:text-[15px]">
+                <div className="mt-1 text-[15px] font-medium text-[color:var(--ui-ink)]">
                   Keep ProFixter for your home.
                 </div>
-                <div className="mt-1.5 text-[10px] leading-4 text-[#64748B] sm:text-[13px] sm:leading-5">
+                <div className="mt-1 text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
                   Membership gives you ongoing access to book ProFixter whenever something around your home needs attention.
                 </div>
                 <Link
                   href="/membership/plans"
                   onClick={() => trackEvent("membership_plans_viewed_after_free_visit", { placement: "booking_section" })}
-                  className="mt-3 inline-flex h-[40px] items-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-bold text-white transition hover:bg-[#2558c9]"
+                  className="ui-btn ui-btn--primary ui-btn--sm mt-3"
                 >
                   View Membership Plans
                 </Link>
-                <div className="mt-2 text-[9px] leading-4 text-[#94A3B8] sm:text-[11px]">
+                <div className="mt-2 text-[13px] leading-[1.45] text-[color:var(--ui-text-3)]">
                   Prefer a single visit? A one-time handyman visit is also available.
                 </div>
               </div>
@@ -2001,12 +1990,12 @@ if (next?.date) {
 
             {/* Subscription warning */}
             {isAuthenticated && !checkingAccess && !hasSubscription && !freeFirstVisitAvailable && !introVisitConsumed && subscriptionError && (
-              <div className="order-5 rounded-[6px] border border-red-200 bg-red-50 p-2 sm:rounded-[8px] sm:p-5 lg:order-none">
-                <div className="mb-0.5 text-[12px] font-extrabold text-red-700 sm:mb-1 sm:text-[15px]">Booking unavailable for this address</div>
-                <div className="mb-2 text-[10px] text-red-600 sm:mb-4 sm:text-[13px]">{subscriptionError}</div>
+              <div className="order-5 rounded-[var(--ui-r-md)] border border-red-200 bg-red-50 p-4 lg:order-none">
+                <div className="mb-1 text-[15px] font-semibold text-red-800">Booking unavailable for this address</div>
+                <div className="mb-3 text-[14px] text-red-700">{subscriptionError}</div>
                 <a
                   href="/account"
-                  className="inline-flex h-[40px] items-center px-5 rounded-[8px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
+                  className="ui-btn ui-btn--primary ui-btn--sm"
                 >
                   Open account
                 </a>
@@ -2015,7 +2004,7 @@ if (next?.date) {
 
             {/* Booking limit warning */}
             {isAuthenticated && hasSubscription && hasActiveBooking && (
-              <div className="order-5 rounded-[6px] border border-amber-200 bg-amber-50 p-2 sm:rounded-[8px] sm:p-5 lg:order-none">
+              <div className="order-5 rounded-[var(--ui-r-md)] border border-amber-200 bg-amber-50 p-4 lg:order-none">
                 {/*
                   The one place a customer meets the concurrency rule as an
                   obstacle, and it used to read "Visit limit reached" — which
@@ -2024,17 +2013,17 @@ if (next?.date) {
                   not a cap, so it now says what is actually the case and what
                   happens next.
                 */}
-                <div className="mb-0.5 text-[12px] font-extrabold text-amber-800 sm:mb-1 sm:text-[15px]">
+                <div className="mb-1 text-[15px] font-semibold text-amber-900">
                   {activeBookingLimit === 1 ? "Your next visit is booked" : "Your visits are booked"}
                 </div>
-                <div className="mb-1 text-[10px] text-amber-700 sm:mb-2 sm:text-[13px]">
+                <div className="mb-2 text-[14px] text-amber-800">
                   You can have{" "}
                   <span className="font-semibold">{activeBookingLimit}</span>{" "}
                   {activeBookingLimit === 1 ? "visit" : "visits"} booked at a time on this plan.
                   Once {activeBookingLimit === 1 ? "it's" : "one is"} done, you can book the next.
                 </div>
                 {existingBookingDate && (
-                  <div className="mb-2 text-[10px] text-amber-700 sm:mb-4 sm:text-[13px]">
+                  <div className="mb-3 text-[14px] text-amber-800">
                     Next visit:{" "}
                     <span className="font-semibold">
                       {existingBookingDate.toLocaleString("en-US", {
@@ -2051,7 +2040,7 @@ if (next?.date) {
                 <button
                   type="button"
                   onClick={() => rebook(activeBookings[0] || null)}
-                  className="inline-flex h-[40px] items-center px-5 rounded-[8px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
+                  className="ui-btn ui-btn--primary ui-btn--sm"
                 >
                   Reschedule visit
                 </button>
@@ -2060,25 +2049,24 @@ if (next?.date) {
 
             {/* Notice / Error banners */}
             {notice && (
-              <div className="order-6 rounded-[6px] border border-green-200 bg-green-50 px-2 py-1.5 text-[10px] font-semibold text-green-700 sm:rounded-[8px] sm:px-5 sm:py-4 sm:text-[14px] lg:order-none">
+              <div className="order-6 rounded-[var(--ui-r-sm)] border border-green-200 bg-green-50 px-4 py-3 text-[14px] font-medium text-green-800 lg:order-none">
                 {notice}
               </div>
             )}
             {error && (
-              <div className="order-6 rounded-[6px] border border-red-200 bg-red-50 px-2 py-1.5 text-[10px] text-red-700 sm:rounded-[8px] sm:px-5 sm:py-4 sm:text-[14px] lg:order-none">
+              <div className="pg-error order-6 lg:order-none">
                 {error}
               </div>
             )}
 
             {/* Confirm card */}
-            <div className="order-7 pb-[calc(80px+env(safe-area-inset-bottom,0px))] sm:pb-0 lg:order-none">
+            <div className="order-7 lg:order-none">
               {serviceTextsOptIn ? <div className="mb-2.5">{serviceTextsOptIn}</div> : null}
               <button
                 onClick={handleBookNow}
                 data-track="booking-cta"
                 disabled={bookingActionDisabled}
-                className="h-11 w-full rounded-[6px] bg-[#306EEC] text-[12px] font-extrabold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-14 sm:rounded-[8px] sm:text-[16px]"
-                style={{ boxShadow: !bookingActionDisabled ? "0 10px 30px rgba(48,110,236,0.25)" : undefined }}
+                className="ui-btn ui-btn--primary ui-btn--lg ui-btn--block"
               >
                 {checkingAccess
                   ? "Checking access..."
@@ -2092,60 +2080,46 @@ if (next?.date) {
                   ? "Visit limit reached"
                   : "Book Your Visit"}
               </button>
-              <p className="mt-1 text-center text-[9px] text-[#94A3B8] sm:mt-2 sm:text-[11px]">
+              <p className="mt-2 text-center text-[13px] text-[color:var(--ui-text-3)]">
                 <span className="text-red-500" aria-hidden="true">*</span> Required to book your visit
               </p>
             </div>
           </div>
         </div>
 
-        <div className="mx-auto mt-3 max-w-[1180px] sm:mt-6">
-          <section aria-labelledby="how-to-book-title">
-            <h3 id="how-to-book-title" className="text-[14px] font-extrabold text-[#0B1628] sm:text-[18px]">
-              How to book a visit
-            </h3>
-            <ol className="mt-2 grid grid-cols-2 gap-1.5 sm:mt-3 sm:gap-2 lg:grid-cols-4">
-              {[
-                ["Choose a date and time", "Select any available day and appointment time."],
-                ["Describe the task", "Tell us what needs to be repaired, installed, or completed."],
-                ["Add photos", "Photos help us prepare the right tools and materials."],
-                ["Submit your visit", "We’ll review it and notify you when it is confirmed."],
-              ].map(([title, description], index) => (
-                <li key={title} className="flex gap-2 rounded-[6px] border border-[#D7DEE9] bg-white px-2 py-2 sm:rounded-[8px] sm:px-3 sm:py-3">
-                  <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-[#EEF5FF] text-[9px] font-extrabold text-[#306EEC] sm:h-6 sm:w-6 sm:text-[11px]">
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <h4 className="text-[10px] font-bold leading-4 text-[#0B1628] sm:text-[13px]">{title}</h4>
-                    <p className="mt-0.5 text-[9px] leading-3 text-[#64748B] sm:text-[11px] sm:leading-4">{description}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
-
-          <section aria-labelledby="good-to-know-title" className="mt-3 rounded-[6px] border border-[#D7DEE9] bg-white px-3 py-3 sm:mt-4 sm:rounded-[8px] sm:px-4 sm:py-4">
-            <h3 id="good-to-know-title" className="text-[13px] font-extrabold text-[#0B1628] sm:text-[17px]">Good to know</h3>
-            <div className="mt-2 grid gap-2 text-[10px] leading-4 text-[#64748B] sm:grid-cols-3 sm:gap-4 sm:text-[12px] sm:leading-5">
-              <div>
-                <h4 className="font-bold text-[#0B1628]">Active visit limits</h4>
-                <p>Basic: 1 active visit at a time. Plus, Premium, and Elite: up to 2 active visits at a time.</p>
-                <p className="mt-1">These are simultaneous appointments, not total visits. Once one is completed or canceled, you can book another.</p>
-              </div>
-              <div>
-                <h4 className="font-bold text-[#0B1628]">Visit details</h4>
-                <p>Standard visits are 90 minutes.</p>
-                <p className="mt-1">Need same-day or emergency service? <a href="tel:6315991363" aria-label="Call Profixter at 631-599-1363 for same-day or emergency service" className="font-bold text-[#306EEC] underline underline-offset-2">631-599-1363</a>.</p>
-                <p>Subject to availability and additional fees.</p>
-              </div>
-              <div>
-                <h4 className="font-bold text-[#0B1628]">Materials and special tools</h4>
-                <p>Already have materials? Please have them ready before your visit.</p>
-                <p className="mt-1">Need us to bring materials or special tools? Include that in the task details.</p>
-              </div>
+        {/*
+          How booking works and the plan rules, one tap away under the form
+          instead of two always-open blocks: the member came to book.
+        */}
+        <details className="pg-more mt-4 sm:mt-6">
+          <summary>How booking works</summary>
+          <div className="pg-more__body grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <h3 className="font-semibold text-[color:var(--ui-ink)]">Booking a visit</h3>
+              <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+                <li>Choose a date and time.</li>
+                <li>Describe the task.</li>
+                <li>Add photos so we bring the right tools and materials.</li>
+                <li>Submit. We&rsquo;ll review it and notify you when it is confirmed.</li>
+              </ol>
             </div>
-          </section>
-        </div>
+            <div>
+              <h3 className="font-semibold text-[color:var(--ui-ink)]">Active visit limits</h3>
+              <p>Basic: 1 active visit at a time. Plus, Premium, and Elite: up to 2 active visits at a time.</p>
+              <p className="mt-1">These are simultaneous appointments, not total visits. Once one is completed or canceled, you can book another.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-[color:var(--ui-ink)]">Visit details</h3>
+              <p>Standard visits are 90 minutes.</p>
+              <p className="mt-1">Need same-day or emergency service? <a href="tel:6315991363" aria-label="Call Profixter at 631-599-1363 for same-day or emergency service" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">631-599-1363</a>. Subject to availability and additional fees.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-[color:var(--ui-ink)]">Materials and special tools</h3>
+              <p>Already have materials? Please have them ready before your visit.</p>
+              <p className="mt-1">Need us to bring materials or special tools? Include that in the task details.</p>
+            </div>
+          </div>
+        </details>
 
         {/* ── Quick Booking Modal ── */}
         {quickBookOpen && (
@@ -2154,15 +2128,15 @@ if (next?.date) {
             onClick={() => { if (!quickBookingLoading) setQuickBookOpen(false); }}
           >
             <div
-              className="max-h-[90vh] w-full max-w-[700px] overflow-y-auto rounded-[8px] bg-white p-5 shadow-[0_32px_100px_rgba(0,0,0,0.28)] sm:p-7"
+              className="max-h-[90vh] w-full max-w-[700px] overflow-y-auto rounded-[var(--ui-r-lg)] bg-white p-5 shadow-[var(--ui-shadow-3)] sm:p-7"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC] mb-1">
+                  <div className="ui-eyebrow">
                     Quick Booking
                   </div>
-                  <h3 className="text-[19px] font-extrabold leading-tight text-[#0B1628] sm:text-[23px]">
+                  <h3 className="ui-h3">
                     What can we help with?
                   </h3>
                   <p className="text-[13px] text-[#64748B] mt-1.5">
@@ -2189,7 +2163,7 @@ if (next?.date) {
                     type="button"
                     disabled={quickBookingLoading}
                     onClick={() => handleQuickBookingSelect(task.title)}
-                    className="group flex items-start gap-3 rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-4 text-left transition hover:border-[#306EEC] hover:bg-white disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="group flex items-start gap-3 rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-white px-4 py-3.5 text-left transition-colors hover:border-[color:var(--ui-line-2)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <div className="flex-shrink-0 w-9 h-9 rounded-[6px] border border-[#E5E9F2] bg-white flex items-center justify-center text-[#64748B] group-hover:text-[#306EEC] group-hover:border-[#D9E4FF] transition">
                       {task.icon}
