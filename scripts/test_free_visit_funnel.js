@@ -15,7 +15,10 @@
  * - Meta: a cold booker sends ONE Lead (the account) and one Schedule (the
  *   booking, relayed with the same event id); UI taps never reach Meta
  * - out of area: the email-only waitlist form, every server answer
- * - plain /signup (no ?next) lands on the free-visit booker
+ * - Registration 2.0: sign-up is phone-first (code, no address, no password);
+ *   plain /signup opens the new account, and the free-visit booker is still
+ *   there for the new customer; a plan chosen before sign-up asks for the home
+ *   (AddHomeSheet) on return, then confirms, then checks out
  *
  * Account, booking, checkout, waitlist and tracking endpoints are faked in the
  * browser, so the run creates no account, no booking, no Stripe session, no
@@ -77,6 +80,9 @@ async function fakeApi(ctx, opts = {}) {
     requestPosts: [], requestQueue: opts.requestQueue || [],
   };
   const user = makeUser(opts);
+  /* Registration 2.0 creates the account without a home; the home comes later. */
+  const home = user.addresses[0];
+  if (opts.newAccount) { user.addresses = []; user.defaultAddressId = null; }
   await ctx.route((url) => url.href.startsWith(API), async (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -117,6 +123,21 @@ async function fakeApi(ctx, opts = {}) {
       return json(next.status, next.body);
     }
     if (p === "/api/auth/register" && req.method() === "POST") { state.registerPosts++; return json(201, { token: TOKEN, user }); }
+    /* Registration 2.0: phone-first. A code is "sent", and any six digits sign a new customer in. */
+    if (p === "/api/auth/otp/phone/start" && req.method() === "POST") {
+      state.otpStarts = (state.otpStarts || 0) + 1;
+      return json(200, { ok: true, phoneMasked: "(•••) •••-0134", resendAfterSeconds: 30, expiresInSeconds: 600 });
+    }
+    if (p === "/api/auth/otp/phone/verify" && req.method() === "POST") {
+      state.registerPosts++;
+      return json(200, { status: "signed_in", token: TOKEN, user, created: true });
+    }
+    if (p === "/api/users/me/addresses" && req.method() === "POST" && authed) {
+      state.homePosts = (state.homePosts || 0) + 1;
+      user.addresses = [home];
+      user.defaultAddressId = home._id;
+      return json(201, { user, address: home, serviceArea: { inArea: true, county: "Nassau" } });
+    }
     if (p === "/api/auth/me") return authed ? json(200, user) : json(401, { message: "no" });
     if (p === "/api/bookings/next") {
       return json(200, opts.next || { freeFirstVisitAvailable: true, introVisitStatus: "available", introVisitServiceable: true, hasSubscription: false, bookingLimit: 1, activeCount: 0, activeBookings: [] });
@@ -229,7 +250,7 @@ async function buildVisit(page, { photo = true } = {}) {
   return { date, time, taken };
 }
 
-async function completeSignup(page, { zip = "11758" } = {}) {
+async function completeSignup(page, { zip = "11758", scope = "" } = {}) {
   // Step 1: address. Use the manual entry the field offers when lookup fails.
   // A build without a Maps key renders the manual form straight away.
   await page.waitForSelector('#pf-address, [aria-label="Street address"]', { timeout: 15000 });
@@ -253,27 +274,30 @@ async function completeSignup(page, { zip = "11758" } = {}) {
     await page.fill('[aria-label="ZIP code"]', zip);
   }
   await page.waitForTimeout(1500); // service-area check (real endpoint)
-  await page.click('button[type="submit"]');
+  await page.click(`${scope ? scope + " " : ""}button[type="submit"]`);
   await page.waitForTimeout(600);
   return page;
+}
+
+/* Registration 2.0 sign-up: phone, then the six-digit code (it submits itself). */
+async function signUpWithPhone(page) {
+  await page.getByRole("button", { name: /Continue with phone/ }).first().click();
+  await page.fill("#phone", "6315550134");
+  await page.getByRole("button", { name: /Text me a code/ }).click();
+  const code = page.locator('input[autocomplete="one-time-code"]');
+  await code.waitFor({ timeout: 10000 });
+  await code.fill("123456");
+}
+
+/* The AddHomeSheet that checkout opens for an account without a home. */
+async function addHomeInSheet(page) {
+  await page.waitForSelector('.pf-sheet #pf-address, .pf-sheet [aria-label="Street address"]', { timeout: 15000 });
+  await completeSignup(page, { scope: ".pf-sheet" });
 }
 
 const SHOTS = process.env.FUNNEL_SHOTS || "";
 async function shot(page, name) {
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${name}.png`) });
-}
-
-async function finishSignupSteps(page) {
-  await shot(page, "signup-2-name");
-  await page.fill("#name", "Test Person");
-  await page.click('button[type="submit"]');
-  await page.fill("#email", "test@example.com");
-  await page.fill("#phone", "6315550134");
-  await page.check("#sms-service-consent", { force: true });
-  await page.click('button[type="submit"]');
-  await page.fill("#password", "correct-horse-1");
-  await page.check("#agree-terms", { force: true });
-  await shot(page, "signup-4-password");
 }
 
 (async () => {
@@ -444,18 +468,23 @@ async function finishSignupSteps(page) {
     await ctx.close();
   }
 
-  /* 1b. Plain /signup, no ?next: the new customer lands on the free-visit booker. */
+  /*
+   * 1b. Plain /signup, no ?next (Registration 2.0): phone, code, and the new
+   * customer is in their account - no address, no password on the way. The
+   * free-visit booker is still offered to them.
+   */
   {
-    console.log("\n--- plain /signup lands on the free-visit booker ---");
-    const { ctx, page } = await newContext(browser);
+    console.log("\n--- plain /signup: phone-first account, booker still offered ---");
+    const { ctx, page, state } = await newContext(browser, { newAccount: true });
     await page.goto(BASE + "/signup", { waitUntil: "networkidle" });
-    await completeSignup(page);
-    await finishSignupSteps(page);
-    await page.click('button[type="submit"]');
-    await page.waitForURL((u) => u.pathname === "/book/free", { timeout: 15000 }).catch(() => {});
-    check("signup without ?next goes to /book/free", new URL(page.url()).pathname === "/book/free", page.url());
-    await page.waitForSelector('[data-fv="book"]', { timeout: 10000 }).catch(() => {});
-    check("/book/free offers the eligible new customer the booker", (await page.locator('[data-fv="book"]').count()) === 1);
+    check("signup asks for no address up front", (await page.locator("#pf-address, [aria-label='Street address']").count()) === 0);
+    await signUpWithPhone(page);
+    await page.waitForURL((u) => u.pathname === "/account", { timeout: 15000 }).catch(() => {});
+    check("signup without ?next opens the new account", new URL(page.url()).pathname === "/account", page.url());
+    check("one code sent, one account created", state.otpStarts === 1 && state.registerPosts === 1, `${state.otpStarts} / ${state.registerPosts}`);
+    await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
+    await page.waitForSelector('[data-fv="book"], [data-fv-access="no-address"]', { timeout: 10000 }).catch(() => {});
+    check("/book/free still offers the new customer the free visit", (await page.locator('[data-fv="book"], [data-fv-access="no-address"]').count()) >= 1);
     await ctx.close();
   }
 
@@ -597,7 +626,7 @@ async function finishSignupSteps(page) {
   /* 6. Plans: chosen before signup, confirmed after it, then checkout. */
   {
     console.log("\n--- plan survives signup ---");
-    const { ctx, page, state } = await newContext(browser);
+    const { ctx, page, state } = await newContext(browser, { newAccount: true });
     await page.goto(BASE + "/", { waitUntil: "networkidle" });
     const plansLink = page.locator('a[href="/membership/plans"]').first();
     check("plans are one tap from the landing", (await plansLink.count()) > 0);
@@ -609,10 +638,11 @@ async function finishSignupSteps(page) {
     await shot(page, "signup-plan-carry");
     const carry = await page.locator("[data-signup-carry]").innerText().catch(() => "");
     check("signup shows the chosen plan and its price", carry.includes("Premium") && carry.includes("Annual") && carry.includes("$3,490/year"), carry);
-    await completeSignup(page);
-    await finishSignupSteps(page);
-    await page.click('button[type="submit"]');
+    await signUpWithPhone(page);
     await page.waitForURL((u) => u.pathname === "/membership/plans", { timeout: 15000 });
+    /* A new account has no home: the sheet asks for it at once, before anything is charged. */
+    await addHomeInSheet(page);
+    check("back on plans: the home is asked for once, then saved", state.homePosts === 1 && state.checkoutPosts.length === 0, `${state.homePosts}`);
     await page.waitForSelector("[data-plan-resume]", { timeout: 15000 }).catch(() => {});
     await shot(page, "plan-sheet");
     const sheet = await page.locator("[data-plan-resume]").innerText().catch(() => "");
@@ -659,7 +689,7 @@ async function finishSignupSteps(page) {
   }
   {
     console.log("\n--- anonymous: plan chosen on Book survives signup, back to Book ---");
-    const { ctx, page, state } = await newContext(browser);
+    const { ctx, page, state } = await newContext(browser, { newAccount: true });
     await page.goto(BASE + "/book", { waitUntil: "networkidle" });
     await page.getByRole("button", { name: /^Annual/ }).first().click();
     await page.click('[data-plan-option="Elite"]');
@@ -667,11 +697,10 @@ async function finishSignupSteps(page) {
     await page.waitForURL(/\/signup\?next=/, { timeout: 10000 });
     const carry = (await page.locator("[data-signup-carry]").innerText().catch(() => "")).replace(/\s+/g, " ");
     check("signup shows Elite annual chosen on Book", carry.includes("Elite") && carry.includes("$4,990/year"), carry);
-    await completeSignup(page);
-    await finishSignupSteps(page);
-    await page.click('button[type="submit"]');
+    await signUpWithPhone(page);
     await page.waitForURL((u) => u.pathname === "/book", { timeout: 15000 }).catch(() => {});
     check("signup returns to Book", new URL(page.url()).pathname === "/book", page.url());
+    await addHomeInSheet(page);
     await page.waitForSelector("[data-plan-resume]", { timeout: 15000 }).catch(() => {});
     await page.click("[data-plan-resume-continue]").catch(() => {});
     await page.waitForURL(/__stripe_stub/, { timeout: 15000 }).catch(() => {});
