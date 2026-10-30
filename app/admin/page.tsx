@@ -63,6 +63,7 @@ import type {
   BookingAdminPatch,
 } from "@/lib/admin-service";
 import AdminCalendarSettings from "@/app/components/admin/AdminCalendarSettings";
+import CreateVisitSheet from "@/app/components/admin/tools/CreateVisitSheet";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 type BookingQuickFilter =
@@ -159,6 +160,24 @@ function AdminPageContent() {
     params.delete("session_id");
     router.replace(`/admin?${params.toString()}`, { scroll: false });
   }, [giftReturn, router, searchParams, showToast]);
+
+  /*
+   * Back from a "Pay by phone" checkout (Buy Membership / Create Visit). As
+   * with gifts, the webhook activates it; this only says what is true now.
+   */
+  const paidReturn = searchParams.get("paid");
+  useEffect(() => {
+    if (paidReturn !== "membership" && paidReturn !== "visit") return;
+    showToast(
+      paidReturn === "membership"
+        ? "Payment received. The membership turns on as soon as Stripe confirms it."
+        : "Payment received. The visit is confirmed as soon as Stripe confirms it."
+    );
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("paid");
+    router.replace(`/admin?${params.toString()}`, { scroll: false });
+  }, [paidReturn, router, searchParams, showToast]);
+  const [showCreateVisit, setShowCreateVisit] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingAssignees, setBookingAssignees] = useState<BookingAssignee[]>([]);
@@ -187,6 +206,7 @@ function AdminPageContent() {
   const hasWorkspaceAccess = isAdmin || isEmployee;
   const canAssignBookings = can(user, PERM.BOOKINGS_ASSIGN);
   const canCustomers = can(user, PERM.CUSTOMERS_MANAGE);
+  const canBookingsWrite = can(user, PERM.BOOKINGS_WRITE);
   const canMembers = can(user, PERM.MEMBERS_READ);
   const canBookings = can(user, PERM.BOOKINGS_READ);
   const canBlacklist = can(user, PERM.BLACKLIST_MANAGE);
@@ -984,6 +1004,17 @@ function AdminPageContent() {
               </button>
 
               <div className="flex flex-shrink-0 items-center gap-1.5 md:ml-auto">
+                {canBookingsWrite && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateVisit(true)}
+                    data-action="open-create-visit-jobs"
+                    className="flex min-h-[42px] flex-shrink-0 items-center gap-1 rounded-lg bg-sky-600 px-3 text-sm font-bold text-white hover:bg-sky-700 md:min-h-[34px]"
+                  >
+                    <span aria-hidden="true" className="text-base leading-none">+</span>
+                    Visit
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={fetchAll}
@@ -1111,6 +1142,11 @@ function AdminPageContent() {
                 canGift={isAdmin}
                 canEdit={canCustomers}
                 onUserUpdated={handleUserUpdated}
+                canCreateCustomer={canCustomers}
+                canSellMembership={canCustomers}
+                canCreateVisit={canBookingsWrite}
+                onCustomerCreated={fetchAll}
+                onNotify={showToast}
               />
             )}
 
@@ -1134,6 +1170,11 @@ function AdminPageContent() {
                 canGift={isAdmin}
                 canEdit={canCustomers}
                 onUserUpdated={handleUserUpdated}
+                canCreateCustomer={canCustomers}
+                canSellMembership={canCustomers}
+                canCreateVisit={canBookingsWrite}
+                onCustomerCreated={fetchAll}
+                onNotify={showToast}
               />
             )}
 
@@ -1220,6 +1261,17 @@ function AdminPageContent() {
         />
       )}
 
+      {showCreateVisit && (
+        <CreateVisitSheet
+          customers={users}
+          onClose={() => setShowCreateVisit(false)}
+          onCreated={(note) => {
+            setShowCreateVisit(false);
+            showToast(note);
+            fetchAll();
+          }}
+        />
+      )}
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   );

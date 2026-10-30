@@ -57,6 +57,12 @@ export function useCompleteSignIn() {
 
       clearPendingFlow();
 
+      // Signed in with the temporary password Admin sent: set a real one first.
+      if (user.mustChangePassword && user.temporaryPassword) {
+        router.replace("/set-password");
+        return user;
+      }
+
       const params = new URLSearchParams(window.location.search);
       const promo = params.get("promo")?.trim().toUpperCase() || sessionStorage.getItem("pendingPromoCode") || "";
       if (promo) sessionStorage.setItem("pendingPromoCode", promo);

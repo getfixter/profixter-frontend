@@ -54,6 +54,8 @@ export interface User {
   isOwner?: boolean;
   isActive?: boolean;
   mustChangePassword?: boolean;
+  /* Signed in with an Admin-issued temporary password: only /set-password until it is replaced. */
+  temporaryPassword?: boolean;
   /* Computed by the server from field work + sections; what the UI may show. */
   permissions?: string[];
 

@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/useAuth";
 import VisitorPromotionPopup from "@/app/components/promotion/VisitorPromotionPopup";
 import InstallAppPrompt from "@/app/components/pwa/InstallAppPrompt";
 import KioskReturn from "@/app/components/event/KioskReturn";
+import TemporaryPasswordGate from "@/app/components/auth/TemporaryPasswordGate";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -17,6 +18,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <VisitorPromotionPopup />
         <InstallAppPrompt />
         <KioskReturn />
+        <TemporaryPasswordGate />
       </AuthProvider>
     );
   }
@@ -28,6 +30,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <VisitorPromotionPopup />
         <InstallAppPrompt />
         <KioskReturn />
+        <TemporaryPasswordGate />
       </AuthProvider>
     </GoogleOAuthProvider>
   );

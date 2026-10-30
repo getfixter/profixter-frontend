@@ -17,7 +17,11 @@ import { CompletedBookingsChip, CustomerLoyaltyPanel, LoyaltyStrip } from './Loy
 import AdminGiftModal from './AdminGiftModal';
 import CustomerEditSheet from './CustomerEditSheet';
 import CustomerProfileHistory from './CustomerProfileHistory';
-import { GiftIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import CreateCustomerSheet from './tools/CreateCustomerSheet';
+import BuyMembershipSheet from './tools/BuyMembershipSheet';
+import CreateVisitSheet from './tools/CreateVisitSheet';
+import CommunicationPanel from './tools/CommunicationPanel';
+import { CalendarDaysIcon, CreditCardIcon, GiftIcon, PencilSquareIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 
 type PlanFilter = 'all' | 'basic' | 'plus' | 'premium' | 'elite' | 'cancel';
 
@@ -57,6 +61,14 @@ interface UsersTableProps {
   canEdit?: boolean;
   /* The saved row, to swap into the list without a reload. */
   onUserUpdated?: (user: User) => void;
+  /* Admin phone tools (customers.manage / bookings.write). Each hides its button when false. */
+  canCreateCustomer?: boolean;
+  canSellMembership?: boolean;
+  canCreateVisit?: boolean;
+  /* A customer was created in Admin: reload so they appear in the list. */
+  onCustomerCreated?: () => void;
+  /* Short confirmation for the page's toast. */
+  onNotify?: (message: string) => void;
 }
 
 type FlattenedRow = {
@@ -279,6 +291,11 @@ export default function UsersTable({
   canGift = false,
   canEdit = false,
   onUserUpdated,
+  canCreateCustomer = false,
+  canSellMembership = false,
+  canCreateVisit = false,
+  onCustomerCreated,
+  onNotify,
 }: UsersTableProps) {
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
   const [savingCancellationByAddress, setSavingCancellationByAddress] = useState<Record<string, boolean>>({});
@@ -300,6 +317,9 @@ export default function UsersTable({
 
   const [giftTarget, setGiftTarget] = useState<{ user: User; addressId: string | null } | null>(null);
   const [editUserId, setEditUserId] = useState<string | null>(null);
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [membershipTarget, setMembershipTarget] = useState<User | null>(null);
+  const [visitTarget, setVisitTarget] = useState<User | null>(null);
   const [profileRefresh, setProfileRefresh] = useState(0);
 
   const handleUserSaved = (saved: User) => {
@@ -724,6 +744,18 @@ export default function UsersTable({
             >
               {isRunningCleanup ? 'Fixing GHL...' : 'Fix GHL'}
             </button>}
+
+            {canCreateCustomer && (
+              <button
+                type="button"
+                onClick={() => setShowCreateCustomer(true)}
+                data-action="open-create-customer"
+                className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-700"
+              >
+                <UserPlusIcon className="h-4 w-4" aria-hidden="true" />
+                Create customer
+              </button>
+            )}
 
             {!readOnly && filteredRows.length > 0 && (
               <button
@@ -1163,25 +1195,51 @@ export default function UsersTable({
                     {historyUser.email || historyUser.phone || 'No email'} · ID {historyUser.userId}
                   </div>
                 </div>
-                <div className="flex flex-shrink-0 items-center gap-2">
+                <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
                   {canEdit && (
                     <button
                       type="button"
+                      aria-label="Edit"
                       onClick={() => setEditUserId(historyUser._id)}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-sky-300/30 bg-sky-500/15 px-3.5 text-sm font-semibold text-sky-100 transition hover:bg-sky-500/25"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-sky-300/30 bg-sky-500/15 px-2.5 sm:px-3.5 text-sm font-semibold text-sky-100 transition hover:bg-sky-500/25"
                     >
                       <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
-                      Edit
+                      <span className="hidden sm:inline">Edit</span>
+                    </button>
+                  )}
+                  {canSellMembership && (
+                    <button
+                      type="button"
+                      aria-label="Buy membership"
+                      onClick={() => setMembershipTarget(historyUser)}
+                      data-action="open-buy-membership"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-500/15 px-2.5 sm:px-3.5 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/25"
+                    >
+                      <CreditCardIcon className="h-4 w-4" aria-hidden="true" />
+                      <span className="hidden sm:inline">Membership</span>
+                    </button>
+                  )}
+                  {canCreateVisit && (
+                    <button
+                      type="button"
+                      aria-label="Create visit"
+                      onClick={() => setVisitTarget(historyUser)}
+                      data-action="open-create-visit"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-500/15 px-2.5 sm:px-3.5 text-sm font-semibold text-amber-100 transition hover:bg-amber-500/25"
+                    >
+                      <CalendarDaysIcon className="h-4 w-4" aria-hidden="true" />
+                      <span className="hidden sm:inline">Visit</span>
                     </button>
                   )}
                   {canGift && (
                     <button
                       type="button"
+                      aria-label="Gift"
                       onClick={() => setGiftTarget({ user: historyUser, addressId: null })}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-violet-300/30 bg-violet-500/15 px-3.5 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/25"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-violet-300/30 bg-violet-500/15 px-2.5 sm:px-3.5 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/25"
                     >
                       <GiftIcon className="h-4 w-4" aria-hidden="true" />
-                      Gift
+                      <span className="hidden sm:inline">Gift</span>
                     </button>
                   )}
                   <button
@@ -1236,6 +1294,10 @@ export default function UsersTable({
                 */}
               {canViewLoyalty && <div className="mb-5 border-b border-slate-200 pb-5">
                 <CustomerLoyaltyPanel key={historyUser._id} userId={historyUser._id} fallbackCompleted={historyUser.completedBookings} />
+              </div>}
+
+              {showCustomerPanels && <div className="mb-5 border-b border-slate-200 pb-5">
+                <CommunicationPanel key={historyUser._id} userId={historyUser._id} canEdit={canEdit} />
               </div>}
 
               {showCustomerPanels && <div className="mb-5 border-b border-slate-200 pb-5">
@@ -1342,6 +1404,41 @@ export default function UsersTable({
           userId={editUserId}
           onClose={() => setEditUserId(null)}
           onSaved={handleUserSaved}
+        />
+      )}
+
+      {showCreateCustomer && (
+        <CreateCustomerSheet
+          onClose={() => setShowCreateCustomer(false)}
+          onCreated={(_customer, note) => {
+            setShowCreateCustomer(false);
+            onNotify?.(note);
+            onCustomerCreated?.();
+          }}
+        />
+      )}
+
+      {membershipTarget && (
+        <BuyMembershipSheet
+          key={membershipTarget._id}
+          customer={membershipTarget}
+          onClose={() => setMembershipTarget(null)}
+          onDone={(note) => {
+            setMembershipTarget(null);
+            onNotify?.(note);
+          }}
+        />
+      )}
+
+      {visitTarget && (
+        <CreateVisitSheet
+          key={visitTarget._id}
+          presetCustomer={visitTarget}
+          onClose={() => setVisitTarget(null)}
+          onCreated={(note) => {
+            setVisitTarget(null);
+            onNotify?.(note);
+          }}
         />
       )}
 
