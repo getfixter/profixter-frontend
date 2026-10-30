@@ -17,14 +17,24 @@
  * free-visit rule (one per customer, service area, photo or example, Labor Only).
  * This component only renders what the server answers.
  *
- * GUEST REQUESTS (`guest`: the homepage and /book/free). A signed-out visitor
- * types a name, mobile and email under the day and time, and one press sends the
- * whole request to POST /api/free-visit-requests: no /signup, no address, no
- * account. /book/free is where follow-up emails and the Google Business Profile
- * button land, so it must not send those visitors through /signup either.
- * That saves a pending request for the owner to call and confirm - it is not a
- * booking and holds no slot - and only once it is saved does the Meta Lead fire,
- * in the browser here and on the server with the same event id.
+ * TWO WAYS TO BOOK (`guest`: the homepage and /book/free). A signed-out visitor
+ * first chooses, and only the chosen form is shown; the job, day and time are
+ * shared, so switching never loses them.
+ *
+ *  - "Book my free visit" (online): the draft waits in lib/booking-draft while
+ *    they sign up or sign in on /signup, which returns to /book/free. There the
+ *    home is added (or picked) and missing contact details collected in place,
+ *    then the booking is created from the draft with the time they chose. The
+ *    server holds the slot and the visit waits in "Pending Confirmation" for
+ *    the owner; this screen says so and never calls it confirmed.
+ *  - "Have us call you" (callback): name, mobile and email under the day and
+ *    time, one press, POST /api/free-visit-requests. No account, no address.
+ *    That reserves the slot as a pending request for the owner to call and
+ *    confirm, and only once it is saved does the Meta Lead fire, in the browser
+ *    here and on the server with the same event id.
+ *
+ * Both are the same free visit and share one lifetime limit, enforced on the
+ * server (utils/freeVisit/eligibility); nothing here decides eligibility.
  */
 
 import Link from "next/link";
@@ -95,8 +105,12 @@ type Access =
   | "eligible"
   | "member"
   | "used"
+  /* A free visit is already requested or booked and not finished yet. */
+  | "active"
   | "outside"
   | "no-address";
+
+type Channel = "" | "online" | "callback";
 
 type Phase = "edit" | "submitting" | "done";
 
@@ -105,6 +119,8 @@ type Confirmation = {
   timeLabel: string;
   address: string;
   reference?: string;
+  /* What they asked for, as they typed it. */
+  work?: string;
   /* A homepage request: we call to confirm, so it is not "booked" yet. */
   request?: boolean;
 };
@@ -272,7 +288,10 @@ export default function FreeVisitBooker({
   /* --- flow ------------------------------------------------------- */
   const [phase, setPhase] = useState<Phase>("edit");
   const [access, setAccess] = useState<Access>("anonymous");
+  const [channel, setChannel] = useState<Channel>("");
   const [addressId, setAddressId] = useState("");
+  /* More than one home on the account: back from signup, they pick before it books. */
+  const [addressPicked, setAddressPicked] = useState(false);
   const { requestHome, homeSheet } = useAddHome();
   const { ensureContact, contactSheet } = useContactCompletion();
   const { serviceTextsOptIn, applyServiceTextsOptIn } = useServiceTextsOptIn();
@@ -306,6 +325,10 @@ export default function FreeVisitBooker({
    */
   const requestEventId = useRef("");
   const leadFired = useRef(false);
+  /* One online submit at a time: a double tap must not send two. */
+  const submitting$ = useRef(false);
+  /* The add-home sheet opens by itself once per visit, never in a loop. */
+  const homePrompted = useRef(false);
 
   const trackOnce = useCallback((name: string, params: Record<string, string | number | boolean> = {}) => {
     if (tracked.current.has(name)) return;
@@ -326,6 +349,7 @@ export default function FreeVisitBooker({
       }
       setSelectedTime(draft.requestedTime);
       if (draft.requestedDate && draft.requestedTime) setWhenOpen(false);
+      if (draft.channel) setChannel(draft.channel);
     }
     void loadPhotos()
       .then((files) => {
@@ -348,9 +372,10 @@ export default function FreeVisitBooker({
       libraryReference,
       requestedDate: selectedDate,
       requestedTime: selectedTime,
+      channel,
       ...(photosRestored ? { photoCount: photos.length } : {}),
     });
-  }, [hydrated, photosRestored, phase, note, libraryReference, selectedDate, selectedTime, photos.length]);
+  }, [hydrated, photosRestored, phase, note, libraryReference, selectedDate, selectedTime, photos.length, channel]);
 
   useEffect(() => {
     const urls = photos.map((f) => URL.createObjectURL(f));
@@ -359,6 +384,8 @@ export default function FreeVisitBooker({
   }, [photos]);
 
   /* --- who is booking --------------------------------------------- */
+  const homes = useMemo(() => (isAuthenticated && user?.addresses ? user.addresses : []), [isAuthenticated, user]);
+
   useEffect(() => {
     if (isLoading) return;
     if (!isAuthenticated || !user) {
@@ -369,22 +396,31 @@ export default function FreeVisitBooker({
       setAccess("member");
       return;
     }
-    const id =
-      String((user as { defaultAddressId?: string | null }).defaultAddressId || "") ||
-      String(user.addresses?.[0]?._id || "");
-    if (!id) {
+    if (!homes.length) {
+      setAddressId("");
       setAccess("no-address");
       return;
     }
-    setAddressId(id);
+    // Keep the home they picked; otherwise the default, then the first.
+    setAddressId((current) =>
+      current && homes.some((a) => String(a._id) === current)
+        ? current
+        : String((user as { defaultAddressId?: string | null }).defaultAddressId || "") || String(homes[0]?._id || "")
+    );
+  }, [isLoading, isAuthenticated, user, homes]);
+
+  /* Can this home have the free visit? Asked again whenever the home changes. */
+  useEffect(() => {
+    if (isLoading || !isAuthenticated || !user || hasActiveMembership(user) || !addressId) return;
     setAccess("checking");
     let cancelled = false;
-    getNextBooking(id)
+    getNextBooking(addressId)
       .then((data) => {
         if (cancelled) return;
         if (data?.freeFirstVisitAvailable) setAccess("eligible");
         else if (data?.hasSubscription) setAccess("member");
         else if (data?.introVisitServiceable === false) setAccess("outside");
+        else if (data?.introVisitStatus === "claimed") setAccess("active");
         else setAccess("used");
       })
       .catch(() => {
@@ -394,7 +430,7 @@ export default function FreeVisitBooker({
     return () => {
       cancelled = true;
     };
-  }, [isLoading, isAuthenticated, user]);
+  }, [isLoading, isAuthenticated, user, addressId]);
 
   /* --- availability ----------------------------------------------- */
   const loadMonth = useCallback(async (key: string, force = false) => {
@@ -493,8 +529,12 @@ export default function FreeVisitBooker({
   const selectedSlotOpen = !!selectedTime && slotOptions.some((s) => s.time === selectedTime && s.available);
 
   /* --- readiness -------------------------------------------------- */
-  /* Signed out where guests are welcome: the one-step request, not /signup. */
-  const guestMode = guest && !isLoading && access === "anonymous";
+  /* Signed out where guests are welcome: they choose online or a callback first. */
+  const choosing = guest && !isLoading && access === "anonymous";
+  /* The callback request: name and number, no /signup. */
+  const guestMode = choosing && channel === "callback";
+  /* Back from signup with more than one home: which one, before it books. */
+  const needsHomePick = autoResume && homes.length > 1 && !addressPicked;
   const noteOk = wordCount(note) >= 3;
   /* The request asks for a photo only if they have one; the owner sees the job on the call. */
   const photoOk = guestMode || photos.length > 0 || !!libraryReference;
@@ -517,7 +557,7 @@ export default function FreeVisitBooker({
   useEffect(() => {
     if (selectedSlotOpen) step("slot_selected");
   }, [selectedSlotOpen, step]);
-  const blocked = access === "member" || access === "used" || access === "outside" || access === "no-address";
+  const blocked = access === "member" || access === "used" || access === "active" || access === "outside" || access === "no-address";
   const waitlist = useMemo(
     () => ({
       zip: String(user?.addresses?.find((a) => String(a._id) === String(addressId))?.zip || ""),
@@ -633,81 +673,118 @@ export default function FreeVisitBooker({
     note: string; libraryReference: string; date: string; time: string; photos: File[];
   }) => {
     const d = draftOverride || { note, libraryReference, date: selectedDate, time: selectedTime, photos };
-    if (!addressId) return;
-    if (!(await ensureContact())) return;
-    setPhase("submitting");
-    setFormError("");
-    setNotice("");
-
-    /*
-     * A fresh look at the day before asking. Not a guarantee - the server's
-     * transaction is - but it turns the common case (somebody took the time
-     * while this visitor was signing up) into a calm message instead of a
-     * failed request.
-     */
-    const day = await refreshDay(d.date);
-    if (day && !getBookableSlots(day).some((s) => s.time === d.time)) {
-      setPhase("edit");
-      await slotTaken(d.date);
-      return;
-    }
-
+    if (!addressId || submitting$.current) return;
+    submitting$.current = true;
     try {
-      const [h, m] = d.time.split(":").map(Number);
-      const when = dateFromYMDLocal(d.date);
-      when.setHours(h, m, 0, 0);
-      const result = await createBooking({
-        service: FREE_VISIT_SERVICE,
-        date: when.toISOString(),
-        note: d.note.trim(),
-        addressId,
-        images: d.photos,
-        libraryReference: d.libraryReference || undefined,
-        requestedDate: d.date,
-        requestedTime: d.time,
-      });
+      if (!(await ensureContact())) return;
+      setPhase("submitting");
+      setFormError("");
+      setNotice("");
+      /* The same id for every retry of this submission; replaced only after it succeeds. */
+      const priorAttempt = loadDraft()?.clientRequestId || "";
+      const clientRequestId = priorAttempt || newEventId();
+      saveDraft({ clientRequestId });
 
-      const reference = String(result?.booking?.bookingNumber || "");
-      /* Only now, with the booking accepted: the box is never a condition of it. */
-      await applyServiceTextsOptIn();
       /*
-       * Schedule, not a second Lead: the Lead was this person's account,
-       * created a minute ago on /signup.
+       * A fresh look at the day before asking. Not a guarantee - the server's
+       * transaction is - but it turns the common case (somebody took the time
+       * while this visitor was signing up) into a calm message instead of a
+       * failed request. Skipped when this submission was already sent once: the
+       * time may be gone because it is THEIRS (a refresh while it was booking),
+       * and only the server can tell that apart from somebody else taking it.
        */
-      trackSchedule({
-        content_name: "free_first_visit",
-        status: "free_visit_booked",
-        booking_reference: reference,
-      });
-
-      const addr = user?.addresses?.find((a) => String(a._id) === String(addressId));
-      setConfirmation({
-        dateLabel: longDate(d.date),
-        timeLabel: time12(d.time),
-        address: [addr?.line1, addr?.city].filter(Boolean).join(", "),
-        reference,
-      });
-      setPhase("done");
-      await clearDraft();
-      window.setTimeout(() => {
-        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 60);
-    } catch (err) {
-      const code = errorCode(err);
-      setPhase("edit");
-      saveDraft({ submitRequested: false });
-      if (code === "SLOT_UNAVAILABLE" || code === "DATE_UNAVAILABLE") {
-        await slotTaken(d.date);
-      } else if (code === "INTRO_VISIT_CONSUMED" || code === "INTRO_VISIT_CLAIMED") {
-        setAccess("used");
-      } else if (code === "OUT_OF_SERVICE_AREA") {
-        setAccess("outside");
-      } else if (code === "PHOTO_REQUIRED") {
-        setErrors((e) => ({ ...e, photos: "Add a photo, or pick the closest example." }));
-        photosRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      } else {
-        setFormError(errorMessage(err) || "We couldn't book that just now. Please try again.");
+      if (!priorAttempt) {
+        const day = await refreshDay(d.date);
+        if (day && !getBookableSlots(day).some((s) => s.time === d.time)) {
+          setPhase("edit");
+          await slotTaken(d.date);
+          return;
+        }
       }
+
+      try {
+        const [h, m] = d.time.split(":").map(Number);
+        const when = dateFromYMDLocal(d.date);
+        when.setHours(h, m, 0, 0);
+        const payload = {
+          service: FREE_VISIT_SERVICE,
+          date: when.toISOString(),
+          note: d.note.trim(),
+          addressId,
+          images: d.photos,
+          libraryReference: d.libraryReference || undefined,
+          requestedDate: d.date,
+          requestedTime: d.time,
+          clientRequestId,
+        };
+        let result: Awaited<ReturnType<typeof createBooking>> & { duplicate?: boolean };
+        try {
+          result = await createBooking(payload);
+        } catch (err) {
+          /*
+           * "Already booked" right after a refresh can be this same submission,
+           * still finishing on the server. Ask once more with the same id: if it
+           * was ours, the server hands back that booking.
+           */
+          if (errorCode(err) !== "INTRO_VISIT_CLAIMED") throw err;
+          await new Promise((r) => window.setTimeout(r, 2500));
+          result = await createBooking(payload);
+        }
+
+        const reference = String(result?.booking?.bookingNumber || "");
+        /* Only now, with the booking accepted: the box is never a condition of it. */
+        await applyServiceTextsOptIn();
+        /*
+         * Schedule, not a second Lead: the Lead was this person's account,
+         * created a minute ago on /signup. Not again for a submission the server
+         * had already booked (a refresh mid-submit).
+         */
+        if (!result?.duplicate) {
+          trackSchedule({
+            content_name: "free_first_visit",
+            status: "free_visit_booked",
+            booking_reference: reference,
+          });
+        }
+
+        const addr = user?.addresses?.find((a) => String(a._id) === String(addressId));
+        /* A booking the server had already made shows its own time, not whatever is selected now. */
+        const madeAt = result?.duplicate && result.booking?.date ? new Date(result.booking.date) : null;
+        const shownDate = madeAt ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(madeAt) : d.date;
+        const shownTime = madeAt && result.booking?.time ? String(result.booking.time) : d.time;
+        setConfirmation({
+          dateLabel: longDate(shownDate),
+          timeLabel: time12(shownTime),
+          address: [addr?.line1, addr?.city, addr?.state, addr?.zip].filter(Boolean).join(", "),
+          reference,
+          work: d.note.trim(),
+        });
+        setPhase("done");
+        await clearDraft();
+        window.setTimeout(() => {
+          document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 60);
+      } catch (err) {
+        const code = errorCode(err);
+        setPhase("edit");
+        saveDraft({ submitRequested: false });
+        if (code === "SLOT_UNAVAILABLE" || code === "DATE_UNAVAILABLE") {
+          await slotTaken(d.date);
+        } else if (code === "INTRO_VISIT_CONSUMED") {
+          setAccess("used");
+        } else if (code === "INTRO_VISIT_CLAIMED") {
+          setAccess("active");
+        } else if (code === "OUT_OF_SERVICE_AREA") {
+          setAccess("outside");
+        } else if (code === "PHOTO_REQUIRED") {
+          setErrors((e) => ({ ...e, photos: "Add a photo, or pick the closest example." }));
+          photosRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else {
+          setFormError(errorMessage(err) || "We couldn't book that just now. Please try again.");
+        }
+      }
+    } finally {
+      submitting$.current = false;
     }
   }, [addressId, applyServiceTextsOptIn, ensureContact, id, libraryReference, note, photos, refreshDay, selectedDate, selectedTime, slotTaken, user]);
 
@@ -794,7 +871,10 @@ export default function FreeVisitBooker({
    */
   const addHomeAndContinue = async () => {
     const home = await requestHome();
-    if (home?.address?._id) setAddressId(String(home.address._id));
+    if (home?.address?._id) {
+      setAddressId(String(home.address._id));
+      setAddressPicked(true);
+    }
   };
 
   const onBook = async () => {
@@ -811,6 +891,8 @@ export default function FreeVisitBooker({
         requestedTime: selectedTime,
         photoCount: photos.length,
         submitRequested: true,
+        channel: "online",
+        clientRequestId: newEventId(),
       });
       await savePhotos(photos);
       trackEvent("free_visit_signup_started", { date: selectedDate, time: selectedTime });
@@ -818,7 +900,10 @@ export default function FreeVisitBooker({
       router.push(`/signup?next=${encodeURIComponent(RESUME_PATH)}&intent=free-visit`);
       return;
     }
-    if (access === "eligible") void submitBooking();
+    if (access === "eligible") {
+      setAddressPicked(true);
+      void submitBooking();
+    }
   };
 
   /*
@@ -827,9 +912,16 @@ export default function FreeVisitBooker({
    * confirm this address can still have its free visit.
    */
   useEffect(() => {
-    if (!autoResume || resumeStarted.current || !hydrated || access !== "eligible") return;
+    if (!autoResume || !hydrated) return;
     const draft = loadDraft();
     if (!draft?.submitRequested || !draft.requestedDate || !draft.requestedTime) return;
+    /* Signed up with no home yet: ask for it here, once, then carry on. */
+    if (access === "no-address" && !homePrompted.current) {
+      homePrompted.current = true;
+      void addHomeAndContinue();
+      return;
+    }
+    if (resumeStarted.current || access !== "eligible" || needsHomePick) return;
     resumeStarted.current = true;
     void (async () => {
       const files = await loadPhotos();
@@ -852,7 +944,13 @@ export default function FreeVisitBooker({
       });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoResume, hydrated, access]);
+  }, [autoResume, hydrated, access, needsHomePick]);
+
+  /* Back from signup with several homes: the one question left is which, so bring it into view. */
+  useEffect(() => {
+    if (!needsHomePick || !hydrated || access !== "eligible" || !loadDraft()?.submitRequested) return;
+    window.setTimeout(() => summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 150);
+  }, [needsHomePick, hydrated, access]);
 
   /* ------------------------------------------------------------------ */
   /* Render                                                             */
@@ -867,12 +965,14 @@ export default function FreeVisitBooker({
           </svg>
         </div>
         <h2 className="ui-h2 mt-5">
-          Got it!
+          Request received!
         </h2>
         <p className="mx-auto mt-3 max-w-[420px] text-[16px] leading-[1.6] text-[color:var(--ui-text-2)]">
-          A Profixter team member will call you shortly to confirm your free visit on{" "}
-          <strong className="text-[color:var(--ui-ink)]">{confirmation.dateLabel} at {confirmation.timeLabel}</strong>.
+          We&rsquo;ll call to confirm your free visit.
         </p>
+        <dl className="mx-auto mt-5 grid max-w-[420px] gap-2 text-left">
+          <SummaryRow label="Requested" value={`${confirmation.dateLabel} · ${confirmation.timeLabel}`} />
+        </dl>
         <p className="mx-auto mt-5 max-w-[420px] text-[14px] leading-6 text-[color:var(--ui-text-3)]">
           We&rsquo;ve sent the details to your email and phone. Questions? Call or text{" "}
           <a href="tel:+16315991363" className="fv-link whitespace-nowrap text-[14px]">631-599-1363</a>.
@@ -883,23 +983,28 @@ export default function FreeVisitBooker({
 
   if (phase === "done" && confirmation) {
     return (
-      <div id={id} className="fv-card fv-enter scroll-mt-24 p-6 text-center sm:p-10" role="status">
+      <div id={id} className="fv-card fv-enter scroll-mt-24 p-6 text-center sm:p-10" role="status" data-fv="booked">
         <div className="fv-check mx-auto" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="30" height="30" fill="none">
             <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <h2 className="ui-h2 mt-5">
-          You&rsquo;re booked.
+          Your free visit is booked!
         </h2>
-        <p className="mt-2 text-[16px] text-[color:var(--ui-text-2)]">Your free 90-minute visit is on the calendar.</p>
-        <dl className="mx-auto mt-6 grid max-w-[420px] gap-2 text-left">
-          <SummaryRow label="When" value={`${confirmation.dateLabel} · ${confirmation.timeLabel}`} />
-          {confirmation.address ? <SummaryRow label="Where" value={confirmation.address} /> : null}
+        <p className="fv-awaiting mx-auto mt-3" data-fv="awaiting">
+          <span className="fv-awaiting__dot" aria-hidden="true" />
+          Awaiting confirmation from Profixter.
+        </p>
+        <dl className="mx-auto mt-5 grid max-w-[420px] gap-2 text-left">
+          <SummaryRow label="Date" value={confirmation.dateLabel} />
+          <SummaryRow label="Time" value={confirmation.timeLabel} />
+          {confirmation.address ? <SummaryRow label="Address" value={confirmation.address} /> : null}
+          {confirmation.work ? <SummaryRow label="Work" value={confirmation.work} /> : null}
           {confirmation.reference ? <SummaryRow label="Booking" value={`#${confirmation.reference}`} /> : null}
         </dl>
         <p className="mx-auto mt-5 max-w-[420px] text-[14px] leading-6 text-[color:var(--ui-text-3)]">
-          We&rsquo;ll confirm by email and text. You can see or change it any time in My Home.
+          The time is held for you. We&rsquo;ll let you know as soon as it&rsquo;s confirmed.
         </p>
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link href="/account" className="fv-cta w-full sm:w-auto">Go to My Home</Link>
@@ -908,6 +1013,42 @@ export default function FreeVisitBooker({
       </div>
     );
   }
+
+  const chooseChannel = (next: Exclude<Channel, "">) => {
+    setChannel(next);
+    setFormError("");
+    trackEvent("free_visit_channel_selected", { channel: next });
+  };
+
+  /* Signed out: the choice comes first, and nothing else until it is made. */
+  if (choosing && !channel) {
+    return (
+      <div id={id} className={`fv-card scroll-mt-24 ${compact ? "fv-compact" : ""}`} data-fv="chooser">
+        <ChannelChooser onChoose={chooseChannel} />
+      </div>
+    );
+  }
+
+  const switcher = choosing ? <ChannelSwitch value={channel} onChange={chooseChannel} /> : null;
+  const homePicker =
+    isAuthenticated && homes.length > 1 && access !== "member" ? (
+      <HomePicker
+        homes={homes}
+        value={addressId}
+        prompt={needsHomePick}
+        onChange={(next) => {
+          setAddressId(next);
+          setAddressPicked(true);
+        }}
+      />
+    ) : null;
+  const ctaLabel = guestMode ? "Request my free visit" : access === "anonymous" ? "Continue" : "Book my free visit";
+  const ctaBusy = guestMode ? "Sending…" : "Booking your visit…";
+  const ctaHint = guestMode
+    ? "We'll call to confirm. No card needed."
+    : access === "anonymous"
+      ? "Next: sign in or create your account. No card needed."
+      : "90 minutes · free · no card needed";
 
   const grid = monthGrid(month);
   const monthMap = months[month];
@@ -958,6 +1099,7 @@ export default function FreeVisitBooker({
     const showWhen = whenOpen || !picked;
     return (
       <div id={id} className="fv-card fv-compact scroll-mt-24" aria-busy={submitting} data-fv-variant="compact">
+        {switcher}
         {/* The job */}
         <div className={`fv-field ${errors.note ? "fv-field--error" : ""}`}>
           <svg className="fv-field-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
@@ -1174,6 +1316,7 @@ export default function FreeVisitBooker({
         {contactBlock}
 
         <div ref={summaryRef} className="scroll-mt-28">
+          {homePicker}
           <AccessNotice access={access} waitlist={waitlist} onAddHome={addHomeAndContinue} />
           {homeSheet}
           {contactSheet}
@@ -1189,12 +1332,12 @@ export default function FreeVisitBooker({
                 data-fv="book"
               >
                 {submitting ? (
-                  <><span className="fv-spinner" aria-hidden="true" /> {guestMode ? "Sending…" : "Booking your visit…"}</>
+                  <><span className="fv-spinner" aria-hidden="true" /> {ctaBusy}</>
                 ) : (
-                  <>Book my free visit <span aria-hidden="true">→</span></>
+                  <>{ctaLabel} <span aria-hidden="true">→</span></>
                 )}
               </button>
-              <p className="mt-2 text-center text-[13px] text-[color:var(--ui-text-3)]">90 minutes · free · no card needed</p>
+              <p className="mt-2 text-center text-[13px] text-[color:var(--ui-text-3)]" data-fv="cta-hint">{ctaHint}</p>
             </>
           ) : null}
         </div>
@@ -1204,6 +1347,7 @@ export default function FreeVisitBooker({
 
   return (
     <div id={id} className="fv-card scroll-mt-24" aria-busy={submitting}>
+      {switcher}
       {/* 1. The job */}
       <section className="fv-step" aria-labelledby={`${id}-what`}>
         <StepLabel n={1} done={noteOk && photoOk} />
@@ -1366,6 +1510,7 @@ export default function FreeVisitBooker({
 
       {/* 4. Summary + the one button */}
       <section ref={summaryRef} className="fv-step fv-step--last scroll-mt-28" aria-label="Your visit">
+        {homePicker}
         <AccessNotice access={access} waitlist={waitlist} onAddHome={addHomeAndContinue} />
           {homeSheet}
           {contactSheet}
@@ -1408,20 +1553,88 @@ export default function FreeVisitBooker({
               data-fv="book"
             >
               {submitting ? (
-                <><span className="fv-spinner" aria-hidden="true" /> {guestMode ? "Sending…" : "Booking your visit…"}</>
+                <><span className="fv-spinner" aria-hidden="true" /> {ctaBusy}</>
               ) : (
-                <>Book my free visit <span aria-hidden="true">→</span></>
+                <>{ctaLabel} <span aria-hidden="true">→</span></>
               )}
             </button>
-            <p className="mt-3 text-center text-[13px] text-[color:var(--ui-text-3)]">
-              {access === "anonymous" && !guestMode
-                ? "Next: your address and contact. About a minute. No card needed."
-                : "No card needed."}
-            </p>
+            <p className="mt-3 text-center text-[13px] text-[color:var(--ui-text-3)]" data-fv="cta-hint">{ctaHint}</p>
           </>
         ) : null}
       </section>
     </div>
+  );
+}
+
+/* The first thing a signed-out visitor sees: two ways to the same free visit. */
+function ChannelChooser({ onChoose }: { onChoose: (channel: "online" | "callback") => void }) {
+  return (
+    <div className="fv-choose" role="group" aria-label="How would you like to book?">
+      <button type="button" className="fv-option fv-option--primary" onClick={() => onChoose("online")} data-fv-channel="online">
+        <span className="fv-option__title">Book My Free Visit</span>
+        <span className="fv-option__body">Book online in minutes. No phone call needed.</span>
+        <span className="fv-option__go" aria-hidden="true">→</span>
+      </button>
+      <button type="button" className="fv-option" onClick={() => onChoose("callback")} data-fv-channel="callback">
+        <span className="fv-option__title">Have Us Call You</span>
+        <span className="fv-option__body">Choose a time, leave your number, and we&rsquo;ll handle the rest.</span>
+        <span className="fv-option__go" aria-hidden="true">→</span>
+      </button>
+    </div>
+  );
+}
+
+/* Once chosen: a quiet switch, so changing your mind keeps the job, day and time. */
+function ChannelSwitch({ value, onChange }: { value: Channel; onChange: (channel: "online" | "callback") => void }) {
+  return (
+    <div className="fv-switch" role="radiogroup" aria-label="How would you like to book?" data-fv="switch">
+      {(
+        [
+          ["online", "Book online"],
+          ["callback", "Have us call"],
+        ] as const
+      ).map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          role="radio"
+          aria-checked={value === key}
+          className={`fv-switch__opt ${value === key ? "fv-switch__opt--on" : ""}`}
+          onClick={() => onChange(key)}
+          data-fv-switch={key}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+type Home = { _id?: string; label?: string; line1?: string; unit?: string; city?: string; state?: string; zip?: string };
+
+/* An account with more than one home says which one this visit is for. */
+function HomePicker({
+  homes,
+  value,
+  prompt,
+  onChange,
+}: {
+  homes: Home[];
+  value: string;
+  prompt: boolean;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <label className={`fv-home mt-3 ${prompt ? "fv-home--prompt" : ""}`} data-fv="home-picker">
+      <span className="fv-label">{prompt ? "Which home is this visit for?" : "Visit address"}</span>
+      <select className="fv-input mt-1.5" value={value} onChange={(e) => onChange(e.target.value)}>
+        {homes.map((h) => (
+          <option key={String(h._id)} value={String(h._id)}>
+            {[h.label, [h.line1, h.unit ? `Unit ${h.unit}` : "", h.city].filter(Boolean).join(", ")].filter(Boolean).join(": ")}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -1501,10 +1714,19 @@ function AccessNotice({
       </div>
     );
   }
+  if (access === "active") {
+    return (
+      <div className="fv-panel" data-fv-access="active">
+        <p className="font-semibold text-[color:var(--ui-ink)]">You already have a free visit request.</p>
+        <p className="mt-1 text-[14px] text-[color:var(--ui-text-2)]">One free visit per customer. We&rsquo;ll be in touch to confirm it.</p>
+        <Link href="/account" className="fv-cta mt-4 w-full">Go to My Home</Link>
+      </div>
+    );
+  }
   if (access === "used") {
     return (
       <div className="fv-panel" data-fv-access="used">
-        <p className="font-semibold text-[color:var(--ui-ink)]">Your free visit has been used at this address.</p>
+        <p className="font-semibold text-[color:var(--ui-ink)]">You&rsquo;ve already used your free visit.</p>
         <p className="mt-1 text-[14px] text-[color:var(--ui-text-2)]">Book a one-time visit, or get a plan for regular help.</p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <Link href="/book?visit=additional" className="fv-cta">Book a one-time visit</Link>

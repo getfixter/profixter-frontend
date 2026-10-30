@@ -64,6 +64,11 @@ async function scrollThrough(page) {
    */
   {
     const { ctx, page } = await openPage(browser, 390, 844);
+    /* Free Visit 2.0: the booker asks how first (online or a callback); either opens the same form. */
+    await page.waitForSelector('[data-fv-channel="online"]', { timeout: 30000 });
+    check("free visit offers two ways to book", (await page.locator("[data-fv-channel]").count()) === 2, "");
+    const openedH = await page.evaluate(() => Math.round(document.querySelector("#book").getBoundingClientRect().height));
+    await page.click('[data-fv-channel="callback"]');
     await page.waitForSelector('[data-fv="note"]', { timeout: 30000 });
     await page.waitForSelector('[data-booking-date-disabled="false"]', { timeout: 30000 }).catch(() => {});
     const s = await page.evaluate(() => {
@@ -98,7 +103,7 @@ async function scrollThrough(page) {
      */
     const size = await page.evaluate(() => {
       const card = document.querySelector("#book").getBoundingClientRect();
-      const how = [...document.querySelectorAll("h2")].find((e) => /Try Profixter on us/.test(e.textContent || ""));
+      const how = [...document.querySelectorAll("h2")].find((e) => /Your first 90 minutes are on us/.test(e.textContent || ""));
       return { h: Math.round(card.height), how: how ? Math.round(how.getBoundingClientRect().top + window.scrollY) : 99999 };
     });
     /*
@@ -106,7 +111,9 @@ async function scrollThrough(page) {
      * mobile, email and the consent line, so the request is one step with no
      * /signup. Those ~170px are the price of that step, by the owner's choice.
      */
-    check("booker opens compact (< 620px tall at 390px)", size.h < 620, `${size.h}px`);
+    check("booker opens compact (< 620px tall at 390px)", openedH < 620, `${openedH}px`);
+    /* The callback form: the 2026-10-23 allowance (620) plus the online/callback switch. */
+    check("the callback form stays compact (< 700px at 390px)", size.h < 700, `${size.h}px`);
     check("the free-visit section starts within about two screens of the top", size.how < 1700, `${size.how}px`);
     check("no signup link anywhere on Home", s.noSignupWall, "");
     await ctx.close();
@@ -115,7 +122,7 @@ async function scrollThrough(page) {
   /* ---------------- the 3D is gone, and not downloaded ---------------- */
   {
     const { ctx, page, heavy } = await openPage(browser, 390, 844);
-    await page.waitForSelector('[data-fv="note"]', { timeout: 30000 });
+    await page.waitForSelector("#book", { timeout: 30000 });
     await scrollThrough(page);
     const canvas = await page.evaluate(() => !!document.querySelector("canvas"));
     check("no 3D canvas anywhere on Home", canvas === false, `canvas=${canvas}`);
@@ -131,7 +138,7 @@ async function scrollThrough(page) {
       const t = document.body.innerText.replace(/’/g, "'");
       return {
         beats: {
-          how: t.includes("Try Profixter on us."),
+          how: t.includes("Your first 90 minutes are on us."),
           plans: t.includes("One membership. Every small job."),
           work: /real work/i.test(t),
           proof: t.includes("A local company, not a marketplace."),

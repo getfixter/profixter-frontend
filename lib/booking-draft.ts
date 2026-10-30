@@ -39,6 +39,17 @@ export type BookingDraft = {
   photoCount: number;
   /** Set when the visitor pressed the final CTA, so the booking can be created on return. */
   submitRequested: boolean;
+  /**
+   * How they chose to book on the homepage: "online" (account, address, booked
+   * by them) or "callback" (name and number, we call). Empty until chosen.
+   */
+  channel: "" | "online" | "callback";
+  /**
+   * One id per online submission, minted when they press Book and kept until
+   * it succeeds. The server returns the booking this id already made, so a
+   * refresh or retry mid-submit never books twice or reads as a refusal.
+   */
+  clientRequestId: string;
   updatedAt: number;
 };
 
@@ -49,6 +60,8 @@ export const EMPTY_DRAFT: BookingDraft = {
   requestedTime: "",
   photoCount: 0,
   submitRequested: false,
+  channel: "",
+  clientRequestId: "",
   updatedAt: 0,
 };
 

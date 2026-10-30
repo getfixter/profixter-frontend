@@ -609,3 +609,6 @@
     padding: 56px 0 16px;
   }
 }
+
+/* On a phone the two booking options say it already; the steps would only push them down. */
+@media (max-width: 639px) { .hm-steps { display: none; } }

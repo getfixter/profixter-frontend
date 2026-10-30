@@ -49,14 +49,17 @@ function normalizeStatus(status: string) {
   return String(status || "").trim().toLowerCase();
 }
 
+/* A free visit waiting for Profixter's approval is still the customer's to change or cancel. */
+const AWAITING = "pending confirmation";
+
 function canCancel(status: string) {
   const s = normalizeStatus(status);
-  return s === "pending" || s === "confirmed";
+  return s === "pending" || s === AWAITING || s === "confirmed";
 }
 
 function canAddDetails(status: string) {
   const s = normalizeStatus(status);
-  return s === "pending" || s === "confirmed";
+  return s === "pending" || s === AWAITING || s === "confirmed";
 }
 
 function hoursUntilVisit(booking: Booking) {
@@ -117,7 +120,7 @@ function hasActiveMembershipForBooking(me: MeResponse | null, booking: Booking) 
 
 function isActiveStatus(status: string) {
   const s = normalizeStatus(status);
-  return s === "pending" || s === "confirmed" || s === "in-progress";
+  return s === "pending" || s === AWAITING || s === "confirmed" || s === "in-progress";
 }
 
 function isCompletedStatus(status: string) {
@@ -133,6 +136,7 @@ function statusBadge(status: string) {
   const s = normalizeStatus(status);
   const map: Record<string, string> = {
     pending: "bg-amber-50 text-amber-700 border-amber-200",
+    [AWAITING]: "bg-amber-50 text-amber-700 border-amber-200",
     confirmed: "bg-[#EEF5FF] text-[#1D4ED8] border-[#C7D9FF]",
     "in-progress": "bg-[#F3F0FF] text-[#6D28D9] border-[#DDD6FE]",
     completed: "bg-[#F0FDF4] text-[#166534] border-[#BBF7D0]",
@@ -145,6 +149,7 @@ function statusBadge(status: string) {
 function statusLabel(status: string) {
   const s = normalizeStatus(status);
   if (s === "in-progress") return "In Progress";
+  if (s === AWAITING) return "Awaiting confirmation";
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 

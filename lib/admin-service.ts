@@ -180,6 +180,8 @@ export interface Booking {
   assignedFixterPosition?: EmployeePosition | "";
   /** Set on a homepage free-visit request; status "Pending Confirmation" until the owner confirms. */
   guestRequestId?: string | null;
+  /** "callback" (homepage request) or "online" (booked from an account); both wait for the owner's approval. */
+  freeVisitChannel?: "" | "callback" | "online";
   /** A possible repeat customer the server flagged for the owner to verify. */
   freeVisitReview?: { required?: boolean; reasons?: string[] } | null;
 }
@@ -2407,6 +2409,10 @@ export interface FreeVisitDetail {
     _id: string;
     bookingNumber: string;
     status: string;
+    /** "callback": call them, collect the address. "online": booked from their account, details complete. */
+    channel?: "callback" | "online" | "";
+    /** What the owner still has to collect before Confirm works: "name" | "phone" | "email" | "address". */
+    missing?: string[];
     date: string;
     requestedDate: string;
     requestedTime: string;

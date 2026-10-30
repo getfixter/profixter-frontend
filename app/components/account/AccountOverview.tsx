@@ -620,6 +620,9 @@ export default function AccountOverview({
                       })}
                     </p>
                     {address ? <p className="ui-small mt-0.5 break-words">{addressLine(address)}</p> : null}
+                    {/^pending confirmation$/i.test(String(upcoming.status || "")) ? (
+                      <p className="ui-small mt-1 font-semibold text-amber-700" data-acct="awaiting">Awaiting confirmation from Profixter</p>
+                    ) : null}
                   </div>
                   <Link href="/book#your-visits" className={buttonClass({ variant: "secondary", size: "sm" })}>
                     View or change
