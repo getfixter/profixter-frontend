@@ -413,6 +413,17 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
 
       let { status, data } = await requestCheckoutSession();
 
+      if (status === 409 && data?.code === "MEMBERSHIP_PAYMENT_RECOVERY_REQUIRED") {
+        // A failed renewal is fixed by paying it, never by a second membership.
+        window.location.href = "/account?tab=plan";
+        return;
+      }
+
+      if (status === 409 && data?.code === "CHECKOUT_ALREADY_OPENING") {
+        setActionError("Your secure checkout is already opening. Please wait a moment.");
+        return;
+      }
+
       if (status === 409 && data?.code === "ADDRESS_ALREADY_SUBSCRIBED") {
         setActionError(
           "This address already has an active membership. Refresh your account or contact support."

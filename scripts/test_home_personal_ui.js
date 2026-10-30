@@ -98,6 +98,18 @@ const text = (page) => page.locator("main").first().innerText().catch(() => "");
     await ctx.close();
   }
 
+  console.log("\n--- renewal failed (past due) ---");
+  {
+    const { ctx, page } = await open(browser, { who: "registered", subscriptions: [{ status: "past_due", subscriptionType: "basic" }] });
+    await page.goto(BASE + "/", { waitUntil: "networkidle" });
+    await page.waitForSelector("[data-home-promo]", { timeout: 10000 }).catch(() => {});
+    const promo = page.locator("[data-home-promo]");
+    const t = await promo.innerText().catch(() => "");
+    check("past due: sent to fix the payment, never to buy again", (await promo.getAttribute("data-home-promo")) === "attention" && /payment needs attention/i.test(t) && !/See Memberships|Explore Memberships|Restart/.test(t), t);
+    check("past due: the button goes to the plan tab", (await promo.locator('a[href="/account?tab=plan"]').count()) === 1);
+    await ctx.close();
+  }
+
   console.log("\n--- member ---");
   {
     const { ctx, page, seen, errors } = await open(browser, { who: "member" });
