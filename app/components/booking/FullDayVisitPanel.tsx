@@ -491,11 +491,11 @@ export default function FullDayVisitPanel() {
                   <textarea
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
-                    rows={5}
+                    rows={4}
                     placeholder={
                       "Mount TV in the den\nReplace two light fixtures\nFix the sticking back door\nPatch and paint the hallway"
                     }
-                    className="pg-input min-h-[120px] resize-y"
+                    className="pg-input pg-input--grow min-h-[96px] max-h-[240px] resize-y"
                   />
 
                   <div className="mt-4">

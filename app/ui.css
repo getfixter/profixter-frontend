@@ -180,7 +180,7 @@
   /* Section heading block: eyebrow + title + optional lede, then content. */
   .ui-head {
     max-width: 640px;
-    margin-bottom: clamp(24px, 3vw, 40px);
+    margin-bottom: clamp(14px, 2vw, 28px);
   }
   .ui-head--row {
     display: flex;
@@ -196,7 +196,7 @@
   /* ==================================================================== */
 
   .ui-eyebrow {
-    margin: 0 0 10px;
+    margin: 0 0 6px;
     font-size: var(--ui-fs-micro);
     font-weight: 600;
     line-height: 1.3;
@@ -414,7 +414,7 @@
     background: #fff;
     border: 1px solid var(--ui-line);
     border-radius: var(--ui-r-md);
-    padding: clamp(18px, 2vw, 24px);
+    padding: clamp(14px, 1.6vw, 20px);
   }
   .ui-card--raised {
     border-color: transparent;
@@ -551,11 +551,11 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    min-height: 56px;
-    padding: 14px 0;
+    min-height: 46px;
+    padding: 10px 0;
     list-style: none;
     cursor: pointer;
-    font-size: 15.5px;
+    font-size: 15px;
     font-weight: 500;
     line-height: 1.4;
     color: var(--ui-ink);
@@ -578,7 +578,7 @@
     transform: translateY(2px) rotate(-135deg);
   }
   .ui-faq__a {
-    padding: 0 32px 18px 0;
+    padding: 0 32px 12px 0;
     font-size: var(--ui-fs-body);
     line-height: var(--ui-lh-body);
     color: var(--ui-text-2);

@@ -16,13 +16,15 @@ import "./ui-shell.css";
 import "./mobile-scale.css";
 import "./desktop-scale.css";
 import "./pages.css";
+/* Last: the one site-wide scale factor and its readable floor (compact pass). */
+import "./site-scale.css";
 import { DEFAULT_OG_IMAGE, PROFIXTER_STRUCTURED_DATA, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { META_PIXEL_ID } from "@/lib/meta-config";
 import AttributionCapture from "./components/AttributionCapture";
 import PhoneClickTracker from "./components/PhoneClickTracker";
 import MetaPageView from "./components/MetaPageView";
 import SurfaceMarker from "./components/SurfaceMarker";
-import { SURFACE_SCRIPT } from "@/lib/surface";
+import { IOS_VIEWPORT_SCRIPT, SURFACE_SCRIPT } from "@/lib/surface";
 
 /*
  * The customer site's typeface (app/ui.css sets it on html[data-surface="site"]).
@@ -197,6 +199,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* Customer page or staff tool, decided before paint - see lib/surface.ts. */}
         <script dangerouslySetInnerHTML={{ __html: SURFACE_SCRIPT }} />
+        {/* iOS: no zoom-in on focused fields at the compact scale - see lib/surface.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: IOS_VIEWPORT_SCRIPT }} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Profixter" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

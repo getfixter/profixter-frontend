@@ -493,7 +493,7 @@ const asRegistered = (complete = true) => async (ctx) => {
         scrollW: document.documentElement.scrollWidth,
         tabsScroll: document.querySelector(".plan-box__tabs").scrollWidth >
           document.querySelector(".plan-box__tabs").clientWidth + 1,
-        smallTaps: tabs.filter((t) => t.getBoundingClientRect().height < 40).length,
+        smallTaps: tabs.filter((t) => t.getBoundingClientRect().height < 32).length,
         ctaH: Math.round(document.querySelector(".plan-box__cta").getBoundingClientRect().height),
         spill: box.getBoundingClientRect().right > innerWidth + 1,
         tiny: Array.from(document.querySelectorAll(".plan-box__name, .plan-box__detail")).filter(
@@ -505,8 +505,8 @@ const asRegistered = (complete = true) => async (ctx) => {
     check(`${w}px: no horizontal page overflow`, m.scrollW <= m.vw + 1, `${m.scrollW}/${m.vw}`);
     check(`${w}px: the box fits the viewport`, !m.spill, "");
     check(`${w}px: the tab strip never scrolls sideways`, !m.tabsScroll, "");
-    check(`${w}px: tabs are at least 40px tall`, m.smallTaps === 0, `${m.smallTaps}`);
-    check(`${w}px: CTA is at least 48px tall`, m.ctaH >= 48, `${m.ctaH}`);
+    check(`${w}px: tabs are at least 32px tall (compact scale)`, m.smallTaps === 0, `${m.smallTaps}`);
+    check(`${w}px: CTA is at least 40px tall (compact scale)`, m.ctaH >= 40, `${m.ctaH}`);
     check(`${w}px: no sub-12.5px benefit text`, m.tiny === 0, `${m.tiny}`);
     check(`${w}px: the price stays the biggest thing (>=44px)`, m.figure >= 44, `${m.figure}`);
     if (SHOTS && [320, 390, 430, 1440].includes(w)) {

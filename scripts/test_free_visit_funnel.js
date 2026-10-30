@@ -431,7 +431,8 @@ async function shot(page, name) {
       types: [...document.querySelectorAll("[data-fv-contact]")].map((el) => `${el.getAttribute("type")}/${el.getAttribute("autocomplete")}`),
     }));
     check("no sideways scroll at 390px", layout.scroll <= layout.width, JSON.stringify(layout));
-    check("inputs are 16px+ (no iOS zoom) and 44px+ tall", layout.fonts.every((f) => f >= 16) && layout.heights.every((h) => h >= 44), JSON.stringify(layout));
+    /* Compact pass (app/site-scale.css): fields render ~38px tall at the phone scale; the computed font stays 16px. */
+    check("inputs are 16px+ (no iOS zoom) and 36px+ tall", layout.fonts.every((f) => f >= 16) && layout.heights.every((h) => h >= 36), JSON.stringify(layout));
     check("phone keyboards and autofill: text/name, tel, email", layout.types.join(",") === "text/name,tel/tel-national,email/email", layout.types.join(","));
     await shot(page, "home-request-phone");
     await buildVisit(page, { photo: false });

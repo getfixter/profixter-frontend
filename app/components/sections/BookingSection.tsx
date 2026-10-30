@@ -1821,8 +1821,8 @@ if (next?.date) {
                 aria-invalid={Boolean(fieldErrors.note)}
                 aria-describedby={fieldErrors.note ? "booking-note-error" : undefined}
                 placeholder="Describe your task. If we need to bring any materials or special tools, please let us know."
-                rows={3}
-                className={`pg-input min-h-[96px] max-h-[200px] resize-y ${fieldErrors.note ? "!border-red-300" : ""}`}
+                rows={2}
+                className={`pg-input pg-input--grow min-h-[68px] max-h-[200px] resize-y ${fieldErrors.note ? "!border-red-300" : ""}`}
               />
               {fieldErrors.note ? (
                 <p id="booking-note-error" role="alert" className="mt-1 text-[13px] font-medium text-red-700">

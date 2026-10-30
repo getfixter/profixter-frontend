@@ -85,8 +85,8 @@
   :root[data-surface="site"] .space-y-10 > :not(:last-child) { margin-block-start: 0; margin-block-end: 28px; }
 
   /* Controls: tall buttons come down to a comfortable 46-48px. */
-  :root[data-surface="site"] :is(.h-14, .h-\[52px\], .h-16) { height: 48px; }
-  :root[data-surface="site"] :is(.min-h-\[52px\], .min-h-14, .min-h-\[56px\]) { min-height: 48px; }
+  :root[data-surface="site"] :is(.h-14, .h-\[52px\], .h-16) { height: 44px; }
+  :root[data-surface="site"] :is(.min-h-\[52px\], .min-h-14, .min-h-\[56px\]) { min-height: 44px; }
 
   /* ---------------------------------------------------------------- */
   /* Site chrome                                                        */
@@ -112,19 +112,19 @@
   /* ---------------------------------------------------------------- */
   /* Signup / login                                                     */
   /* ---------------------------------------------------------------- */
-  :root[data-surface="site"] .auth-question { font-size: 24px; line-height: 1.15; }
-  :root[data-surface="site"] .auth-input { height: 50px; font-size: 16px; }
-  :root[data-surface="site"] .auth-submit { min-height: 50px; font-size: 16px; }
+  :root[data-surface="site"] .auth-question { font-size: 22px; line-height: 1.15; }
+  :root[data-surface="site"] .auth-input { height: 46px; font-size: 16px; }
+  :root[data-surface="site"] .auth-submit { min-height: 46px; font-size: 16px; }
   :root[data-surface="site"] .auth-fields { gap: 10px; }
 
   /* ---------------------------------------------------------------- */
   /* Plans page                                                         */
   /* ---------------------------------------------------------------- */
   :root[data-surface="site"] .plan-box { padding: 14px; }
-  :root[data-surface="site"] .plan-box__figure { font-size: 44px; }
+  :root[data-surface="site"] .plan-box__figure { font-size: 36px; }
   :root[data-surface="site"] .plan-box__price { margin-top: 12px; }
   :root[data-surface="site"] .plan-box__stack { margin-top: 12px; }
-  :root[data-surface="site"] .plan-box__cta { min-height: 48px; margin-top: 14px; }
+  :root[data-surface="site"] .plan-box__cta { min-height: 44px; margin-top: 12px; }
   :root[data-surface="site"] .plan-after { margin-top: 18px; }
   :root[data-surface="site"] .plan-after__card { padding: 13px 14px; }
 
@@ -149,29 +149,29 @@
   /* Booker (fv-*) and plan picker (pk-*)                               */
   /* ---------------------------------------------------------------- */
   :root[data-surface="site"] .fv-card { border-radius: 20px; }
-  :root[data-surface="site"] .fv-step { padding: 16px 14px; }
+  :root[data-surface="site"] .fv-step { padding: 14px 12px; }
   :root[data-surface="site"] .fv-step-n { width: 22px; height: 22px; margin-bottom: 8px; font-size: 11px; }
-  :root[data-surface="site"] .fv-step-title { font-size: 18px; }
-  :root[data-surface="site"] .fv-input { padding: 12px 14px; border-radius: 12px; }
+  :root[data-surface="site"] .fv-step-title { font-size: 16px; }
+  :root[data-surface="site"] .fv-input { padding: 10px 12px; border-radius: 10px; }
   :root[data-surface="site"] .fv-chip { padding: 6px 11px; font-size: 13px; }
   :root[data-surface="site"] .fv-compact .fv-chip { min-height: 34px; }
-  :root[data-surface="site"] .fv-photo-btn { min-height: 44px; font-size: 14px; border-radius: 12px; }
-  :root[data-surface="site"] .fv-day { height: 40px; font-size: 14px; border-radius: 10px; }
-  :root[data-surface="site"] .fv-day--compact { height: 40px; }
-  :root[data-surface="site"] .fv-slot, :root[data-surface="site"] .fv-slot--compact { height: 44px; font-size: 14px; border-radius: 10px; }
-  :root[data-surface="site"] .fv-cta { min-height: 48px; font-size: 16px; border-radius: 13px; padding: 0 20px; }
-  :root[data-surface="site"] .fv-cta--compact { min-height: 48px; }
+  :root[data-surface="site"] .fv-photo-btn { min-height: 40px; font-size: 14px; border-radius: 10px; }
+  :root[data-surface="site"] .fv-day { height: 36px; font-size: 14px; border-radius: 8px; }
+  :root[data-surface="site"] .fv-day--compact { height: 36px; }
+  :root[data-surface="site"] .fv-slot, :root[data-surface="site"] .fv-slot--compact { height: 38px; font-size: 13.5px; border-radius: 8px; }
+  :root[data-surface="site"] .fv-cta { min-height: 46px; font-size: 16px; border-radius: 12px; padding: 0 18px; }
+  :root[data-surface="site"] .fv-cta--compact { min-height: 46px; }
   :root[data-surface="site"] .fv-compact { padding: 12px; border-radius: 18px; }
-  :root[data-surface="site"] .fv-field { min-height: 48px; border-radius: 12px; padding: 0 12px; gap: 9px; }
-  :root[data-surface="site"] .fv-field-icon { margin-top: 14px; }
-  :root[data-surface="site"] .fv-cinput { padding: 12px 0; min-height: 46px; font-size: 16px; }
+  :root[data-surface="site"] .fv-field { min-height: 44px; border-radius: 10px; padding: 0 12px; gap: 9px; }
+  :root[data-surface="site"] .fv-field-icon { margin-top: 13px; }
+  :root[data-surface="site"] .fv-cinput { padding: 11px 0; min-height: 42px; font-size: 16px; }
   :root[data-surface="site"] .fv-strip { margin-left: -12px; margin-right: -12px; padding-left: 12px; padding-right: 12px; scroll-padding-left: 12px; }
-  :root[data-surface="site"] .fv-mini-btn { min-height: 44px; font-size: 13.5px; border-radius: 11px; }
-  :root[data-surface="site"] .fv-daypill { width: 52px; height: 56px; border-radius: 12px; }
+  :root[data-surface="site"] .fv-mini-btn { min-height: 40px; font-size: 13.5px; border-radius: 10px; }
+  :root[data-surface="site"] .fv-daypill { width: 48px; height: 52px; border-radius: 10px; }
   :root[data-surface="site"] .fv-daypill-d { font-size: 16px; }
   :root[data-surface="site"] .fv-daypill-wd { font-size: 10.5px; }
   :root[data-surface="site"] .fv-daypill-mo { font-size: 10px; }
-  :root[data-surface="site"] .fv-sumrow { min-height: 46px; font-size: 14px; border-radius: 12px; }
+  :root[data-surface="site"] .fv-sumrow { min-height: 42px; font-size: 14px; border-radius: 10px; }
   :root[data-surface="site"] .fv-summary { padding: 12px 14px; border-radius: 14px; }
   :root[data-surface="site"] .fv-summary-row { font-size: 14px; }
   :root[data-surface="site"] .fv-panel { padding: 14px; border-radius: 14px; }

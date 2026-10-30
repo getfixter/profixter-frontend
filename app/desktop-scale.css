@@ -42,7 +42,6 @@
   :root[data-surface="site"] .sm\:pb-16 { padding-bottom: clamp(27px, 5vh, 45px); }
   :root[data-surface="site"] .sm\:py-16 { padding-bottom: clamp(27px, 5vh, 45px); }
   :root[data-surface="site"] .sm\:pb-20 { padding-bottom: clamp(34px, 6.22vh, 56px); }
-  :root[data-surface="site"] .sm\:py-20 { padding-bottom: clamp(34px, 6.22vh, 56px); }
   :root[data-surface="site"] .sm\:pb-24 { padding-bottom: clamp(40px, 7.44vh, 67px); }
   :root[data-surface="site"] .sm\:py-28 { padding-bottom: clamp(47px, 8.67vh, 78px); }
   :root[data-surface="site"] .sm\:py-32 { padding-bottom: clamp(54px, 10vh, 90px); }
