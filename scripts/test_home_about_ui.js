@@ -64,12 +64,10 @@ async function scrollThrough(page) {
    */
   {
     const { ctx, page } = await openPage(browser, 390, 844);
-    /* Free Visit 2.0: the booker asks how first (online or a callback); either opens the same form. */
-    await page.waitForSelector('[data-fv-channel="online"]', { timeout: 30000 });
-    check("free visit offers two ways to book", (await page.locator("[data-fv-channel]").count()) === 2, "");
-    const openedH = await page.evaluate(() => Math.round(document.querySelector("#book").getBoundingClientRect().height));
-    await page.click('[data-fv-channel="callback"]');
+    /* The callback form is open by default (2026-10-30), Book Manually beside it. */
     await page.waitForSelector('[data-fv="note"]', { timeout: 30000 });
+    check("free visit offers two ways to book, callback open", (await page.locator('[data-fv="switch"] [role="radio"]').count()) === 2 && (await page.locator("[data-fv-contact]").count()) === 3, "");
+    const openedH = await page.evaluate(() => Math.round(document.querySelector("#book").getBoundingClientRect().height));
     await page.waitForSelector('[data-booking-date-disabled="false"]', { timeout: 30000 }).catch(() => {});
     const s = await page.evaluate(() => {
       const t = document.body.innerText.replace(/’/g, "'");
@@ -111,8 +109,8 @@ async function scrollThrough(page) {
      * mobile, email and the consent line, so the request is one step with no
      * /signup. Those ~170px are the price of that step, by the owner's choice.
      */
-    check("booker opens compact (< 620px tall at 390px)", openedH < 620, `${openedH}px`);
-    /* The callback form: the 2026-10-23 allowance (620) plus the online/callback switch. */
+    /* It now opens as the callback form: the 2026-10-23 allowance (620) plus the switch. */
+    check("booker opens compact (< 700px tall at 390px)", openedH < 700, `${openedH}px`);
     check("the callback form stays compact (< 700px at 390px)", size.h < 700, `${size.h}px`);
     check("the free-visit section starts within about two screens of the top", size.how < 1700, `${size.how}px`);
     check("no signup link anywhere on Home", s.noSignupWall, "");

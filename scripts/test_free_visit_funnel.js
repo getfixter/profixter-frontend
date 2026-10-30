@@ -241,11 +241,11 @@ async function newContext(browser, { signedIn = false, ...opts } = {}) {
 const fbqLog = (page) => page.evaluate(() => JSON.parse(sessionStorage.getItem("__test_fbq") || "[]"));
 const dlLog = (page) => page.evaluate(() => JSON.parse(sessionStorage.getItem("__test_dl") || "[]"));
 
-/* Signed out, the booker first asks how: online or a callback. */
+/* Signed out, "Have Us Call You" is open by default; "Book Manually" is the other side of the switch. */
 async function chooseIfAsked(page, channel = "callback") {
-  const option = page.locator(`[data-fv-channel="${channel}"]`);
-  if (await option.count()) await option.click();
-  await page.waitForSelector('[data-fv="note"]', { timeout: 5000 }).catch(() => {});
+  await page.waitForSelector('[data-fv="note"]', { timeout: 8000 }).catch(() => {});
+  const option = page.locator(`[data-fv-switch="${channel}"]`);
+  if ((await option.count()) && (await option.getAttribute("aria-checked")) !== "true") await option.click();
 }
 
 async function buildVisit(page, { photo = true, channel = "callback" } = {}) {
@@ -332,8 +332,13 @@ async function shot(page, name) {
     const urls = [];
     page.on("framenavigated", (f) => { if (f === page.mainFrame()) urls.push(f.url()); });
     await page.goto(BASE + "/?utm_source=fb&utm_medium=paid&utm_campaign=120200&fbclid=IwAR_test", { waitUntil: "networkidle" });
-    check("home offers two ways to book, and no form before choosing",
-      (await page.locator('[data-fv-channel="online"]').count()) === 1 && (await page.locator('[data-fv-channel="callback"]').count()) === 1 && (await page.locator('[data-fv="note"]').count()) === 0);
+    await page.waitForSelector('[data-fv="switch"]', { timeout: 10000 }).catch(() => {});
+    const sw = page.locator('[data-fv="switch"] [role="radio"]');
+    check("callback is first and open by default; Book Manually beside it",
+      (await sw.count()) === 2 &&
+        (await sw.nth(0).getAttribute("data-fv-switch")) === "callback" && (await sw.nth(0).getAttribute("aria-checked")) === "true" &&
+        (await sw.nth(0).innerText()).trim() === "Have Us Call You" && (await sw.nth(1).innerText()).trim() === "Book Manually" &&
+        (await page.locator("[data-fv-contact]").count()) === 3 && (await page.locator('[data-fv="note"]').count()) === 1);
     check("home names the offer", /Your first 90 minutes are on us\./.test(await page.locator("#hm-try").innerText().catch(() => "")));
     await chooseIfAsked(page, "callback");
     check("home shows the booker to a new visitor", await page.locator('[data-fv="note"]').isVisible());

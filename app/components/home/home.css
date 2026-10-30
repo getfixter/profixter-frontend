@@ -549,8 +549,8 @@
 .hm-shortcuts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 24px 0 0;
+  gap: 8px;
+  margin: 16px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -558,9 +558,9 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 18px;
+  gap: 8px;
   height: 100%;
-  min-height: 96px;
+  min-height: 74px;
   padding: 16px;
   border: 1px solid var(--ui-line);
   border-radius: var(--ui-r-md);
@@ -597,10 +597,10 @@
   .hm-shortcuts {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
-    margin-top: 32px;
+    margin-top: 22px;
   }
   .hm-shortcut {
-    min-height: 128px;
+    min-height: 100px;
     padding: 20px;
   }
 }
@@ -612,3 +612,138 @@
 
 /* On a phone the two booking options say it already; the steps would only push them down. */
 @media (max-width: 639px) { .hm-steps { display: none; } }
+
+/* ------------------------- signed-in homepage ------------------------ */
+/* Membership invitation for registered non-members (HomePersonal.tsx). */
+.hm-promo-wrap {
+  padding: calc(var(--ui-section) * 0.6) 0 0;
+}
+.hm-promo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  padding: 12px 14px;
+  border: 1px solid #dbe5f8;
+  border-radius: var(--ui-r-md);
+  background: linear-gradient(135deg, #f2f7ff 0%, #ffffff 70%);
+}
+.hm-promo__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--ui-ink);
+}
+.hm-promo__text {
+  margin: 2px 0 0;
+  font-size: var(--ui-fs-small);
+  color: var(--ui-text-2);
+}
+.hm-promo__cta {
+  flex: none;
+}
+@media (max-width: 479px) {
+  .hm-promo__cta {
+    width: 100%;
+  }
+}
+
+/* "More from Profixter": a short row of compact cards. */
+.hm-extras__title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+.hm-extras {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-extras > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+@media (min-width: 768px) {
+  .hm-extras {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .hm-extras > :last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
+.hm-extra__link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "icon title"
+    "text text"
+    "cta cta";
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+  height: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-r-md);
+  background: #fff;
+  color: var(--ui-text);
+  text-decoration: none;
+  transition: border-color var(--ui-dur-2) var(--ui-ease), box-shadow var(--ui-dur-2) var(--ui-ease), transform var(--ui-dur-2) var(--ui-ease);
+}
+.hm-extra__link:hover {
+  border-color: var(--ui-line-2);
+  box-shadow: var(--ui-shadow-2);
+  transform: translateY(-1px);
+}
+.hm-extra__icon {
+  grid-area: icon;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-ink);
+}
+.hm-extra__title {
+  grid-area: title;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ui-ink);
+}
+.hm-extra__text {
+  grid-area: text;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ui-text-2);
+}
+.hm-extra__cta {
+  grid-area: cta;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ui-accent-ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hm-extra__link { transition: none; }
+  .hm-extra__link:hover { transform: none; }
+}
+
+/*
+ * A saved session on the homepage: the personalised part waits, invisible but
+ * holding its space, until the account and membership are known, so nobody
+ * sees the wrong version first. Set before paint by lib/surface.ts
+ * (AUTH_PENDING_SCRIPT), cleared by HomePageClient, and by the script itself
+ * after 2.5s whatever happens.
+ */
+html[data-auth-pending="1"] .hm-gate {
+  visibility: hidden;
+}

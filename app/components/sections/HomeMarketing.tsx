@@ -5,10 +5,8 @@ import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/analytics";
 import Reveal from "@/app/components/ui/Reveal";
 import GoogleRatingCompact from "@/app/components/home/GoogleRatingCompact";
-import MembershipMap from "@/app/components/home/MembershipMap";
 import WorkStrip from "@/app/components/home/WorkStrip";
-import GiftCallout from "@/app/components/gift/GiftCallout";
-import { BOOKING_LINKS } from "@/lib/site-architecture";
+import { HomeExtras } from "@/app/components/home/HomePersonal";
 
 /**
  * THE HOMEPAGE FOR A MEMBER (Website 3.0).
@@ -20,11 +18,12 @@ import { BOOKING_LINKS } from "@/lib/site-architecture";
  * member is the best person to buy), real work, where members are, and the
  * rating.
  */
+/* A member's homepage leads with what they pay for: booking, their visits, their plan, their rewards. */
 const SHORTCUTS = [
   { label: "Book a visit", body: "Your next 90-minute visit.", href: "/book?visit=membership", event: "home_book_visit" },
-  { label: "Full Day", body: "One Fixter, your whole list.", href: BOOKING_LINKS.fullDay.href, event: "home_full_day" },
-  { label: "Projects", body: "Larger work and estimates.", href: "/projects", event: "home_projects" },
-  { label: "Account", body: "Visits, plan and billing.", href: "/account", event: "home_account" },
+  { label: "Upcoming visits", body: "See or change what's booked.", href: "/book#your-visits", event: "home_upcoming" },
+  { label: "Manage membership", body: "Plan, billing and homes.", href: "/account?tab=plan", event: "home_manage_plan" },
+  { label: "Loyalty rewards", body: "Your progress and rewards.", href: "/membership/loyalty", event: "home_loyalty" },
 ];
 
 export default function HomeMarketing() {
@@ -60,13 +59,7 @@ export default function HomeMarketing() {
         </div>
       </section>
 
-      <section className="ui-section ui-section--tight" aria-label="Give a membership">
-        <div className="ui-container">
-          <Reveal>
-            <GiftCallout variant="card" audience="member" />
-          </Reveal>
-        </div>
-      </section>
+      <HomeExtras />
 
       <section className="ui-section ui-section--tight" aria-labelledby="hm-work">
         <div className="ui-container">
@@ -87,12 +80,7 @@ export default function HomeMarketing() {
         </div>
       </section>
 
-      {/*
-        Self-contained, and deliberately silent about numbers: each pin is a
-        home, there is no total anywhere in it, and it renders nothing at all
-        when there is nothing to show.
-      */}
-      <MembershipMap />
+      {/* The public membership map was retired (2026-10-30); Admin keeps its own. */}
 
       <section className="ui-section ui-section--soft" aria-labelledby="hm-trust">
         <div className="ui-container hm-trust">

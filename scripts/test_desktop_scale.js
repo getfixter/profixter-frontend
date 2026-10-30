@@ -125,8 +125,7 @@ const probe = (page, cls) => page.evaluate((c) => {
 
   for (const [w, h] of [[1024, 768], [1366, 657], [1920, 969]]) {
     const { ctx, page } = await open(browser, w, h, "/");
-    /* The job suggestions appear once a way to book is chosen (Free Visit 2.0). */
-    await page.click('[data-fv-channel="online"]').catch(() => {});
+    /* The callback form is open by default, so the job suggestions are on screen. */
     await page.waitForSelector("[aria-label='Common jobs']", { timeout: 5000 }).catch(() => {});
     const out = await page.evaluate(() => {
       const strip = document.querySelector("[aria-label='Common jobs']");

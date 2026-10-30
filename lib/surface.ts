@@ -30,3 +30,12 @@ export const SURFACE_SCRIPT = `(function(){try{var p=location.pathname;var s=${J
  * everywhere - Android Chrome would honour it, hence the iOS check.
  */
 export const IOS_VIEWPORT_SCRIPT = `(function(){try{var ua=navigator.userAgent;var ios=/iP(hone|ad|od)/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);if(!ios)return;var fix=function(){var m=document.querySelector('meta[name="viewport"]');if(m&&m.content.indexOf("maximum-scale")<0)m.content+=", maximum-scale=1";};fix();document.addEventListener("DOMContentLoaded",fix);}catch(e){}})();`;
+
+/**
+ * The homepage with a saved session: hide its personalised part until the
+ * account is known (app/components/home/home.css, .hm-gate), so a member does
+ * not see the visitor page first. HomePageClient clears the flag the moment
+ * the account loads; the timeout clears it regardless, so a failed script can
+ * never leave the page hidden.
+ */
+export const AUTH_PENDING_SCRIPT = `(function(){try{if(location.pathname!=="/")return;if(!localStorage.getItem("token"))return;var d=document.documentElement;d.dataset.authPending="1";setTimeout(function(){delete d.dataset.authPending;},2500);}catch(e){}})();`;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getAutomaticEntryPath, getRoleLandingKind } from "@/lib/auth-routing";
 import { useAuth } from "@/lib/useAuth";
@@ -14,6 +14,16 @@ function EntryLoading({ label }: { label: string }) {
       </div>
     </main>
   );
+}
+
+/* Hydration uses the server answer (no token), then the browser's, with no mismatch. */
+const noSubscription = () => () => {};
+function readStoredToken() {
+  try {
+    return !!window.localStorage.getItem("token");
+  } catch {
+    return false;
+  }
 }
 
 export default function RoleEntryGate({
@@ -52,8 +62,14 @@ export default function RoleEntryGate({
   // nothing to resolve and nothing to redirect to. Render immediately rather
   // than showing a spinner in front of the page - cold traffic should see
   // content on first paint.
-  const hasStoredToken =
-    typeof window !== "undefined" && !!window.localStorage.getItem("token");
+  /*
+   * Not read during the first render: the server cannot see localStorage,
+   * so deciding it in the first render made the client's first frame differ
+   * from the server HTML (React hydration error #418 for every signed-in
+   * visitor). The frame before this runs is covered on the homepage by
+   * AUTH_PENDING_SCRIPT (lib/surface.ts), which hides the personalised part.
+   */
+  const hasStoredToken = useSyncExternalStore(noSubscription, readStoredToken, () => false);
 
   if (isLoading && hasStoredToken) return <EntryLoading label={loadingLabel} />;
   if (target) return <EntryLoading label={redirectLabel} />;
