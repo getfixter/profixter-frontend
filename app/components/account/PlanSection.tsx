@@ -9,6 +9,8 @@ import {
   reactivateSubscription,
   getMySubscriptions,
   createBillingPortalSession,
+  openPaymentRecovery,
+  needsPaymentRecovery,
   requestSubscriptionRetentionOffer,
   acceptSubscriptionRetentionOffer,
   getSubscriptionActionErrorMessage,
@@ -449,15 +451,27 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
     [subscriptions]
   );
 
+  /*
+   * A failed renewal is NOT an ended membership. Stripe keeps retrying a
+   * past-due or unpaid subscription, and paying it brings the membership
+   * straight back. Telling these customers their membership "ended" and to
+   * "start a new Membership" is how one bought a second membership for the
+   * same home (2026-10-30). Only a membership that is actually over says so.
+   */
+  const recoveringSubscriptions = useMemo(
+    () => subscriptions.filter((subscription) => needsPaymentRecovery(subscription)),
+    [subscriptions]
+  );
+
   const paymentEndedSubscriptions = useMemo(
     () =>
-      subscriptions.filter(
-        (subscription) =>
-          subscription.cancellationReason === "payment_failed" ||
-          ["past_due", "unpaid", "incomplete_expired"].includes(
-            String(subscription.status || "").toLowerCase()
-          )
-      ),
+      subscriptions.filter((subscription) => {
+        const status = String(subscription.status || "").toLowerCase();
+        return (
+          (status === "canceled" && subscription.cancellationReason === "payment_failed") ||
+          status === "incomplete_expired"
+        );
+      }),
     [subscriptions]
   );
 
@@ -665,6 +679,20 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
     );
   };
 
+  const [recoveryLoadingId, setRecoveryLoadingId] = useState<string | null>(null);
+  const handlePayNow = async (subscription: ManagedSubscription) => {
+    if (!subscription.addressId) return;
+    setRecoveryLoadingId(subscription._id);
+    setError("");
+    try {
+      const { url } = await openPaymentRecovery({ addressId: String(subscription.addressId) });
+      window.location.href = url;
+    } catch (err: unknown) {
+      setError(getSubscriptionActionErrorMessage(err));
+      setRecoveryLoadingId(null);
+    }
+  };
+
   const handleManageBilling = async (subscription: ManagedSubscription) => {
     setBillingPortalLoadingId(subscription._id);
     setError("");
@@ -780,7 +808,45 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           </div>
         ) : null}
 
-        {!loading && paymentEndedSubscriptions.length ? (
+        {!loading
+          ? recoveringSubscriptions.map((subscription) => (
+              <div
+                key={subscription._id}
+                data-plan-attention={subscription.status || ""}
+                className="mb-4 max-w-[620px] rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-4"
+              >
+                <h3 className="text-base font-semibold text-[#92400E] sm:text-lg">Your membership payment needs attention</h3>
+                <p className="mt-1 text-sm text-[#92400E]">
+                  We could not process the {formatPlanName(subscription.subscriptionType || "")} renewal
+                  {formatAddress(subscription) ? ` for ${formatAddress(subscription)}` : ""}. Your membership has not
+                  ended, but booking new visits is paused until the payment goes through. We will try your card again
+                  automatically, or you can pay now. There is no need to buy a new membership.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    data-plan-pay-now
+                    onClick={() => handlePayNow(subscription)}
+                    disabled={recoveryLoadingId === subscription._id}
+                    className="min-h-[40px] rounded-[10px] bg-[color:var(--ui-ink)] px-4 text-sm font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)] disabled:opacity-60"
+                  >
+                    {recoveryLoadingId === subscription._id ? "Opening..." : "Pay now"}
+                  </button>
+                  <button
+                    type="button"
+                    data-plan-update-card
+                    onClick={() => handleManageBilling(subscription)}
+                    disabled={billingPortalLoadingId === subscription._id}
+                    className="min-h-[40px] rounded-[10px] border border-[color:var(--ui-line)] bg-white px-4 text-sm font-semibold text-[color:var(--ui-ink)] transition hover:bg-[color:var(--ui-surface-2,#f6f8fc)] disabled:opacity-60"
+                  >
+                    {billingPortalLoadingId === subscription._id ? "Opening..." : "Update card"}
+                  </button>
+                </div>
+              </div>
+            ))
+          : null}
+
+        {!loading && paymentEndedSubscriptions.length && !recoveringSubscriptions.length ? (
           <div className="mb-4 rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-sm font-semibold text-[#92400E]">
             Your Membership ended because payment could not be processed. Please start a new Membership to continue booking.
           </div>
@@ -810,7 +876,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
               Book a visit
             </Link>
           </Card>
-        ) : !activeSubscriptions.length && !hasActiveGift ? (
+        ) : !activeSubscriptions.length && !hasActiveGift && recoveringSubscriptions.length ? null : !activeSubscriptions.length && !hasActiveGift ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card className="max-w-[620px]">
               <div className="mb-4 flex items-start justify-between gap-4">

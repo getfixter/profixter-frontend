@@ -5,7 +5,8 @@
  *
  *  - MemberPromo: a registered customer without an active membership gets one
  *    compact invitation to explore memberships; a former member gets the
- *    renewal wording instead. Never shown to a member. No offers or prices are
+ *    renewal wording instead; a member whose renewal failed is sent to fix the
+ *    payment, never to buy again. Never shown to a member. No offers or prices are
  *    invented here - it only points at the plans page.
  *  - HomeExtras: a short row of other things Profixter does, for signed-in
  *    customers. Links only, to pages that already exist.
@@ -21,10 +22,15 @@ import { trackEvent } from "@/lib/analytics";
 import { BOOKING_LINKS } from "@/lib/site-architecture";
 import Reveal from "@/app/components/ui/Reveal";
 
-const ENDED = ["canceled", "cancelled", "expired", "past_due", "unpaid", "incomplete_expired"];
+const ENDED = ["canceled", "cancelled", "expired", "incomplete_expired"];
+/* Stripe is still retrying the renewal: the membership has not ended. */
+const PAYMENT_ATTENTION = ["past_due", "unpaid"];
 
-/** "member" never reaches here; "lapsed" had a membership that ended; "none" never had one. */
-type Standing = "none" | "lapsed";
+/**
+ * "member" never reaches here; "attention" has a renewal that failed and is
+ * still being retried; "lapsed" had a membership that ended; "none" never had one.
+ */
+type Standing = "none" | "lapsed" | "attention";
 
 function useStanding(enabled: boolean): Standing | null {
   const [standing, setStanding] = useState<Standing | null>(null);
@@ -34,8 +40,9 @@ function useStanding(enabled: boolean): Standing | null {
     getMySubscriptions()
       .then((data) => {
         if (cancelled) return;
-        const ended = (data?.subscriptions || []).some((s) => ENDED.includes(String(s.status || "").toLowerCase()));
-        setStanding(ended ? "lapsed" : "none");
+        const statuses = (data?.subscriptions || []).map((s) => String(s.status || "").toLowerCase());
+        if (statuses.some((status) => PAYMENT_ATTENTION.includes(status))) setStanding("attention");
+        else setStanding(statuses.some((status) => ENDED.includes(status)) ? "lapsed" : "none");
       })
       .catch(() => {
         // Unknown history reads as never-a-member: the first-timer wording is still true enough.
@@ -52,24 +59,33 @@ export function MemberPromo() {
   const standing = useStanding(true);
   if (!standing) return null;
   const lapsed = standing === "lapsed";
+  const copy =
+    standing === "attention"
+      ? {
+          title: "Your membership payment needs attention.",
+          text: "Update your payment to start booking visits again. No need to buy a new membership.",
+          cta: "Update Payment",
+          href: "/account?tab=plan",
+        }
+      : lapsed
+        ? { title: "Welcome back. Your handyman is ready.", text: "Restart a monthly handyman membership any time.", cta: "See Memberships", href: "/membership/plans" }
+        : { title: "Your home deserves a dedicated handyman.", text: "Explore our monthly handyman memberships.", cta: "Explore Memberships", href: "/membership/plans" };
   return (
     <section className="hm-promo-wrap" aria-labelledby="hm-promo">
       <div className="ui-container">
         <div className="hm-promo ui-rise" data-home-promo={standing}>
           <div className="min-w-0">
             <h2 id="hm-promo" className="hm-promo__title">
-              {lapsed ? "Welcome back. Your handyman is ready." : "Your home deserves a dedicated handyman."}
+              {copy.title}
             </h2>
-            <p className="hm-promo__text">
-              {lapsed ? "Restart a monthly handyman membership any time." : "Explore our monthly handyman memberships."}
-            </p>
+            <p className="hm-promo__text">{copy.text}</p>
           </div>
           <Link
-            href="/membership/plans"
+            href={copy.href}
             className="ui-btn ui-btn--primary hm-promo__cta"
             onClick={() => trackEvent("home_member_promo", { standing })}
           >
-            {lapsed ? "See Memberships" : "Explore Memberships"}
+            {copy.cta}
           </Link>
         </div>
       </div>

@@ -68,6 +68,7 @@ import {
   getLoyaltyStatus,
   getMySubscriptions,
   getSubscriptionActionErrorMessage,
+  needsPaymentRecovery,
   type LoyaltyStatus,
   type ManagedSubscription,
 } from "@/lib/subscription-service";
@@ -288,13 +289,18 @@ export default function AccountOverview({
   const plan = planKey ? PLAN_DETAILS.find((p) => p.id === planKey) || null : null;
   const viaGift = covered && !isLive(subscription);
 
+  /*
+   * A failed renewal Stripe is still retrying: the membership has not ended,
+   * and the way back is to pay, not to buy again (2026-10-30).
+   */
+  const paymentAttention = !covered && subscriptions.some((s) => needsPaymentRecovery(s));
+
   /* A former member: they had one, and it is over. */
   const lapsed =
     !covered &&
+    !paymentAttention &&
     subscriptions.some((s) =>
-      ["canceled", "cancelled", "expired", "past_due", "unpaid"].includes(
-        String(s.status || "").toLowerCase()
-      )
+      ["canceled", "cancelled", "expired"].includes(String(s.status || "").toLowerCase())
     );
 
   const upcoming = next?.future || null;
@@ -551,6 +557,23 @@ export default function AccountOverview({
                 <Link href={BOOKING_LINKS.freeVisit.href} className={buttonClass({ variant: "accent" })}>
                   Book your free visit
                 </Link>
+              </section>
+            ) : null}
+
+            {paymentAttention ? (
+              <section className="acct-card" aria-labelledby="acct-attention" data-acct-state="payment-attention">
+                <h2 id="acct-attention" className="acct-card__title">
+                  Your membership payment needs attention
+                </h2>
+                <p className="acct-card__text">
+                  We could not process your renewal. Your membership has not ended, but booking new visits is paused
+                  until the payment goes through. There is no need to buy a new membership.
+                </p>
+                <div className="acct-card__actions">
+                  <Link href="/account?tab=plan" className={buttonClass({ variant: "primary" })}>
+                    Update payment
+                  </Link>
+                </div>
               </section>
             ) : null}
 

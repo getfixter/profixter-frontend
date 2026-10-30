@@ -290,6 +290,26 @@ export async function reactivateSubscription(params: {
   return response.data;
 }
 
+/** Statuses where Stripe is still retrying a failed renewal: the fix is to pay, never to buy again. */
+export const PAYMENT_RECOVERY_STATUSES = ["past_due", "unpaid"];
+
+export function needsPaymentRecovery(subscription?: { status?: string | null } | null) {
+  return PAYMENT_RECOVERY_STATUSES.includes(String(subscription?.status || "").toLowerCase());
+}
+
+/**
+ * Where to fix a failed membership payment: Stripe's page for the unpaid
+ * renewal ("invoice"), or the billing portal when there is no open invoice.
+ */
+export async function openPaymentRecovery(params: {
+  addressId: string;
+}): Promise<{ kind: "invoice" | "portal"; url: string }> {
+  const response = await API.post<{ kind: "invoice" | "portal"; url: string }>(
+    `/api/subscriptions/manage/address/${params.addressId}/payment-recovery`
+  );
+  return response.data;
+}
+
 export async function createBillingPortalSession(params?: {
   addressId?: string;
 }): Promise<{ url: string }> {
