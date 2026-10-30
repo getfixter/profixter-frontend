@@ -23,6 +23,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
+import { HomeExtras, MemberPromo } from "./HomePersonal";
 import FreeVisitBooker from "@/app/components/booking/FreeVisitBooker";
 import GoogleRatingCompact from "@/app/components/home/GoogleRatingCompact";
 import WorkStrip from "@/app/components/home/WorkStrip";
@@ -66,7 +67,7 @@ function Arrow() {
   );
 }
 
-export default function HomeLanding() {
+export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }) {
   useEffect(() => {
     trackEvent("landing_viewed", { variant: "membership_first" });
   }, []);
@@ -191,6 +192,10 @@ export default function HomeLanding() {
           </div>
         </div>
       </section>
+
+      {/* Signed in without a membership: one compact invitation, then the other services. */}
+      {signedIn ? <MemberPromo /> : null}
+      {signedIn ? <HomeExtras /> : null}
 
       {/* ============================== MEMBERSHIP ============================ */}
       <section className="ui-section hm-member" aria-labelledby="hm-plans">

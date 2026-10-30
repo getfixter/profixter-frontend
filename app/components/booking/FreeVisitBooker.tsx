@@ -18,16 +18,17 @@
  * This component only renders what the server answers.
  *
  * TWO WAYS TO BOOK (`guest`: the homepage and /book/free). A signed-out visitor
- * first chooses, and only the chosen form is shown; the job, day and time are
- * shared, so switching never loses them.
+ * sees "Have Us Call You" open straight away (the owner's choice, 2026-10-30),
+ * with "Book Manually" beside it; only the chosen form is shown, and the job,
+ * day and time are shared, so switching never loses them.
  *
- *  - "Book my free visit" (online): the draft waits in lib/booking-draft while
+ *  - "Book Manually" (online): the draft waits in lib/booking-draft while
  *    they sign up or sign in on /signup, which returns to /book/free. There the
  *    home is added (or picked) and missing contact details collected in place,
  *    then the booking is created from the draft with the time they chose. The
  *    server holds the slot and the visit waits in "Pending Confirmation" for
  *    the owner; this screen says so and never calls it confirmed.
- *  - "Have us call you" (callback): name, mobile and email under the day and
+ *  - "Have Us Call You" (callback, the default): name, mobile and email under the day and
  *    time, one press, POST /api/free-visit-requests. No account, no address.
  *    That reserves the slot as a pending request for the owner to call and
  *    confirm, and only once it is saved does the Meta Lead fire, in the browser
@@ -529,10 +530,12 @@ export default function FreeVisitBooker({
   const selectedSlotOpen = !!selectedTime && slotOptions.some((s) => s.time === selectedTime && s.available);
 
   /* --- readiness -------------------------------------------------- */
-  /* Signed out where guests are welcome: they choose online or a callback first. */
+  /* Signed out where guests are welcome: the callback, or the manual booking beside it. */
   const choosing = guest && !isLoading && access === "anonymous";
+  /* Nothing chosen yet means the callback: it is the form that opens by default. */
+  const activeChannel: Exclude<Channel, ""> = channel || "callback";
   /* The callback request: name and number, no /signup. */
-  const guestMode = choosing && channel === "callback";
+  const guestMode = choosing && activeChannel === "callback";
   /* Back from signup with more than one home: which one, before it books. */
   const needsHomePick = autoResume && homes.length > 1 && !addressPicked;
   const noteOk = wordCount(note) >= 3;
@@ -1020,16 +1023,7 @@ export default function FreeVisitBooker({
     trackEvent("free_visit_channel_selected", { channel: next });
   };
 
-  /* Signed out: the choice comes first, and nothing else until it is made. */
-  if (choosing && !channel) {
-    return (
-      <div id={id} className={`fv-card scroll-mt-24 ${compact ? "fv-compact" : ""}`} data-fv="chooser">
-        <ChannelChooser onChoose={chooseChannel} />
-      </div>
-    );
-  }
-
-  const switcher = choosing ? <ChannelSwitch value={channel} onChange={chooseChannel} /> : null;
+  const switcher = choosing ? <ChannelSwitch value={activeChannel} onChange={chooseChannel} /> : null;
   const homePicker =
     isAuthenticated && homes.length > 1 && access !== "member" ? (
       <HomePicker
@@ -1566,32 +1560,14 @@ export default function FreeVisitBooker({
   );
 }
 
-/* The first thing a signed-out visitor sees: two ways to the same free visit. */
-function ChannelChooser({ onChoose }: { onChoose: (channel: "online" | "callback") => void }) {
-  return (
-    <div className="fv-choose" role="group" aria-label="How would you like to book?">
-      <button type="button" className="fv-option fv-option--primary" onClick={() => onChoose("online")} data-fv-channel="online">
-        <span className="fv-option__title">Book My Free Visit</span>
-        <span className="fv-option__body">Book online in minutes. No phone call needed.</span>
-        <span className="fv-option__go" aria-hidden="true">→</span>
-      </button>
-      <button type="button" className="fv-option" onClick={() => onChoose("callback")} data-fv-channel="callback">
-        <span className="fv-option__title">Have Us Call You</span>
-        <span className="fv-option__body">Choose a time, leave your number, and we&rsquo;ll handle the rest.</span>
-        <span className="fv-option__go" aria-hidden="true">→</span>
-      </button>
-    </div>
-  );
-}
-
-/* Once chosen: a quiet switch, so changing your mind keeps the job, day and time. */
+/* Two ways to the same free visit: the callback first and open, the manual booking beside it. */
 function ChannelSwitch({ value, onChange }: { value: Channel; onChange: (channel: "online" | "callback") => void }) {
   return (
     <div className="fv-switch" role="radiogroup" aria-label="How would you like to book?" data-fv="switch">
       {(
         [
-          ["online", "Book online"],
-          ["callback", "Have us call"],
+          ["callback", "Have Us Call You"],
+          ["online", "Book Manually"],
         ] as const
       ).map(([key, label]) => (
         <button

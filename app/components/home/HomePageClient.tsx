@@ -5,6 +5,7 @@ import Footer from "@/app/components/sections/Footer";
 import HomeMarketing from "@/app/components/sections/HomeMarketing";
 import HomeLanding from "@/app/components/home/HomeLanding";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
+import { useEffect } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { hasActiveMembership } from "@/lib/auth-routing";
 import "./home.css";
@@ -27,8 +28,13 @@ import "./home.css";
  * as before.
  */
 export default function HomePageClient() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const isMember = isAuthenticated && hasActiveMembership(user);
+
+  /* The account is known: show the right homepage (see AUTH_PENDING_SCRIPT). */
+  useEffect(() => {
+    if (!isLoading) delete document.documentElement.dataset.authPending;
+  }, [isLoading]);
 
   return (
     <RoleEntryGate>
@@ -36,7 +42,9 @@ export default function HomePageClient() {
         <div className="sticky top-0 z-50">
           <Header />
         </div>
-        {isMember ? <HomeMarketing /> : <HomeLanding />}
+        <div className="hm-gate">
+          {isMember ? <HomeMarketing /> : <HomeLanding signedIn={isAuthenticated && !isLoading} />}
+        </div>
         {/* Above the 3D layer, like every other piece of real page content. */}
         <div className="relative z-20">
           <Footer />
