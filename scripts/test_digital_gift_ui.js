@@ -497,14 +497,17 @@ check("the homepage offers it to members and visitors alike", () => {
   has(landing, "Buying for someone else?");
 });
 
-check("the callout speaks to real occasions, not just realtors", () => {
-  for (const audience of ["New homeowners", "Birthdays", "Thank-yous", "Family and friends", "Clients"]) {
-    has(callout, audience, `${audience} should be named`);
-  }
+/*
+ * Compact pass (2026-10-29): every gift banner is a short headline, one
+ * sentence and one button - the owner's brief. The occasion pills and the
+ * longer description went; the gift page itself still carries them.
+ */
+check("the callout is a compact banner, for anyone, with its condition", () => {
   assert.ok(!/realtor/i.test(callout), "the product is not realtor-specific");
   has(callout, "Give ProFixter to", "the member headline");
   has(callout, "Give the Gift of", "the public headline");
-  has(callout, "Add a personal message", "and the approved description");
+  has(callout, "One payment, nothing renews.", "the one sentence keeps the pricing condition");
+  has(callout, 'const CTA = "Give a Membership";', "one call to action");
 });
 
 check("the public callout costs the homepage no API call", () => {

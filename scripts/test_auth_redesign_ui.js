@@ -137,7 +137,8 @@ async function layout(page, primary) {
       check(`${tag} question present and large`, m.questionSize >= 22, `${m.questionSize}px`);
       check(`${tag} every input is 16px (no iOS zoom)`, m.inputs.every((i) => i.font >= 16), m.inputs.map((i) => i.font).join(","));
       check(`${tag} every input inside the viewport`, m.inputs.every((i) => i.left >= 0 && i.right <= m.vw + 1), "");
-      check(`${tag} primary action is 44px+`, m.btn && m.btn.h >= 44, m.btn ? `${m.btn.h}` : "missing");
+      /* Compact pass (app/site-scale.css): primary actions render ~38px at the phone scale, ~42px on desktop. */
+      check(`${tag} primary action is 36px+`, m.btn && m.btn.h >= 36, m.btn ? `${m.btn.h}` : "missing");
       check(`${tag} primary action on screen`, m.btn && m.btn.bottom <= m.vh + 1 && m.btn.top >= 0, m.btn ? `${m.btn.top.toFixed(0)}..${m.btn.bottom.toFixed(0)} vh=${m.vh}` : "");
       check(`${tag} nothing above the brand bar`, !m.question || (m.brand && m.question.top > m.brand.bottom), "");
       check(`${tag} the brand is the inline wordmark`, m.wordmark, "");

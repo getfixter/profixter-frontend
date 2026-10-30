@@ -91,10 +91,10 @@ const probe = (page, cls) => page.evaluate((c) => {
     await ctx.close();
   }
   console.log("   home h1:", JSON.stringify(sizes));
-  check("phone keeps the phone display size", sizes.phone === 30, `${sizes.phone}px`);
-  /* Website 3.0: the homepage H1 is the design system's display size (app/ui.css), 52px at most. */
-  check("designed size from 1440px wide", sizes["1440"] === 52, `${sizes["1440"]}px`);
-  check("never above the designed size", sizes["1920"] === 52 && sizes["2560"] === 52);
+  /* Compact pass: the display size comes from app/site-scale.css (27px on a phone, 44px at most), before the site zoom. */
+  check("phone keeps the phone display size", sizes.phone === 27, `${sizes.phone}px`);
+  check("designed size from 1440px wide", sizes["1440"] === 44, `${sizes["1440"]}px`);
+  check("never above the designed size", sizes["1920"] === 44 && sizes["2560"] === 44);
   check("a laptop gets a smaller headline", sizes.laptop < sizes["1280"] && sizes["1280"] < sizes["1440"], `${sizes.laptop} < ${sizes["1280"]} < ${sizes["1440"]}`);
   check("150% zoom gets smaller still", sizes["150% zoom"] < sizes.laptop && sizes["150% zoom"] >= 36, `${sizes["150% zoom"]}px`);
 

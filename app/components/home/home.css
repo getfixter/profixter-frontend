@@ -19,10 +19,10 @@
 .hm-hero__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 22px;
+  gap: 14px;
 }
 .hm-hero__media {
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 21 / 10;
   border-radius: var(--ui-r-md);
   box-shadow: var(--ui-shadow-1);
 }
@@ -39,14 +39,14 @@
 }
 .hm-hero__ctas {
   display: grid;
-  gap: 10px;
-  margin-top: 22px;
+  gap: 8px;
+  margin-top: 16px;
 }
 .hm-hero__offer {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin: 18px 0 0;
+  margin: 12px 0 0;
   font-size: var(--ui-fs-small);
   line-height: 1.5;
   color: var(--ui-text-2);
@@ -122,9 +122,9 @@
     "desc desc go";
   align-items: center;
   column-gap: 12px;
-  row-gap: 2px;
-  min-height: 64px;
-  padding: 12px 2px;
+  row-gap: 1px;
+  min-height: 52px;
+  padding: 8px 2px;
   border-bottom: 1px solid var(--ui-line);
   color: var(--ui-text);
   text-decoration: none;
@@ -352,18 +352,18 @@
   border-top: 1px solid var(--ui-line);
 }
 .hm-point {
-  padding: 20px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--ui-line);
 }
 .hm-point__n {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
   font-size: 12px;
   font-weight: 500;
   color: var(--ui-text-3);
 }
 .hm-point .ui-body {
-  margin: 6px 0 0;
+  margin: 2px 0 0;
   max-width: 40ch;
 }
 .hm-member__cta {
@@ -371,9 +371,9 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 14px 24px;
-  margin-top: 24px;
-  padding: 18px 20px;
+  gap: 10px 24px;
+  margin-top: 16px;
+  padding: 12px 14px;
   border-radius: var(--ui-r-md);
   background: var(--ui-bg-soft);
 }
@@ -409,11 +409,11 @@
 }
 
 /* ------------------------------ real work ---------------------------- */
-/* Two across on a phone (four photos), three on a tablet, six on a desktop. */
+/* Three across on a phone (one row), three on a tablet, six on a desktop. */
 .hm-work {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -421,7 +421,7 @@
 .hm-work__item {
   min-width: 0;
 }
-.hm-work__item:nth-child(n + 5) {
+.hm-work__item:nth-child(n + 4) {
   display: none;
 }
 .hm-work__link {
@@ -431,13 +431,13 @@
 }
 .hm-work__media {
   aspect-ratio: 1 / 1;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 .hm-work__cap {
   display: block;
-  margin-top: 8px;
+  margin-top: 4px;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--ui-text-3);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -446,7 +446,7 @@
   .hm-work {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .hm-work__item:nth-child(n + 5) {
+  .hm-work__item:nth-child(n + 4) {
     display: block;
   }
   .hm-work__media {
@@ -500,7 +500,7 @@
 
 /* --------------------------------- FAQ ------------------------------- */
 .hm-faq__title {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 .hm-inline-link {
   font-weight: 600;
@@ -511,16 +511,16 @@
 }
 .hm-after {
   display: grid;
-  gap: 16px;
-  margin-top: 28px;
+  gap: 10px;
+  margin-top: 16px;
 }
 .hm-after__gift {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 56px;
-  padding: 14px 18px;
+  min-height: 44px;
+  padding: 10px 14px;
   border: 1px solid var(--ui-line);
   border-radius: var(--ui-r-md);
   font-size: 14px;

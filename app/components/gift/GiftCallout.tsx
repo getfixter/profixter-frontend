@@ -43,8 +43,6 @@ import GiftPromoCode from "./GiftPromoCode";
 export type GiftVariant = "band" | "card" | "bar" | "inline";
 export type GiftAudience = "public" | "member";
 
-const USE_CASES = ["New homeowners", "Birthdays", "Thank-yous", "Family and friends", "Clients"];
-
 const COPY: Record<GiftAudience, { heading: string; emphasis: string; body: string; bar: string }> = {
   public: {
     heading: "Give the Gift of",
@@ -52,7 +50,7 @@ const COPY: Record<GiftAudience, { heading: string; emphasis: string; body: stri
     body:
       "Give family, friends, clients or a new homeowner reliable handyman help for their home. " +
       "Choose a plan and gift 1, 2, 3, 6 or 12 months.",
-    bar: "Give family, friends or a new homeowner reliable handyman help. Gift 1 to 12 months.",
+    bar: "Gift 1–12 months of Profixter. One payment, nothing renews.",
   },
   member: {
     heading: "Give ProFixter to",
@@ -60,9 +58,7 @@ const COPY: Record<GiftAudience, { heading: string; emphasis: string; body: stri
     body:
       "You already know the convenience of having a Fixter. Give that same help to family, " +
       "friends or someone you care about. Gift 1 to 12 months.",
-    bar:
-      "You already know how useful a Fixter is. Give that same help to family or friends — " +
-      "gift 1 to 12 months.",
+    bar: "Gift 1–12 months of the help you already have. One payment, nothing renews.",
   },
 };
 
@@ -132,39 +128,31 @@ export default function GiftCallout({
               "radial-gradient(120% 140% at 100% 0%, rgba(212,165,116,0.22) 0%, rgba(212,165,116,0) 62%)",
           }}
         />
-        <div className="flex flex-col gap-3 px-4 py-4 sm:px-5 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:gap-5">
-          <div className="flex items-start gap-3 @3xl:items-center">
-            <span
-              aria-hidden="true"
-              className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#D4A574]/18 text-[17px] @3xl:mt-0"
+        <div className="flex flex-col gap-2.5 px-3.5 py-3 sm:px-4 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:gap-4">
+          <div className="min-w-0">
+            <h2
+              id={headingId || "gift-bar-heading"}
+              className="text-[14px] font-bold leading-snug text-[#2B2218]"
             >
-              🎁
-            </span>
-            <div className="min-w-0">
-              <h2
-                id={headingId || "gift-bar-heading"}
-                className="text-[15px] font-bold leading-snug text-[#2B2218] sm:text-[16px]"
-              >
-                {copy.heading}{" "}
-                <span className="text-[#8A6A3E]">{copy.emphasis}</span>
-              </h2>
-              <p className="mt-1 text-[13px] leading-relaxed text-[#6B5C48] sm:text-[14px]">
-                {copy.bar}
-              </p>
-            </div>
+              {copy.heading}{" "}
+              <span className="text-[#8A6A3E]">{copy.emphasis}</span>
+            </h2>
+            <p className="mt-0.5 text-[12.5px] leading-snug text-[#6B5C48]">
+              {copy.bar}
+            </p>
           </div>
 
           {/* No indent on mobile: the 48px gutter that lined this up under
               the text cost just enough width to push the button onto its
               own row, making the whole bar a third taller on a phone. */}
-          <div className="flex shrink-0 flex-wrap items-center gap-2.5">
-            <GiftPromoCode tone="light" />
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Link
               href="/gift"
-              className="gift-cta inline-flex min-h-[42px] items-center justify-center rounded-[9px] px-5 text-[14px] font-semibold text-[#1A1206]"
+              className="gift-cta inline-flex min-h-[38px] items-center justify-center rounded-[9px] px-4 text-[13.5px] font-semibold text-[#1A1206]"
             >
               {CTA}
             </Link>
+            <GiftPromoCode tone="light" />
           </div>
         </div>
       </section>
@@ -200,34 +188,28 @@ export default function GiftCallout({
           />
         </div>
 
-        <div className="flex flex-col gap-6 px-6 py-8 sm:px-9 sm:py-10 lg:flex-row lg:items-center lg:justify-between lg:gap-10 lg:px-12">
-          <div className="max-w-[36rem]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#D4A574]">
-              Give ProFixter as a gift
-            </p>
+        <div className="flex flex-col gap-3.5 px-5 py-5 sm:px-7 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+          <div className="max-w-[34rem]">
             <h2
               id={headingId || "gift-card-heading"}
-              className="mt-3 text-balance text-[26px] font-light leading-[1.14] text-[#F4F7FF] sm:text-[34px]"
+              className="text-balance text-[21px] font-light leading-[1.15] text-[#F4F7FF] sm:text-[24px]"
               style={{ fontFamily: "var(--font-gift-display), Georgia, serif" }}
             >
               {copy.heading}{" "}
               <span className="italic text-[#E8CFAE]">{copy.emphasis}</span>
             </h2>
-            <p className="mt-3.5 max-w-[46ch] text-[15px] leading-[1.65] text-[#B7C7E2] sm:text-[16px]">
-              {copy.body}
-            </p>
+            <p className="mt-1.5 text-[13.5px] leading-snug text-[#B7C7E2]">{copy.bar}</p>
           </div>
 
-          <div className="flex shrink-0 flex-col items-start gap-3 lg:items-end">
+          <div className="flex shrink-0 flex-wrap items-center gap-2.5">
             <Link
               href="/gift"
-              className="gift-cta inline-flex min-h-[50px] w-full items-center justify-center gap-2.5 rounded-[10px] px-7 text-[15px] font-semibold tracking-[0.01em] text-[#1A1206] sm:w-auto sm:text-[16px]"
+              className="gift-cta inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[10px] px-5 text-[14px] font-semibold text-[#1A1206]"
             >
               {CTA}
               <span aria-hidden="true">&rarr;</span>
             </Link>
             <GiftPromoCode tone="dark" />
-            <p className="text-[12.5px] text-[#8093B5]">One payment. Nothing renews.</p>
           </div>
         </div>
       </section>
@@ -258,44 +240,24 @@ export default function GiftCallout({
         />
       </div>
 
-      <div className="mx-auto w-full max-w-[1180px] px-4 py-16 text-center sm:px-6 sm:py-20 lg:px-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#D4A574]">
-          Gift a membership
-        </p>
+      <div className="mx-auto w-full max-w-[1180px] px-4 py-7 text-center sm:px-6 sm:py-9 lg:px-8">
         <h2
           id={headingId || "gift-callout-heading"}
-          className="mx-auto mt-4 max-w-[18ch] text-balance text-[30px] font-light leading-[1.12] text-[#F4F7FF] sm:text-[40px]"
+          className="mx-auto max-w-[22ch] text-balance text-[22px] font-light leading-[1.15] text-[#F4F7FF] sm:text-[28px]"
           style={{ fontFamily: "var(--font-gift-display), Georgia, serif" }}
         >
           {copy.heading} <span className="italic text-[#E8CFAE]">{copy.emphasis}</span>
         </h2>
-        <p className="mx-auto mt-4 max-w-[52ch] text-[15px] leading-[1.7] text-[#B7C7E2] sm:text-[17px]">
-          {copy.body} Add a personal message, and we will send them a beautiful digital gift.
-        </p>
-
-        <ul className="mx-auto mt-7 flex max-w-[640px] flex-wrap items-center justify-center gap-x-3 gap-y-2">
-          {USE_CASES.map((use) => (
-            <li
-              key={use}
-              className="rounded-full border border-white/12 px-3.5 py-1.5 text-[12px] text-[#AFC0DC] sm:text-[13px]"
-            >
-              {use}
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-9 flex flex-col items-center gap-3.5">
+        <p className="mx-auto mt-2 max-w-[48ch] text-[14px] leading-snug text-[#B7C7E2]">{copy.bar}</p>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
           <Link
             href="/gift"
-            className="gift-cta inline-flex min-h-[52px] items-center justify-center gap-2.5 rounded-[10px] px-8 text-[15px] font-semibold tracking-[0.02em] text-[#1A1206] sm:text-[16px]"
+            className="gift-cta inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[10px] px-6 text-[14px] font-semibold text-[#1A1206]"
           >
             {CTA}
             <span aria-hidden="true">&rarr;</span>
           </Link>
           <GiftPromoCode tone="dark" />
-          <p className="text-[13px] text-[#8093B5]">
-            One payment. Nothing renews. They choose when to book.
-          </p>
         </div>
       </div>
     </section>

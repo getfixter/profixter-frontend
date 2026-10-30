@@ -18,3 +18,15 @@ export function surfaceFor(pathname: string): "site" | "staff" {
 export const SURFACE_SCRIPT = `(function(){try{var p=location.pathname;var s=${JSON.stringify(
   STAFF_PREFIXES
 )};document.documentElement.dataset.surface=s.some(function(x){return p===x||p.indexOf(x+"/")===0})?"staff":"site";}catch(e){}})();`;
+
+/**
+ * iOS only: stop Safari zooming the page in when a form field is focused.
+ *
+ * The customer site is drawn at a scale below 1 (app/site-scale.css), so a
+ * 16px field renders smaller than 16px, which is what makes iOS Safari zoom
+ * in on focus and leave the page zoomed. maximum-scale=1 turns that off. On
+ * iOS 10+ it does NOT stop the user pinch-zooming (Safari ignores it for
+ * that), and no other platform gets it, so pinch zoom stays available
+ * everywhere - Android Chrome would honour it, hence the iOS check.
+ */
+export const IOS_VIEWPORT_SCRIPT = `(function(){try{var ua=navigator.userAgent;var ios=/iP(hone|ad|od)/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);if(!ios)return;var fix=function(){var m=document.querySelector('meta[name="viewport"]');if(m&&m.content.indexOf("maximum-scale")<0)m.content+=", maximum-scale=1";};fix();document.addEventListener("DOMContentLoaded",fix);}catch(e){}})();`;

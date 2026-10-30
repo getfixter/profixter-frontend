@@ -1,0 +1,91 @@
+/* ==================================================================== */
+/* SITE SCALE (compact pass, 2026-10-29)                                 */
+/*                                                                       */
+/* The owner, on a real Android phone: "everything is oversized - the    */
+/* fonts, numbers, buttons, calendars, blocks, cards, fields, icons and  */
+/* navigation". Shrinking those one size at a time is what the phone and */
+/* desktop maps (mobile-scale.css, desktop-scale.css) already do, and    */
+/* the result was still far too big. So the customer site now has ONE    */
+/* scale factor, applied to everything it draws at once:                 */
+/*                                                                       */
+/*   --site-zoom   0.82 phone (< 640)   0.86 tablet   0.88 desktop       */
+/*                                                                       */
+/* CSS zoom (Baseline 2024: Chrome, Safari, Firefox 126+) scales layout, */
+/* not pixels: text stays crisp, lines re-wrap into the extra width, and */
+/* icons, borders, radii, images and spacing all shrink together, so     */
+/* nothing ends up out of proportion with anything else.                 */
+/*                                                                       */
+/* On top of the factor:                                                 */
+/*  - a READABLE FLOOR. Small text is nudged up a step before the zoom,  */
+/*    so body copy lands at ~14px on a phone and captions at ~11-12px,   */
+/*    never smaller;                                                     */
+/*  - tighter RHYTHM. Section spacing, the default control height and    */
+/*    the heading ramp come down through the shared tokens (ui.css), so  */
+/*    every page built on them follows;                                  */
+/*  - VIEWPORT UNITS. Under zoom 100dvh renders at 82% of the screen, so */
+/*    full-height wrappers are divided back up by the factor.            */
+/*                                                                       */
+/* Scope: html[data-surface="site"] (lib/surface.ts, set before first    */
+/* paint). The admin and the /event kiosk are untouched.                 */
+/* ==================================================================== */
+
+:root[data-surface="site"] {
+  --site-zoom: 0.88;
+
+  /* Rhythm: about two thirds of what Website 3.0 used. */
+  --ui-section: clamp(32px, calc(3vw + 20px), 64px);
+  --ui-btn-h: 44px;
+  --ui-btn-h-sm: 38px;
+  --ui-btn-h-lg: 48px;
+
+  /* Heading ramp, one step down at every size (the zoom then applies). */
+  --ui-fs-display: clamp(27px, calc(1.8vw + 20px), 44px);
+  --ui-fs-h2: clamp(21px, calc(0.9vw + 17px), 30px);
+  --ui-fs-h3: clamp(16px, calc(0.2vw + 15px), 18px);
+  --ui-fs-lede: clamp(15.5px, calc(0.15vw + 15px), 17px);
+}
+
+@media (max-width: 1023px) {
+  :root[data-surface="site"] { --site-zoom: 0.86; }
+}
+
+@media (max-width: 639px) {
+  :root[data-surface="site"] {
+    --site-zoom: 0.82;
+    /* The readable floor, before the zoom: 17 -> ~13.9px, 15.5 -> ~12.7px. */
+    --ui-fs-body: 17px;
+    --ui-fs-small: 15.5px;
+    --ui-fs-micro: 13px;
+    /* The phone map's own steps (mobile-scale.css), one notch down. */
+    --m-display: 27px;
+    --m-title: 22px;
+    --m-section: 19px;
+    --m-card: 17px;
+    --m-body: 17px;
+    --m-lede: 17px;
+    --m-beat: 22px;
+    --m-control: 44px;
+  }
+}
+
+:root[data-surface="site"] body {
+  zoom: var(--site-zoom);
+}
+
+/* Full-height wrappers stay full height under the zoom. */
+:root[data-surface="site"] :is(.min-h-screen, .min-h-dvh) {
+  min-height: calc(100dvh / var(--site-zoom));
+}
+:root[data-surface="site"] :is(.h-screen, .h-dvh) {
+  height: calc(100dvh / var(--site-zoom));
+}
+
+/* ---------------------------------------------------------------- */
+/* Readable floor on a phone: the smallest utility sizes, one step up */
+/* ---------------------------------------------------------------- */
+@media (max-width: 639px) {
+  :root[data-surface="site"] :is(.text-xs, .text-\[11px\], .text-\[11\.5px\], .text-\[12px\]) { font-size: 13.5px; }
+  :root[data-surface="site"] :is(.text-\[12\.5px\], .text-\[13px\], .text-\[13\.5px\]) { font-size: 14.5px; }
+  :root[data-surface="site"] :is(.text-sm, .text-\[14px\], .text-\[14\.5px\]) { font-size: 15.5px; }
+  :root[data-surface="site"] :is(.text-\[15px\], .text-\[15\.5px\], .text-base, .text-\[16px\]) { font-size: 16.5px; }
+}

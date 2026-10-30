@@ -43,7 +43,7 @@ export default function TimeSlotGrid({
   onSelect: (value: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-5">
+    <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5 xl:grid-cols-6">
       {slotOptions.map((slot) => {
         const isSelected = slot.available && slot.time === selectedTime;
         const availabilityLabel = slot.available
@@ -64,7 +64,7 @@ export default function TimeSlotGrid({
             }}
             /* ring-2 marks the selection; the booking tests read it. */
             className={[
-              "relative flex min-h-11 items-center justify-center gap-1 rounded-[var(--ui-r-sm)] border px-1 text-center text-[14px] font-medium tabular-nums transition-colors duration-200 active:scale-[0.99] sm:min-h-12 sm:text-[15px]",
+              "relative flex min-h-[38px] items-center justify-center gap-1 rounded-[8px] border px-1 text-center text-[13.5px] font-medium tabular-nums transition-colors duration-200 active:scale-[0.99] sm:min-h-10 sm:text-[14px]",
               isSelected
                 ? "cursor-default border-[color:var(--ui-ink)] bg-[color:var(--ui-ink)] text-white ring-2 ring-[color:var(--ui-ink)]/15"
                 : slot.available

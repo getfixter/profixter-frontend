@@ -77,10 +77,10 @@
 .fv-nav:disabled { color: #cbd5e1; }
 
 .fv-day {
-  height: 44px; border-radius: 12px; font-size: 15px; font-weight: 600;
+  height: 38px; border-radius: 9px; font-size: 14px; font-weight: 600;
   transition: background-color .2s ease, color .2s ease, transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s ease;
 }
-@media (min-width: 640px) { .fv-day { height: 48px; } }
+@media (min-width: 640px) { .fv-day { height: 40px; } }
 .fv-day--open { background: #eef4ff; color: #1f4fb8; }
 @media (hover: hover) { .fv-day--open:hover { background: #dce8ff; transform: translateY(-1px); } }
 .fv-day--closed { color: #c4ccd8; cursor: default; }
@@ -94,8 +94,8 @@
 .fv-reveal--open { grid-template-rows: 1fr; opacity: 1; }
 
 .fv-slot {
-  height: 48px; border-radius: 12px; border: 1px solid #d7dee9; background: #fff;
-  font-size: 15px; font-weight: 600; color: #0b1628;
+  height: 40px; border-radius: 9px; border: 1px solid #d7dee9; background: #fff;
+  font-size: 14px; font-weight: 600; color: #0b1628;
   transition: border-color .15s ease, background-color .2s ease, color .2s ease, transform .2s cubic-bezier(.16,1,.3,1), box-shadow .2s ease;
 }
 @media (hover: hover) { .fv-slot:not(.fv-slot--selected):hover:not(:disabled) { border-color: #306eec; background: #f8faff; } }
@@ -360,8 +360,8 @@
 .fv-daypill-wd { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; opacity: .75; }
 .fv-daypill-d { font-size: 18px; font-weight: 700; line-height: 1; }
 .fv-daypill-mo { font-size: 10.5px; font-weight: 600; opacity: .65; }
-.fv-day--compact { height: 44px; }
-.fv-slot--compact { height: 44px; font-size: 14px; }
+.fv-day--compact { height: 38px; }
+.fv-slot--compact { height: 38px; font-size: 14px; }
 .fv-sumrow {
   display: flex; width: 100%; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px;
   border-radius: 14px; border: 1px solid #dbe5f8; background: linear-gradient(135deg, #f2f7ff 0%, #ffffff 70%);

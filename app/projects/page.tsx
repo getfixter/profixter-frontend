@@ -548,16 +548,16 @@ function ServiceSection({
   return (
     <section
       id={service.id}
-      className={`scroll-mt-[96px] py-8 sm:py-13 lg:py-12 ${
+      className={`scroll-mt-[96px] py-5 sm:py-9 lg:py-10 ${
         dark ? "bg-[#0B1628] text-white" : "bg-[color:var(--ui-bg-soft)] text-[color:var(--ui-ink)]"
       }`}
     >
       <div
-        className={`mx-auto grid max-w-[1220px] items-center gap-9 px-5 sm:px-6 lg:grid-cols-2 lg:gap-10 ${
+        className={`mx-auto grid max-w-[1220px] items-center gap-4 px-5 sm:px-6 lg:grid-cols-2 lg:gap-10 ${
           index % 2 ? "lg:[&>*:first-child]:order-2" : ""
         }`}
       >
-        <div className="relative min-h-[180px] overflow-hidden rounded-[8px] shadow-[0_18px_44px_rgba(15,23,42,0.14)] sm:min-h-[340px]">
+        <div className="relative min-h-[130px] overflow-hidden rounded-[8px] shadow-[0_18px_44px_rgba(15,23,42,0.14)] sm:min-h-[280px]">
           <Image
             src={service.image}
             alt={`${service.title} project by Profixter`}
@@ -567,7 +567,7 @@ function ServiceSection({
             sizes="(max-width: 1024px) 92vw, 590px"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#07101F]/65 via-transparent to-transparent" />
-          <div className="absolute bottom-5 left-5 rounded-[6px] border border-white/20 bg-[#07101F]/70 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur">
+          <div className="absolute bottom-3 left-3 rounded-[6px] border border-white/20 bg-[#07101F]/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur">
             Long Island, NY
           </div>
         </div>
@@ -585,35 +585,32 @@ function ServiceSection({
            * hero H1, which read as six competing titles down the page instead
            * of one page with six sections.
            */}
-          <h2 className="ui-h2 mt-3 sm:mt-4 text-inherit">
+          <h2 className="ui-h2 mt-1.5 sm:mt-3 text-inherit">
             {service.title}
           </h2>
           <p
-            className={`mt-4 text-[15px] leading-relaxed sm:mt-5 sm:text-[17px] ${
+            className={`mt-2 text-[14px] leading-relaxed sm:mt-4 sm:text-[16px] ${
               dark ? "text-white/70" : "text-[color:var(--ui-text-2)]"
             }`}
           >
             {service.description}
           </p>
-          <div className="mt-4 grid gap-2 sm:mt-5 sm:gap-2.5">
+          <div className="mt-2.5 grid gap-1 sm:mt-4 sm:gap-2">
             {service.details.map((detail) => (
-              <div key={detail} className="flex items-start gap-3">
+              <div key={detail} className="flex items-start gap-2">
                 <span
-                  className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${
+                  className={`mt-0.5 flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full [&_svg]:h-3 [&_svg]:w-3 ${
                     dark ? "bg-white/10 text-[#86EFAC]" : "bg-[#E8F8EE] text-[#16834B]"
                   }`}
                 >
                   <CheckIcon />
                 </span>
-                <span className={`text-[14px] font-semibold leading-6 ${dark ? "text-white/80" : "text-[color:var(--ui-text-2)]"}`}>
+                <span className={`text-[13.5px] font-medium leading-5 ${dark ? "text-white/80" : "text-[color:var(--ui-text-2)]"}`}>
                   {detail}
                 </span>
               </div>
             ))}
           </div>
-          <p className={`mt-4 text-[13px] leading-5 ${dark ? "text-white/50" : "text-[color:var(--ui-text-3)]"}`}>
-            Members may receive project discounts. Eligible larger projects may include up to 12 months of Profixter Membership.
-          </p>
           {/*
             Still an anchor with a real href, so it keeps everything a link
             gives you for free: Enter activates it, middle-click and
@@ -632,7 +629,7 @@ function ServiceSection({
               event.preventDefault();
               onRequestEstimate(estimateType);
             }}
-            className={`mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[8px] px-5 text-[14px] font-semibold transition sm:mt-7 sm:min-h-[52px] sm:px-6 ${
+            className={`mt-4 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[8px] px-4 text-[14px] font-semibold transition sm:mt-5 sm:min-h-[46px] sm:px-5 ${
               dark
                 ? "bg-white text-[color:var(--ui-ink)] hover:bg-[#EAF1FF]"
                 : "bg-[#0B1628] text-white hover:bg-[#17263D]"
@@ -818,14 +815,14 @@ function ProjectsContent() {
           </div>
         </section>
 
-        <section className="border-b border-[color:var(--ui-line)] bg-white py-8">
-          <div className="mx-auto grid max-w-[1220px] gap-4 px-5 sm:grid-cols-3 sm:px-6">
+        <section className="border-b border-[color:var(--ui-line)] bg-white py-5">
+          <div className="mx-auto grid max-w-[1220px] gap-2.5 px-5 sm:grid-cols-3 sm:px-6">
             {[
               ["General Contractor", "A single team to plan, coordinate, and manage larger work."],
               ["Clear estimate path", "A practical scope conversation before you commit to a project."],
               ["Long Island focused", "Built for Nassau and Suffolk homeowners who want accountable local help."],
             ].map(([title, body]) => (
-              <div key={title} className="rounded-[6px] border-l-2 border-[color:var(--ui-line-2)] bg-[#F8FAFC] px-4 py-3.5">
+              <div key={title} className="rounded-[6px] border-l-2 border-[color:var(--ui-line-2)] bg-[#F8FAFC] px-3 py-2.5">
                 <div className="text-[14px] font-semibold text-[color:var(--ui-ink)]">{title}</div>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-[color:var(--ui-text-3)]">{body}</p>
               </div>
