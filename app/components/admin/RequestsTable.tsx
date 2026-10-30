@@ -69,7 +69,7 @@ function niceServiceType(value?: string) {
     case "on_demand":        return "On Demand";
     case "general_contractor": return "General Contractor";
     case "home_improvement": return "Home Improvement";
-    case "free_visit_request": return "Free visit request";
+    case "free_visit_request": return "Free visit · callback";
     default:                 return value || "-";
   }
 }

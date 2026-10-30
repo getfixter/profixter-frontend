@@ -86,10 +86,25 @@ function nyLocalToISOString(local: string) {
   return new Date(pretendUTC.getTime() - totalOffsetMinutes * 60_000).toISOString();
 }
 
-/* A homepage free-visit request whose slot is held until the owner confirms it. */
-function isPendingGuestRequest(booking: Booking) {
-  return !!booking.guestRequestId && String(booking.status || "").toLowerCase() === "pending confirmation";
+/*
+ * A free visit whose slot is held until the owner approves it: a homepage
+ * callback request (no account, call them first) or one booked online by a
+ * signed-in customer with their own address. Both are opened in the review.
+ */
+function pendingFreeVisitKind(booking: Booking): "" | "callback" | "online" {
+  if (String(booking.status || "").toLowerCase() !== "pending confirmation") return "";
+  if (booking.guestRequestId) return "callback";
+  return booking.freeVisitChannel === "online" ? "online" : "";
 }
+
+function isPendingGuestRequest(booking: Booking) {
+  return pendingFreeVisitKind(booking) !== "";
+}
+
+const FREE_VISIT_KIND_LABEL = {
+  callback: "Callback Needed — Awaiting Contact",
+  online: "Online Booking — Awaiting Approval",
+} as const;
 
 function getStatusTone(status: string) {
   const normalized = String(status || "").toLowerCase();
@@ -724,7 +739,20 @@ export default function BookingsTable({
                               </button>
                             )}
 
-                            {booking.freeVisitReview?.required && !guestPending && (
+                            {guestPending && (
+                              <span
+                                className={`rounded border px-1.5 py-0.5 text-[11px] font-bold ${
+                                  pendingFreeVisitKind(booking) === "callback"
+                                    ? "border-amber-300 bg-amber-100 text-amber-900"
+                                    : "border-blue-200 bg-blue-50 text-blue-800"
+                                }`}
+                                data-free-visit-kind={pendingFreeVisitKind(booking)}
+                              >
+                                {FREE_VISIT_KIND_LABEL[pendingFreeVisitKind(booking) as "callback" | "online"]}
+                              </span>
+                            )}
+
+                            {booking.freeVisitReview?.required && (
                               <span
                                 className="rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-900"
                                 title={(booking.freeVisitReview.reasons || []).join(", ").replace(/_/g, " ")}
@@ -816,10 +844,12 @@ export default function BookingsTable({
                           <button
                             type="button"
                             onClick={() => onReviewFreeVisit?.(booking._id)}
-                            className="min-h-[48px] w-full rounded-[12px] bg-amber-500 px-3 text-sm font-bold text-white active:bg-amber-600"
+                            className={`min-h-[48px] w-full rounded-[12px] px-3 text-sm font-bold text-white ${
+                              pendingFreeVisitKind(booking) === "online" ? "bg-[#306EEC] active:bg-[#2558c9]" : "bg-amber-500 active:bg-amber-600"
+                            }`}
                             data-review-free-visit
                           >
-                            Call, then review &amp; confirm
+                            {pendingFreeVisitKind(booking) === "online" ? "Review & approve" : "Call, then review & confirm"}
                           </button>
                         )}
                         {!readOnly && !guestPending && (

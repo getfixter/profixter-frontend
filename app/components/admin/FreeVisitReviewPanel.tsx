@@ -152,6 +152,9 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
   }, [form?.date]);
 
   const pending = /^pending confirmation$/i.test(detail?.booking.status || "");
+  /* Booked from the customer's own account: contact and address come from it, not from this screen. */
+  const online = detail?.booking.channel === "online";
+  const missing = detail?.booking.missing || [];
   const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(saved), [form, saved]);
   const eligibility = blockedBy || detail?.eligibility || null;
   const blocked = eligibility?.decision === "blocked";
@@ -207,7 +210,7 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
     try {
       const result = await confirmFreeVisit(bookingId, acknowledged);
       apply(result);
-      onChanged?.(result.alreadyConfirmed ? "Already confirmed" : "Visit confirmed - the customer has been notified");
+      onChanged?.(result.alreadyConfirmed ? "Already confirmed" : online ? "Approved - the customer has been notified" : "Visit confirmed - the customer has been notified");
     } catch (e) {
       const elig = errorEligibility(e);
       if (elig) setBlockedBy(elig);
@@ -218,7 +221,12 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
   };
 
   const decline = async () => {
-    const reason = window.prompt("Decline this request? Its time goes back on the calendar and their free visit is not used.\n\nReason (optional):", "");
+    const reason = window.prompt(
+      online
+        ? "Decline this online booking? Its time goes back on the calendar, their free visit is not used, and they get a cancellation email.\n\nReason (optional):"
+        : "Decline this request? Its time goes back on the calendar and their free visit is not used.\n\nReason (optional):",
+      ""
+    );
     if (reason === null) return;
     setBusy("decline");
     setError("");
@@ -248,7 +256,12 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
       >
         <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
           <div className="min-w-0">
-            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-amber-700">Free visit request</div>
+            <div
+              className={`text-[11px] font-bold uppercase tracking-[0.16em] ${online ? "text-blue-700" : "text-amber-700"}`}
+              data-free-visit-channel={detail?.booking.channel || ""}
+            >
+              {!pending ? "Free visit" : online ? "Online booking · awaiting approval" : "Callback needed · awaiting contact"}
+            </div>
             <h3 className="truncate text-lg font-bold text-slate-900">
               {detail?.booking.name || "Loading..."}{" "}
               {detail ? <span className="text-sm font-medium text-slate-400">#{detail.booking.bookingNumber}</span> : null}
@@ -275,6 +288,16 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
 
           {detail && form ? (
             <>
+              {pending && !online && missing.length ? (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900" data-free-visit-missing>
+                  Still needed on the call: {missing.map((m) => (m === "address" ? "service address" : m)).join(", ")}
+                </p>
+              ) : null}
+              {pending && online ? (
+                <p className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900" data-free-visit-online>
+                  Booked online from their account, with their own address. Approve it to confirm the visit and notify them.
+                </p>
+              ) : null}
               <div className="grid grid-cols-2 gap-2">
                 <a href={`tel:${detail.booking.phone}`} className="flex min-h-[44px] items-center justify-center rounded-lg bg-emerald-600 text-sm font-bold text-white">
                   Call {detail.booking.phone}
@@ -313,18 +336,20 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
                   {needsAck && pending ? (
                     <label className="mt-2 flex items-start gap-2 font-semibold">
                       <input type="checkbox" className="mt-0.5 h-5 w-5" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} data-free-visit-ack />
-                      I verified on the call this is a different customer
+                      {online ? "I verified this is a different customer" : "I verified on the call this is a different customer"}
                     </label>
                   ) : null}
                 </div>
               ) : null}
 
               <section className="space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Contact</h4>
+                <h4 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                  Contact {online ? <span className="normal-case tracking-normal text-slate-500">· from their account (edit in Users)</span> : null}
+                </h4>
                 <div className="grid gap-2 sm:grid-cols-3">
-                  <div><label className={label}>Full name</label><input className={input} value={form.name} onChange={set("name")} disabled={disabled} /></div>
-                  <div><label className={label}>Phone</label><input className={input} type="tel" value={form.phone} onChange={set("phone")} disabled={disabled} /></div>
-                  <div><label className={label}>Email</label><input className={input} type="email" value={form.email} onChange={set("email")} disabled={disabled} /></div>
+                  <div><label className={label}>Full name</label><input className={input} value={form.name} onChange={set("name")} disabled={disabled || online} /></div>
+                  <div><label className={label}>Phone</label><input className={input} type="tel" value={form.phone} onChange={set("phone")} disabled={disabled || online} /></div>
+                  <div><label className={label}>Email</label><input className={input} type="email" value={form.email} onChange={set("email")} disabled={disabled || online} /></div>
                 </div>
               </section>
 
@@ -333,13 +358,13 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
                   Service address {pending && !detail.booking.hasAddress ? <span className="normal-case tracking-normal text-rose-600">· required to confirm</span> : null}
                 </h4>
                 <div className="grid gap-2 sm:grid-cols-[1fr_110px]">
-                  <div><label className={label}>Street address</label><input className={input} value={form.line1} onChange={set("line1")} disabled={disabled} placeholder="12 Main St" data-free-visit-field="line1" /></div>
-                  <div><label className={label}>Apt / Unit</label><input className={input} value={form.unit} onChange={set("unit")} disabled={disabled} data-free-visit-field="unit" /></div>
+                  <div><label className={label}>Street address</label><input className={input} value={form.line1} onChange={set("line1")} disabled={disabled || online} placeholder="12 Main St" data-free-visit-field="line1" /></div>
+                  <div><label className={label}>Apt / Unit</label><input className={input} value={form.unit} onChange={set("unit")} disabled={disabled || online} data-free-visit-field="unit" /></div>
                 </div>
                 <div className="grid grid-cols-[1fr_64px_96px] gap-2">
-                  <div><label className={label}>City</label><input className={input} value={form.city} onChange={set("city")} disabled={disabled} data-free-visit-field="city" /></div>
-                  <div><label className={label}>State</label><input className={input} value={form.state} onChange={set("state")} disabled={disabled} maxLength={2} /></div>
-                  <div><label className={label}>ZIP</label><input className={input} value={form.zip} onChange={set("zip")} disabled={disabled} inputMode="numeric" maxLength={5} data-free-visit-field="zip" /></div>
+                  <div><label className={label}>City</label><input className={input} value={form.city} onChange={set("city")} disabled={disabled || online} data-free-visit-field="city" /></div>
+                  <div><label className={label}>State</label><input className={input} value={form.state} onChange={set("state")} disabled={disabled || online} maxLength={2} /></div>
+                  <div><label className={label}>ZIP</label><input className={input} value={form.zip} onChange={set("zip")} disabled={disabled || online} inputMode="numeric" maxLength={5} data-free-visit-field="zip" /></div>
                 </div>
               </section>
 
@@ -416,7 +441,7 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
               className="min-h-[48px] rounded-xl bg-emerald-600 text-sm font-bold text-white disabled:opacity-50"
               data-free-visit-confirm
             >
-              {busy === "confirm" ? "Confirming..." : "Confirm Visit"}
+              {busy === "confirm" ? (online ? "Approving..." : "Confirming...") : online ? "Approve" : "Confirm Visit"}
             </button>
           </div>
         ) : null}

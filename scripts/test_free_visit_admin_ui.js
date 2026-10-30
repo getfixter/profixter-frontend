@@ -30,7 +30,23 @@ function freshState(eligibility = { decision: "eligible", code: "", reasons: [],
       guestRequestId: "rq1", address: "", city: "", state: "", zip: "", note: "The faucet drips and a towel bar fell off",
       images: ["https://test-bucket.s3.amazonaws.com/uploads/free-visit-requests/rq1/1-1.jpg"], assignedFixterName: "Fixter 1",
     },
+    /* Free Visit 2.0: booked online from an account, complete, waiting for approval. */
+    online: {
+      _id: "ob1", bookingNumber: "55507777", user: "u9", userId: "9", name: "Olive Online", email: "olive@example.com", phone: "+16315550177",
+      date: AT("08:00"), service: "Labor Only", accessType: "free_first_visit", status: "Pending Confirmation", freeVisitChannel: "online",
+      address: "5 Pine Rd", city: "Babylon", state: "NY", zip: "11702", note: "Hang three shelves in the den", images: [], libraryReference: "shelves",
+      assignedFixterName: "Fixter 1",
+    },
     eligibility,
+  };
+}
+
+function onlineDetail(state) {
+  const b = state.online;
+  return {
+    booking: { ...b, channel: "online", missing: [], requestedDate: DAY, requestedTime: "08:00", hasAddress: true, reserved: true, review: null, confirmation: null },
+    lead: null,
+    eligibility: b.status === "Pending Confirmation" ? { decision: "eligible", code: "", reasons: [], matches: [] } : null,
   };
 }
 
@@ -38,7 +54,8 @@ function detail(state) {
   const b = state.booking;
   return {
     booking: {
-      ...b, requestedDate: DAY, requestedTime: new Date(b.date).toISOString() === AT("15:30") ? "15:30" : "10:30",
+      ...b, channel: "callback", missing: b.address && b.city && /^\d{5}$/.test(b.zip) ? [] : ["address"],
+      requestedDate: DAY, requestedTime: new Date(b.date).toISOString() === AT("15:30") ? "15:30" : "10:30",
       hasAddress: !!(b.address && b.city && /^\d{5}$/.test(b.zip)), reserved: true, review: null, confirmation: null,
     },
     lead: { _id: "rq1", status: b.status === "Confirmed" ? "confirmed" : "pending_confirmation", createdAt: new Date().toISOString(), attribution: { url: { utm_source: "fb", utm_medium: "paid" } } },
@@ -68,6 +85,7 @@ async function open(browser, { width = 390, height = 844, eligibility } = {}) {
     if (p === "/api/admin/bookings") {
       return json([
         state.booking,
+        state.online,
         { _id: "rb1", bookingNumber: "55509999", userId: "77", name: "Regular Member", email: "m@example.com", phone: "+16315559999", date: AT("13:00"), service: "Handyman visit", accessType: "membership", status: "Confirmed", address: "9 Oak Ave", city: "Babylon", state: "NY", zip: "11702" },
       ]);
     }
@@ -75,6 +93,16 @@ async function open(browser, { width = 390, height = 844, eligibility } = {}) {
       return json([{ _id: "rq1", name: "Jane Doe", email: "jane.doe@example.com", phone: "+16315550142", serviceType: "free_visit_request", status: state.booking.status === "Confirmed" ? "confirmed" : "pending_confirmation", bookingId: "gb1", requestedDate: DAY, requestedTime: "10:30", message: state.booking.note, createdAt: new Date().toISOString() }]);
     }
     if (p === "/api/admin/free-visits/gb1" && req.method() === "GET") return json(detail(state));
+    if (p === "/api/admin/free-visits/ob1" && req.method() === "GET") return json(onlineDetail(state));
+    if (p === "/api/admin/free-visits/ob1" && req.method() === "PUT") return json(onlineDetail(state));
+    if (p === "/api/admin/free-visits/ob1/confirm") {
+      state.online.status = "Confirmed";
+      return json({ ...onlineDetail(state), notified: true });
+    }
+    if (p === "/api/admin/free-visits/ob1/decline") {
+      state.online.status = "Canceled";
+      return json(onlineDetail(state));
+    }
     if (p === "/api/admin/free-visits/gb1" && req.method() === "PUT") {
       const body = JSON.parse(req.postData() || "{}");
       if (body.address) Object.assign(state.booking, { address: body.address.unit ? `${body.address.line1}, Unit ${body.address.unit}` : body.address.line1, city: body.address.city, state: body.address.state, zip: body.address.zip });
@@ -108,6 +136,8 @@ async function open(browser, { width = 390, height = 844, eligibility } = {}) {
 }
 
 const card = (page, number) => page.locator("article").filter({ hasText: `#${number}` });
+const SHOTS = process.env.ADMIN_SHOTS || "";
+const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png` }); };
 
 (async () => {
   const browser = await chromium.launch();
@@ -117,7 +147,7 @@ const card = (page, number) => page.locator("article").filter({ hasText: `#${num
     const { ctx, page, state, errors } = await open(browser);
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
     const pendingChip = page.getByRole("button", { name: /All Pending/ });
-    check("All Pending counts the held request", /1/.test(await pendingChip.innerText()), await pendingChip.innerText());
+    check("All Pending counts both held free visits", /2/.test(await pendingChip.innerText()), await pendingChip.innerText());
     await page.getByRole("button", { name: /Upcoming/ }).click();
     await page.waitForSelector("article", { timeout: 15000 });
     const guest = card(page, "55501234");
@@ -126,6 +156,7 @@ const card = (page, number) => page.locator("article").filter({ hasText: `#${num
     check("it says Pending Confirmation", (await guest.innerText()).includes("Pending Confirmation"));
     check("its card is dashed amber, unlike a confirmed job", /border-dashed/.test((await guest.getAttribute("class")) || "") && !/border-dashed/.test((await member.getAttribute("class")) || ""));
     check("it has one action: review & confirm", (await guest.locator("[data-review-free-visit]").count()) === 1);
+    check("it is labelled Callback Needed — Awaiting Contact", (await guest.locator('[data-free-visit-kind="callback"]').innerText()).includes("Callback Needed — Awaiting Contact"));
     check("no generic Confirm or status buttons on it", !/Confirm \/ Approve/.test(await guest.innerText()) && (await guest.locator("button", { hasText: /^Done$/ }).count()) === 0);
     check("a normal job keeps its status buttons", (await member.locator("button", { hasText: /^Done$/ }).count()) === 1);
 
@@ -165,6 +196,61 @@ const card = (page, number) => page.locator("article").filter({ hasText: `#${num
     await ctx.close();
   }
 
+  console.log("\n--- Jobs: an online booking awaiting approval ---");
+  {
+    const { ctx, page, state, errors } = await open(browser);
+    await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: /All Pending/ }).click();
+    await page.waitForSelector("article", { timeout: 15000 });
+    const online = card(page, "55507777");
+    check("the online booking is on the Jobs list", (await online.count()) === 1);
+    check("it is labelled Online Booking — Awaiting Approval", (await online.locator('[data-free-visit-kind="online"]').innerText()).includes("Online Booking — Awaiting Approval"));
+    check("its one action is Review & approve, no generic status buttons", (await online.locator("[data-review-free-visit]").innerText()).includes("Review & approve") && (await online.locator("button", { hasText: /^Done$/ }).count()) === 0);
+    await online.locator("[data-review-free-visit]").click();
+    await page.waitForSelector('[data-free-visit-panel] [data-free-visit-channel="online"]', { timeout: 10000 });
+    const panel = page.locator("[data-free-visit-panel]");
+    const text = await panel.innerText();
+    check("the review says booked online, awaiting approval", /Online booking · awaiting approval/i.test(text) && (await panel.locator("[data-free-visit-online]").count()) === 1, text.slice(0, 120));
+    const shown = text + " " + (await panel.locator("input").evaluateAll((els) => els.map((e) => e.value).join(" ")));
+    check("full customer info and the submitted address are shown", ["Olive Online", "+16315550177", "olive@example.com", "5 Pine Rd", "11702"].every((t) => shown.includes(t)), shown.slice(0, 160));
+    check("contact and address come from the account: read-only here", await panel.locator('[data-free-visit-field="line1"]').isDisabled());
+    check("nothing is listed as missing", (await panel.locator("[data-free-visit-missing]").count()) === 0);
+    await shot(page, "admin-online-review");
+    check("the button says Approve", /Approve/.test(await panel.locator("[data-free-visit-confirm]").innerText()));
+    await panel.locator("[data-free-visit-confirm]").click();
+    await page.waitForSelector('[data-free-visit-status]:has-text("Confirmed")', { timeout: 10000 }).catch(() => {});
+    check("approving goes through the free-visit review", state.calls.some((c) => c.method === "POST" && c.path === "/api/admin/free-visits/ob1/confirm"));
+    check("and sends no contact or address changes", !state.calls.some((c) => c.method === "PUT" && c.path === "/api/admin/free-visits/ob1" && (c.body?.address || c.body?.phone || c.body?.email || c.body?.name)));
+    check("never through the generic status endpoint", !state.calls.some((c) => c.path === "/api/admin/bookings/ob1/status"));
+    check("no page errors", errors.length === 0, errors.join(" | "));
+    await ctx.close();
+  }
+  {
+    const { ctx, page, state } = await open(browser);
+    await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: /All Pending/ }).click();
+    await page.waitForSelector("article", { timeout: 15000 });
+    await card(page, "55507777").locator("[data-review-free-visit]").click();
+    await page.waitForSelector("[data-free-visit-decline]", { timeout: 10000 });
+    await page.locator("[data-free-visit-decline]").click();
+    await page.waitForTimeout(500);
+    check("an online booking can be declined", state.calls.some((c) => c.path === "/api/admin/free-visits/ob1/decline"));
+    await ctx.close();
+  }
+  {
+    const { ctx, page } = await open(browser);
+    await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: /All Pending/ }).click();
+    await page.waitForSelector("article", { timeout: 15000 });
+    await card(page, "55501234").locator("[data-review-free-visit]").click();
+    await page.waitForSelector("[data-free-visit-missing]", { timeout: 10000 }).catch(() => {});
+    const missing = await page.locator("[data-free-visit-missing]").innerText().catch(() => "");
+    check("a callback names what is still missing", /service address/.test(missing), missing);
+    check("a callback's header says callback needed", /Callback needed · awaiting contact/i.test(await page.locator('[data-free-visit-channel="callback"]').innerText().catch(() => "")));
+    await shot(page, "admin-callback-review");
+    await ctx.close();
+  }
+
   console.log("\n--- Leads: the same visit, from its lead ---");
   {
     const { ctx, page, state } = await open(browser);
@@ -189,7 +275,7 @@ const card = (page, number) => page.locator("article").filter({ hasText: `#${num
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: /All Pending/ }).click();
     await page.waitForSelector("[data-review-free-visit]", { timeout: 15000 });
-    await page.locator("[data-review-free-visit]").click();
+    await card(page, "55501234").locator("[data-review-free-visit]").click();
     await page.waitForSelector('[data-free-visit-eligibility="review"]', { timeout: 10000 });
     const panel = page.locator("[data-free-visit-panel]");
     check("the review explains the match", /Same address as an earlier free visit/.test(await panel.innerText()) && /40001111/.test(await panel.innerText()));
@@ -212,7 +298,7 @@ const card = (page, number) => page.locator("article").filter({ hasText: `#${num
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: /All Pending/ }).click();
     await page.waitForSelector("[data-review-free-visit]", { timeout: 15000 });
-    await page.locator("[data-review-free-visit]").click();
+    await card(page, "55501234").locator("[data-review-free-visit]").click();
     await page.waitForSelector('[data-free-visit-eligibility="blocked"]', { timeout: 10000 });
     check("a used free visit cannot be confirmed", await page.locator("[data-free-visit-confirm]").isDisabled());
     await ctx.close();

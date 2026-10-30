@@ -27,11 +27,11 @@ export default function BookingsCalendar({
     });
     return countsMap;
   }, [bookings]);
-  /* Homepage requests holding a slot until the owner confirms: shown apart. */
+  /* Free visits (callback or online) holding a slot until the owner approves: shown apart. */
   const pendingCounts = useMemo(() => {
     const map: Record<string, number> = {};
     bookings.forEach((b) => {
-      if (!b.guestRequestId || String(b.status || "").toLowerCase() !== "pending confirmation") return;
+      if (String(b.status || "").toLowerCase() !== "pending confirmation") return;
       const key = toYMDNY(new Date(b.date));
       map[key] = (map[key] || 0) + 1;
     });

@@ -60,12 +60,14 @@ function pngFile() {
   return file;
 }
 
-function makeUser({ member = false } = {}) {
+function makeUser({ member = false, twoHomes = false, noPhone = false } = {}) {
+  const addresses = [{ _id: "addr1", label: "Home", line1: "12 Main St", city: "Massapequa", state: "NY", zip: "11758",
+    hasActiveSubscription: member, plan: member ? "plus" : null }];
+  if (twoHomes) addresses.push({ _id: "addr2", label: "Beach", line1: "9 Ocean Ave", city: "Long Beach", state: "NY", zip: "11561", hasActiveSubscription: false, plan: null });
   return {
-    _id: "u1", userId: "PF-TEST", name: "Test Person", email: "test@example.com", phone: "+16315550134",
+    _id: "u1", userId: "PF-TEST", name: "Test Person", email: "test@example.com", phone: noPhone ? "" : "+16315550134",
     role: "customer", defaultAddressId: "addr1",
-    addresses: [{ _id: "addr1", label: "Home", line1: "12 Main St", city: "Massapequa", state: "NY", zip: "11758",
-      hasActiveSubscription: member, plan: member ? "plus" : null }],
+    addresses,
   };
 }
 
@@ -128,6 +130,11 @@ async function fakeApi(ctx, opts = {}) {
       state.otpStarts = (state.otpStarts || 0) + 1;
       return json(200, { ok: true, phoneMasked: "(•••) •••-0134", resendAfterSeconds: 30, expiresInSeconds: 600 });
     }
+    if (p === "/api/auth/otp/phone/verify" && req.method() === "POST" && /"mode":"attach"/.test(req.postData() || "")) {
+      state.attachPosts = (state.attachPosts || 0) + 1;
+      user.phone = "+16315550134";
+      return json(200, { status: "attached", user });
+    }
     if (p === "/api/auth/otp/phone/verify" && req.method() === "POST") {
       state.registerPosts++;
       return json(200, { status: "signed_in", token: TOKEN, user, created: true });
@@ -149,8 +156,10 @@ async function fakeApi(ctx, opts = {}) {
         service: field("service"), note: field("note"), addressId: field("addressId"),
         requestedDate: field("requestedDate"), requestedTime: field("requestedTime"),
         libraryReference: field("libraryReference"), images: (body.match(/name="images"/g) || []).length,
+        clientRequestId: field("clientRequestId"),
       });
-      const next = state.bookingQueue.shift() || { status: 201, body: { booking: { _id: "b1", bookingNumber: "1042" } } };
+      const next = state.bookingQueue.shift() || { status: 201, body: { booking: { _id: "b1", bookingNumber: "1042", status: "Pending Confirmation" } } };
+      if (next.delay) await new Promise((r) => setTimeout(r, next.delay));
       return json(next.status, next.body);
     }
     if (p === "/api/stripe/checkout/create-checkout-session") {
@@ -232,7 +241,15 @@ async function newContext(browser, { signedIn = false, ...opts } = {}) {
 const fbqLog = (page) => page.evaluate(() => JSON.parse(sessionStorage.getItem("__test_fbq") || "[]"));
 const dlLog = (page) => page.evaluate(() => JSON.parse(sessionStorage.getItem("__test_dl") || "[]"));
 
-async function buildVisit(page, { photo = true } = {}) {
+/* Signed out, the booker first asks how: online or a callback. */
+async function chooseIfAsked(page, channel = "callback") {
+  const option = page.locator(`[data-fv-channel="${channel}"]`);
+  if (await option.count()) await option.click();
+  await page.waitForSelector('[data-fv="note"]', { timeout: 5000 }).catch(() => {});
+}
+
+async function buildVisit(page, { photo = true, channel = "callback" } = {}) {
+  await chooseIfAsked(page, channel);
   await page.fill('[data-fv="note"]', "The bathroom faucet drips and a towel bar fell off");
   if (photo) {
     await page.setInputFiles('[data-fv="photos"] input[type=file]', pngFile());
@@ -315,6 +332,10 @@ async function shot(page, name) {
     const urls = [];
     page.on("framenavigated", (f) => { if (f === page.mainFrame()) urls.push(f.url()); });
     await page.goto(BASE + "/?utm_source=fb&utm_medium=paid&utm_campaign=120200&fbclid=IwAR_test", { waitUntil: "networkidle" });
+    check("home offers two ways to book, and no form before choosing",
+      (await page.locator('[data-fv-channel="online"]').count()) === 1 && (await page.locator('[data-fv-channel="callback"]').count()) === 1 && (await page.locator('[data-fv="note"]').count()) === 0);
+    check("home names the offer", /Your first 90 minutes are on us\./.test(await page.locator("#hm-try").innerText().catch(() => "")));
+    await chooseIfAsked(page, "callback");
     check("home shows the booker to a new visitor", await page.locator('[data-fv="note"]').isVisible());
     /* Website 3.0: the H1 names the membership. */
     check("home H1 states the product", (await page.locator("h1").first().innerText()).includes("One membership"));
@@ -370,8 +391,8 @@ async function shot(page, name) {
     await page.waitForSelector('[data-fv="request-done"]', { timeout: 15000 }).catch(() => {});
     await shot(page, "home-request-done");
     const done = (await page.locator('[data-fv="request-done"]').innerText().catch(() => "")).replace(/\s+/g, " ");
-    check("success: on-page confirmation with the day and time",
-      done.includes("Got it!") && done.includes("A Profixter team member will call you shortly to confirm your free visit on") && done.includes(" at "), done);
+    check("success: a request, not an appointment, with the day and time",
+      done.includes("Request received!") && done.includes("We’ll call to confirm your free visit.") && done.includes("·") && !/booked/i.test(done), done);
     check("one press = one request each time (failed + retry)", state.requestPosts.length === 2);
     const post = state.requestPosts[1] || {};
     check("POST carries name, 10-digit phone, email", post.name === "Jane Doe" && post.phone === "6315550142" && post.email === "jane.doe@example.com", JSON.stringify(post));
@@ -401,6 +422,7 @@ async function shot(page, name) {
       requestQueue: [{ status: 409, body: { code: "SLOT_UNAVAILABLE", message: "That time was just taken." } }],
     });
     await page.goto(BASE + "/", { waitUntil: "networkidle" });
+    await chooseIfAsked(page, "callback");
     const layout = await page.evaluate(() => ({
       scroll: document.documentElement.scrollWidth,
       width: window.innerWidth,
@@ -436,6 +458,7 @@ async function shot(page, name) {
     const urls = [];
     page.on("framenavigated", (f) => { if (f === page.mainFrame()) urls.push(f.url()); });
     await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
+    await chooseIfAsked(page, "callback");
     check("/book/free shows the booker to a new visitor", await page.locator('[data-fv="note"]').isVisible());
     check("/book/free asks for name, mobile and email instead of signup", (await page.locator("[data-fv-contact]").count()) === 3);
     check("no account wall: the calendar is visible signed out", (await page.locator('[data-booking-date-disabled="false"]').count()) > 0);
@@ -455,7 +478,7 @@ async function shot(page, name) {
     await page.waitForSelector('[data-fv="request-done"]', { timeout: 15000 }).catch(() => {});
     await shot(page, "book-free-request-done");
     const done = (await page.locator('[data-fv="request-done"]').innerText().catch(() => "")).replace(/\s+/g, " ");
-    check("success: on-page confirmation with the day and time", done.includes("Got it!") && done.includes(" at "), done);
+    check("success: on-page confirmation with the day and time", done.includes("Request received!") && done.includes("·"), done);
     const post = state.requestPosts[0] || {};
     check("one request, photo optional", state.requestPosts.length === 1 && post.images === 0);
     check("POST carries name, phone, email, job and day/time", post.name === "Jane Doe" && post.phone === "6315550142" && post.email === "jane.doe@example.com" && post.note === "The bathroom faucet drips and a towel bar fell off" && post.requestedDate === visit.date && post.requestedTime === visit.time, JSON.stringify(post));
@@ -732,6 +755,186 @@ async function shot(page, name) {
     await page.reload({ waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
     check("after logout /book still opens Book Fixter with plans", (await activeTab(page)) === "Book Fixter" && (await page.locator("[data-plan-option]").count()) === 4);
+    await ctx.close();
+  }
+
+  /* ================================================================ */
+  /* Free Visit 2.0: the online path, end to end, with a mocked API.   */
+  /* ================================================================ */
+  {
+    console.log("\n--- two ways: switching keeps the job, day and time ---");
+    const { ctx, page } = await newContext(browser);
+    await page.goto(BASE + "/", { waitUntil: "networkidle" });
+    await shot(page, "fv2-home-chooser");
+    const visit = await buildVisit(page, { channel: "online" });
+    check("online: no name/phone/email fields, Continue to sign in", (await page.locator("[data-fv-contact]").count()) === 0 && /Continue/.test(await page.locator('[data-fv="book"]').innerText()));
+    check("online: says what happens next", /sign in or create your account/i.test(await page.locator('[data-fv="cta-hint"]').innerText()));
+    await shot(page, "fv2-home-online");
+    await page.click('[data-fv-switch="callback"]');
+    check("switch to callback: contact fields appear", (await page.locator("[data-fv-contact]").count()) === 3);
+    check("switch to callback: job and time kept", (await page.inputValue('[data-fv="note"]')).startsWith("The bathroom faucet") && (await page.locator('[data-fv="when-summary"]').innerText().catch(() => "")).includes("·"));
+    await shot(page, "fv2-home-callback");
+    await page.click('[data-fv-switch="online"]');
+    check("switch back to online: still kept", (await page.inputValue('[data-fv="note"]')).startsWith("The bathroom faucet") && !!visit.time);
+    const layout = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: window.innerWidth }));
+    check("no sideways scroll at 390px (online form)", layout.scroll <= layout.width, JSON.stringify(layout));
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- online: new phone customer, no home yet, booked without choosing the time again ---");
+    const { ctx, page, state, errors } = await newContext(browser, { newAccount: true });
+    const urls = [];
+    page.on("framenavigated", (f) => { if (f === page.mainFrame()) urls.push(f.url()); });
+    await page.goto(BASE + "/", { waitUntil: "networkidle" });
+    const visit = await buildVisit(page, { channel: "online" });
+    await page.click('[data-fv="book"]');
+    await page.waitForURL(/\/signup\?/, { timeout: 10000 }).catch(() => {});
+    const u = new URL(page.url());
+    check("online: Registration 2.0 opens, returning to the booking", u.pathname === "/signup" && u.searchParams.get("next") === "/book/free" && u.searchParams.get("intent") === "free-visit", page.url());
+    await page.waitForFunction(() => /Almost done/.test(document.body.innerText), null, { timeout: 8000 }).catch(() => {});
+    const carry = (await page.locator("body").innerText().catch(() => "")).replace(/\s+/g, " ");
+    check("signup shows the visit they picked", /Free visit/.test(carry) && /Almost done/.test(carry), carry.slice(0, 160));
+    await shot(page, "fv2-signup-carry");
+    await signUpWithPhone(page);
+    await page.waitForURL((x) => x.pathname === "/book/free", { timeout: 15000 }).catch(() => {});
+    check("after signup: straight back to the booking", new URL(page.url()).pathname === "/book/free", page.url());
+    await shot(page, "fv2-add-home");
+    await addHomeInSheet(page);
+    await page.waitForSelector('[data-fv="booked"]', { timeout: 20000 }).catch(() => {});
+    await shot(page, "fv2-online-booked");
+    const done = (await page.locator('[data-fv="booked"]').innerText().catch(() => "")).replace(/\s+/g, " ");
+    check("booked: says booked AND awaiting confirmation", done.includes("Your free visit is booked!") && done.includes("Awaiting confirmation from Profixter."), done);
+    check("booked: date, time, address and work shown", /Date/.test(done) && /Time/.test(done) && done.includes("12 Main St") && done.includes("The bathroom faucet drips"), done);
+    const post = state.bookingPosts[0] || {};
+    check("exactly one booking, with the time chosen before signup", state.bookingPosts.length === 1 && post.requestedDate === visit.date && post.requestedTime === visit.time, JSON.stringify(state.bookingPosts));
+    check("the booking carries a once-only submit id", /^[A-Za-z0-9_-]{8,64}$/.test(post.clientRequestId || ""), post.clientRequestId);
+    check("the home was added once", state.homePosts === 1, String(state.homePosts));
+    check("no callback request was sent", state.requestPosts.length === 0);
+    const schedules = (await fbqLog(page)).filter((c) => c[0] === "track" && c[1] === "Schedule");
+    check("one Schedule for the booking", schedules.length === 1, String(schedules.length));
+    check("the calendar was never shown again after signup", !urls.slice(urls.findIndex((x) => x.includes("/signup"))).some((x) => /\/#book$/.test(x)));
+    await page.reload({ waitUntil: "networkidle" });
+    await page.waitForTimeout(2500);
+    check("refresh after success books nothing again", state.bookingPosts.length === 1, String(state.bookingPosts.length));
+    check("no page errors on the online path", errors.length === 0, errors.join(" | "));
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- online: signed-in customer with one home books in one press ---");
+    const { ctx, page, state } = await newContext(browser, { signedIn: true });
+    await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
+    check("signed in: no chooser, straight to booking", (await page.locator('[data-fv="chooser"]').count()) === 0 && (await page.locator('[data-fv="switch"]').count()) === 0);
+    const visit = await buildVisit(page, { channel: "online" });
+    await page.dblclick('[data-fv="book"]');
+    await page.waitForSelector('[data-fv="booked"]', { timeout: 15000 }).catch(() => {});
+    check("double tap: one booking", state.bookingPosts.length === 1, String(state.bookingPosts.length));
+    check("existing home reused, no address asked", state.bookingPosts[0]?.addressId === "addr1" && !state.homePosts);
+    check("the time they picked", state.bookingPosts[0]?.requestedTime === visit.time);
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- online: two homes, the customer picks which ---");
+    const { ctx, page, state } = await newContext(browser, { signedIn: true, twoHomes: true });
+    await page.goto(BASE + "/", { waitUntil: "networkidle" });
+    const draftDate = await (async () => { await buildVisit(page, { channel: "online" }); return true; })();
+    await page.evaluate(() => {
+      const d = JSON.parse(sessionStorage.getItem("pf_free_visit_draft") || "{}");
+      sessionStorage.setItem("pf_free_visit_draft", JSON.stringify({ ...d, submitRequested: true, channel: "online", clientRequestId: "fv-test-two-homes-01", updatedAt: Date.now() }));
+    });
+    await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
+    await page.waitForSelector('[data-fv="home-picker"]', { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    check("two homes: asks which, books nothing yet", draftDate && (await page.locator(".fv-home--prompt").count()) === 1 && state.bookingPosts.length === 0, String(state.bookingPosts.length));
+    await shot(page, "fv2-two-homes");
+    // Picking the home is the last step: it books with the draft, no second press.
+    await page.selectOption('[data-fv="home-picker"] select', "addr2");
+    await page.waitForSelector('[data-fv="booked"]', { timeout: 15000 }).catch(() => {});
+    check("two homes: booked for the home picked, with the draft's id", state.bookingPosts.length === 1 && state.bookingPosts[0].addressId === "addr2" && state.bookingPosts[0].clientRequestId === "fv-test-two-homes-01", JSON.stringify(state.bookingPosts));
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- online: missing phone is collected before booking ---");
+    const { ctx, page, state } = await newContext(browser, { signedIn: true, noPhone: true });
+    await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
+    await buildVisit(page, { channel: "online" });
+    await page.click('[data-fv="book"]');
+    await page.waitForSelector('.pf-sheet input[type="tel"]', { timeout: 10000 }).catch(() => {});
+    check("missing phone: the contact sheet asks for it", (await page.locator('.pf-sheet input[type="tel"]').count()) >= 1);
+    check("missing phone: nothing booked before it is given", state.bookingPosts.length === 0);
+    await shot(page, "fv2-missing-phone");
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- online: a free visit already requested ---");
+    const { ctx, page } = await newContext(browser, { signedIn: true, next: { freeFirstVisitAvailable: false, introVisitStatus: "claimed", introVisitServiceable: true, hasSubscription: false } });
+    await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
+    await page.waitForSelector('[data-fv-access="active"]', { timeout: 10000 }).catch(() => {});
+    check("already requested: says so, no second booking offered", (await page.locator('[data-fv-access="active"]').count()) === 1 && (await page.locator('[data-fv="book"]').count()) === 0);
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- online: time taken mid-flow, then a failed submit, then success ---");
+    const { ctx, page, state } = await newContext(browser, {
+      signedIn: true,
+      bookingQueue: [
+        { status: 409, body: { code: "SLOT_UNAVAILABLE", message: "This time is no longer available." } },
+        { status: 500, body: { message: "Something went wrong" } },
+      ],
+    });
+    await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
+    await buildVisit(page, { channel: "online" });
+    await page.click('[data-fv="book"]');
+    await page.waitForSelector(".fv-notice", { timeout: 10000 }).catch(() => {});
+    check("taken: plain message, no success", (await page.locator(".fv-notice").count()) === 1 && (await page.locator('[data-fv="booked"]').count()) === 0);
+    check("taken: the job is kept, only the time cleared", (await page.inputValue('[data-fv="note"]')).startsWith("The bathroom faucet") && (await page.locator(".fv-slot--selected").count()) === 0);
+    await page.locator('[data-booking-time-available="true"]').first().click();
+    await page.click('[data-fv="book"]');
+    await page.waitForTimeout(1500);
+    check("failed submit: an error, never a success", (await page.locator('[data-fv="booked"]').count()) === 0 && (await page.locator('.fv-error[role="alert"]').count()) === 1);
+    await page.click('[data-fv="book"]');
+    await page.waitForSelector('[data-fv="booked"]', { timeout: 15000 }).catch(() => {});
+    const ids = new Set(state.bookingPosts.map((b) => b.clientRequestId));
+    check("retry succeeds, the same submission id each time", (await page.locator('[data-fv="booked"]').count()) === 1 && state.bookingPosts.length === 3 && ids.size === 1, JSON.stringify(state.bookingPosts.map((b) => b.clientRequestId)));
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- online: refreshed mid-submit, the server returns the booking it already made ---");
+    const { ctx, page, state } = await newContext(browser, {
+      signedIn: true,
+      bookingQueue: [
+        { status: 403, body: { code: "INTRO_VISIT_CLAIMED", message: "Your free first visit is already booked." } },
+        { status: 200, body: { duplicate: true, booking: { bookingNumber: "1042", status: "Pending Confirmation" } } },
+      ],
+    });
+    await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
+    await buildVisit(page, { channel: "online" });
+    await page.click('[data-fv="book"]');
+    await page.waitForSelector('[data-fv="booked"]', { timeout: 15000 }).catch(() => {});
+    check("same submission asked again shows the booking", (await page.locator('[data-fv="booked"]').count()) === 1 && state.bookingPosts.length === 2);
+    const schedules = (await fbqLog(page)).filter((c) => c[0] === "track" && c[1] === "Schedule");
+    check("no Schedule for a booking the server had already made", schedules.length === 0, String(schedules.length));
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- desktop layout of both ways ---");
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await fakeApi(ctx, {});
+    const page = await ctx.newPage();
+    await page.goto(BASE + "/", { waitUntil: "networkidle" });
+    await page.locator("#book").scrollIntoViewIfNeeded();
+    await shot(page, "fv2-desktop-chooser");
+    await chooseIfAsked(page, "callback");
+    const layout = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: window.innerWidth }));
+    check("desktop: no sideways scroll", layout.scroll <= layout.width, JSON.stringify(layout));
+    await shot(page, "fv2-desktop-callback");
     await ctx.close();
   }
 

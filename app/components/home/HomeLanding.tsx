@@ -170,9 +170,9 @@ export default function HomeLanding() {
           <Reveal className="hm-try__copy">
             <p className="ui-eyebrow ui-eyebrow--accent">First visit free</p>
             <h2 id="hm-try" className="ui-h2">
-              Try Profixter on us.
+              Your first 90 minutes are on us.
             </h2>
-            <p className="ui-lede">Tell us what needs fixing and pick a time. Up to 90 minutes of work, free for new customers.</p>
+            <p className="ui-lede">Choose how you&rsquo;d like to book.</p>
             <ol className="hm-steps">
               {STEPS.map((s, i) => (
                 <li key={s.title}>

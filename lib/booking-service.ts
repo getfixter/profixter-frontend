@@ -84,6 +84,8 @@ export interface BookingData {
   libraryReference?: string;
   requestedDate?: string;
   requestedTime?: string;
+  /** One online free-visit submission: a retry with the same id gets the same booking back. */
+  clientRequestId?: string;
 }
 
 export interface OneTimeCheckoutData {
@@ -313,6 +315,7 @@ export const createBooking = async (data: BookingData): Promise<BookingResponse>
   if (data.requestedDate) formData.append("requestedDate", data.requestedDate);
   if (data.requestedTime) formData.append("requestedTime", data.requestedTime);
   if (data.libraryReference) formData.append("libraryReference", data.libraryReference);
+  if (data.clientRequestId) formData.append("clientRequestId", data.clientRequestId);
 
   data.images.forEach((img) => formData.append("images", img));
 

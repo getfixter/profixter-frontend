@@ -144,6 +144,48 @@
 }
 .fv-enter { animation: fv-fade-up .5s cubic-bezier(.16,1,.3,1) both; }
 
+/* Two ways to the same free visit (Free Visit 2.0). */
+.fv-choose { display: grid; gap: 10px; padding: 14px; }
+@media (min-width: 640px) { .fv-choose { padding: 18px; } }
+/* The compact card already pads its contents. */
+.fv-compact > .fv-choose { padding: 0; }
+.fv-option {
+  position: relative; display: grid; gap: 4px; width: 100%; padding: 18px 52px 18px 18px; text-align: left;
+  border-radius: 18px; border: 1px solid #dfe5ef; background: #fff; color: #0b1628;
+  transition: border-color .2s ease, background-color .2s ease, transform .2s cubic-bezier(.16,1,.3,1), box-shadow .2s ease;
+}
+.fv-option:hover { border-color: #306eec; transform: translateY(-1px); }
+.fv-option:active { transform: scale(.99); }
+.fv-option:focus-visible { outline: 3px solid rgba(48, 110, 236, .35); outline-offset: 2px; }
+.fv-option--primary { background: #306eec; border-color: #306eec; color: #fff; box-shadow: 0 16px 34px -16px rgba(48, 110, 236, .75); }
+.fv-option--primary:hover { background: #2558c9; border-color: #2558c9; }
+.fv-option__title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.fv-option__body { font-size: 14px; line-height: 1.45; color: #5b6577; }
+.fv-option--primary .fv-option__body { color: rgba(255, 255, 255, .86); }
+.fv-option__go { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 18px; opacity: .8; }
+
+.fv-switch {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 12px 12px 0; padding: 4px;
+  border-radius: 14px; background: #f1f4f9;
+}
+.fv-compact .fv-switch { margin: 0 0 12px; }
+@media (min-width: 640px) { .fv-card:not(.fv-compact) > .fv-switch { margin: 18px 32px 0; } }
+.fv-switch__opt {
+  min-height: 40px; border-radius: 11px; font-size: 14px; font-weight: 600; color: #5b6577;
+  transition: background-color .2s ease, color .2s ease, box-shadow .2s ease;
+}
+.fv-switch__opt--on { background: #fff; color: #0b1628; box-shadow: 0 1px 2px rgba(11, 22, 40, .08), 0 4px 12px -6px rgba(11, 22, 40, .18); }
+.fv-switch__opt:focus-visible { outline: 2px solid rgba(48, 110, 236, .45); outline-offset: 1px; }
+
+.fv-home { display: block; }
+.fv-home--prompt .fv-input { border-color: #306eec; box-shadow: 0 0 0 4px rgba(48, 110, 236, 0.12); }
+
+.fv-awaiting {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+  background: #fff8eb; border: 1px solid #f3d7a2; color: #7a4d00; font-size: 14px; font-weight: 600;
+}
+.fv-awaiting__dot { width: 8px; height: 8px; border-radius: 999px; background: #e0a100; }
+
 @keyframes fv-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes fv-pop { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
 @keyframes fv-spin { to { transform: rotate(360deg); } }
