@@ -50,7 +50,7 @@ export default function StickyMobileCTA() {
         /* Cold traffic gets the offer, not an account chore. */
         <Link href="/book/free" className="ui-btn ui-btn--primary ui-btn--block sticky-cta__offer">
           <span>Book your free visit</span>
-          <span className="sticky-cta__note">90 minutes · No card required</span>
+          <span className="sticky-cta__note">We go over your to-do list · No account needed</span>
         </Link>
       )}
     </div>

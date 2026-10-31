@@ -56,8 +56,8 @@ export default function Header() {
    */
   const isMember = hasActiveMembership(user);
   const homeHref = useMemo(() => getCustomerHomePath(user), [user]);
-  /* The free-visit booker: in place on the homepage, its own page elsewhere. */
-  const freeVisitHref = pathname === "/" ? "/#book" : BOOKING_LINKS.freeVisit.href;
+  /* The Free Visit (a to-do list review, no labor) books at its own page, /book/free. */
+  const freeVisitHref = BOOKING_LINKS.freeVisit.href;
 
   const navLinks: readonly NavLink[] = useMemo(() => {
     if (isMember) {
@@ -104,7 +104,7 @@ export default function Header() {
     }
     return [
       { label: "Memberships", href: BOOKING_LINKS.memberships.href, meta: "From $149/mo" },
-      { label: "Free first visit", href: freeVisitHref, meta: "New customers" },
+      { label: "Free Visit", href: freeVisitHref, meta: "Go over your to-do list" },
       { label: "One-Time Visit", href: BOOKING_LINKS.oneTime.href, meta: "$99" },
       { label: "Full Day", href: BOOKING_LINKS.fullDay.href },
       { label: "Gift a membership", href: "/gift" },

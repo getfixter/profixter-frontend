@@ -83,7 +83,7 @@ export const guide: Guide = {
       t: "callout",
       tone: "profixter",
       title: "How Profixter prices visits",
-      text: "A **One-Time Visit** is one fixed price for up to 90 minutes on one small job from a set list. A **membership** is a monthly fee with 90-minute visits booked as often as you need; your plan sets how many visits you can have booked at the same time. A **Full Day** covers about eight hours. New Nassau and Suffolk customers can start with a free first visit.",
+      text: "A **One-Time Visit** is one fixed price for up to 90 minutes on one small job from a set list. A **membership** is a monthly fee with 90-minute visits booked as often as you need; your plan sets how many visits you can have booked at the same time. A **Full Day** covers about eight hours. Not sure which fits? Nassau and Suffolk homeowners can book a free visit to go over their to-do list with us.",
     },
     { t: "component", name: "offers" },
   ],

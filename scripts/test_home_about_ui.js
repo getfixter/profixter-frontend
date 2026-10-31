@@ -54,65 +54,44 @@ async function scrollThrough(page) {
 (async () => {
   const browser = await chromium.launch();
 
-  /* ---------------- the landing is the booker ---------------- */
+  /* ---------------- the first screen: two ways to start ---------------- */
   /*
-   * The full-screen start screen and its "Get Started" -> /signup button are
-   * gone on purpose: a visitor now describes the job and picks a real time
-   * before any account exists. What is pinned here is that the booker is on
-   * the first screen, live, and that nothing on Home sends a new visitor to a
-   * signup form first.
+   * Customer Experience 4.0 (2026-10-30): no booking form on Home. The first
+   * screen on a phone names the product and offers the two ways to start -
+   * Free Visit (/book/free, a to-do-list visit, no account) and Book a
+   * Handyman (/book/handyman) - both visible without scrolling. Nothing on
+   * Home sends a new visitor to a signup form first.
    */
   {
     const { ctx, page } = await openPage(browser, 390, 844);
-    /* The callback form is open by default (2026-10-30), Book Manually beside it. */
-    await page.waitForSelector('[data-fv="note"]', { timeout: 30000 });
-    check("free visit offers two ways to book, callback open", (await page.locator('[data-fv="switch"] [role="radio"]').count()) === 2 && (await page.locator("[data-fv-contact]").count()) === 3, "");
-    const openedH = await page.evaluate(() => Math.round(document.querySelector("#book").getBoundingClientRect().height));
-    await page.waitForSelector('[data-booking-date-disabled="false"]', { timeout: 30000 }).catch(() => {});
+    await page.waitForSelector("[data-hero-choices]", { timeout: 30000 });
+    await page.waitForTimeout(600);
     const s = await page.evaluate(() => {
       const t = document.body.innerText.replace(/’/g, "'");
-      const note = document.querySelector('[data-fv="note"]').getBoundingClientRect();
+      const onScreen = (sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return false;
+        const r = el.getBoundingClientRect();
+        return r.top >= 0 && r.bottom <= window.innerHeight;
+      };
       return {
-        /* Website 3.0: the first screen names the product - a membership. */
-        headline: t.includes("Your home.") && t.includes("One membership."),
-        offer: t.includes("First 90-minute visit"),
-        /*
-         * Website 3.0 leads with the membership; the booker moved below the
-         * ways to book. What stays pinned is that it is one tap from the first
-         * screen.
-         */
-        bookerOnFirstScreen: [...document.querySelectorAll('a[href="#book"]')].some((a) => {
-          const r = a.getBoundingClientRect();
-          return r.height > 0 && r.top < window.innerHeight;
-        }) && note.top > 0,
-        liveCalendar: document.querySelectorAll('[data-booking-date-disabled="false"]').length > 0,
+        headline: t.includes("Your home.") && t.includes("Your handyman."),
+        noLaborPromise: !/first 90-minute visit|90 minutes are on us/i.test(t),
+        freeVisitFirstScreen: onScreen("[data-hero-cta='free-visit']"),
+        handymanFirstScreen: onScreen("[data-hero-cta='book-handyman']"),
+        noForm: !document.querySelector("[data-fv='note'], [data-free-visit-form]"),
         noStartScreen: !document.querySelector(".start-screen"),
         noSignupWall: !document.querySelector('a[href^="/signup"]'),
+        oldAnchor: !!document.getElementById("book"),
       };
     });
     check("headline states the product", s.headline, "");
-    check("free 90-minute offer stated", s.offer, "");
-    check("booker is one tap from the first screen (390px)", s.bookerOnFirstScreen, "");
-    check("real availability shown signed out", s.liveCalendar, "");
+    check("no free-labor promise on Home", s.noLaborPromise, "");
+    check("Free Visit on the first screen (390px)", s.freeVisitFirstScreen, "");
+    check("Book a Handyman on the first screen (390px)", s.handymanFirstScreen, "");
+    check("no booking form competing on Home", s.noForm, "");
+    check("old links to /#book still land on the ways to start", s.oldAnchor, "");
     check("old start screen removed", s.noStartScreen, "");
-    /*
-     * The booker is the main action, not the whole page: it opens small and
-     * grows only as it is used. 1,007px tall before the compact pass.
-     */
-    const size = await page.evaluate(() => {
-      const card = document.querySelector("#book").getBoundingClientRect();
-      const how = [...document.querySelectorAll("h2")].find((e) => /Your first 90 minutes are on us/.test(e.textContent || ""));
-      return { h: Math.round(card.height), how: how ? Math.round(how.getBoundingClientRect().top + window.scrollY) : 99999 };
-    });
-    /*
-     * Raised 2026-10-23 from 420 / 900: the signed-out booker now carries name,
-     * mobile, email and the consent line, so the request is one step with no
-     * /signup. Those ~170px are the price of that step, by the owner's choice.
-     */
-    /* It now opens as the callback form: the 2026-10-23 allowance (620) plus the switch. */
-    check("booker opens compact (< 700px tall at 390px)", openedH < 700, `${openedH}px`);
-    check("the callback form stays compact (< 700px at 390px)", size.h < 700, `${size.h}px`);
-    check("the free-visit section starts within about two screens of the top", size.how < 1700, `${size.how}px`);
     check("no signup link anywhere on Home", s.noSignupWall, "");
     await ctx.close();
   }
@@ -120,7 +99,7 @@ async function scrollThrough(page) {
   /* ---------------- the 3D is gone, and not downloaded ---------------- */
   {
     const { ctx, page, heavy } = await openPage(browser, 390, 844);
-    await page.waitForSelector("#book", { timeout: 30000 });
+    await page.waitForSelector("[data-hero-choices]", { timeout: 30000 });
     await scrollThrough(page);
     const canvas = await page.evaluate(() => !!document.querySelector("canvas"));
     check("no 3D canvas anywhere on Home", canvas === false, `canvas=${canvas}`);
@@ -136,9 +115,10 @@ async function scrollThrough(page) {
       const t = document.body.innerText.replace(/’/g, "'");
       return {
         beats: {
-          how: t.includes("Your first 90 minutes are on us."),
+          how: /two ways to start/i.test(t),
           plans: t.includes("One membership. Every small job."),
-          work: /real work/i.test(t),
+          // The What We Do gallery renders only when the API has pairs; the section heading is the beat.
+          work: /what we do/i.test(t) || /real work/i.test(t),
           proof: t.includes("A local company, not a marketplace."),
           faq: !!document.querySelector("details.lx-faq"),
         },
@@ -159,7 +139,7 @@ async function scrollThrough(page) {
     });
 
     for (const [k, v] of Object.entries(m.beats)) check(`Home beat present: ${k}`, v, "");
-    check("real work photographs render", m.photos > 0, `${m.photos} images`);
+    check("photographs render", m.photos > 0, `${m.photos} images`);
     check("price signal present", m.price, "");
     check("Plans link goes straight to prices", m.plansLink, "");
     check("About link present", m.aboutLink, "");

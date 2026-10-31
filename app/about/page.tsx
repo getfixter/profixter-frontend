@@ -121,8 +121,8 @@ const faqs = [
     a: "Yes. Bathrooms, kitchens, roofing, siding and multi-day work start with a project estimate rather than a membership visit, handled by the same local company.",
   },
   {
-    q: "Is the first visit free?",
-    a: "New to Profixter? Your first visit is free: up to 90 minutes of handyman work, one per customer, no card needed.",
+    q: "What is the Free Visit?",
+    a: "A free in-person visit: a Profixter team member goes over your to-do list, explains what we handle and which tasks suit a membership, and answers your questions. Repairs and labor aren't part of the Free Visit. No account needed.",
   },
   {
     q: "Do you repair appliances?",
@@ -311,7 +311,7 @@ export default function AboutPage() {
         <section className="ui-section ui-section--tight ui-section--soft" aria-labelledby="about-close">
           <div className="ui-container text-center">
             <h2 id="about-close" className="ui-h2">Start with whatever&rsquo;s been waiting longest.</h2>
-            <p className="ui-lede mx-auto">Your first 90-minute visit is free. No card required.</p>
+            <p className="ui-lede mx-auto">Let&rsquo;s take a look at your to-do list. The visit is free, no account needed.</p>
             {/*
               An explicit Get Started, not MembershipCtaLink: that component
               picks its own label (See plans, for visitors) and would silently

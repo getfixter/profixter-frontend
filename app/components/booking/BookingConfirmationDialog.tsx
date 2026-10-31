@@ -128,7 +128,7 @@ export default function BookingConfirmationDialog({
           </h2>
           {confirmation.isFreeVisit ? (
             <p className="mt-1.5 text-[15px] font-semibold text-[color:var(--ui-accent-ink)]">
-              Your first visit is on us.
+              Free Visit: we&rsquo;ll go over your to-do list together.
             </p>
           ) : null}
           {confirmation.dateLabel ? (

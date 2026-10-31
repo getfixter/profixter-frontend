@@ -264,7 +264,7 @@ const asRegistered = (complete = true) => async (ctx) => {
     check("Priority Visit kept, never renamed 'Emergency'", /Priority Visit/.test(t) && !/emergency visit/i.test(t), "");
     check("'Small supplies', never 'Basic supplies'", /Small supplies included/.test(t) && !/Basic supplies/i.test(t), "");
     check("gift popup does not cover the buying page", !(await page.$('[aria-labelledby="promotion-popup-title"]')), "");
-    check("free visit still reachable, quietly", /first 90-minute visit is free/i.test(t), "");
+    check("free visit still reachable, quietly (a to-do list visit since 2026-10-30)", /take a look at your to-do list/i.test(t) && !/90-minute visit is free/i.test(t), "");
     check("loyalty still present", /loyalty benefits/i.test(t), "");
 
     /* Nothing may ever be marked with a cross, in any plan. */

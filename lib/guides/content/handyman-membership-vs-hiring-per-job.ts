@@ -77,7 +77,7 @@ export const guide: Guide = {
     { t: "component", name: "plan-table" },
     {
       t: "p",
-      text: "Not sure yet? New Nassau and Suffolk customers can start with a [free first visit](/book/free), or book a single [One-Time Visit](/book?visit=additional) and decide later. [How the membership works, in full](/handyman-membership).",
+      text: "Not sure yet? Nassau and Suffolk homeowners can book a [free visit](/book/free) to go over their to-do list with us, or book a single [One-Time Visit](/book?visit=additional) and decide later. [How the membership works, in full](/handyman-membership).",
     },
   ],
   sources: [

@@ -56,7 +56,7 @@ const WELCOME: ChatMessage = {
   content: "Hi! I'm the Profixter assistant. Ask me about membership, booking a visit, or anything about how we work.",
 };
 
-const SUGGESTIONS = ["How does membership work?", "Is the first visit free?", "What can a handyman visit cover?"];
+const SUGGESTIONS = ["How does membership work?", "What is the Free Visit?", "What can a handyman visit cover?"];
 
 let messageSeq = 0;
 const nextId = (prefix: string) => `${prefix}-${Date.now()}-${(messageSeq += 1)}`;

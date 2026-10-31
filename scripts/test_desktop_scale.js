@@ -12,7 +12,7 @@
  * - phones keep the phone scale (app/mobile-scale.css)
  * - the admin and the /event kiosk are never scaled
  * - no page scrolls sideways from 1024px up, or at 125/150/200% zoom
- * - the homepage job suggestions wrap instead of running off the card
+ * - the homepage's two ways to start fit inside their tiles
  *
  * PF_CORS_PROXY=<path to a module(ctx)> routes API calls for a local build on
  * a port the API's CORS list does not include.
@@ -125,15 +125,19 @@ const probe = (page, cls) => page.evaluate((c) => {
 
   for (const [w, h] of [[1024, 768], [1366, 657], [1920, 969]]) {
     const { ctx, page } = await open(browser, w, h, "/");
-    /* The callback form is open by default, so the job suggestions are on screen. */
-    await page.waitForSelector("[aria-label='Common jobs']", { timeout: 5000 }).catch(() => {});
+    /* Customer Experience 4.0: the two ways to start; neither tile may clip or overflow. */
+    await page.waitForSelector("[data-hero-choices]", { timeout: 5000 }).catch(() => {});
     const out = await page.evaluate(() => {
-      const strip = document.querySelector("[aria-label='Common jobs']");
-      if (!strip) return null;
-      const box = strip.getBoundingClientRect();
-      return [...strip.children].filter((c) => c.getBoundingClientRect().right > box.right + 1).map((c) => c.textContent.trim());
+      const tiles = [...document.querySelectorAll("[data-hero-cta]")];
+      if (tiles.length !== 2) return null;
+      return tiles
+        .filter((t) => {
+          const r = t.getBoundingClientRect();
+          return r.left < 0 || r.right > window.innerWidth + 1 || t.scrollWidth > t.clientWidth + 1;
+        })
+        .map((t) => t.textContent.trim());
     });
-    check(`${w}x${h}: every job suggestion is inside the card`, Array.isArray(out) && out.length === 0, out ? out.join(", ") : "strip not found");
+    check(`${w}x${h}: both ways to start fit inside their tiles`, Array.isArray(out) && out.length === 0, out ? out.join(", ") : "tiles not found");
     await ctx.close();
   }
 

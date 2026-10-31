@@ -100,7 +100,7 @@ export const metadata: Metadata = {
     template: "%s | Profixter",
   },
   description:
-    "A handyman membership for the repairs, installations and small jobs around your home. First visit free for new Nassau and Suffolk customers.",
+    "A handyman membership for the repairs, installations and small jobs around your home. Free visit to go over your to-do list, across Nassau and Suffolk.",
   /*
    * No canonical here. A canonical in the root layout is inherited by every
    * page that does not set its own, which made /gift, /signup and others point
@@ -119,7 +119,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Handyman Membership for Long Island Homes | Profixter",
     description:
-      "A handyman membership for the repairs, installations and small jobs around your home. First visit free for new Nassau and Suffolk customers.",
+      "A handyman membership for the repairs, installations and small jobs around your home. Free visit to go over your to-do list, across Nassau and Suffolk.",
     url: SITE_URL,
     siteName: SITE_NAME,
     type: "website",
@@ -130,7 +130,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Handyman Membership for Long Island Homes | Profixter",
     description:
-      "A handyman membership for the repairs, installations and small jobs around your home. First visit free for new Nassau and Suffolk customers.",
+      "A handyman membership for the repairs, installations and small jobs around your home. Free visit to go over your to-do list, across Nassau and Suffolk.",
     images: [DEFAULT_OG_IMAGE.url],
   },
   robots: {

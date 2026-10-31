@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PhotoLightbox from "../ui/PhotoLightbox";
-import RecentWorkUploader from "./RecentWorkUploader";
+import RecentWorkUploader, { RecentWorkPairUploader } from "./RecentWorkUploader";
 import {
   STATUS_LABELS,
   STATUS_TONES,
@@ -73,6 +73,7 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
   const [category, setCategory] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [uploaderOpen, setUploaderOpen] = useState(false);
+  const [pairOpen, setPairOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [editing, setEditing] = useState<AdminWorkPhoto | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -213,19 +214,32 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-slate-900">Recent Work</h2>
           <p className="text-[13px] text-slate-500">
-            Photos of real jobs, for the public gallery.
+            Photos of real jobs, and the before &amp; after pairs shown in What We Do.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setUploaderOpen(true)}
-          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:min-h-[38px]"
-        >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Add photos
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setPairOpen(true)}
+            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 md:min-h-[38px]"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M12 5v14" />
+            </svg>
+            Add before &amp; after
+          </button>
+          <button
+            type="button"
+            onClick={() => setUploaderOpen(true)}
+            className="flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:min-h-[38px]"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Add photos
+          </button>
+        </div>
       </div>
 
       {/* -------------------------------- views ------------------------------ */}
@@ -346,6 +360,21 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
         />
       )}
 
+      {pairOpen && (
+        <RecentWorkPairUploader
+          categories={categories}
+          onToast={onToast}
+          onClose={() => setPairOpen(false)}
+          onUploaded={(result) => {
+            setPairOpen(false);
+            onToast(result.message);
+            if (result.created[0]?.status === "published") setView("published");
+            else if (result.created.length) setView("library");
+            load({ quiet: true });
+          }}
+        />
+      )}
+
       {activePhoto && lightboxIndex !== null && (
         <PhotoLightbox
           items={lightboxItems}
@@ -419,6 +448,7 @@ function PhotoTile({
    * there still works: open the photo and the same actions are there.
    */
   const moderating = showModeration && needsReview;
+  const isPair = photo.kind === "before_after";
 
   return (
     <article
@@ -447,6 +477,29 @@ function PhotoTile({
               <path d="M3 3l18 18" />
             </svg>
             <span className="text-[10px] font-semibold leading-tight">Preview unavailable</span>
+          </span>
+        ) : isPair ? (
+          /* A pair: BEFORE on the left half, AFTER on the right. */
+          <span className="absolute inset-0 grid grid-cols-2 gap-px bg-white">
+            {[photo.beforeThumbUrl || "", photo.thumbUrl].map((src, side) => (
+              <span key={side} className="relative overflow-hidden bg-slate-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={side === 0 ? `Before: ${photo.title || "pair"}` : `After: ${photo.title || "pair"}`}
+                  loading="lazy"
+                  decoding="async"
+                  width={240}
+                  height={480}
+                  onError={() => setBroken(true)}
+                  className="absolute inset-0 object-cover"
+                  style={{ height: "100%", width: "100%" }}
+                />
+                <span className="absolute bottom-1 left-1 rounded bg-slate-900/70 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-white">
+                  {side === 0 ? "Before" : "After"}
+                </span>
+              </span>
+            ))}
           </span>
         ) : (
         /* eslint-disable-next-line @next/next/no-img-element */
@@ -495,6 +548,20 @@ function PhotoTile({
         <div className="mt-0.5 truncate text-[11px] text-slate-500">
           {UPLOADER_LABELS[photo.uploaderType]} · {relativeDate(photo.createdAt)}
         </div>
+        {isPair || photo.illustrative ? (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {isPair ? (
+              <span className="rounded-md border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-900">
+                Before/After{photo.group ? ` · ${photo.group}` : ""}
+              </span>
+            ) : null}
+            {photo.illustrative ? (
+              <span className="rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-900">
+                Illustrative
+              </span>
+            ) : null}
+          </div>
+        ) : null}
 
         {/*
           What the person who sent it said about it.

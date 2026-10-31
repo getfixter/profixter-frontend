@@ -3,7 +3,7 @@ import EventKiosk from "./EventKiosk";
 
 /**
  * The public event kiosk: real Profixter booking photos on an iPad at a booth,
- * and one way in, "Get My First Visit Free".
+ * and one way in, "Get My Free Visit".
  *
  * Public on purpose, and kept out of search: it is a booth screen, not a page
  * of the website. Photo management is /admin/event-display/review.

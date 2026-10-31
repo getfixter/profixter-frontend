@@ -4,7 +4,7 @@
  * The public event kiosk: an iPad on a tripod at a Profixter booth.
  *
  * A visitor can do exactly three things here: watch, swipe left/right, and
- * tap "Get My First Visit Free". There are no other controls, no admin panel,
+ * tap "Get My Free Visit". There are no other controls, no admin panel,
  * no keyboard shortcuts, no links, and the photos themselves are not
  * clickable, draggable or long-pressable. Photo management stays in
  * /admin/event-display/review, behind the admin API.
@@ -520,7 +520,7 @@ export default function EventKiosk() {
           onClick={startSignup}
           disabled={leaving}
         >
-          <span>{leaving ? "One moment…" : "Get My First Visit Free"}</span>
+          <span>{leaving ? "One moment…" : "Get My Free Visit"}</span>
           {!leaving && (
             <svg width="26" height="20" viewBox="0 0 19 14" aria-hidden="true">
               <path
@@ -534,7 +534,7 @@ export default function EventKiosk() {
             </svg>
           )}
         </button>
-        <div className="ed-cta-sub">90-minute handyman visit &middot; No card required</div>
+        <div className="ed-cta-sub">We visit your home and go over your to-do list &middot; No card required</div>
       </div>
     </div>
   );

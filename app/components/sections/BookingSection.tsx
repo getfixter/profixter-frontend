@@ -1936,20 +1936,20 @@ if (next?.date) {
               </div>
             </div>
 
-            {/* First Visit Free, eligible non-members only. Members never see this. */}
+            {/* Free Visit (to-do list review, no labor), eligible non-members only. Members never see this. */}
             {isAuthenticated && !checkingAccess && !hasSubscription && freeFirstVisitAvailable && (
               <div className="pg-panel order-5 lg:order-none">
                 <div className="ui-eyebrow ui-eyebrow--accent !mb-1">
-                  First Visit Free
+                  Free Visit
                 </div>
                 <div className="text-[16px] font-semibold leading-tight text-[color:var(--ui-ink)]">
-                  Your first 90-minute handyman visit is on us.
+                  Let&rsquo;s take a look at your to-do list.
                 </div>
                 <div className="mt-1 text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
-                  $0 due for your first eligible visit. No membership required, and no credit card needed to book.
+                  We&rsquo;ll visit your home, go over your list and help you find the right Profixter service. $0 due, no membership or credit card needed.
                 </div>
                 <div className="mt-1.5 text-[13px] leading-[1.45] text-[color:var(--ui-text-3)]">
-                  One free visit per customer. Standard handyman labor, up to 90 minutes. Materials not included. Subject to availability.
+                  Repairs and labor aren&rsquo;t part of the Free Visit. Subject to availability.
                 </div>
               </div>
             )}
@@ -1961,7 +1961,7 @@ if (next?.date) {
                   We don&rsquo;t reach this address yet
                 </div>
                 <div className="mt-1 text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
-                  We currently offer First Visit Free for homes in Nassau and Suffolk Counties.
+                  We currently offer the Free Visit for homes in Nassau and Suffolk Counties.
                   If you have another property on Long Island, add it to your account and
                   we&rsquo;ll take it from there.
                 </div>

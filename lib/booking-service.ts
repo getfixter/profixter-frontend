@@ -98,6 +98,10 @@ export interface OneTimeCheckoutData {
   libraryReference?: string;
   requestedDate?: string;
   requestedTime?: string;
+  /** One id per press of Pay: a retry reopens the same checkout instead of holding a second slot. */
+  clientRequestId?: string;
+  /** "handyman": a canceled checkout returns to /book/handyman with the draft. */
+  returnTo?: "handyman";
 }
 
 export interface OneTimeCheckoutResponse {
@@ -354,6 +358,8 @@ export const createOneTimeVisitCheckout = async (
   if (data.requestedDate) formData.append("requestedDate", data.requestedDate);
   if (data.requestedTime) formData.append("requestedTime", data.requestedTime);
   if (data.libraryReference) formData.append("libraryReference", data.libraryReference);
+  if (data.clientRequestId) formData.append("clientRequestId", data.clientRequestId);
+  if (data.returnTo) formData.append("returnTo", data.returnTo);
   data.images.forEach((img) => formData.append("images", img));
 
   const token = localStorage.getItem("token") || "";

@@ -65,7 +65,7 @@ export const guide: Guide = {
       t: "callout",
       tone: "profixter",
       title: "For new Long Island homeowners",
-      text: "New customers in Nassau and Suffolk can start with a **free first 90-minute visit**, one per customer, to take a first bite out of the punch list. Real estate agents and family can also [give a membership as a gift](/gift): a set number of months, paid once, nothing renews.",
+      text: "In Nassau and Suffolk, you can start with a **free visit**: a Profixter team member walks through your punch list with you and helps you find the right service (repairs and labor aren't part of it). Real estate agents and family can also [give a membership as a gift](/gift): a set number of months, paid once, nothing renews.",
     },
     { t: "component", name: "offers" },
   ],

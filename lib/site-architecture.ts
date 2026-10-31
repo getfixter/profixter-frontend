@@ -79,7 +79,13 @@ export const COMPANY_LINKS = [
 export const BOOKING_LINKS = {
   memberships: { label: "Memberships", href: "/membership/plans" },
   freeVisit: { label: "Free Visit", href: "/book/free" },
-  oneTime: { label: "One-Time Visit", href: "/book?visit=additional" },
+  /*
+   * Customer Experience 4.0: getting work done starts at Book a Handyman,
+   * which offers the One-Time Visit (and membership) after the job and time
+   * are chosen. The old ?visit=additional tab still works for saved links.
+   */
+  handyman: { label: "Book a Handyman", href: "/book/handyman" },
+  oneTime: { label: "One-Time Visit", href: "/book/handyman" },
   fullDay: { label: "Full Day", href: "/book?visit=full-day" },
   gift: { label: "Gift", href: "/gift" },
 } as const;
@@ -117,8 +123,8 @@ export const FOOTER_PRODUCT_LINKS = [
    * business that needs defining before it can be chosen.
    */
   { label: "How membership works", href: "/handyman-membership" },
-  { label: "Free first visit", href: BOOKING_LINKS.freeVisit.href },
-  BOOKING_LINKS.oneTime,
+  BOOKING_LINKS.freeVisit,
+  BOOKING_LINKS.handyman,
   BOOKING_LINKS.fullDay,
   { label: "Gift a Membership", href: "/gift" },
 ] as const;
@@ -131,7 +137,7 @@ export const FOOTER_SEO_LINKS = [
   { label: "Services", href: "/services" },
   { label: "Locations", href: "/locations" },
   { label: "Homeowner guides", href: "/guides" },
-  { label: "What we do", href: "/recent-work" },
+  { label: "What We Do", href: "/recent-work" },
   { label: "Renovations", href: "/renovations" },
 ] as const;
 

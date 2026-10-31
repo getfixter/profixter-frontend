@@ -106,6 +106,17 @@ const FREE_VISIT_KIND_LABEL = {
   online: "Online Booking — Awaiting Approval",
 } as const;
 
+/* A Free Visit under the current offer: a to-do list review, no labor. Older ones ("") were 90 minutes of labor. */
+function isConsultationFreeVisit(booking: Booking) {
+  return booking.freeVisitPurpose === "consultation";
+}
+
+function pendingFreeVisitLabel(booking: Booking) {
+  const kind = pendingFreeVisitKind(booking) as "callback" | "online";
+  if (!isConsultationFreeVisit(booking)) return FREE_VISIT_KIND_LABEL[kind];
+  return kind === "callback" ? "Free Visit — Awaiting Approval · Call first" : "Free Visit — Awaiting Approval";
+}
+
 function getStatusTone(status: string) {
   const normalized = String(status || "").toLowerCase();
 
@@ -140,7 +151,9 @@ function getStatusTone(status: string) {
 function bookingTypeLabel(booking: Booking) {
   if (isFullDayBooking(booking)) return "Full Day";
   if (isOneTimeBooking(booking)) return "One-Time Visit";
-  if (booking.accessType === "free_first_visit") return "Free First Visit";
+  if (booking.accessType === "free_first_visit") {
+    return isConsultationFreeVisit(booking) ? "Free Visit · To-do review" : "Free First Visit (labor)";
+  }
   return "Membership";
 }
 
@@ -748,7 +761,7 @@ export default function BookingsTable({
                                 }`}
                                 data-free-visit-kind={pendingFreeVisitKind(booking)}
                               >
-                                {FREE_VISIT_KIND_LABEL[pendingFreeVisitKind(booking) as "callback" | "online"]}
+                                {pendingFreeVisitLabel(booking)}
                               </span>
                             )}
 

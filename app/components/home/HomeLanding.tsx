@@ -3,39 +3,37 @@
 /**
  * The homepage for anyone who is not already a member (Website 3.0).
  *
- * The one thing a visitor must understand within five seconds: Profixter is a
- * handyman membership for your home. So the first screen says exactly that,
- * offers the membership first, and puts the free first visit one tap away.
- * Then, in order: the other ways in (One-Time, Full Day), the free-visit
- * booker itself, how membership works, real work, why us, questions.
+ * Customer Experience 4.0 (2026-10-30): the first screen on a phone shows the
+ * brand, one line about what Profixter is, and the two ways to start - Free
+ * Visit (we come and go over your to-do list; no labor) and Book a Handyman
+ * (get the work done). Both are reachable without scrolling. Then: what each
+ * path is, What We Do (before/after), membership, trust, questions.
  *
- * Short text only. Details live behind links and a closed FAQ.
- *
- * THE BOOKER IS UNCHANGED. FreeVisitBooker (same component, same props, same
- * API calls, validation, consent line and Meta/analytics events) only moved
- * down the page and wears the design system through .hm-booker in home.css.
- *
- * Every fact here is already published on the site: plans from $149/month,
- * the free first 90-minute visit for new Nassau and Suffolk customers (one per
- * customer, no card), the $99 One-Time Visit for one small job, Full Day.
+ * Short text only. Details live behind links and a closed FAQ. There is no
+ * booking form on this page: each path has its own focused page
+ * (/book/free, /book/handyman), so nothing here competes with them.
  */
 
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import { HomeExtras, MemberPromo } from "./HomePersonal";
-import FreeVisitBooker from "@/app/components/booking/FreeVisitBooker";
 import GoogleRatingCompact from "@/app/components/home/GoogleRatingCompact";
-import WorkStrip from "@/app/components/home/WorkStrip";
+import WhatWeDo from "@/app/components/whatwedo/WhatWeDo";
 import Reveal from "@/app/components/ui/Reveal";
 import { trackEvent } from "@/lib/analytics";
 import { HOME_FAQ as FAQ } from "@/lib/home-faq";
 import { BOOKING_LINKS } from "@/lib/site-architecture";
 
-const STEPS = [
-  { title: "Pick a time", body: "Tell us what needs doing. About a minute." },
-  { title: "Your Fixter arrives", body: "A local pro, with the tools." },
-  { title: "It's done", body: "Up to 90 minutes of work on your list." },
+const FREE_VISIT_POINTS = [
+  "We come to your home and go over your to-do list",
+  "We explain what we handle and which service fits",
+  "Free, no account needed. Repairs aren't part of this visit",
+];
+const HANDYMAN_STEPS = [
+  { title: "Describe the job", body: "A few words, a photo if you have one." },
+  { title: "Pick a time", body: "Real open times on our calendar." },
+  { title: "Choose how to book", body: "A One-Time Visit or a membership." },
 ];
 
 const MEMBERSHIP_POINTS = [
@@ -91,32 +89,42 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
           </div>
 
           <div className="hm-hero__copy">
-            <p className="ui-eyebrow ui-rise">Handyman membership &middot; Long Island</p>
+            <p className="ui-eyebrow ui-rise">Handyman services &middot; Long Island</p>
             <h1 id="hm-title" className="ui-display hm-hero__title ui-rise" style={{ animationDelay: "60ms" }}>
-              Your home. Your handyman. One membership.
+              Your home. Your handyman.
             </h1>
             <p className="ui-lede hm-hero__lede ui-rise" style={{ animationDelay: "120ms" }}>
-              Reliable handyman visits through one simple monthly membership, from $149/month.
+              Local Fixters for the small jobs around your house. Nassau &amp; Suffolk.
             </p>
-            <div className="hm-hero__ctas ui-rise" style={{ animationDelay: "180ms" }}>
+            <div className="hm-choices ui-rise" style={{ animationDelay: "180ms" }} data-hero-choices>
               <Link
-                href={BOOKING_LINKS.memberships.href}
-                className="ui-btn ui-btn--primary ui-btn--lg"
-                onClick={plansClick("home_hero")}
-              >
-                Explore memberships
-              </Link>
-              <Link
-                href="#book"
-                className="ui-btn ui-btn--secondary ui-btn--lg"
+                href="/book/free"
+                className="hm-choice"
+                data-hero-cta="free-visit"
                 onClick={() => trackEvent("free_visit_cta_clicked", { placement: "home_hero" })}
               >
-                Book a free visit
+                <span className="hm-choice__name">Free Visit</span>
+                <span className="hm-choice__desc">We&rsquo;ll look at your to-do list</span>
+                <span className="hm-choice__go" aria-hidden="true"><Arrow /></span>
+              </Link>
+              <Link
+                href="/book/handyman"
+                className="hm-choice hm-choice--primary"
+                data-hero-cta="book-handyman"
+                onClick={() => trackEvent("book_handyman_clicked", { placement: "home_hero" })}
+              >
+                <span className="hm-choice__name">Book a Handyman</span>
+                <span className="hm-choice__desc">Get the work done</span>
+                <span className="hm-choice__go" aria-hidden="true"><Arrow /></span>
               </Link>
             </div>
             <p className="hm-hero__offer ui-rise" style={{ animationDelay: "240ms" }}>
-              <span className="ui-tag ui-tag--accent">Free</span>
-              <span>First 90-minute visit for new Nassau &amp; Suffolk customers. No card needed.</span>
+              <span>
+                Memberships from $149/month.{" "}
+                <Link href={BOOKING_LINKS.memberships.href} className="hm-inline-link" onClick={plansClick("home_hero")}>
+                  Explore plans
+                </Link>
+              </span>
             </p>
           </div>
         </div>
@@ -138,15 +146,15 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
               </Link>
             </li>
             <li>
-              <Link href="#book" className="hm-way">
-                <span className="hm-way__name">Free first visit</span>
+              <Link href="/book/free" className="hm-way">
+                <span className="hm-way__name">Free Visit</span>
                 <span className="hm-way__price">Free</span>
-                <span className="hm-way__desc">90 minutes, new customers.</span>
+                <span className="hm-way__desc">We go over your to-do list.</span>
                 <span className="hm-way__go" aria-hidden="true"><Arrow /></span>
               </Link>
             </li>
             <li>
-              <Link href={BOOKING_LINKS.oneTime.href} className="hm-way">
+              <Link href="/book/handyman" className="hm-way">
                 <span className="hm-way__name">One-Time Visit</span>
                 <span className="hm-way__price ui-num">$99</span>
                 <span className="hm-way__desc">One small job, up to 90 minutes.</span>
@@ -165,30 +173,47 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
         </div>
       </section>
 
-      {/* ======================== FREE VISIT + BOOKER ========================= */}
-      <section className="ui-section ui-section--soft hm-try" aria-labelledby="hm-try">
-        <div className="ui-container hm-try__grid">
-          <Reveal className="hm-try__copy">
-            <p className="ui-eyebrow ui-eyebrow--accent">First visit free</p>
-            <h2 id="hm-try" className="ui-h2">
-              Your first 90 minutes are on us.
+      {/* ============================ TWO WAYS IN ============================ */}
+      {/* id="book": older links to /#book land here, on the two ways to start. */}
+      <section id="book" className="ui-section ui-section--soft hm-paths" aria-labelledby="hm-paths">
+        <div className="ui-container">
+          <Reveal className="ui-head">
+            <p className="ui-eyebrow ui-eyebrow--accent">Two ways to start</p>
+            <h2 id="hm-paths" className="ui-h2">
+              Not sure yet, or ready to go?
             </h2>
-            <p className="ui-lede">Choose how you&rsquo;d like to book.</p>
-            <ol className="hm-steps">
-              {STEPS.map((s, i) => (
-                <li key={s.title}>
-                  <span className="hm-steps__n ui-num">{i + 1}</span>
-                  <span>
-                    <b>{s.title}</b>
-                    <span>{s.body}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
           </Reveal>
-
-          <div className="hm-booker">
-            <FreeVisitBooker id="book" variant="compact" guest />
+          <div className="hm-paths__grid">
+            <Reveal className="hm-path">
+              <h3 className="ui-h3">Free Visit</h3>
+              <p className="ui-body">Let&rsquo;s take a look at your to-do list together.</p>
+              <ul className="ui-checks">
+                {FREE_VISIT_POINTS.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+              <Link href="/book/free" className="ui-btn ui-btn--secondary" onClick={() => trackEvent("free_visit_cta_clicked", { placement: "home_paths" })}>
+                Book a Free Visit
+              </Link>
+            </Reveal>
+            <Reveal className="hm-path hm-path--primary" delay={70}>
+              <h3 className="ui-h3">Book a Handyman</h3>
+              <p className="ui-body">Ready to get it done? Book a Fixter in about a minute.</p>
+              <ol className="hm-steps">
+                {HANDYMAN_STEPS.map((step, i) => (
+                  <li key={step.title}>
+                    <span className="hm-steps__n ui-num">{i + 1}</span>
+                    <span>
+                      <b>{step.title}</b>
+                      <span>{step.body}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <Link href="/book/handyman" className="ui-btn ui-btn--primary" onClick={() => trackEvent("book_handyman_clicked", { placement: "home_paths" })}>
+                Book a Handyman
+              </Link>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -224,7 +249,7 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
 
           <Reveal className="hm-member__cta">
             <p className="hm-member__price">
-              <span className="ui-num">Plans from $149 a month.</span> Your first visit is free.
+              <span className="ui-num">Plans from $149 a month.</span> Not sure yet? Start with a Free Visit.
             </p>
             <Link href={BOOKING_LINKS.memberships.href} className="ui-btn ui-btn--primary" onClick={plansClick("home_membership")}>
               Explore memberships
@@ -233,25 +258,8 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
         </div>
       </section>
 
-      {/* =============================== REAL WORK ============================ */}
-      <section className="ui-section ui-section--flush-top hm-realwork" aria-labelledby="hm-work">
-        <div className="ui-container">
-          <Reveal className="ui-head ui-head--row">
-            <div>
-              <p className="ui-eyebrow">Real work</p>
-              <h2 id="hm-work" className="ui-h2">
-                Real homes. Real jobs.
-              </h2>
-            </div>
-            <Link href="/recent-work" className="ui-link">
-              See more work
-            </Link>
-          </Reveal>
-        </div>
-        <div className="ui-container">
-          <WorkStrip />
-        </div>
-      </section>
+      {/* ============================== WHAT WE DO ============================ */}
+      <WhatWeDo variant="home" />
 
       {/* ================================= TRUST ============================== */}
       <section className="ui-section ui-section--soft" aria-labelledby="hm-trust">

@@ -230,7 +230,7 @@ export function DetailPage({
       ? [
           {
             title: "Best first step",
-            body: "New to Profixter? Your first visit is free: up to 90 minutes of handyman work, one per customer, no card needed. After that, book a $99 One-Time Visit when the task is specific, small, and on the approved service list.",
+            body: "New to Profixter? Start with a free visit: we'll go over your to-do list and help you find the right service (repairs and labor aren't part of the Free Visit). To get work done, book a $99 One-Time Visit when the task is specific, small, and on the approved service list.",
           },
           {
             title: "Better long-term answer",
@@ -434,13 +434,13 @@ export function LocationDetailPage({
   lowestPlanPrice: number;
   dataAsOf: string;
 }) {
-  /* The free first visit leads: it is the step a new visitor can take today. */
+  /* The Free Visit leads: it is the step a new visitor can take today. */
   const paths: { title: string; body: string; href: string; label: string }[] = [
     {
       title: "New to Profixter",
-      body: "A free first 90-minute visit, one per customer, for new customers in Nassau and Suffolk.",
+      body: "A free visit in Nassau and Suffolk: we go over your to-do list and help you find the right service. No labor included.",
       href: "/book/free",
-      label: "Book a free first visit",
+      label: "Book a free visit",
     },
     {
       title: "One small job",
@@ -583,7 +583,7 @@ export function LocationDetailPage({
 
         <ConversionBand
           title={`Start with the right Profixter path in ${area.name}.`}
-          description="New here: your first visit is free. One small job: a One-Time Visit. A running list: a membership. Larger work: a project estimate."
+          description="New here: start with a free visit to go over your to-do list. One small job: a One-Time Visit. A running list: a membership. Larger work: a project estimate."
           freeVisitFirst
         />
       </main>

@@ -17,15 +17,15 @@ import { HOME_FAQ } from "@/lib/home-faq";
  * Membership for Long Island Homes"), which describes the product nobody has
  * heard of yet and undersells the plain answer to "I need a handyman". The
  * title now leads with that and keeps the membership beside it. Every fact in
- * the description is published elsewhere on the site and verified: free first
- * 90-minute visit (one per customer, new customers only), $99 One-Time Visit, plans from
+ * the description is published elsewhere on the site and verified: a Free
+ * Visit to go over the to-do list (no labor), $99 One-Time Visit, plans from
  * $149 a month, Nassau and Suffolk.
  *
  * The page body is unchanged and still a client component.
  */
 const TITLE = "Long Island Handyman & Handyman Membership | Profixter";
 const DESCRIPTION =
-  "A Long Island handyman for the small jobs around your home, from a local team in Lindenhurst. New Nassau and Suffolk customers get a free first 90-minute visit; after that, $99 One-Time Visits or a handyman membership from $149/month.";
+  "A Long Island handyman for the small jobs around your home, from a local team in Lindenhurst. Start with a free visit to go over your to-do list, then book a $99 One-Time Visit or a handyman membership from $149/month. Nassau and Suffolk.";
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },

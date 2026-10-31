@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import Link from "next/link";
-import RecentWorkSection from "@/app/components/sections/RecentWorkSection";
-import { getRecentWorkPhotos } from "@/lib/offers";
+import WhatWeDo from "@/app/components/whatwedo/WhatWeDo";
+import { getWhatWeDoPairs } from "@/lib/offers";
 import { SITE_URL } from "@/lib/seo";
 import { COMPLETED_VISITS_ROUNDED, DATA_AS_OF, DATA_SINCE, MULTI_TASK_REQUEST_PHRASE, TASK_MIX } from "@/lib/profixter-data";
 
@@ -15,13 +15,18 @@ export const metadata: Metadata = {
    * The Open Graph title below is not templated and keeps its own suffix.
    */
   title: "What We Do",
+  /*
+   * No longer "photographs of real jobs": the gallery is now before/after
+   * pairs, many of them illustrative examples, and the description must not
+   * promise otherwise.
+   */
   description:
-    "See the everyday work a Profixter membership covers - mounting, repairs, installations, replacements, adjustments and maintenance - in photographs of real jobs across Long Island.",
+    "Small fixes, done right: outlets, light fixtures, caulking, faucets, doors, trim, drywall and more. See before-and-after examples of the everyday handyman jobs Profixter handles on Long Island.",
   alternates: { canonical: "https://www.profixter.com/recent-work" },
   openGraph: {
     title: "What We Do | Profixter",
     description:
-      "The everyday work a Profixter membership covers - mounting, repairs, installations, replacements and maintenance - shown in real Long Island homes.",
+      "Small fixes, done right: before-and-after examples of the everyday handyman jobs Profixter handles on Long Island.",
     url: "https://www.profixter.com/recent-work",
     type: "website",
   },
@@ -30,41 +35,49 @@ export const metadata: Metadata = {
 /**
  * The browsable answer to "can they handle my thing?"
  *
- * Not a portfolio. The photographs exist to show what ordinary handyman work
- * looks like when a membership covers it - a door that will not close, grey
- * caulk, a fixture nobody swapped - so a homeowner can find their own job in
- * somebody else's house and stop wondering whether it counts.
+ * Not a portfolio. The before/after pairs exist to show what ordinary
+ * handyman work looks like - a scorched outlet, grey caulk, a fixture nobody
+ * swapped - so a homeowner can find their own job and stop wondering whether
+ * it counts. Many are illustrative examples, and the page says so.
  *
- * It keeps its own page because that library will grow, and because the
- * question is one people ask deliberately. The homepage carries a six-tile
- * sample; this is where the rest lives, with the category filter.
+ * It keeps its own page (and its old URL) because that library will grow, and
+ * because the question is one people ask deliberately. The homepage carries a
+ * carousel; this is where every pair lives, with the kind-of-job filter.
  */
-/* The captioned photos are re-read hourly for the structured data below. */
+/* The pairs are re-read hourly for the structured data below. */
 export const revalidate = 3600;
 
 export default async function RecentWorkPage() {
   /*
    * The gallery itself renders in the browser; this gives search engines and
-   * assistants the same photographs as data in the served HTML - each with the
-   * caption an admin wrote for it - so "what does this company actually do"
-   * has an answer that does not depend on running the page's scripts.
+   * assistants the same pairs as data in the served HTML.
+   *
+   * Honestly labelled. Most pairs are illustrative examples (generated or
+   * staged images of the kind of job), not photographs of a specific Profixter
+   * job, so when any are, the gallery is named and described as examples and
+   * each such image's caption starts "Illustrative example:". A real job pair
+   * keeps its caption as written.
    */
-  const photos = await getRecentWorkPhotos(undefined, 48);
-  const galleryJsonLd = photos.length
+  const pairs = await getWhatWeDoPairs(48);
+  const illustrative = pairs.some((pair) => pair.illustrative);
+  const galleryJsonLd = pairs.length
     ? {
         "@context": "https://schema.org",
         "@type": "ImageGallery",
-        name: "Profixter recent work",
+        name: illustrative ? "What We Do: illustrative before-and-after examples" : "What We Do: before and after",
+        description: illustrative
+          ? "Illustrative before-and-after examples of the small home repairs Profixter handles. The images show the type of work; they are not photographs of specific customer jobs."
+          : "Before-and-after photographs of small home repairs completed by Profixter.",
         url: `${SITE_URL}/recent-work`,
         provider: { "@id": `${SITE_URL}/#business` },
-        associatedMedia: photos.map((photo) => ({
+        associatedMedia: pairs.map((pair) => ({
           "@type": "ImageObject",
-          contentUrl: photo.imageUrl,
-          thumbnailUrl: photo.thumbUrl,
-          name: photo.title,
-          caption: photo.caption,
-          width: photo.width,
-          height: photo.height,
+          contentUrl: pair.imageUrl,
+          thumbnailUrl: pair.thumbUrl,
+          name: pair.illustrative ? `Illustrative example: ${pair.title}` : pair.title,
+          caption: pair.illustrative ? `Illustrative example: ${pair.caption}` : pair.caption,
+          width: pair.width,
+          height: pair.height,
         })),
       }
     : null;
@@ -76,25 +89,8 @@ export default async function RecentWorkPage() {
       <div className="sticky top-0 z-50">
         <Header />
       </div>
-      <RecentWorkSection
-        variant="full"
-        /*
-         * Framed as coverage, not as a portfolio.
-         *
-         * "Real work completed by Profixter" is true and answers the wrong
-         * question. Somebody weighing a membership is not asking whether we
-         * have done work before; they are asking what they would be able to
-         * book. These are the same photographs, introduced as the answer to
-         * that question instead.
-         *
-         * The materials and renovations line stays. It is what keeps this
-         * from reading as a promise that anything pictured is always covered
-         * at no extra cost, which depends on the plan and the job.
-         */
-        eyebrow="What your membership covers"
-        heading="See the kind of work included"
-        subheading="Mounting, repairs, installations, replacements, adjustments and maintenance - real examples of the everyday jobs ProFixter members book, in real Long Island homes. Materials are separate, and bigger renovations are quoted on their own."
-      />
+      {/* Owns the page's one H1, rendered in the server HTML even before the pairs load. */}
+      <WhatWeDo variant="page" />
       {/*
         What the photographs cannot say on their own. The gallery has no
         captions yet, so the page's text was a heading and a sentence; this is

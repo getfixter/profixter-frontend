@@ -787,7 +787,7 @@ export default function SignUpPage() {
 
         {screen === "methods" && carry?.kind !== "plan" && mode === "signup" ? (
           <p className="auth-reassure">
-            <b>First visit free.</b> No card required.
+            <b>Free visit available.</b> No card required.
           </p>
         ) : null}
       </AuthScreen>
