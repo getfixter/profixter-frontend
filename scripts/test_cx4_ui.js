@@ -49,6 +49,8 @@ async function open(browser, { width, height, me = null }) {
     } catch {}
   }, Boolean(me));
   const state = { me, freeVisits: [], callbacks: [], oneTime: [], memberships: [], bookings: [], abandons: [], homes: [] };
+  // Google Places is real on the live site; blocking it makes the address field use its manual form, as it does without a key.
+  await ctx.route(/maps\.googleapis\.com|places\.googleapis\.com/, (r) => r.abort());
   await ctx.route("https://checkout.stripe.test/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<h1>Stripe test checkout</h1>" }));
   await ctx.route(/\/api\//, async (route) => {
     const req = route.request();
