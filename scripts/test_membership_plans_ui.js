@@ -142,6 +142,10 @@ const asMember = (plan) => async (ctx) => {
       addressId: "a1",
     },
   };
+  // The welcome offer needs a real session; a stubbed account is never new. (Routes added later win, so 8c can override.)
+  await ctx.route("**/api/stripe/checkout/welcome-offer**", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ eligible: false, serverNow: new Date().toISOString(), percentOff: 20 }) })
+  );
   await ctx.route("**/api/subscriptions/**", (r) =>
     r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(SUB) })
   );
@@ -167,6 +171,10 @@ const asMember = (plan) => async (ctx) => {
  * may be requested behind it.
  */
 const asRegistered = (complete = true) => async (ctx) => {
+  // The welcome offer needs a real session; a stubbed account is never new. (Routes added later win, so 8c can override.)
+  await ctx.route("**/api/stripe/checkout/welcome-offer**", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ eligible: false, serverNow: new Date().toISOString(), percentOff: 20 }) })
+  );
   await ctx.route("**/api/subscriptions/**", (r) =>
     r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ subscription: null }) })
   );
