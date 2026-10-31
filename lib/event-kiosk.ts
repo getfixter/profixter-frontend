@@ -9,14 +9,18 @@
  * sent to a server.
  */
 
+import { clearHandymanDraft } from "./handyman-draft";
+
 export const KIOSK_RETURN_KEY = "profixterEventKiosk";
 export const KIOSK_PATH = "/event";
 
 /**
  * Leftovers from whoever used this tab before: a plan picked but not paid for,
- * a promo code, a just-logged-in marker. Normal logout leaves these alone
- * because on a personal device they are the same person's; on a shared kiosk
- * they are not, so the next visitor starts clean.
+ * a promo code, a just-logged-in marker, and a Book a Handyman draft (the
+ * Free Visit form hands its name, phone, address and photos to it when the
+ * visitor switches over; it lives in localStorage for a day). Normal logout
+ * leaves these alone because on a personal device they are the same person's;
+ * on a shared kiosk they are not, so the next visitor starts clean.
  */
 const CARRY_OVER_KEYS = ["pendingCheckoutPlan", "pendingPromoCode", "justLoggedIn"];
 
@@ -24,6 +28,7 @@ export function clearKioskCarryOver() {
   try {
     for (const key of CARRY_OVER_KEYS) window.sessionStorage.removeItem(key);
   } catch {}
+  void clearHandymanDraft().catch(() => undefined);
 }
 
 export function isKioskSession() {

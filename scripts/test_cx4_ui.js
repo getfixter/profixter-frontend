@@ -48,7 +48,7 @@ async function open(browser, { width, height, me = null }) {
       localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
     } catch {}
   }, Boolean(me));
-  const state = { me, freeVisits: [], callbacks: [], oneTime: [], memberships: [], bookings: [], abandons: [], homes: [] };
+  const state = { me, freeVisits: [], callbacks: [], oneTime: [], memberships: [], bookings: [], abandons: [], homes: [], holds: [], releases: [], takenTimes: [] };
   // Google Places is real on the live site; blocking it makes the address field use its manual form, as it does without a key.
   await ctx.route(/maps\.googleapis\.com|places\.googleapis\.com/, (r) => r.abort());
   await ctx.route("https://checkout.stripe.test/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<h1>Stripe test checkout</h1>" }));
@@ -90,10 +90,24 @@ async function open(browser, { width, height, me = null }) {
       state.callbacks.push(JSON.parse(req.postData() || "{}"));
       return json({ success: true }, 201);
     }
+    if (p === "/api/bookings/hold/release" && m === "POST") {
+      state.releases.push(JSON.parse(req.postData() || "{}").token);
+      return json({ released: true });
+    }
+    if (p === "/api/bookings/hold" && m === "POST") {
+      // Like the server: the same token and time extends; anything else is a new hold.
+      const body = JSON.parse(req.postData() || "{}");
+      const last = state.holds[state.holds.length - 1];
+      state.holds.push(body);
+      if (state.takenTimes.includes(body.requestedTime)) return json({ message: "That time was just taken. Pick another - everything else is saved.", code: "SLOT_UNAVAILABLE" }, 409);
+      const same = body.token && last && last.issued === body.token && last.requestedDate === body.requestedDate && last.requestedTime === body.requestedTime;
+      body.issued = same ? body.token : `h${state.holds.length}.secretsecretsecretsecretsecret`;
+      return json({ held: true, token: body.issued, holdExpiresAt: new Date(Date.now() + 20 * 60000).toISOString(), minutes: 20 });
+    }
     if (p === "/api/bookings/one-time/config") return json({ enabled: true, priceCents: 9900, currency: "usd", durationMinutes: 90, holdMinutes: 30 });
     if (p === "/api/bookings/one-time/checkout" && m === "POST") {
       const t = text();
-      state.oneTime.push({ addressId: field(t, "addressId"), note: field(t, "note"), returnTo: field(t, "returnTo"), clientRequestId: field(t, "clientRequestId"), requestedDate: field(t, "requestedDate"), requestedTime: field(t, "requestedTime"), photos: (t.match(/name="images"; filename=/g) || []).length });
+      state.oneTime.push({ addressId: field(t, "addressId"), note: field(t, "note"), returnTo: field(t, "returnTo"), clientRequestId: field(t, "clientRequestId"), requestedDate: field(t, "requestedDate"), requestedTime: field(t, "requestedTime"), holdToken: field(t, "holdToken"), photos: (t.match(/name="images"; filename=/g) || []).length });
       return json({ url: "https://checkout.stripe.test/cs_one", bookingId: "b-held-1", entitlementId: "e1", holdExpiresAt: new Date(Date.now() + 1800000).toISOString() });
     }
     if (p.startsWith("/api/bookings/one-time/") && p.endsWith("/abandon")) {
@@ -106,7 +120,7 @@ async function open(browser, { width, height, me = null }) {
     }
     if (p === "/api/bookings" && m === "POST") {
       const t = text();
-      state.bookings.push({ addressId: field(t, "addressId"), requestedDate: field(t, "requestedDate"), requestedTime: field(t, "requestedTime"), note: field(t, "note") });
+      state.bookings.push({ addressId: field(t, "addressId"), requestedDate: field(t, "requestedDate"), requestedTime: field(t, "requestedTime"), note: field(t, "note"), holdToken: field(t, "holdToken") });
       return json({ message: "Booking created", booking: { bookingNumber: "12345678", status: "Pending" } });
     }
     if (p === "/api/users/me/addresses" && m === "POST") {
@@ -245,6 +259,8 @@ async function fillAddress(scope, { line1, city, zip }) {
       await booker.locator("[data-auth-step]").waitFor({ timeout: 5000 });
       check(`${tag}: switching skips to the account step with the details shown`, /40 Birch Ln/.test(await booker.innerText()));
       check(`${tag}: nothing was booked as a free visit`, state.freeVisits.length === 0);
+      await page.waitForTimeout(400);
+      check(`${tag}: reaching the account step holds their time`, state.holds.length === 1 && state.holds[0].requestedDate === day && state.holds[0].requestedTime === "13:00", JSON.stringify(state.holds));
       await booker.locator("[data-auth-step] button:has-text('Back')").click();
       check(`${tag}: the time carried over`, (await page.locator(`[data-day='${day}'][aria-pressed=true]`).count()) === 1 && (await page.locator("[data-time='13:00'][aria-pressed=true]").count()) === 1);
       await booker.locator("button:has-text('Back')").first().click();
@@ -272,6 +288,10 @@ async function fillAddress(scope, { line1, city, zip }) {
       await booker.locator("[data-action='to-step-3']").click();
       await booker.locator("[data-auth-step]").waitFor({ timeout: 5000 });
       check(`${tag}: signed out, it asks to sign in or create an account (not payment)`, (await booker.locator("[data-action='create-account']").count()) === 1 && (await booker.locator("[data-action='sign-in']").count()) === 1);
+      const firstHold = state.holds[0]?.issued;
+      check(`${tag}: the chosen time is held at the sign-in step (new hold, no token yet)`, state.holds.length === 1 && state.holds[0].requestedDate === day && state.holds[0].requestedTime === "08:00" && !state.holds[0].token && !!firstHold, JSON.stringify(state.holds));
+      check(`${tag}: the account step says the time is held`, /holding this time for you until/.test(await booker.locator("[data-hold-note]").innerText()));
+      check(`${tag}: the hold token is saved with the draft`, (await page.evaluate(() => JSON.parse(localStorage.getItem("pf_handyman_draft") || "{}").holdToken)) === firstHold);
       await shot(page, `${tag}-handy-03-account`);
       await booker.locator("[data-action='create-account']").click();
       await page.waitForURL(/\/signup\?next=%2Fbook%2Fhandyman/, { timeout: 10000 });
@@ -283,6 +303,9 @@ async function fillAddress(scope, { line1, city, zip }) {
       await booker.waitFor({ timeout: 15000 });
       await page.locator("[data-option='one_time']").waitFor({ timeout: 10000 });
       check(`${tag}: back from sign-in, straight to how to book, draft intact`, (await booker.getAttribute("data-step")) === "4" && /9 Pine Ct/.test(await booker.locator("[data-summary]").innerText()));
+      await page.waitForTimeout(400);
+      check(`${tag}: back from sign-in, the same hold is extended`, state.holds.length === 2 && state.holds[1].token === firstHold && state.holds[1].issued === firstHold, JSON.stringify(state.holds.map((h) => h.token)));
+      check(`${tag}: step 4 shows the hold`, /Held for you until/.test(await booker.locator("[data-summary]").innerText()));
       check(`${tag}: One-Time and Membership offered with real prices`, /\$99/.test(await page.locator("[data-option='one_time']").innerText()) && /\$149/.test(await page.locator("[data-option='membership']").innerText()));
       check(`${tag}: no included-visit option for a non-member`, (await page.locator("[data-option='member']").count()) === 0);
       await page.locator("[data-option='membership']").click();
@@ -296,11 +319,13 @@ async function fillAddress(scope, { line1, city, zip }) {
       check(`${tag}: one checkout, even on a double tap`, ot.length === 1, `${ot.length}`);
       check(`${tag}: the typed address was saved to the account first`, state.homes.length === 1 && state.homes[0].line1 === "9 Pine Ct" && ot[0].addressId === "a-new");
       check(`${tag}: checkout carries the job, time, returnTo and a press id; no photo needed`, ot[0].returnTo === "handyman" && /^hb/.test(ot[0].clientRequestId || "") && ot[0].requestedDate === day && ot[0].requestedTime === "08:00" && ot[0].photos === 0 && /faucet/.test(ot[0].note));
+      check(`${tag}: checkout carries their hold so it gives way to the booking`, ot[0].holdToken === firstHold, String(ot[0].holdToken));
       // Back from Stripe without paying.
       await page.goto(`${BASE}/book/handyman?canceled=1&booking_id=b-held-1`, { waitUntil: "load" });
       await booker.waitFor({ timeout: 15000 });
       await page.locator("text=Checkout canceled").waitFor({ timeout: 5000 });
       check(`${tag}: canceled checkout: nothing charged, draft kept, hold released`, state.abandons.includes("/api/bookings/one-time/b-held-1/abandon") && /9 Pine Ct/.test(await booker.locator("[data-summary]").innerText()));
+      check(`${tag}: a canceled checkout does not re-hold over its own pending booking`, state.holds.length === 2, String(state.holds.length));
       await shot(page, `${tag}-handy-05-canceled`);
       await page.locator("[data-option='membership']").click();
       await page.locator("[data-plan='plus']").click();
@@ -308,6 +333,34 @@ async function fillAddress(scope, { line1, city, zip }) {
       await page.waitForURL(/checkout\.stripe\.test\/cs_member/, { timeout: 10000 });
       check(`${tag}: membership checkout returns to the flow`, state.memberships[0]?.returnTo === "handyman" && state.memberships[0]?.plan === "plus" && state.memberships[0]?.addressId === "a-new");
       check(`${tag}: handyman flow has no page errors`, errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
+
+    /* ================= Book a Handyman, the time goes while choosing ================ */
+    {
+      const { ctx, page, state, errors } = await open(browser, { width, height });
+      state.takenTimes = ["10:00"];
+      await page.goto(`${BASE}/book/handyman`, { waitUntil: "load" });
+      const booker = page.locator("[data-handyman-booker]");
+      await booker.waitFor({ timeout: 20000 });
+      await booker.locator("textarea[name=task]").fill("Fix a running toilet upstairs");
+      await fillAddress(booker, { line1: "3 Elm Rd", city: "Farmingdale", zip: "11735" });
+      await booker.locator("[data-action='to-step-2']").click();
+      await page.locator(".bk-day[disabled]").first().waitFor({ timeout: 10000 }); // the month view has loaded
+      const day = await page.locator(".bk-day:not([disabled])").first().getAttribute("data-day");
+      await page.locator(`[data-day='${day}']`).click();
+      await page.locator("[data-time='10:00']").click();
+      await booker.locator("[data-action='to-step-3']").click();
+      await page.locator("text=That time was just taken").waitFor({ timeout: 5000 });
+      check(`${tag}: a time taken by someone else: stays on When, says so, keeps the job`, (await booker.getAttribute("data-step")) === "2" && (await page.locator("[data-time='10:00'][aria-pressed=true]").count()) === 0 && (await page.evaluate(() => JSON.parse(localStorage.getItem("pf_handyman_draft") || "{}").task)) === "Fix a running toilet upstairs");
+      await page.locator("[data-time='13:00']").click();
+      await booker.locator("[data-action='to-step-3']").click();
+      await booker.locator("[data-auth-step]").waitFor({ timeout: 5000 });
+      check(`${tag}: another time is held and they go on`, state.holds.length === 2 && state.holds[1].requestedTime === "13:00");
+      await booker.locator("[data-auth-step] button:has-text('Back')").click();
+      check(`${tag}: back on When, their own held time is still shown as chosen`, (await page.locator("[data-time='13:00'][aria-pressed=true]").count()) === 1);
+      await shot(page, `${tag}-handy-07-taken`);
+      check(`${tag}: taken-time flow has no page errors`, errors.length === 0, errors.join(" | "));
       await ctx.close();
     }
 
@@ -340,6 +393,10 @@ async function fillAddress(scope, { line1, city, zip }) {
       await page.locator("[data-action='book-handyman']").click();
       await page.locator("[data-handyman-done]").waitFor({ timeout: 8000 });
       check(`${tag}: member visit requested with the included visit`, state.bookings.length === 1 && state.bookings[0].addressId === "a1" && state.bookings[0].requestedTime === "13:00" && state.oneTime.length === 0 && state.memberships.length === 0);
+      const lastHold = state.holds[state.holds.length - 1];
+      check(`${tag}: signed in, Continue holds the time`, state.holds.length === 2 && state.holds[0].requestedTime === "10:00" && state.holds[1].requestedTime === "13:00", JSON.stringify(state.holds));
+      check(`${tag}: a time the seven-day rule refuses is let go at once`, state.releases.length === 1 && state.releases[0] === state.holds[0].issued && !state.holds[1].token && lastHold.issued !== state.holds[0].issued, JSON.stringify(state.releases));
+      check(`${tag}: the member booking carries the hold`, state.bookings[0].holdToken === lastHold.issued, String(state.bookings[0].holdToken));
       check(`${tag}: it says requested and awaiting review, not confirmed`, /review it and confirm/.test(await page.locator("[data-handyman-done]").innerText()));
       await shot(page, `${tag}-handy-06b-member-done`);
       await ctx.close();

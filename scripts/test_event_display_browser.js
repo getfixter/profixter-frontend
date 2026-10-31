@@ -442,34 +442,36 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
         sessionStorage.setItem("pendingCheckoutPlan", "premium");
         sessionStorage.setItem("pendingPromoCode", "OLDCODE");
         localStorage.setItem("rememberedEmail", "someone@example.com");
+        localStorage.setItem("pf_handyman_draft", JSON.stringify({ task: "previous visitor", name: "Jane", phone: "5165550100", updatedAt: Date.now() }));
       });
       const before = await snapshot(page);
       check(`${who}: session present before the tap = ${!!token}`, !!before.token === !!token);
       // Tap during a transition: swipe, then tap straight away.
       await swipe(page, 640, 260);
       await page.locator(".ed-cta").click();
-      await page.waitForURL(/\/signup/, { timeout: 15000 });
+      await page.waitForURL(/\/book\/free/, { timeout: 15000 });
       await page.waitForTimeout(3000);
       const after = await snapshot(page);
       const leftovers = await page.evaluate(() => ({
         plan: sessionStorage.getItem("pendingCheckoutPlan"),
         promo: sessionStorage.getItem("pendingPromoCode"),
         remembered: localStorage.getItem("rememberedEmail"),
+        handyman: localStorage.getItem("pf_handyman_draft"),
       }));
-      const onForm = await page.evaluate(() => location.pathname === "/signup" && !!document.querySelector("form input"));
-      check(`${who}: lands on /signup?source=event`, after.path === "/signup?source=event", after.path);
+      const onForm = await page.evaluate(() => location.pathname === "/book/free" && !!document.querySelector("[data-free-visit-form] input"));
+      check(`${who}: lands on /book/free?source=event (no registration)`, after.path === "/book/free?source=event", after.path);
       check(`${who}: signed out (no token, no cached user)`, !after.token && !after.cachedUser);
-      check(`${who}: the registration form shows (not bounced by the session gate)`, onForm);
-      check(`${who}: the previous visitor's plan, promo and remembered email are gone`, !leftovers.plan && !leftovers.promo && !leftovers.remembered, JSON.stringify(leftovers));
+      check(`${who}: the Free Visit form shows, no account asked for`, onForm);
+      check(`${who}: the previous visitor's plan, promo, remembered email and handyman draft are gone`, !leftovers.plan && !leftovers.promo && !leftovers.remembered && !leftovers.handyman, JSON.stringify(leftovers));
       check(`${who}: this tab is marked as a kiosk session`, after.kiosk === "1");
       check(`${who}: no admin API was called`, state.adminCalls === 0, String(state.adminCalls));
       if (who === "admin") {
-        await shot(page, "signup-with-back-to-event");
+        await shot(page, "free-visit-with-back-to-event");
         const back = page.getByRole("button", { name: "Back to event" });
-        check("signup in a kiosk tab offers 'Back to event'", (await back.count()) === 1);
+        check("the Free Visit form in a kiosk tab offers 'Back to event'", (await back.count()) === 1);
         await back.click();
         await page.getByRole("button", { name: "Keep going" }).click();
-        check("'Keep going' stays on registration", /\/signup/.test(page.url()));
+        check("'Keep going' stays on the form", /\/book\/free/.test(page.url()));
         // Pretend the visitor has registered: a session exists again.
         await page.evaluate(() => localStorage.setItem("token", "customer-token"));
         await back.click();

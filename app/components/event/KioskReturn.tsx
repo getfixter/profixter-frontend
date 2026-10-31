@@ -2,7 +2,7 @@
 
 /**
  * "Back to event": the way an iPad at a booth gets back to the kiosk after a
- * visitor has registered (and maybe booked their First Visit Free).
+ * visitor has booked their Free Visit (or registered, or looked around).
  *
  * Renders nothing unless this tab came from the /event call to action (see
  * lib/event-kiosk). It never acts on its own: a tap asks first, then signs the
