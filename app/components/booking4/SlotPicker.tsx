@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMonthAvailability, getTimeSlots } from "@/lib/booking-service";
 import { getBookableSlots, normalizeDayAvailability, type AvailabilitySlot } from "@/lib/booking-calendar-availability";
 
@@ -9,13 +9,19 @@ import { getBookableSlots, normalizeDayAvailability, type AvailabilitySlot } fro
  * reservation engine books against). `visit="membership"` applies the member
  * seven-day lead time, exactly as the server will.
  *
- * The day's whole schedule is shown: times that are taken (or that this visit
- * cannot have) stay visible, greyed and struck through, and cannot be chosen.
- * Only times the server sent as bookable are ever selectable; nothing outside
- * the company's configured schedule is drawn.
+ * Customer Experience 4.2: only days with at least one bookable time are in the
+ * strip, and the earliest opening is chosen for the customer - day and time -
+ * so the common case is one tap on Continue. Choosing another day chooses that
+ * day's earliest time. A remembered choice is kept while it is still open; if
+ * it has gone (taken, or not open to this visit), the next opening is chosen
+ * and a short note says so.
  *
- * Nothing here reserves anything; the server re-checks when the booking is
- * made and answers SLOT_UNAVAILABLE if the time has gone.
+ * Within a day, the whole schedule is still shown: times that are taken (or
+ * that this visit cannot have) stay visible, greyed and struck through, and
+ * cannot be chosen. Only times the server sent as bookable are ever selectable.
+ *
+ * Choosing - by the customer or by default - reserves nothing. The server
+ * re-checks when the booking (or Book a Handyman's hold, on Continue) is made.
  */
 
 const TZ = "America/New_York";
@@ -48,6 +54,7 @@ function daySchedule(raw: unknown): AvailabilitySlot[] {
   const bookable = new Set(getBookableSlots(day).map((s) => s.time));
   return day.slots.map((s) => ({ time: s.time, available: bookable.has(s.time) }));
 }
+const firstOpen = (slots: AvailabilitySlot[] | null | undefined) => slots?.find((s) => s.available)?.time || "";
 
 export function formatWhen(date: string, time: string) {
   if (!date) return "";
@@ -71,15 +78,34 @@ export default function SlotPicker({
 }) {
   const today = ymdInNY(new Date());
   const days = useMemo(() => Array.from({ length: DAYS_SHOWN }, (_, i) => addDays(today, i)), [today]);
-  const [byDay, setByDay] = useState<Record<string, AvailabilitySlot[]> | null>(null);
-  const [fresh, setFresh] = useState<{ date: string; slots: AvailabilitySlot[] } | null>(null);
-  const loaded = !date ? null : fresh?.date === date ? fresh.slots : (byDay?.[date] ?? null);
-  // The customer's own held time counts as taken in the calendar, but it is theirs to keep.
-  const daySlots = useMemo(() => {
-    if (!loaded || !held || held.date !== date) return loaded;
-    const rest = loaded.filter((s) => s.time !== held.time);
-    return [...rest, { time: held.time, available: true }].sort((a, b) => a.time.localeCompare(b.time));
-  }, [loaded, held, date]);
+  /* undefined: loading; null: no month view (an older API) - every day stays pickable and its own slots decide. */
+  const visitKey = visit || "any";
+  const [month, setMonth] = useState<{ visit: string; map: Record<string, AvailabilitySlot[]> | null } | null>(null);
+  const [freshRaw, setFresh] = useState<{ visit: string; date: string; slots: AvailabilitySlot[] } | null>(null);
+  // Answers for another kind of visit (before the member calendar loaded, say) are never used.
+  const byDay = month && month.visit === visitKey ? month.map : undefined;
+  const fresh = freshRaw && freshRaw.visit === visitKey ? freshRaw : null;
+  const [notice, setNotice] = useState("");
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  /* A day's schedule: the fresh fetch for the chosen day, else the month view; the customer's own hold counts as open. */
+  const slotsFor = useCallback(
+    (ymd: string): AvailabilitySlot[] | null => {
+      const base = fresh?.date === ymd ? fresh.slots : (byDay?.[ymd] ?? null);
+      if (!base || !held || held.date !== ymd) return base;
+      const rest = base.filter((s) => s.time !== held.time);
+      return [...rest, { time: held.time, available: true }].sort((a, b) => a.time.localeCompare(b.time));
+    },
+    [fresh, byDay, held]
+  );
+  const daySlots = date ? slotsFor(date) : null;
+
+  /* Only days that can actually be booked. Until the month view is in, nothing is offered (no guessing). */
+  const openDays = useMemo(() => {
+    if (byDay === undefined) return [];
+    if (byDay === null) return days;
+    return days.filter((ymd) => firstOpen(slotsFor(ymd)) !== "");
+  }, [byDay, days, slotsFor]);
 
   useEffect(() => {
     let alive = true;
@@ -88,66 +114,90 @@ export default function SlotPicker({
     Promise.all(months.map((m) => getMonthAvailability(m, { visit }).catch(() => null)))
       .then((results) => {
         if (!alive) return;
-        // No month view at all (an older API): every day stays pickable and the day's own slots decide.
-        if (results.every((r) => !r)) return setByDay(null);
+        if (results.every((r) => !r)) return setMonth({ visit: visitKey, map: null });
         const map: Record<string, AvailabilitySlot[]> = {};
         for (const month of results) {
           for (const day of month?.days || []) map[day.date] = daySchedule(day);
         }
-        setByDay(map);
+        setMonth({ visit: visitKey, map });
       })
-      .catch(() => alive && setByDay(null));
+      .catch(() => alive && setMonth({ visit: visitKey, map: null }));
     return () => {
       alive = false;
     };
-  }, [today, days, visit]);
+  }, [today, days, visit, visitKey]);
 
   // The chosen day, fresh: the month view can be a minute old.
   useEffect(() => {
     if (!date) return;
     let alive = true;
     getTimeSlots(date, { visit })
-      .then((res) => alive && setFresh({ date, slots: daySchedule(res) }))
+      .then((res) => alive && setFresh({ visit: visitKey, date, slots: daySchedule(res) }))
       .catch(() => undefined);
     return () => {
       alive = false;
     };
-  }, [date, visit]);
+  }, [date, visit, visitKey]);
 
-  // A remembered choice that has since been taken is let go, so it is never sent as if still open.
+  /*
+   * Keep a real opening chosen. Nothing chosen yet: the earliest opening. A
+   * chosen day that is no longer open, or a chosen time that has gone: the
+   * next opening, with a note - never a time sent as if it were still open.
+   */
   useEffect(() => {
-    if (!date || !time || fresh?.date !== date || !daySlots) return;
-    if (!daySlots.some((s) => s.time === time && s.available)) onChange({ date, time: "" });
-  }, [date, time, fresh, daySlots, onChange]);
+    if (byDay === undefined) return;
+    if (byDay && (!date || !openDays.includes(date))) {
+      const first = openDays[0];
+      if (!first || (fresh?.date !== first && !byDay[first])) return;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- says why a choice was changed for them
+      if (date && time) setNotice("Your earlier time is no longer open, so we picked the earliest opening.");
+      onChange({ date: first, time: firstOpen(slotsFor(first)) });
+      return;
+    }
+    if (!date || !daySlots) return;
+    if (time && daySlots.some((s) => s.time === time && s.available)) return;
+    const next = firstOpen(daySlots);
+    if (!next) return;
+    if (time) setNotice("That time is no longer open, so we picked the next one that day.");
+    onChange({ date, time: next });
+  }, [byDay, openDays, date, time, daySlots, fresh, slotsFor, onChange]);
 
-  const hasAny =(ymd: string) => (byDay ? (byDay[ymd] || []).some((s) => s.available) || held?.date === ymd : true);
+  // The chosen day in view, in the strip only (never scrolls the page).
+  useEffect(() => {
+    const strip = stripRef.current;
+    const chip = strip?.querySelector<HTMLElement>(`[data-day="${date}"]`);
+    if (!strip || !chip) return;
+    const left = chip.offsetLeft - strip.offsetLeft;
+    if (left < strip.scrollLeft || left + chip.offsetWidth > strip.scrollLeft + strip.clientWidth) {
+      strip.scrollLeft = Math.max(0, left - 8);
+    }
+  }, [date, openDays.length]);
+
+  const pickDay = (ymd: string) => {
+    setNotice("");
+    onChange({ date: ymd, time: firstOpen(slotsFor(ymd)) });
+  };
 
   return (
     <div data-slot-picker>
-      <div className="bk-days" role="group" aria-label="Choose a day">
-        {days.map((ymd) => {
-          const l = label(ymd);
-          return (
-            <button
-              key={ymd}
-              type="button"
-              className="bk-day"
-              aria-pressed={date === ymd}
-              disabled={!hasAny(ymd)}
-              data-day={ymd}
-              onClick={() => onChange({ date: ymd, time: "" })}
-            >
-              <span>{l.weekday}</span>
-              <b>{l.day}</b>
-              <span>{l.month}</span>
-            </button>
-          );
-        })}
+      <div ref={stripRef} className="bk-days" role="group" aria-label="Choose a day" aria-busy={byDay === undefined}>
+        {byDay === undefined
+          ? Array.from({ length: 6 }, (_, i) => <span key={i} className="bk-day bk-day--ghost" aria-hidden="true" />)
+          : openDays.map((ymd) => {
+              const l = label(ymd);
+              return (
+                <button key={ymd} type="button" className="bk-day" aria-pressed={date === ymd} data-day={ymd} onClick={() => pickDay(ymd)}>
+                  <span>{l.weekday}</span>
+                  <b>{l.day}</b>
+                  <span>{l.month}</span>
+                </button>
+              );
+            })}
       </div>
-      {byDay && Object.values(byDay).every((list) => !list.some((s) => s.available)) && (
+      {byDay !== undefined && openDays.length === 0 && (
         <p className="bk-note">No openings in the next few weeks. Please call us at 631-599-1363.</p>
       )}
-      {date && (
+      {date && openDays.length > 0 && (
         <div className="bk-times" role="group" aria-label="Choose a time">
           {daySlots === null ? (
             <p className="bk-note">Checking times…</p>
@@ -162,7 +212,14 @@ export default function SlotPicker({
                 disabled={!available}
                 data-time={t}
                 data-available={available ? "1" : "0"}
-                onClick={available ? () => onChange({ date, time: t }) : undefined}
+                onClick={
+                  available
+                    ? () => {
+                        setNotice("");
+                        onChange({ date, time: t });
+                      }
+                    : undefined
+                }
               >
                 {formatTime12(t)}
               </button>
@@ -172,6 +229,11 @@ export default function SlotPicker({
           )}
         </div>
       )}
+      {notice ? (
+        <p className="bk-note bk-picked" role="status" data-slot-notice>
+          {notice}
+        </p>
+      ) : null}
     </div>
   );
 }

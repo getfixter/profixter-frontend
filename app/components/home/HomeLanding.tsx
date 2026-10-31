@@ -6,8 +6,9 @@
  * Customer Experience 4.0 (2026-10-30): the first screen on a phone shows the
  * brand, one line about what Profixter is, and the two ways to start - Free
  * Visit (we come and go over your to-do list; no labor) and Book a Handyman
- * (get the work done). Both are reachable without scrolling. Then: what each
- * path is, What We Do (before/after), membership, trust, questions.
+ * (get the work done). Both are reachable without scrolling. Then: What's
+ * Included (before/after, moved up in Customer Experience 4.2), what each path
+ * is, membership, trust, questions.
  *
  * Short text only. Details live behind links and a closed FAQ. There is no
  * booking form on this page: each path has its own focused page
@@ -173,6 +174,10 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
         </div>
       </section>
 
+      {/* =========================== WHAT'S INCLUDED ========================== */}
+      {/* Customer Experience 4.2: the before/after work, right before the choice it informs. */}
+      <WhatWeDo variant="home" cta={false} />
+
       {/* ============================ TWO WAYS IN ============================ */}
       {/* id="book": older links to /#book land here, on the two ways to start. */}
       <section id="book" className="ui-section ui-section--soft hm-paths" aria-labelledby="hm-paths">
@@ -257,9 +262,6 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
           </Reveal>
         </div>
       </section>
-
-      {/* ============================== WHAT WE DO ============================ */}
-      <WhatWeDo variant="home" />
 
       {/* ================================= TRUST ============================== */}
       <section className="ui-section ui-section--soft" aria-labelledby="hm-trust">

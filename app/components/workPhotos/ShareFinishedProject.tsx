@@ -70,7 +70,7 @@ export default function ShareFinishedProject({ className = "" }: { className?: s
             </h3>
             <p className="mt-1 max-w-[58ch] text-[13px] leading-relaxed text-[#6A6D71]">
               Happy with something we worked on? Share a photo and a few words about
-              the work. We may feature it on our What We Do page.
+              the work. We may feature it on our What&rsquo;s Included page.
             </p>
           </div>
         </div>

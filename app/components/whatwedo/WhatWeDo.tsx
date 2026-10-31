@@ -8,7 +8,10 @@ import { fetchRecentWork, WORK_GROUPS, type PublicWorkPhoto } from "@/lib/public
 import "./whatwedo.css";
 
 /**
- * What We Do: small fixes shown as before/after pairs.
+ * What's Included (was "What We Do"; renamed in Customer Experience 4.2):
+ * small fixes shown as before/after pairs - the kind of everyday work a
+ * membership covers. Illustrative, and said so; never a promise that every
+ * job is included (each plan's scope is on the plans page).
  *
  * "home" is a swipeable carousel of up to 24 pairs. "page" (/recent-work) loads
  * every published pair: the same carousel on a phone, a grid from 768px, and it
@@ -47,7 +50,8 @@ async function loadPairs(variant: Variant, signal: AbortSignal): Promise<PublicW
   return all.filter(isPair);
 }
 
-export default function WhatWeDo({ variant = "home" }: { variant?: Variant }) {
+/** `cta={false}` where the booking choice follows straight after (the landing page's "Two ways to start"). */
+export default function WhatWeDo({ variant = "home", cta = true }: { variant?: Variant; cta?: boolean }) {
   const [pairs, setPairs] = useState<PublicWorkPhoto[] | null>(null);
   const [group, setGroup] = useState("All");
   const [active, setActive] = useState(0);
@@ -176,7 +180,7 @@ export default function WhatWeDo({ variant = "home" }: { variant?: Variant }) {
   if (!isPage && pairs !== null && pairs.length === 0) return null;
 
   const Heading = isPage ? "h1" : "h2";
-  const lede = pairs !== null && pairs.length === 0 ? "Small fixes, done right." : "Small fixes, done right. Drag to compare.";
+  const lede = "Everyday home repairs and improvements, covered with your membership.";
 
   return (
     <section
@@ -190,7 +194,7 @@ export default function WhatWeDo({ variant = "home" }: { variant?: Variant }) {
           <div>
             <p className="ui-eyebrow ui-eyebrow--accent">Before &amp; after</p>
             <Heading id={headingId} className={isPage ? "ui-display" : "ui-h2"}>
-              What We Do
+              What&rsquo;s Included
             </Heading>
             <p className="ui-lede wwd-lede">{lede}</p>
           </div>
@@ -278,11 +282,12 @@ export default function WhatWeDo({ variant = "home" }: { variant?: Variant }) {
 
             {anyIllustrative ? (
               <p className="wwd-note" data-testid="wwd-note">
-                Illustrative examples of the kinds of jobs we handle.
+                Illustrative examples of everyday jobs we handle. Drag to compare. What each plan covers is on the{" "}
+                <Link href="/membership/plans">plans page</Link>.
               </p>
             ) : null}
 
-            {!isPage ? (
+            {!isPage && cta ? (
               <div className="wwd-cta">
                 <Link href="/book/handyman" className="wwd-cta__link">
                   Book a Handyman

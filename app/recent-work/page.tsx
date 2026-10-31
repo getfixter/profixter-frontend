@@ -14,7 +14,7 @@ export const metadata: Metadata = {
    * browser tab, and every search result, read "... | Profixter | Profixter".
    * The Open Graph title below is not templated and keeps its own suffix.
    */
-  title: "What We Do",
+  title: "What's Included",
   /*
    * No longer "photographs of real jobs": the gallery is now before/after
    * pairs, many of them illustrative examples, and the description must not
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     "Small fixes, done right: outlets, light fixtures, caulking, faucets, doors, trim, drywall and more. See before-and-after examples of the everyday handyman jobs Profixter handles on Long Island.",
   alternates: { canonical: "https://www.profixter.com/recent-work" },
   openGraph: {
-    title: "What We Do | Profixter",
+    title: "What's Included | Profixter",
     description:
       "Small fixes, done right: before-and-after examples of the everyday handyman jobs Profixter handles on Long Island.",
     url: "https://www.profixter.com/recent-work",
@@ -64,7 +64,7 @@ export default async function RecentWorkPage() {
     ? {
         "@context": "https://schema.org",
         "@type": "ImageGallery",
-        name: illustrative ? "What We Do: illustrative before-and-after examples" : "What We Do: before and after",
+        name: illustrative ? "What's Included: illustrative before-and-after examples" : "What's Included: before and after",
         description: illustrative
           ? "Illustrative before-and-after examples of the small home repairs Profixter handles. The images show the type of work; they are not photographs of specific customer jobs."
           : "Before-and-after photographs of small home repairs completed by Profixter.",

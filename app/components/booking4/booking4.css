@@ -296,3 +296,42 @@
   .bk-day, .bk-btn, .bk-option { transition: none; }
 }
 .bk-note a { color: var(--ui-accent); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- Customer Experience 4.2 ---------------------------------------- */
+
+/* Job shortcuts: compact, wrap, each a full tap target. */
+/* Two rows that scroll sideways on a phone (nine chips would otherwise stack four rows deep); wrapped from 640px. */
+.bk-chips {
+  display: grid; grid-template-rows: repeat(2, auto); grid-auto-flow: column; justify-content: start;
+  gap: 6px; margin: 2px -2px 8px; padding: 0 2px 2px;
+  overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+}
+.bk-chips::-webkit-scrollbar { display: none; }
+.bk-chip { white-space: nowrap; }
+@media (min-width: 640px) {
+  .bk-chips { display: flex; flex-wrap: wrap; overflow: visible; }
+}
+.bk-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  min-height: var(--tap, 44px); padding: 0 12px;
+  border: 1px solid var(--ui-line-2); border-radius: var(--ui-r-pill);
+  background: var(--ui-bg); color: var(--ui-ink-2);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: border-color var(--ui-dur-1), background var(--ui-dur-1);
+}
+.bk-chip span { color: var(--ui-accent); font-weight: 800; }
+.bk-chip[aria-pressed="true"] { border-color: var(--ui-accent); background: var(--ui-accent-soft); color: var(--ui-accent-ink); }
+.bk-chip:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+
+/* The day strip while the calendar loads: the same size, so nothing jumps. */
+.bk-day--ghost { display: block; height: 64px; border-color: transparent; background: var(--ui-bg-soft); cursor: default; }
+.bk-picked { margin-top: 8px; color: var(--ui-accent-ink); font-weight: 600; }
+
+/* Plan cards: name, "Labor included", the price. */
+.bk-plan { display: grid; gap: 2px; min-height: var(--tap, 44px); }
+.bk-plan .bk-plan-labor { font-size: 13px; font-weight: 600; color: var(--ui-text-2); }
+.bk-plan .bk-plan-price { font-size: 13.5px; color: var(--ui-text-3); }
+.bk-plan .bk-plan-price .wo-now { font-size: 15px; }
+.bk-plan-terms { margin-top: 10px; }
+.bk-offer { margin-bottom: 10px; }
+@media (prefers-reduced-motion: reduce) { .bk-chip { transition: none; } }

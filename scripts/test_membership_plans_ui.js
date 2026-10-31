@@ -337,10 +337,15 @@ const asRegistered = (complete = true) => async (ctx) => {
         /Pay for 10 months, get 12/.test(m.terms),
         m.terms
       );
+      /*
+       * CX 4.2: no "about $X a month" under an annual price - the owner's brief
+       * is that a yearly charge must never read as a monthly one. The terms say
+       * how it is billed instead.
+       */
       const perMonth = Math.round(CATALOG[plan].annual / 12);
       check(
-        `${plan}: monthly equivalent is honest secondary info ($${perMonth})`,
-        m.terms.includes(String(perMonth)),
+        `${plan}: annual terms say billed once a year, with no per-month figure`,
+        /Billed once a year/.test(m.terms) && !m.terms.includes(`$${perMonth}`),
         m.terms
       );
     }
@@ -459,6 +464,76 @@ const asRegistered = (complete = true) => async (ctx) => {
     await page.keyboard.press("Escape");
     await page.waitForTimeout(800);
     check("closing the sheet does not start checkout", !requested && !/stripe|canceled=true/.test(page.url()), page.url());
+    await ctx.close();
+  }
+
+  /* ============ 8c. CX 4.2: the welcome offer, the annual comparison, the CTA reach ============ */
+  {
+    const WELCOME = { basic: { monthlyCents: 14900, firstMonthCents: 11920 }, plus: { monthlyCents: 24900, firstMonthCents: 19920 }, premium: { monthlyCents: 34900, firstMonthCents: 27920 }, elite: { monthlyCents: 49900, firstMonthCents: 39920 } };
+    const offerState = { eligible: true, asks: 0, bodies: [], refuse: false };
+    const { ctx, page } = await open(browser, 390, 844, async (c) => {
+      await asRegistered(true)(c);
+      await c.route("**/api/stripe/checkout/welcome-offer**", (r) => {
+        offerState.asks += 1;
+        const body = offerState.eligible
+          ? { eligible: true, serverNow: new Date().toISOString(), expiresAt: new Date(Date.now() + 7 * 60000).toISOString(), percentOff: 20, plans: WELCOME }
+          : { eligible: false, serverNow: new Date().toISOString(), percentOff: 20 };
+        r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+      });
+      await c.route("**/api/stripe/checkout/create-checkout-session", (r) => {
+        const body = JSON.parse(r.request().postData() || "{}");
+        offerState.bodies.push(body);
+        if (offerState.refuse) {
+          offerState.refuse = false;
+          offerState.eligible = false;
+          return r.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ code: "WELCOME_OFFER_ENDED", message: "The welcome offer has ended. The prices shown now are the regular monthly prices." }) });
+        }
+        r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: BASE + "/membership/plans?canceled=true" }) });
+      });
+    });
+    await page.waitForSelector("[data-welcome-offer]", { timeout: 10000 }).catch(() => {});
+    let m = await readActive(page);
+    check("welcome: eligible new customer sees the offer and its countdown", (await page.locator("[data-welcome-offer]").count()) === 1 && /^[0-9]:\d\d$/.test(await page.locator("[data-welcome-countdown]").innerText()), "");
+    check("welcome: Plus shows $199.20 first month", m.figure === "$199.20" && m.unit === "first month", `${m.figure} ${m.unit}`);
+    check("welcome: the regular $249 is struck through above it", (await page.locator("[data-welcome-regular] s").innerText()) === "$249", "");
+    check("welcome: renewal price and taxes named", /Then \$249\/month afterward, plus applicable taxes/.test(m.terms), m.terms);
+    await selectPlan(page, "Elite");
+    m = await readActive(page);
+    check("welcome: Elite shows $399.20 first month", m.figure === "$399.20", m.figure);
+    await selectCycle(page, "Annual");
+    m = await readActive(page);
+    check("welcome: annual is never discounted", m.figure === "$4,990" && m.unit === "/ year" && (await page.locator("[data-welcome-regular]").count()) === 0, `${m.figure} ${m.unit}`);
+    check("welcome: annual says the offer is monthly only", /monthly plans only/.test(await page.locator(".plan-box__offer-note").innerText().catch(() => "")), "");
+    await page.click(".plan-box__cta");
+    await page.waitForTimeout(2500);
+    check("welcome: an annual checkout does not ask for the welcome price", offerState.bodies[0] && offerState.bodies[0].billingCycle === "annual" && offerState.bodies[0].welcomeOffer === false, JSON.stringify(offerState.bodies[0] || {}));
+    await page.goto(BASE + "/membership/plans", { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("[data-welcome-offer]", { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(1200);
+    await selectPlan(page, "Basic");
+    offerState.refuse = true;
+    await page.click(".plan-box__cta");
+    await page.waitForTimeout(2500);
+    const sentWelcome = offerState.bodies[1];
+    check("welcome: a monthly checkout asks for the welcome price it showed", sentWelcome && sentWelcome.billingCycle === "monthly" && sentWelcome.welcomeOffer === true, JSON.stringify(sentWelcome || {}));
+    m = await readActive(page);
+    check("welcome: refused by the server -> regular price, offer gone, no Stripe", m.figure === "$149" && m.unit === "/ month" && (await page.locator("[data-welcome-offer]").count()) === 0 && !/canceled=true/.test(page.url()), `${m.figure} ${page.url()}`);
+    check("welcome: the customer is told why", /welcome offer has ended/i.test(await page.locator("body").innerText()), "");
+    await ctx.close();
+  }
+  {
+    // Signed out: never an offer; the annual comparison; the CTA within the first phone screen.
+    const { ctx, page } = await open(browser, 360, 640);
+    check("signed out: no welcome offer", (await page.locator("[data-welcome-offer]").count()) === 0, "");
+    const reach = await page.evaluate(() => Math.round(document.querySelector(".plan-box__cta").getBoundingClientRect().bottom + scrollY));
+    check("360x640: Choose is on the first screen", reach <= 640, `${reach}`);
+    await selectCycle(page, "Annual");
+    for (const plan of PLANS) {
+      await selectPlan(page, plan);
+      const m = await readActive(page);
+      const regular = (await page.locator("[data-annual-regular] s").innerText()).trim();
+      check(`annual ${plan}: 12-month total struck, 10-month total charged, billed yearly`, regular === `$${(CATALOG[plan].monthly * 12).toLocaleString("en-US")}` && m.figure === `$${CATALOG[plan].annual.toLocaleString("en-US")}` && m.unit === "/ year" && /Pay for 10 months, get 12/.test(m.terms) && /Billed once a year/.test(m.terms) && !/a month/.test(m.terms), `${regular} ${m.figure} ${m.terms}`);
+    }
     await ctx.close();
   }
 

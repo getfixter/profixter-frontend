@@ -904,3 +904,41 @@
   letter-spacing: var(--ui-track-micro);
   color: var(--ui-text-3);
 }
+
+/* Customer Experience 4.2: what the price is measured against, and the CTA under it. */
+:root[data-surface="site"] .plan-box__regular {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ui-text-2);
+  white-space: nowrap;
+}
+:root[data-surface="site"] .plan-box__regular s {
+  margin-right: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ui-text-3);
+  text-decoration-thickness: 2px;
+}
+:root[data-surface="site"] .plan-box__terms b {
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+:root[data-surface="site"] .plan-box__offer {
+  margin-bottom: 12px;
+}
+:root[data-surface="site"] .plan-box__offer-note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--ui-text-3);
+  text-align: center;
+}
+:root[data-surface="site"] .plan-box__stack {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ui-line);
+}
+@media (max-width: 719px) {
+  :root[data-surface="site"] .plan-box__benefits {
+    gap: 8px;
+  }
+}

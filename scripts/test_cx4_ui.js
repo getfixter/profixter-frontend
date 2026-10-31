@@ -17,12 +17,21 @@
  *   -> One-Time (checkout body: returnTo, clientRequestId, no photo needed) or
  *   membership (returnTo handyman); a member uses the included visit; a
  *   canceled checkout comes back with the draft and releases the hold.
+ * - Customer Experience 4.2: days with no opening are not offered, the earliest
+ *   opening is chosen on arrival (nothing held until Continue), another day
+ *   chooses its earliest time, a remembered time that has gone is replaced with
+ *   a note; job shortcuts add text without erasing; benefit-led membership copy,
+ *   "Labor included" plan cards; the welcome offer's countdown and prices, its
+ *   expiry, and a refusal re-pricing instead of opening checkout.
  */
 const { chromium } = require("playwright");
 const fs = require("fs");
 
 const BASE = process.argv[2] || "http://localhost:3000";
 const SCHEDULE = ["08:00", "10:00", "13:00", "15:30"];
+// Four days out is fully booked: every time taken. It must never be offered.
+const FULL_DAY_OFFSET = 4;
+const WELCOME_PLANS = { basic: { monthlyCents: 14900, firstMonthCents: 11920 }, plus: { monthlyCents: 24900, firstMonthCents: 19920 }, premium: { monthlyCents: 34900, firstMonthCents: 27920 }, elite: { monthlyCents: 49900, firstMonthCents: 39920 } };
 const SHOTS = process.argv[3] || "";
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
@@ -51,7 +60,7 @@ async function open(browser, { width, height, me = null }) {
       localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
     } catch {}
   }, Boolean(me));
-  const state = { me, freeVisits: [], callbacks: [], oneTime: [], memberships: [], bookings: [], abandons: [], homes: [], holds: [], releases: [], takenTimes: [] };
+  const state = { me, freeVisits: [], callbacks: [], oneTime: [], memberships: [], bookings: [], abandons: [], homes: [], holds: [], releases: [], takenTimes: [], offer: null, offerAsks: 0, membershipRefusal: null };
   // Google Places is real on the live site; blocking it makes the address field use its manual form, as it does without a key.
   await ctx.route(/maps\.googleapis\.com|places\.googleapis\.com/, (r) => r.abort());
   await ctx.route("https://checkout.stripe.test/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<h1>Stripe test checkout</h1>" }));
@@ -78,12 +87,27 @@ async function open(browser, { width, height, me = null }) {
         const d = ymd(i);
         if (!d.startsWith(month)) continue;
         // The day's whole schedule, as the server sends it: 15:30 is always taken here.
-        const candidateSlots = SCHEDULE.map((time) => ({ time, available: i >= lead && time !== "15:30" }));
-        days.push({ date: d, open: true, available: i >= lead, slotCount: 3, slots: i >= lead ? ["08:00", "10:00", "13:00"] : [], candidateSlots, taken: {} });
+        const open = i >= lead && i !== FULL_DAY_OFFSET;
+        const candidateSlots = SCHEDULE.map((time) => ({ time, available: open && time !== "15:30" }));
+        days.push({ date: d, open: true, available: open, slotCount: open ? 3 : 0, slots: open ? ["08:00", "10:00", "13:00"] : [], candidateSlots, taken: {} });
       }
       return json({ month, engine: "reservation", visitDurationMinutes: 90, days });
     }
-    if (p === "/api/calendar/slots") return json({ date: u.searchParams.get("date"), available: true, slots: ["08:00", "10:00", "13:00"], candidateSlots: SCHEDULE.map((time) => ({ time, available: time !== "15:30" })), taken: {}, capacityPerSlot: 2 });
+    if (p === "/api/calendar/slots") {
+      const date = u.searchParams.get("date");
+      // Like the server: the member lead time applies to a day's own times too.
+      const memberLead = u.searchParams.get("visit") === "membership" && date < ymd(7);
+      const open = date !== ymd(FULL_DAY_OFFSET) && !memberLead;
+      return json({ date, available: open, slots: open ? ["08:00", "10:00", "13:00"] : [], candidateSlots: SCHEDULE.map((time) => ({ time, available: open && time !== "15:30" })), taken: {}, capacityPerSlot: 2 });
+    }
+    if (p === "/api/stripe/checkout/welcome-offer") {
+      state.offerAsks += 1;
+      const o = state.offer;
+      if (!o) return json({ eligible: false, serverNow: new Date().toISOString(), percentOff: 20 });
+      const serverNow = new Date();
+      if (serverNow >= o.expiresAt) return json({ eligible: false, serverNow: serverNow.toISOString(), percentOff: 20 });
+      return json({ eligible: true, serverNow: serverNow.toISOString(), expiresAt: o.expiresAt.toISOString(), percentOff: 20, plans: WELCOME_PLANS });
+    }
     if (p === "/api/service-area/check") return json({ serviceable: u.searchParams.get("zip") !== "10118" });
     if (p === "/api/free-visit-requests" && m === "POST") {
       const t = text();
@@ -120,7 +144,15 @@ async function open(browser, { width, height, me = null }) {
       return json({ released: true });
     }
     if (p === "/api/stripe/checkout/create-checkout-session" && m === "POST") {
-      state.memberships.push(JSON.parse(req.postData() || "{}"));
+      const body = JSON.parse(req.postData() || "{}");
+      if (state.membershipRefusal) {
+        const refusal = state.membershipRefusal;
+        state.membershipRefusal = null;
+        state.offer = null;
+        state.refused = (state.refused || 0) + 1;
+        return json(refusal, 409);
+      }
+      state.memberships.push(body);
       return json({ url: "https://checkout.stripe.test/cs_member", sessionId: "cs_member" });
     }
     if (p === "/api/bookings" && m === "POST") {
@@ -222,7 +254,17 @@ async function fillAddress(scope, { line1, city, zip }) {
       await form.locator("input[name=phone]").fill("(516) 555-0123");
       await form.locator("input[name=email]").fill("dana@mailbox.org");
       await fillAddress(form, { line1: "12 Elm St", city: "Farmingdale", zip: "11735" });
-      const day = await page.locator(".bk-day:not([disabled])").first().getAttribute("data-day");
+      /* CX 4.2: only bookable days; the earliest opening is already chosen. */
+      await page.locator(".bk-day[data-day]").first().waitFor({ timeout: 10000 });
+      await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
+      const offered = await page.locator(".bk-day[data-day]").evaluateAll((els) => els.map((e) => e.getAttribute("data-day")));
+      check(`${tag}: days with no opening are not offered (today, tomorrow, the fully booked day)`, !offered.includes(ymd(0)) && !offered.includes(ymd(1)) && !offered.includes(ymd(FULL_DAY_OFFSET)) && offered[0] === ymd(2), offered.slice(0, 5).join(","));
+      check(`${tag}: no disabled or struck-through days in the strip`, (await page.locator(".bk-day:disabled").count()) === 0);
+      check(`${tag}: days stay in date order`, offered.every((d, i) => i === 0 || offered[i - 1] < d));
+      check(`${tag}: the earliest day and its earliest time are chosen on arrival`, (await page.locator(`[data-day='${ymd(2)}'][aria-pressed=true]`).count()) === 1 && (await page.locator("[data-time='08:00'][aria-pressed=true]").count()) === 1);
+      await page.locator(`[data-day='${ymd(3)}']`).click();
+      check(`${tag}: choosing another day chooses that day's earliest time`, (await page.locator(`[data-day='${ymd(3)}'][aria-pressed=true]`).count()) === 1 && (await page.locator("[data-time='08:00'][aria-pressed=true]").count()) === 1);
+      const day = await page.locator(".bk-day[data-day]").first().getAttribute("data-day");
       await page.locator(`[data-day='${day}']`).click();
       await page.locator("[data-time='10:00']").click();
       /* The day's whole schedule: the taken time is shown, struck through, and cannot be chosen. */
@@ -277,9 +319,15 @@ async function fillAddress(scope, { line1, city, zip }) {
       await page.reload({ waitUntil: "networkidle" });
       await form.waitFor({ timeout: 20000 });
       check(`${tag}: a reload keeps name, phone, email and address`, (await form.locator("input[name=name]").inputValue()) === "Lee Walker" && (await form.locator("input[name=email]").inputValue()) === "lee@mailbox.org" && (await form.locator("input[placeholder='Street address']").inputValue()) === "40 Birch Ln");
-      const day = await page.locator(".bk-day:not([disabled])").nth(1).getAttribute("data-day");
+      const day = await page.locator(".bk-day[data-day]").nth(1).getAttribute("data-day");
       await page.locator(`[data-day='${day}']`).click();
       await page.locator("[data-time='13:00']").click();
+      await page.waitForTimeout(300);
+      await page.reload({ waitUntil: "networkidle" });
+      await form.waitFor({ timeout: 20000 });
+      await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
+      await page.waitForTimeout(600);
+      check(`${tag}: a reload keeps the chosen day and time (not reset to the earliest)`, (await page.locator(`[data-day='${day}'][aria-pressed=true]`).count()) === 1 && (await page.locator("[data-time='13:00'][aria-pressed=true]").count()) === 1);
       await form.locator("[data-action='add-details']").click();
       await form.locator("textarea[name=note]").fill("Mount a TV and hang two shelves");
       await page.locator("[data-action='review-free-visit']").click();
@@ -294,6 +342,7 @@ async function fillAddress(scope, { line1, city, zip }) {
       await page.waitForTimeout(400);
       check(`${tag}: reaching the account step holds their time`, state.holds.length === 1 && state.holds[0].requestedDate === day && state.holds[0].requestedTime === "13:00", JSON.stringify(state.holds));
       await booker.locator("[data-auth-step] button:has-text('Back')").click();
+      await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
       check(`${tag}: the time carried over`, (await page.locator(`[data-day='${day}'][aria-pressed=true]`).count()) === 1 && (await page.locator("[data-time='13:00'][aria-pressed=true]").count()) === 1);
       await booker.locator("button:has-text('Back')").first().click();
       check(`${tag}: the job and address carried over`, (await booker.locator("textarea[name=task]").inputValue()) === "Mount a TV and hang two shelves" && (await booker.locator("input[placeholder='Street address']").inputValue()) === "40 Birch Ln");
@@ -310,10 +359,34 @@ async function fillAddress(scope, { line1, city, zip }) {
       await shot(page, `${tag}-handy-01-describe`);
       await booker.locator("[data-action='to-step-2']").click();
       check(`${tag}: describe step names what is missing`, (await booker.locator(".bk-error").count()) >= 2);
-      await booker.locator("textarea[name=task]").fill("Replace a kitchen faucet that drips");
+      /* CX 4.2 job shortcuts: add, never duplicate, never erase. */
+      const task = booker.locator("textarea[name=task]");
+      const chips = booker.locator("[data-shortcut]");
+      check(`${tag}: job shortcuts offered`, (await chips.count()) >= 8, String(await chips.count()));
+      const chipHeights = await chips.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
+      check(`${tag}: every shortcut is a full tap target`, Math.min(...chipHeights) >= 43.5, chipHeights.map((h) => h.toFixed(0)).join(","));
+      await booker.locator("[data-shortcut='Replace faucet']").click();
+      check(`${tag}: a shortcut writes a useful description`, (await task.inputValue()) === "Replace an existing faucet.", await task.inputValue());
+      await booker.locator("[data-shortcut='Replace faucet']").click();
+      check(`${tag}: tapping it again does not duplicate it`, (await task.inputValue()) === "Replace an existing faucet." && (await booker.locator("[data-shortcut='Replace faucet'][aria-pressed=true]").count()) === 1);
+      await task.fill("The kitchen one drips at night");
+      await booker.locator("[data-shortcut='Fix door']").click();
+      await booker.locator("[data-shortcut='Install shelves']").click();
+      check(`${tag}: typed text survives, shortcuts are added on their own lines`, (await task.inputValue()) === "The kitchen one drips at night\nFix a door that sticks or won't latch.\nInstall wall shelves.", JSON.stringify(await task.inputValue()));
+      const labels = await chips.evaluateAll((els) => els.map((e) => e.getAttribute("data-shortcut")));
+      await task.fill("");
+      for (const label of labels) await booker.locator(`[data-shortcut='${label}']`).click();
+      const lines = (await task.inputValue()).split("\n");
+      check(`${tag}: every shortcut adds its own line of at least three words`, lines.length === labels.length && lines.every((l) => l.trim().split(/\s+/).length >= 3), JSON.stringify(lines));
+      await task.fill("Replace a kitchen faucet that drips");
       await fillAddress(booker, { line1: "9 Pine Ct", city: "Farmingdale", zip: "11735" });
       await booker.locator("[data-action='to-step-2']").click();
-      const day = await page.locator(".bk-day:not([disabled])").first().getAttribute("data-day");
+      await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
+      await page.waitForTimeout(500);
+      check(`${tag}: When opens on the earliest opening, already chosen`, (await page.locator(`[data-day='${ymd(2)}'][aria-pressed=true]`).count()) === 1 && (await page.locator("[data-time='08:00'][aria-pressed=true]").count()) === 1);
+      check(`${tag}: a default choice holds nothing (no hold until Continue)`, state.holds.length === 0, JSON.stringify(state.holds));
+      check(`${tag}: the fully booked day is not offered`, (await page.locator(`[data-day='${ymd(FULL_DAY_OFFSET)}']`).count()) === 0);
+      const day = await page.locator(".bk-day[data-day]").first().getAttribute("data-day");
       await page.locator(`[data-day='${day}']`).click();
       await page.locator("[data-time='08:00']").click();
       await shot(page, `${tag}-handy-02-time`);
@@ -328,8 +401,9 @@ async function fillAddress(scope, { line1, city, zip }) {
       await booker.locator("[data-action='create-account']").click();
       await page.waitForURL(/\/signup\?next=%2Fbook%2Fhandyman/, { timeout: 10000 });
       check(`${tag}: sends them to Registration 2.0 with a way back`, true);
-      // They sign in (Registration 2.0 stores the token) and come back.
+      // They create an account (Registration 2.0 stores the token) and come back: a new customer, inside the welcome window.
       state.me = customer({ addresses: [] });
+      state.offer = { expiresAt: new Date(Date.now() + 9.5 * 60000) };
       await page.evaluate(() => localStorage.setItem("token", "ui-token"));
       await page.goto(`${BASE}/book/handyman`, { waitUntil: "load" });
       await booker.waitFor({ timeout: 15000 });
@@ -340,8 +414,26 @@ async function fillAddress(scope, { line1, city, zip }) {
       check(`${tag}: step 4 shows the hold`, /Held for you until/.test(await booker.locator("[data-summary]").innerText()));
       check(`${tag}: One-Time and Membership offered with real prices`, /\$99/.test(await page.locator("[data-option='one_time']").innerText()) && /\$149/.test(await page.locator("[data-option='membership']").innerText()));
       check(`${tag}: no included-visit option for a non-member`, (await page.locator("[data-option='member']").count()) === 0);
+      const memberCard = await page.locator("[data-option='membership']").innerText();
+      check(`${tag}: membership card sells benefits, not rules`, /Labor included for covered tasks/.test(memberCard) && /month-to-month/.test(memberCard) && !/7\+ days|seven|all year|more than one job/i.test(memberCard), memberCard);
       await page.locator("[data-option='membership']").click();
       check(`${tag}: membership shows the real plans`, (await page.locator("[data-plan]").count()) === 4);
+      const planTexts = await page.locator("[data-plan]").allInnerTexts();
+      check(`${tag}: each plan card says Labor included (no visits-at-a-time line)`, planTexts.every((t) => /Labor included/.test(t) && !/at a time/.test(t)), planTexts.join(" | "));
+      check(`${tag}: See all plans is visible`, (await page.locator("[data-link='all-plans']").isVisible()) && (await page.getAttribute("[data-link='all-plans']", "href")) === "/membership/plans");
+      /* The welcome offer, for a new customer: real countdown, first month struck from the regular price. */
+      const banner = page.locator("[data-welcome-offer]");
+      await banner.waitFor({ timeout: 8000 });
+      const clock1 = await page.locator("[data-welcome-countdown]").innerText();
+      check(`${tag}: welcome offer banner with the time left`, /Welcome Offer .* 20% Off Your First Month/.test(await banner.innerText()) && /^9:[0-3]\d$/.test(clock1), clock1);
+      const basic = await page.locator("[data-plan='basic']").innerText();
+      check(`${tag}: plan card: $149 struck, $119.20 first month`, /\$149/.test(basic) && /\$119\.20/.test(basic) && /first month/.test(basic) && (await page.locator("[data-plan='basic'] s").innerText()) === "$149", basic);
+      await page.locator("[data-plan='plus']").click();
+      check(`${tag}: renewal price named, taxes named`, /\$199\.20 for your first month, then \$249\/month afterward, plus applicable taxes/.test(await page.locator("[data-plan-terms]").innerText()));
+      check(`${tag}: the button shows the first-month price`, /\$199\.20 first month/.test(await page.locator("[data-action='book-handyman']").innerText()));
+      await page.waitForTimeout(1300);
+      const clock2 = await page.locator("[data-welcome-countdown]").innerText();
+      check(`${tag}: the countdown counts down`, clock2 < clock1, `${clock1} -> ${clock2}`);
       await shot(page, `${tag}-handy-04-choose`);
       check(`${tag}: choose step fits`, await noSideScroll(page));
       await page.locator("[data-option='one_time']").click();
@@ -361,9 +453,18 @@ async function fillAddress(scope, { line1, city, zip }) {
       await shot(page, `${tag}-handy-05-canceled`);
       await page.locator("[data-option='membership']").click();
       await page.locator("[data-plan='plus']").click();
+      const clockBefore = await page.locator("[data-welcome-countdown]").innerText();
+      check(`${tag}: a reload never restarts the countdown`, clockBefore <= clock2 && state.offerAsks >= 2, `${clock2} -> ${clockBefore}`);
+      /* The server says the offer has gone (another tab bought, say): nothing opens, the page re-prices. */
+      state.membershipRefusal = { code: "WELCOME_OFFER_ENDED", message: "The welcome offer has ended. The prices shown now are the regular monthly prices." };
+      await page.locator("[data-action='book-handyman']").click();
+      await page.locator("text=The welcome offer has ended").waitFor({ timeout: 5000 });
+      await page.locator("[data-welcome-offer]").waitFor({ state: "detached", timeout: 5000 });
+      check(`${tag}: a refused welcome price opens nothing and re-prices to regular`, state.memberships.length === 0 && state.refused === 1 && /\$249\/mo/.test(await page.locator("[data-plan='plus']").innerText()) && (await page.locator("[data-plan-offer]").count()) === 0 && page.url().includes("/book/handyman"));
       await page.locator("[data-action='book-handyman']").click();
       await page.waitForURL(/checkout\.stripe\.test\/cs_member/, { timeout: 10000 });
       check(`${tag}: membership checkout returns to the flow`, state.memberships[0]?.returnTo === "handyman" && state.memberships[0]?.plan === "plus" && state.memberships[0]?.addressId === "a-new");
+      check(`${tag}: the regular-price checkout does not ask for the welcome price`, state.memberships[0]?.welcomeOffer === false);
       check(`${tag}: handyman flow has no page errors`, errors.length === 0, errors.join(" | "));
       await ctx.close();
     }
@@ -378,18 +479,21 @@ async function fillAddress(scope, { line1, city, zip }) {
       await booker.locator("textarea[name=task]").fill("Fix a running toilet upstairs");
       await fillAddress(booker, { line1: "3 Elm Rd", city: "Farmingdale", zip: "11735" });
       await booker.locator("[data-action='to-step-2']").click();
-      await page.locator(".bk-day[disabled]").first().waitFor({ timeout: 10000 }); // the month view has loaded
-      const day = await page.locator(".bk-day:not([disabled])").first().getAttribute("data-day");
+      await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 }); // the month view has loaded
+      const day = await page.locator(".bk-day[data-day]").first().getAttribute("data-day");
       await page.locator(`[data-day='${day}']`).click();
       await page.locator("[data-time='10:00']").click();
       await booker.locator("[data-action='to-step-3']").click();
       await page.locator("text=That time was just taken").waitFor({ timeout: 5000 });
       check(`${tag}: a time taken by someone else: stays on When, says so, keeps the job`, (await booker.getAttribute("data-step")) === "2" && (await page.locator("[data-time='10:00'][aria-pressed=true]").count()) === 0 && (await page.evaluate(() => JSON.parse(localStorage.getItem("pf_handyman_draft") || "{}").task)) === "Fix a running toilet upstairs");
+      await page.waitForTimeout(400);
+      check(`${tag}: ...and the next opening is chosen for them`, (await page.locator("[data-time='08:00'][aria-pressed=true]").count()) === 1);
       await page.locator("[data-time='13:00']").click();
       await booker.locator("[data-action='to-step-3']").click();
       await booker.locator("[data-auth-step]").waitFor({ timeout: 5000 });
       check(`${tag}: another time is held and they go on`, state.holds.length === 2 && state.holds[1].requestedTime === "13:00");
       await booker.locator("[data-auth-step] button:has-text('Back')").click();
+      await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
       check(`${tag}: back on When, their own held time is still shown as chosen`, (await page.locator("[data-time='13:00'][aria-pressed=true]").count()) === 1);
       await shot(page, `${tag}-handy-07-taken`);
       check(`${tag}: taken-time flow has no page errors`, errors.length === 0, errors.join(" | "));
@@ -405,10 +509,12 @@ async function fillAddress(scope, { line1, city, zip }) {
       await booker.waitFor({ timeout: 20000 });
       await booker.locator("textarea[name=task]").fill("Patch a hole in the hallway wall");
       await booker.locator("[data-action='to-step-2']").click();
-      await page.locator(".bk-day[disabled]").first().waitFor({ timeout: 10000 });
+      await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
       await page.waitForTimeout(500);
-      const first = await page.locator(".bk-day:not([disabled])").first().getAttribute("data-day");
+      const first = await page.locator(".bk-day[data-day]").first().getAttribute("data-day");
       check(`${tag}: a member home sees only times its included visit can take (7+ days out)`, first >= ymd(7) && /Member visits start 7 days out/.test(await booker.innerText()), first);
+      check(`${tag}: the earliest member day is chosen for them`, (await page.locator(`[data-day='${first}'][aria-pressed=true]`).count()) === 1 && first === ymd(7) && (await page.locator("[data-time='08:00'][aria-pressed=true]").count()) === 1, first);
+      check(`${tag}: members are never shown the new-customer offer`, (await page.locator("[data-welcome-offer]").count()) === 0);
       await page.locator(`[data-day='${first}']`).click();
       await page.locator("[data-time='13:00']").click();
       await booker.locator("[data-action='to-step-3']").click();
@@ -442,6 +548,56 @@ async function fillAddress(scope, { line1, city, zip }) {
       check(`${tag}: the seven-day member rule is explained up front, back on When, nothing booked`, state.bookings.length === 0 && (await booker.getAttribute("data-step")) === "2");
       check(`${tag}: the held time the rule refuses is let go, and not held again`, state.releases.includes("h0.secretsecretsecretsecretsecret") && state.holds.length === 0, JSON.stringify({ r: state.releases, h: state.holds }));
       check(`${tag}: the job is kept`, (await page.evaluate(() => JSON.parse(localStorage.getItem("pf_handyman_draft") || "{}").task)) === "Patch a hole in the hallway wall");
+      await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
+      await page.waitForTimeout(600);
+      const picked = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("pf_handyman_draft") || "{}"); return `${d.date} ${d.time}`; });
+      check(`${tag}: once membership is known, the time is revalidated to the earliest member opening`, (await page.locator(`[data-day='${ymd(7)}'][aria-pressed=true]`).count()) === 1 && (await page.locator("[data-time='08:00'][aria-pressed=true]").count()) === 1 && state.holds.length === 0, `${picked} holds=${state.holds.length} first=${await page.locator(".bk-day[data-day]").first().getAttribute("data-day")}`);
+      await ctx.close();
+    }
+
+    /* ===== CX 4.2: a remembered time that has gone; an unconfirmed default is not held ===== */
+    {
+      const { ctx, page, state } = await open(browser, { width, height });
+      await ctx.addInitScript((d) => {
+        try {
+          if (!sessionStorage.getItem("seeded")) {
+            sessionStorage.setItem("seeded", "1");
+            localStorage.setItem("pf_handyman_draft", JSON.stringify({ task: "Hang three shelves in the den", addressId: "", address: { line1: "5 Oak Ct", unit: "", city: "Farmingdale", state: "NY", zip: "11735" }, date: d, time: "10:00", name: "", phone: "", email: "", photoCount: 0, clientRequestId: "", choice: "", plan: "", pendingBookingId: "", holdToken: "", holdFor: "", holdExpiresAt: "", updatedAt: Date.now() }));
+          }
+        } catch {}
+      }, ymd(FULL_DAY_OFFSET));
+      await page.goto(`${BASE}/book/handyman`, { waitUntil: "load" });
+      const booker = page.locator("[data-handyman-booker]");
+      await booker.waitFor({ timeout: 20000 });
+      await page.locator("[data-slot-notice]").waitFor({ timeout: 10000 });
+      check(`${tag}: a saved time on a day that filled up: replaced by the earliest opening, with a short note`, (await booker.getAttribute("data-step")) === "2" && (await page.locator(`[data-day='${ymd(2)}'][aria-pressed=true]`).count()) === 1 && (await page.locator("[data-time='08:00'][aria-pressed=true]").count()) === 1 && /no longer open/.test(await page.locator("[data-slot-notice]").innerText()));
+      check(`${tag}: an unconfirmed saved time does not skip ahead or hold`, state.holds.length === 0);
+      await shot(page, `${tag}-handy-08-saved-gone`);
+      await ctx.close();
+    }
+
+    /* ===== CX 4.2: the welcome offer runs out while they look ===== */
+    {
+      const { ctx, page, state } = await open(browser, { width, height, me: customer() });
+      state.offer = { expiresAt: new Date(Date.now() + 6000) };
+      await ctx.addInitScript((d) => {
+        try {
+          localStorage.setItem("pf_handyman_draft", JSON.stringify({ task: "Replace a bathroom faucet please", addressId: "a1", address: null, date: d, time: "08:00", name: "", phone: "", email: "", photoCount: 0, clientRequestId: "", choice: "membership", plan: "basic", pendingBookingId: "", holdToken: "", holdFor: "", holdExpiresAt: "", timeConfirmed: true, updatedAt: Date.now() }));
+        } catch {}
+      }, ymd(9));
+      await page.goto(`${BASE}/book/handyman`, { waitUntil: "load" });
+      await page.locator("[data-welcome-offer]").waitFor({ timeout: 10000 });
+      check(`${tag}: a confirmed time and a signed-in customer go straight to choosing`, (await page.locator("[data-handyman-booker]").getAttribute("data-step")) === "4");
+      check(`${tag}: inside the window the first-month price shows`, (await page.locator("[data-plan-offer]").count()) === 4);
+      await page.locator("[data-welcome-offer]").waitFor({ state: "detached", timeout: 8000 });
+      check(`${tag}: at zero the offer disappears and regular prices return`, (await page.locator("[data-plan-offer]").count()) === 0 && /\$149\/mo/.test(await page.locator("[data-plan='basic']").innerText()) && !/first month/.test(await page.locator("[data-action='book-handyman']").innerText()));
+      await page.reload({ waitUntil: "load" });
+      await page.locator("[data-plan='basic']").waitFor({ timeout: 10000 });
+      await page.waitForTimeout(800);
+      check(`${tag}: reloading after it ended does not bring it back`, (await page.locator("[data-welcome-offer]").count()) === 0);
+      await page.locator("[data-action='book-handyman']").click();
+      await page.waitForURL(/checkout\.stripe\.test\/cs_member/, { timeout: 10000 });
+      check(`${tag}: after the window, checkout asks for the regular price`, state.memberships[0]?.welcomeOffer === false && state.memberships[0]?.billingCycle === "monthly");
       await ctx.close();
     }
   }

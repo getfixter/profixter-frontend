@@ -56,7 +56,7 @@ const GROUPS: Array<{ id: string; title: string; items: Item[] }> = [
     items: [
       { label: "Handyman services", href: "/services" },
       { label: "Locations we serve", href: "/locations", note: "Nassau & Suffolk" },
-      { label: "What we do", href: "/recent-work", note: "Real jobs, photographed" },
+      { label: "What's included", href: "/recent-work", note: "Before-and-after examples" },
       { label: "Homeowner guides", href: "/guides" },
       { label: "Projects", href: "/projects", note: "Larger work and estimates" },
       { label: "Renovations", href: "/renovations" },
