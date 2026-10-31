@@ -89,3 +89,27 @@
   :root[data-surface="site"] :is(.text-sm, .text-\[14px\], .text-\[14\.5px\]) { font-size: 15.5px; }
   :root[data-surface="site"] :is(.text-\[15px\], .text-\[15\.5px\], .text-base, .text-\[16px\]) { font-size: 16.5px; }
 }
+
+/* ---------------------------------------------------------------- */
+/* Touch targets (CX 4.1)                                             */
+/*                                                                    */
+/* The zoom shrinks controls along with everything else, so a 44px    */
+/* button drew at ~36px on a phone - under the 44px minimum. --tap is  */
+/* 44 SCREEN pixels expressed in pre-zoom units (53.7px at 0.82), and  */
+/* every customer control is at least that tall. Pages get shorter by  */
+/* losing whitespace and copy, not by shrinking what people tap.       */
+/* ---------------------------------------------------------------- */
+:root[data-surface="site"] {
+  --tap: calc(44px / var(--site-zoom));
+  --ui-btn-h: max(44px, var(--tap));
+  --ui-btn-h-lg: max(48px, var(--tap));
+}
+@media (max-width: 639px) {
+  :root[data-surface="site"] { --m-control: var(--tap); }
+}
+:root[data-surface="site"] .auth-input { height: max(52px, var(--tap)); }
+:root[data-surface="site"] :is(.plan-box__tab, .plan-box__cycle, .plan-box__cta, .auth-text-button, .auth-back, .auth-bar__link) {
+  min-height: var(--tap);
+}
+/* The floating chat launcher (look only; the chat itself is unchanged). */
+:root[data-surface="site"] [data-support-chat] > button { min-height: var(--tap); }

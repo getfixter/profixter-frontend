@@ -2,14 +2,20 @@
  * Free Visit and Book a Handyman (Customer Experience 4.0).
  * Mobile-first, on the site's own tokens (app/ui.css). The site is drawn
  * through a CSS zoom (app/site-scale.css), so sizes here are design sizes.
+ *
+ * Compact (CX 4.1): the owner, on an Android phone, found these forms too
+ * long. Height comes out of whitespace, copy and labels (labels float inside
+ * the fields); never out of tap size: every control is at least --tap, 44
+ * screen pixels whatever the zoom.
  */
 .bk {
+  --bk-field-h: max(56px, var(--tap, 48px));
   max-width: 620px;
   margin: 0 auto;
-  padding: var(--ui-s5) var(--ui-gutter) var(--ui-s12);
+  padding: var(--ui-s3) var(--ui-gutter) max(var(--ui-s8), env(safe-area-inset-bottom));
   color: var(--ui-ink);
 }
-.bk-head { margin-bottom: var(--ui-s5); }
+.bk-head { margin-bottom: var(--ui-s3); }
 .bk-eyebrow {
   display: inline-flex;
   align-items: center;
@@ -21,15 +27,15 @@
   color: var(--ui-accent);
 }
 .bk-title {
-  margin: 6px 0 0;
-  font-size: var(--ui-fs-h2);
+  margin: 4px 0 0;
+  font-size: clamp(21px, calc(0.6vw + 18px), 27px);
   line-height: var(--ui-lh-head);
   letter-spacing: var(--ui-track-head);
   font-weight: 800;
 }
-.bk-lede { margin: 8px 0 0; color: var(--ui-text-2); font-size: var(--ui-fs-body); line-height: var(--ui-lh-body); }
+.bk-lede { margin: 4px 0 0; color: var(--ui-text-2); font-size: var(--ui-fs-small); line-height: 1.45; }
 
-.bk-steps { display: flex; gap: 6px; margin: 0 0 var(--ui-s5); }
+.bk-steps { display: flex; gap: 6px; margin: 0 0 var(--ui-s3); }
 .bk-steps span { flex: 1; height: 4px; border-radius: 4px; background: var(--ui-line); transition: background var(--ui-dur-2) var(--ui-ease); }
 .bk-steps span[data-on="1"] { background: var(--ui-accent); }
 
@@ -38,19 +44,19 @@
   border: 1px solid var(--ui-line);
   border-radius: var(--ui-r-lg);
   box-shadow: var(--ui-shadow-1);
-  padding: var(--ui-s5);
+  padding: var(--ui-s4);
 }
-.bk-card + .bk-card { margin-top: var(--ui-s4); }
+.bk-card + .bk-card { margin-top: var(--ui-s3); }
 .bk-section-title { margin: 0 0 var(--ui-s3); font-size: var(--ui-fs-h3); font-weight: 800; line-height: var(--ui-lh-tight); }
 
-.bk-field { display: block; margin-bottom: var(--ui-s4); }
-.bk-label { display: block; margin-bottom: 6px; font-size: var(--ui-fs-small); font-weight: 700; color: var(--ui-ink-2); }
+.bk-field { display: block; margin-bottom: 10px; }
+.bk-label { display: block; margin-bottom: 6px; font-size: 15px; font-weight: 700; color: var(--ui-ink-2); }
 .bk-label small { font-weight: 500; color: var(--ui-text-3); }
 .bk-input,
 .bk-textarea {
   display: block;
   width: 100%;
-  min-height: 52px;
+  min-height: var(--bk-field-h);
   padding: 12px 14px;
   border: 1px solid var(--ui-line-2);
   border-radius: var(--ui-r-md);
@@ -61,13 +67,46 @@
   outline: none;
   transition: border-color var(--ui-dur-1) var(--ui-ease), box-shadow var(--ui-dur-1) var(--ui-ease);
 }
-.bk-textarea { min-height: 96px; resize: vertical; line-height: 1.45; }
+.bk-textarea { min-height: 84px; resize: vertical; line-height: 1.45; }
+.bk-input, .bk-textarea, .bk .auth-input { scroll-margin: 88px 0 140px; }
+
+/* Floating label: the label sits in the field as its prompt and moves up once
+   there is a value (typed or autofilled) or focus. */
+.bk-float { position: relative; }
+.bk-input--float { padding: 22px 14px 6px; }
+.bk-float-label {
+  position: absolute;
+  left: 15px;
+  top: calc(var(--bk-field-h) / 2);
+  transform: translateY(-50%);
+  font-size: 17px;
+  color: var(--ui-text-3);
+  pointer-events: none;
+  transition: top var(--ui-dur-1) var(--ui-ease), font-size var(--ui-dur-1) var(--ui-ease);
+  white-space: nowrap;
+}
+.bk-input--float:focus + .bk-float-label,
+.bk-input--float:not(:placeholder-shown) + .bk-float-label,
+.bk-input--float:-webkit-autofill + .bk-float-label {
+  top: 15px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ui-text-2);
+}
+.bk-input--float:focus + .bk-float-label { color: var(--ui-accent); }
+
+/* The shared address box, drawn as one of these fields. */
+.bk .auth-input { height: var(--bk-field-h); border-radius: var(--ui-r-md); font-size: 17px; padding-left: 15px; }
+.bk .auth-input::placeholder { color: var(--ui-text-3); font-weight: 400; }
 .bk-input:focus,
 .bk-textarea:focus { border-color: var(--ui-accent); box-shadow: 0 0 0 4px var(--ui-accent-soft); }
 .bk-input[aria-invalid="true"] { border-color: #dc2626; }
 .bk-row { display: grid; gap: var(--ui-s3); grid-template-columns: 1fr; }
 @media (min-width: 560px) { .bk-row--2 { grid-template-columns: 1fr 1fr; } }
-.bk-error { margin: 6px 0 0; font-size: var(--ui-fs-small); font-weight: 600; color: #dc2626; }
+.bk-row--pair { gap: 10px; margin-bottom: 10px; }
+.bk-row--pair > .bk-field { margin-bottom: 0; }
+@media (min-width: 340px) { .bk-row--pair { grid-template-columns: 1fr 1fr; } }
+.bk-error { margin: 4px 0 0; font-size: 14px; font-weight: 600; color: #dc2626; line-height: 1.35; }
 .bk-note { margin: 0; font-size: var(--ui-fs-small); color: var(--ui-text-3); line-height: 1.45; }
 
 /* Days: a horizontal strip, snap-scrolled; times: a grid. */
@@ -84,8 +123,8 @@
 .bk-day {
   flex: 0 0 auto;
   scroll-snap-align: start;
-  width: 64px;
-  padding: 10px 0;
+  width: 60px;
+  padding: 7px 0;
   border: 1px solid var(--ui-line-2);
   border-radius: var(--ui-r-md);
   background: var(--ui-bg);
@@ -95,15 +134,18 @@
   cursor: pointer;
   transition: border-color var(--ui-dur-1), background var(--ui-dur-1), transform var(--ui-dur-1);
 }
-.bk-day b { display: block; font-size: 20px; line-height: 1.1; }
+.bk-day b { display: block; font-size: 19px; line-height: 1.15; }
 .bk-day span { display: block; font-size: 12px; color: var(--ui-text-3); font-weight: 600; }
 .bk-day[aria-pressed="true"] { border-color: var(--ui-accent); background: var(--ui-accent); color: #fff; }
 .bk-day[aria-pressed="true"] span { color: rgba(255, 255, 255, 0.85); }
 .bk-day:disabled { opacity: 0.38; cursor: not-allowed; }
-.bk-times { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: var(--ui-s3); }
-@media (min-width: 560px) { .bk-times { grid-template-columns: repeat(4, 1fr); } }
+.bk-times { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px; }
+@media (max-width: 300px) { .bk-times { grid-template-columns: repeat(2, 1fr); } }
 .bk-time {
-  min-height: 48px;
+  min-height: max(48px, var(--tap, 48px));
+  padding: 0 4px;
+  white-space: nowrap;
+  font-size: 15.5px;
   border: 1px solid var(--ui-line-2);
   border-radius: var(--ui-r-md);
   background: var(--ui-bg);
@@ -113,6 +155,16 @@
   cursor: pointer;
 }
 .bk-time[aria-pressed="true"] { border-color: var(--ui-accent); background: var(--ui-accent); color: #fff; }
+/* Taken or not offered for this visit: still shown, so the day reads whole, but plainly out of reach. */
+.bk-time:disabled {
+  border-color: var(--ui-line);
+  background: var(--ui-bg-soft);
+  color: #a3acba;
+  font-weight: 600;
+  text-decoration: line-through;
+  text-decoration-color: #b9c1cd;
+  cursor: not-allowed;
+}
 
 /* Photos */
 .bk-photo-actions { display: flex; gap: 8px; }
@@ -149,7 +201,32 @@
 .bk-btn--dark { border-color: var(--ui-ink); background: var(--ui-ink); color: #fff; }
 .bk-btn--block { width: 100%; min-height: var(--ui-btn-h-lg); font-size: 17px; }
 .bk-link { background: none; border: 0; padding: 0; color: var(--ui-accent); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-.bk-actions { display: grid; gap: 10px; margin-top: var(--ui-s5); }
+.bk-actions { display: grid; gap: 8px; margin-top: var(--ui-s4); }
+.bk-fine { margin: 0; text-align: center; font-size: 13px; line-height: 1.4; color: var(--ui-text-3); }
+
+/* Free Visit: day and time live in the same card as the details. */
+.bk-when { margin-top: 4px; }
+.bk-when .bk-label { margin-bottom: 4px; }
+.bk-more {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--tap, 44px);
+  margin-top: 6px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--ui-accent);
+  font: inherit;
+  font-size: 15.5px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.bk-more span { font-size: 20px; line-height: 1; }
+.bk-more small { font-weight: 500; color: var(--ui-text-3); }
+.bk-optional { margin-top: 12px; }
 .bk-spinner { width: 18px; height: 18px; border: 2px solid rgba(255, 255, 255, 0.45); border-top-color: #fff; border-radius: 50%; animation: bk-spin 0.8s linear infinite; }
 @keyframes bk-spin { to { transform: rotate(360deg); } }
 

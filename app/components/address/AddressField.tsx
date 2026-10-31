@@ -23,6 +23,8 @@ type Props = {
   onChange: (value: AddressValue | null) => void;
   /** Told the service-area answer whenever it changes, for copy elsewhere. */
   onServiceArea?: (state: ServiceAreaState) => void;
+  /** The lookup box's prompt, for forms that use it in place of a label. */
+  placeholder?: string;
 };
 
 export type ServiceAreaState = "unknown" | "checking" | "inside" | "outside";
@@ -34,7 +36,7 @@ export type ServiceAreaState = "unknown" | "checking" | "inside" | "outside";
  */
 const DEBOUNCE_MS = 260;
 
-export default function AddressField({ value, onChange, onServiceArea }: Props) {
+export default function AddressField({ value, onChange, onServiceArea, placeholder }: Props) {
   const [query, setQuery] = useState(value?.formatted || "");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -230,11 +232,15 @@ export default function AddressField({ value, onChange, onServiceArea }: Props) 
               aria-controls={listId}
               aria-autocomplete="list"
               aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
-              autoComplete="off"
+              /*
+                The browser's saved address fills the street line; the lookup then
+                offers the matching verified address to pick, exactly as if typed.
+              */
+              autoComplete="street-address"
               value={query}
               onChange={(e) => handleType(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Start typing your address..."
+              placeholder={placeholder || "Start typing your address..."}
               /*
                 Room for the tick, and an ellipsis rather than a collision. A
                 verified address is a full formatted line - "1 Congress Ave,

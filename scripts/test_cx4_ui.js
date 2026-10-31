@@ -22,6 +22,7 @@ const { chromium } = require("playwright");
 const fs = require("fs");
 
 const BASE = process.argv[2] || "http://localhost:3000";
+const SCHEDULE = ["08:00", "10:00", "13:00", "15:30"];
 const SHOTS = process.argv[3] || "";
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
@@ -76,11 +77,13 @@ async function open(browser, { width, height, me = null }) {
       for (let i = 0; i < 60; i++) {
         const d = ymd(i);
         if (!d.startsWith(month)) continue;
-        days.push({ date: d, open: true, available: i >= lead, slotCount: 3, slots: i >= lead ? ["08:00", "10:00", "13:00"] : [], taken: {} });
+        // The day's whole schedule, as the server sends it: 15:30 is always taken here.
+        const candidateSlots = SCHEDULE.map((time) => ({ time, available: i >= lead && time !== "15:30" }));
+        days.push({ date: d, open: true, available: i >= lead, slotCount: 3, slots: i >= lead ? ["08:00", "10:00", "13:00"] : [], candidateSlots, taken: {} });
       }
       return json({ month, engine: "reservation", visitDurationMinutes: 90, days });
     }
-    if (p === "/api/calendar/slots") return json({ date: u.searchParams.get("date"), available: true, slots: ["08:00", "10:00", "13:00"], taken: {}, capacityPerSlot: 2 });
+    if (p === "/api/calendar/slots") return json({ date: u.searchParams.get("date"), available: true, slots: ["08:00", "10:00", "13:00"], candidateSlots: SCHEDULE.map((time) => ({ time, available: time !== "15:30" })), taken: {}, capacityPerSlot: 2 });
     if (p === "/api/service-area/check") return json({ serviceable: u.searchParams.get("zip") !== "10118" });
     if (p === "/api/free-visit-requests" && m === "POST") {
       const t = text();
@@ -198,6 +201,19 @@ async function fillAddress(scope, { line1, city, zip }) {
       const form = page.locator("[data-free-visit-form]");
       await form.waitFor({ timeout: 20000 });
       check(`${tag}: Free Visit page has no inspection/labor promise`, !/inspection|90 minutes|90-minute/i.test(await form.innerText()));
+      /* Compact (CX 4.1): the whole form and its button in the first screen on a phone, and nothing too small to tap. */
+      const fit = await page.evaluate(() => {
+        const r = document.querySelector("[data-action='review-free-visit']").getBoundingClientRect();
+        const fields = [...document.querySelectorAll("[data-free-visit-form] input:not([type=file]), [data-free-visit-form] button")].filter((e) => e.offsetParent && !e.closest(".bk-days"));
+        return { bottom: r.bottom, vh: window.innerHeight, smallest: Math.min(...fields.map((e) => e.getBoundingClientRect().height)) };
+      });
+      if (tag === "mobile") check(`${tag}: the Request button is on the first screen`, fit.bottom <= fit.vh, `${Math.round(fit.bottom)} of ${fit.vh}`);
+      check(`${tag}: every field and button is at least 44px tall on screen`, fit.smallest >= 43.5, `smallest ${fit.smallest.toFixed(1)}`);
+      const auto = await form.evaluate((el) => ["name", "phone", "email"].map((n) => { const i = el.querySelector(`input[name=${n}]`); return `${i.autocomplete}/${i.inputMode || i.type}/${i.enterKeyHint}`; }).join(" "));
+      check(`${tag}: autofill and keyboard hints on name, phone and email`, auto === "name/text/next tel-national/tel/next email/email/next", auto);
+      await form.locator("input[name=name]").focus();
+      await page.keyboard.press("Enter");
+      check(`${tag}: keyboard Next moves from name to phone, without submitting`, (await page.evaluate(() => document.activeElement?.getAttribute("name"))) === "phone" && (await form.locator(".bk-error").count()) === 0);
       await shot(page, `${tag}-free-01-empty`);
       await page.locator("[data-action='review-free-visit']").click();
       check(`${tag}: required fields are named`, (await form.locator(".bk-error").count()) >= 4);
@@ -209,7 +225,16 @@ async function fillAddress(scope, { line1, city, zip }) {
       const day = await page.locator(".bk-day:not([disabled])").first().getAttribute("data-day");
       await page.locator(`[data-day='${day}']`).click();
       await page.locator("[data-time='10:00']").click();
-      check(`${tag}: description and photos are optional`, (await form.locator("text=(optional)").count()) >= 2);
+      /* The day's whole schedule: the taken time is shown, struck through, and cannot be chosen. */
+      const taken = page.locator("[data-time='15:30']");
+      check(`${tag}: a taken time stays visible but disabled`, (await taken.count()) === 1 && (await taken.isDisabled()) && (await taken.getAttribute("aria-label")) === "3:30 PM, unavailable");
+      check(`${tag}: the taken time looks unavailable (struck through)`, /line-through/.test(await taken.evaluate((el) => getComputedStyle(el).textDecorationLine)));
+      await taken.click({ force: true });
+      check(`${tag}: tapping a taken time changes nothing`, (await page.locator("[data-time='10:00'][aria-pressed=true]").count()) === 1 && (await taken.getAttribute("aria-pressed")) === null);
+      /* Note and photos wait behind one small optional control. */
+      check(`${tag}: note and photos are folded away until asked for`, (await form.locator("textarea[name=note]").count()) === 0 && /optional/.test(await form.locator("[data-action='add-details']").innerText()));
+      await form.locator("[data-action='add-details']").click();
+      check(`${tag}: description and photos are optional`, (await form.locator("text=(optional)").count()) >= 1 && (await form.locator("textarea[name=note]").count()) === 1);
       check(`${tag}: camera capture offered`, (await form.locator("[data-input=camera][capture=environment]").count()) === 1);
       check(`${tag}: free visit form fits`, await noSideScroll(page));
       await shot(page, `${tag}-free-02-filled`);
@@ -248,9 +273,14 @@ async function fillAddress(scope, { line1, city, zip }) {
       await form.locator("input[name=phone]").fill("516-555-0188");
       await form.locator("input[name=email]").fill("lee@mailbox.org");
       await fillAddress(form, { line1: "40 Birch Ln", city: "Farmingdale", zip: "11735" });
+      /* Going away and coming back (reload, Back) keeps what was typed. */
+      await page.reload({ waitUntil: "networkidle" });
+      await form.waitFor({ timeout: 20000 });
+      check(`${tag}: a reload keeps name, phone, email and address`, (await form.locator("input[name=name]").inputValue()) === "Lee Walker" && (await form.locator("input[name=email]").inputValue()) === "lee@mailbox.org" && (await form.locator("input[placeholder='Street address']").inputValue()) === "40 Birch Ln");
       const day = await page.locator(".bk-day:not([disabled])").nth(1).getAttribute("data-day");
       await page.locator(`[data-day='${day}']`).click();
       await page.locator("[data-time='13:00']").click();
+      await form.locator("[data-action='add-details']").click();
       await form.locator("textarea[name=note]").fill("Mount a TV and hang two shelves");
       await page.locator("[data-action='review-free-visit']").click();
       await page.locator("[data-action='need-handyman']").click();

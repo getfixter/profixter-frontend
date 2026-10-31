@@ -2,12 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getMonthAvailability, getTimeSlots } from "@/lib/booking-service";
-import { getBookableSlots, normalizeDayAvailability } from "@/lib/booking-calendar-availability";
+import { getBookableSlots, normalizeDayAvailability, type AvailabilitySlot } from "@/lib/booking-calendar-availability";
 
 /*
  * Pick a day, then a time - from the real calendar (the same availability the
  * reservation engine books against). `visit="membership"` applies the member
  * seven-day lead time, exactly as the server will.
+ *
+ * The day's whole schedule is shown: times that are taken (or that this visit
+ * cannot have) stay visible, greyed and struck through, and cannot be chosen.
+ * Only times the server sent as bookable are ever selectable; nothing outside
+ * the company's configured schedule is drawn.
  *
  * Nothing here reserves anything; the server re-checks when the booking is
  * made and answers SLOT_UNAVAILABLE if the time has gone.
@@ -37,6 +42,13 @@ export function formatTime12(t: string) {
   if (!Number.isFinite(hh)) return t;
   return `${hh % 12 || 12}:${String(mm || 0).padStart(2, "0")} ${hh >= 12 ? "PM" : "AM"}`;
 }
+/* Bookable and unavailable times together (only `available` ones are bookable). */
+function daySchedule(raw: unknown): AvailabilitySlot[] {
+  const day = normalizeDayAvailability(raw as never);
+  const bookable = new Set(getBookableSlots(day).map((s) => s.time));
+  return day.slots.map((s) => ({ time: s.time, available: bookable.has(s.time) }));
+}
+
 export function formatWhen(date: string, time: string) {
   if (!date) return "";
   const l = label(date);
@@ -59,10 +71,15 @@ export default function SlotPicker({
 }) {
   const today = ymdInNY(new Date());
   const days = useMemo(() => Array.from({ length: DAYS_SHOWN }, (_, i) => addDays(today, i)), [today]);
-  const [byDay, setByDay] = useState<Record<string, string[]> | null>(null);
-  const [fresh, setFresh] = useState<{ date: string; slots: string[] } | null>(null);
+  const [byDay, setByDay] = useState<Record<string, AvailabilitySlot[]> | null>(null);
+  const [fresh, setFresh] = useState<{ date: string; slots: AvailabilitySlot[] } | null>(null);
   const loaded = !date ? null : fresh?.date === date ? fresh.slots : (byDay?.[date] ?? null);
-  const daySlots = loaded && held && held.date === date && !loaded.includes(held.time) ? [...loaded, held.time].sort() : loaded;
+  // The customer's own held time counts as taken in the calendar, but it is theirs to keep.
+  const daySlots = useMemo(() => {
+    if (!loaded || !held || held.date !== date) return loaded;
+    const rest = loaded.filter((s) => s.time !== held.time);
+    return [...rest, { time: held.time, available: true }].sort((a, b) => a.time.localeCompare(b.time));
+  }, [loaded, held, date]);
 
   useEffect(() => {
     let alive = true;
@@ -73,11 +90,9 @@ export default function SlotPicker({
         if (!alive) return;
         // No month view at all (an older API): every day stays pickable and the day's own slots decide.
         if (results.every((r) => !r)) return setByDay(null);
-        const map: Record<string, string[]> = {};
+        const map: Record<string, AvailabilitySlot[]> = {};
         for (const month of results) {
-          for (const day of month?.days || []) {
-            map[day.date] = getBookableSlots(normalizeDayAvailability(day as never)).map((s) => s.time);
-          }
+          for (const day of month?.days || []) map[day.date] = daySchedule(day);
         }
         setByDay(map);
       })
@@ -92,14 +107,20 @@ export default function SlotPicker({
     if (!date) return;
     let alive = true;
     getTimeSlots(date, { visit })
-      .then((res) => alive && setFresh({ date, slots: getBookableSlots(normalizeDayAvailability(res as never)).map((s) => s.time) }))
+      .then((res) => alive && setFresh({ date, slots: daySchedule(res) }))
       .catch(() => undefined);
     return () => {
       alive = false;
     };
   }, [date, visit]);
 
-  const hasAny = (ymd: string) => (byDay ? (byDay[ymd] || []).length > 0 || held?.date === ymd : true);
+  // A remembered choice that has since been taken is let go, so it is never sent as if still open.
+  useEffect(() => {
+    if (!date || !time || fresh?.date !== date || !daySlots) return;
+    if (!daySlots.some((s) => s.time === time && s.available)) onChange({ date, time: "" });
+  }, [date, time, fresh, daySlots, onChange]);
+
+  const hasAny =(ymd: string) => (byDay ? (byDay[ymd] || []).some((s) => s.available) || held?.date === ymd : true);
 
   return (
     <div data-slot-picker>
@@ -123,16 +144,26 @@ export default function SlotPicker({
           );
         })}
       </div>
-      {byDay && Object.values(byDay).every((list) => !list.length) && (
+      {byDay && Object.values(byDay).every((list) => !list.some((s) => s.available)) && (
         <p className="bk-note">No openings in the next few weeks. Please call us at 631-599-1363.</p>
       )}
       {date && (
         <div className="bk-times" role="group" aria-label="Choose a time">
           {daySlots === null ? (
             <p className="bk-note">Checking times…</p>
-          ) : daySlots.length ? (
-            daySlots.map((t) => (
-              <button key={t} type="button" className="bk-time" aria-pressed={time === t} data-time={t} onClick={() => onChange({ date, time: t })}>
+          ) : daySlots.some((s) => s.available) ? (
+            daySlots.map(({ time: t, available }) => (
+              <button
+                key={t}
+                type="button"
+                className="bk-time"
+                aria-pressed={available ? time === t : undefined}
+                aria-label={available ? undefined : `${formatTime12(t)}, unavailable`}
+                disabled={!available}
+                data-time={t}
+                data-available={available ? "1" : "0"}
+                onClick={available ? () => onChange({ date, time: t }) : undefined}
+              >
                 {formatTime12(t)}
               </button>
             ))
