@@ -64,9 +64,10 @@ const text = (page) => page.locator("main").first().innerText().catch(() => "");
     const { ctx, page, seen, errors } = await open(browser);
     await page.goto(BASE + "/", { waitUntil: "networkidle" });
     await page.waitForTimeout(800);
-    check("visitor: the visitor homepage", /One membership\./.test(await text(page)));
+    check("visitor: the visitor homepage", /Your home\.\s*Your handyman\./.test(await text(page)));
     check("visitor: no membership promotion, no signed-in extras", (await page.locator("[data-home-promo]").count()) === 0 && (await page.locator("[data-home-extra]").count()) === 0);
-    check("visitor: callback form open first", (await page.locator('[data-fv="switch"] [role="radio"]').first().getAttribute("data-fv-switch")) === "callback" && (await page.locator("[data-fv-contact]").count()) === 3);
+    // Customer Experience 4.0: the two ways to start, as links to their own pages (no form on the homepage).
+    check("visitor: Free Visit and Book a Handyman in the hero", (await page.locator("[data-hero-cta='free-visit'][href='/book/free']").count()) === 1 && (await page.locator("[data-hero-cta='book-handyman'][href='/book/handyman']").count()) === 1);
     check("no membership map anywhere, never requested", (await page.locator("#membership-map-heading").count()) === 0 && seen.map === 0, `requests=${seen.map}`);
     check("visitor: no page errors", errors.length === 0, errors.join(" | "));
     await ctx.close();

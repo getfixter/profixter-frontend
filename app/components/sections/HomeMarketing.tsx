@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/analytics";
 import Reveal from "@/app/components/ui/Reveal";
 import GoogleRatingCompact from "@/app/components/home/GoogleRatingCompact";
-import WorkStrip from "@/app/components/home/WorkStrip";
+import WhatWeDo from "@/app/components/whatwedo/WhatWeDo";
 import { HomeExtras } from "@/app/components/home/HomePersonal";
 
 /**
@@ -61,24 +61,8 @@ export default function HomeMarketing() {
 
       <HomeExtras />
 
-      <section className="ui-section ui-section--tight" aria-labelledby="hm-work">
-        <div className="ui-container">
-          <Reveal className="ui-head ui-head--row">
-            <div>
-              <p className="ui-eyebrow">Real work</p>
-              <h2 id="hm-work" className="ui-h2">
-                This is the everyday kind.
-              </h2>
-            </div>
-            <Link href="/recent-work" className="ui-link">
-              See more work
-            </Link>
-          </Reveal>
-        </div>
-        <div className="ui-container">
-          <WorkStrip />
-        </div>
-      </section>
+      {/* Before/after pairs; renders nothing if none are published. */}
+      <WhatWeDo variant="home" />
 
       {/* The public membership map was retired (2026-10-30); Admin keeps its own. */}
 

@@ -94,6 +94,8 @@ export type RecentWorkPhoto = {
   imageUrl: string;
   width: number;
   height: number;
+  kind?: "before_after" | "photo";
+  illustrative?: boolean;
 };
 
 /**
@@ -101,11 +103,28 @@ export type RecentWorkPhoto = {
  * the gallery uses. Only captioned photos are returned: an uncaptioned photo
  * says nothing a search engine or an assistant can use, and the gallery
  * already shows it. Fails quietly to an empty list.
+ *
+ * Illustrative examples are left out. Everything this feeds - the "photos of
+ * our work" grid on each service page, the service JSON-LD images and the
+ * sitemap's image list - presents a picture as a real Profixter job, and a
+ * generated example is not one. With no real photos published the list is
+ * simply empty and those places render without photos.
  */
 export async function getRecentWorkPhotos(category?: string, limit = 24): Promise<RecentWorkPhoto[]> {
   const query = new URLSearchParams({ limit: String(limit) });
   if (category) query.set("category", category);
   const json = await getJson(`/api/recent-work?${query.toString()}`);
   const photos = Array.isArray(json?.photos) ? (json.photos as RecentWorkPhoto[]) : [];
-  return photos.filter((photo) => photo && photo.caption && photo.imageUrl);
+  return photos.filter((photo) => photo && photo.caption && photo.imageUrl && !photo.illustrative);
+}
+
+/**
+ * The What We Do before/after pairs, for /recent-work's structured data. Unlike
+ * getRecentWorkPhotos this keeps illustrative pairs and says which they are:
+ * the caller must describe them as examples, never as real jobs.
+ */
+export async function getWhatWeDoPairs(limit = 48): Promise<RecentWorkPhoto[]> {
+  const json = await getJson(`/api/recent-work?kind=before_after&limit=${limit}`);
+  const photos = Array.isArray(json?.photos) ? (json.photos as RecentWorkPhoto[]) : [];
+  return photos.filter((photo) => photo && photo.kind === "before_after" && photo.caption && photo.imageUrl);
 }

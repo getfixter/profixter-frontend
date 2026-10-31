@@ -357,7 +357,7 @@ export default function LabHomepage() {
             </div>
 
             <p className="mt-4 text-[13.5px] leading-[1.5] text-white/45">
-              Your first 90-minute visit is free. No card required.
+              Let&rsquo;s take a look at your to-do list. The visit is free.
             </p>
           </div>
 

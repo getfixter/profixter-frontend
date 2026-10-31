@@ -154,6 +154,8 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
   const pending = /^pending confirmation$/i.test(detail?.booking.status || "");
   /* Booked from the customer's own account: contact and address come from it, not from this screen. */
   const online = detail?.booking.channel === "online";
+  /* "consultation": a Free Visit under the current offer (no labor). "" or missing: an older 90-minute labor visit. */
+  const consultation = detail?.booking.freeVisitPurpose === "consultation";
   const missing = detail?.booking.missing || [];
   const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(saved), [form, saved]);
   const eligibility = blockedBy || detail?.eligibility || null;
@@ -288,6 +290,17 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
 
           {detail && form ? (
             <>
+              {/* What this visit is: the current Free Visit is a to-do list review; older ones were promised labor. */}
+              <p
+                className={`rounded-xl border p-3 text-sm font-semibold ${
+                  consultation ? "border-slate-200 bg-slate-50 text-slate-800" : "border-violet-200 bg-violet-50 text-violet-900"
+                }`}
+                data-free-visit-purpose={detail.booking.freeVisitPurpose || "labor"}
+              >
+                {consultation
+                  ? "Free Visit — review their to-do list, no labor"
+                  : "Free first visit — 90 minutes of labor (booked under the earlier offer)"}
+              </p>
               {pending && !online && missing.length ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900" data-free-visit-missing>
                   Still needed on the call: {missing.map((m) => (m === "address" ? "service address" : m)).join(", ")}
@@ -356,6 +369,7 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
               <section className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
                   Service address {pending && !detail.booking.hasAddress ? <span className="normal-case tracking-normal text-rose-600">· required to confirm</span> : null}
+                  {pending && !online && detail.booking.hasAddress ? <span className="normal-case tracking-normal text-slate-500">· from their request, check it on the call</span> : null}
                 </h4>
                 <div className="grid gap-2 sm:grid-cols-[1fr_110px]">
                   <div><label className={label}>Street address</label><input className={input} value={form.line1} onChange={set("line1")} disabled={disabled || online} placeholder="12 Main St" data-free-visit-field="line1" /></div>

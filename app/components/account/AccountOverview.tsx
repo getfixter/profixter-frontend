@@ -545,12 +545,12 @@ export default function AccountOverview({
             {freeVisit ? (
               <section className="acct-card acct-offer" aria-labelledby="acct-free" data-acct-state="free-visit">
                 <div className="min-w-0">
-                  <p className="ui-eyebrow ui-eyebrow--accent">First visit free</p>
+                  <p className="ui-eyebrow ui-eyebrow--accent">Free Visit</p>
                   <h2 id="acct-free" className="acct-card__title mt-1">
-                    Book your free first visit.
+                    Let&rsquo;s take a look at your to-do list.
                   </h2>
                   <p className="acct-card__text">
-                    Up to {STANDARD_VISIT_MINUTES} minutes of work, free for new customers. No card needed.
+                    We&rsquo;ll visit your home, go over your list and help you find the right Profixter service. Free, no card needed.
                     {!address ? " We'll check your address when you book." : ""}
                   </p>
                 </div>

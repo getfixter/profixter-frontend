@@ -254,8 +254,8 @@ export const PROFIXTER_STRUCTURED_DATA = {
           },
           {
             "@type": "Offer",
-            name: "Free first visit",
-            description: "A free 90-minute first visit, one per customer, for new customers in Nassau and Suffolk.",
+            name: "Free Visit",
+            description: "A free in-person visit in Nassau and Suffolk: a Profixter team member goes over your to-do list and helps you find the right service. Repairs and labor are not included.",
             url: `${SITE_URL}/book/free`,
             price: "0.00",
             priceCurrency: "USD",

@@ -177,12 +177,12 @@ function FreeVisitFlow() {
         <div className="pg-intro">
           <p className="ui-tag ui-tag--accent">
             <span className="ui-tag__dot" aria-hidden="true" />
-            Free first visit
+            Free Visit
           </p>
-          <h1 className="ui-display mt-3">Your first visit is free.</h1>
-          <p className="ui-lede">Pick a day and tell us what needs doing. Nothing to pay, no membership required.</p>
+          <h1 className="ui-display mt-3">Let&rsquo;s take a look at your to-do list.</h1>
+          <p className="ui-lede">Pick a day and we&rsquo;ll visit your home, go over your list and help you find the right Profixter service. Repairs and labor aren&rsquo;t part of the Free Visit.</p>
           <ul className="pg-facts mt-3">
-            <li>90 minutes of handyman labor</li>
+            <li>Free, in person</li>
             <li>No card required</li>
             <li>One per customer</li>
             <li>Subject to availability</li>
@@ -314,9 +314,9 @@ function ProspectMembershipFlow({
             >
               <div>
                 <p className="text-[16px] font-semibold text-[color:var(--ui-ink)]">
-                  {onAddHome ? "Your first visit may be free." : "Your first visit is free."}
+                  {onAddHome ? "A free visit may be available." : "Let's take a look at your to-do list."}
                 </p>
-                <p className="ui-small mt-0.5">90-minute first visit · No card required · One per customer</p>
+                <p className="ui-small mt-0.5">Free visit · We go over your list together · No labor included</p>
               </div>
               {onAddHome ? (
                 <button
@@ -335,7 +335,7 @@ function ProspectMembershipFlow({
                   onClick={() => trackEvent("free_visit_cta_clicked", { placement: "membership_hero" })}
                   className="ui-btn ui-btn--accent shrink-0"
                 >
-                  Book Your First Visit Free
+                  Book Your Free Visit
                 </Link>
               )}
             </div>

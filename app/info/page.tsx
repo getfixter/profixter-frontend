@@ -44,7 +44,7 @@ const GROUPS: Array<{ id: string; title: string; items: Item[] }> = [
     items: [
       { ...BOOKING_LINKS.memberships, note: "Plans from $149/month" },
       { label: "How membership works", href: "/handyman-membership" },
-      { label: "Free first visit", href: BOOKING_LINKS.freeVisit.href, note: "New Nassau & Suffolk customers" },
+      { label: "Free Visit", href: BOOKING_LINKS.freeVisit.href, note: "We go over your to-do list" },
       { ...BOOKING_LINKS.oneTime, note: "$99, one small job" },
       { ...BOOKING_LINKS.fullDay, note: "One Fixter, your whole list" },
       { label: "Gift a membership", href: "/gift" },

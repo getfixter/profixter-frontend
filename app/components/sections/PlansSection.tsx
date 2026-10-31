@@ -1472,7 +1472,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           <div className="plan-after__card">
             <p className="plan-after__label">Not ready to choose?</p>
             <p className="plan-after__body">
-              <b>Your first 90-minute visit is free.</b> No card required.
+              <b>Let&rsquo;s take a look at your to-do list.</b> The visit is free.
             </p>
             <Link href="/book/free" className="plan-after__link">
               Book a free visit

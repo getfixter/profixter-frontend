@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  GALLERY_GROUPS,
+  uploadPair,
   uploadPhotos,
   type UploadResult,
   type WorkPhotoCategory,
@@ -350,6 +352,282 @@ export default function RecentWorkUploader({
               : count
                 ? `Upload ${count} photo${count === 1 ? "" : "s"}`
                 : "Choose photos to continue"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+/**
+ * One before/after pair for What We Do.
+ *
+ * Two pickers, not a multi-select: which file is BEFORE and which is AFTER is
+ * the whole point, and guessing it from the order a phone returns files is how
+ * a gallery ends up showing every repair in reverse.
+ *
+ * "Illustrative example" is on by default because that is what the collection
+ * mostly is (generated examples of the kind of job). It is what keeps a pair
+ * out of the service-page photo grids and the sitemap, and what labels it as
+ * an example under the gallery. Untick it only for a real job's own photos.
+ */
+export function RecentWorkPairUploader({
+  categories,
+  onClose,
+  onUploaded,
+  onToast,
+}: RecentWorkUploaderProps) {
+  const [before, setBefore] = useState<Selection | null>(null);
+  const [after, setAfter] = useState<Selection | null>(null);
+  const [title, setTitle] = useState("");
+  const [caption, setCaption] = useState("");
+  const [category, setCategory] = useState("general-handyman");
+  const [group, setGroup] = useState<string>("Other");
+  const [illustrative, setIllustrative] = useState(true);
+  const [publishNow, setPublishNow] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  /* Each preview URL is revoked when it is replaced or the sheet closes. */
+  useEffect(
+    () => () => {
+      if (before) URL.revokeObjectURL(before.preview);
+    },
+    [before]
+  );
+  useEffect(
+    () => () => {
+      if (after) URL.revokeObjectURL(after.preview);
+    },
+    [after]
+  );
+
+  const pick = (fileList: FileList | null, set: (value: Selection | null) => void) => {
+    const file = fileList?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      onToast(`${file.name} is not an image`);
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      onToast(`${file.name} is over 25 MB`);
+      return;
+    }
+    set({ id: `${file.name}-${file.size}-${file.lastModified}`, file, preview: URL.createObjectURL(file) });
+  };
+
+  const ready = Boolean(before && after && title.trim());
+
+  const submit = async () => {
+    if (!before || !after || uploading) return;
+    if (!title.trim()) {
+      onToast("Add a title");
+      return;
+    }
+    setUploading(true);
+    setProgress(0);
+    try {
+      const result = await uploadPair(
+        before.file,
+        after.file,
+        { title: title.trim(), caption: caption.trim(), category, group, illustrative, publishNow },
+        setProgress
+      );
+      setProgress(100);
+      onUploaded(result);
+    } catch (error) {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Upload failed. Nothing was saved.";
+      onToast(message);
+      setUploading(false);
+      setProgress(0);
+    }
+  };
+
+  const labelClass = "text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500";
+  const fieldClass =
+    "mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400";
+
+  const picker = (label: "Before" | "After", value: Selection | null, set: (value: Selection | null) => void) => (
+    <label className="block">
+      <span className={labelClass}>{label} photo</span>
+      <span className="relative mt-1 flex aspect-[4/3] w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center transition hover:border-slate-400">
+        {value ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={value.preview} alt="" style={{ height: "100%", width: "100%" }} className="absolute inset-0 object-cover" />
+        ) : (
+          <span className="flex flex-col items-center gap-1 px-2 text-slate-400">
+            <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <circle cx="8.5" cy="10.5" r="1.5" />
+              <path d="m21 15-5-5-9 9" />
+            </svg>
+            <span className="text-xs font-semibold text-slate-700">Choose {label.toLowerCase()}</span>
+          </span>
+        )}
+        <span
+          className={`absolute left-1.5 top-1.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white ${
+            label === "Before" ? "bg-slate-900/75" : "bg-blue-600/90"
+          }`}
+        >
+          {label}
+        </span>
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          data-testid={`pair-${label.toLowerCase()}`}
+          disabled={uploading}
+          onChange={(event) => {
+            pick(event.target.files, set);
+            event.target.value = "";
+          }}
+        />
+      </span>
+    </label>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-slate-950/50 backdrop-blur-sm sm:items-center sm:p-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Add before and after"
+        className="flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white sm:max-w-2xl sm:rounded-2xl"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+          <h2 className="text-base font-semibold text-slate-900">Add before &amp; after</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={uploading}
+            aria-label="Close"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:opacity-40"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
+          <div className="grid grid-cols-2 gap-2.5">
+            {picker("Before", before, setBefore)}
+            {picker("After", after, setAfter)}
+          </div>
+          <p className="text-xs text-slate-500">Two photos of the same view, ideally the same shape.</p>
+
+          <label className="block">
+            <span className={labelClass}>Title</span>
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Outlet replacement"
+              maxLength={120}
+              className={fieldClass}
+            />
+          </label>
+
+          <label className="block">
+            <span className={labelClass}>Caption</span>
+            <textarea
+              value={caption}
+              onChange={(event) => setCaption(event.target.value)}
+              rows={2}
+              maxLength={400}
+              placeholder="What was done, in a sentence."
+              className={fieldClass}
+            />
+          </label>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className={labelClass}>Group (chip on the site)</span>
+              <select value={group} onChange={(event) => setGroup(event.target.value)} className={fieldClass}>
+                {GALLERY_GROUPS.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className={labelClass}>Category</span>
+              <select value={category} onChange={(event) => setCategory(event.target.value)} className={fieldClass}>
+                {categories.map((option) => (
+                  <option key={option.slug} value={option.slug}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <input
+              type="checkbox"
+              checked={illustrative}
+              onChange={(event) => setIllustrative(event.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-slate-900"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-slate-900">Illustrative example</span>
+              <span className="block text-xs text-slate-500">
+                Generated or staged, not a real customer job. Labelled as an example on the site and kept out of the
+                service-page photos.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <input
+              type="checkbox"
+              checked={publishNow}
+              onChange={(event) => setPublishNow(event.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-slate-900"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-slate-900">Publish now</span>
+              <span className="block text-xs text-slate-500">
+                {publishNow ? "Shows in What We Do straight away." : "Saved to the Library. Nobody outside sees it."}
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div
+          className="border-t border-slate-200 px-4 py-3"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          {uploading && (
+            <div className="mb-2.5">
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-slate-900 transition-[width] duration-200"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="mt-1.5 text-xs text-slate-500">{progress < 100 ? "Uploading the pair…" : "Finishing up…"}</div>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!ready || uploading}
+            className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {uploading
+              ? "Uploading…"
+              : !before || !after
+                ? "Choose both photos to continue"
+                : !title.trim()
+                  ? "Add a title to continue"
+                  : publishNow
+                    ? "Upload and publish"
+                    : "Upload to Library"}
           </button>
         </div>
       </div>

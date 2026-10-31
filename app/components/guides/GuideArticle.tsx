@@ -53,9 +53,9 @@ function OffersBlock({ oneTime, fullDay }: { oneTime: OneTimeOffer; fullDay: Ful
   const lowest = Math.min(...plans.map((plan) => plan.price));
   const rows = [
     {
-      name: "Free first visit",
+      name: "Free Visit",
       price: "Free",
-      body: `A free ${STANDARD_VISIT_MINUTES}-minute first visit, one per customer, for new customers in Nassau and Suffolk.`,
+      body: "A free in-person visit in Nassau and Suffolk to go over your to-do list and find the right service. No labor included.",
       href: "/book/free",
     },
     {
@@ -399,7 +399,7 @@ export default async function GuideArticle({ guide }: { guide: Guide }) {
 
         <ConversionBand
           title="When you are ready, pick the way that fits."
-          description="One small job: a One-Time Visit. A running list: a membership. New customer in Nassau or Suffolk: start with a free first visit."
+          description="One small job: a One-Time Visit. A running list: a membership. Not sure yet: start with a free visit to go over your to-do list."
         />
       </main>
     </SeoPageShell>

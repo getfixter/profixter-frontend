@@ -93,9 +93,9 @@ export const membershipBenefits: MembershipBenefit[] = [
  * The three ways into a handyman visit, in the order a new visitor should
  * meet them.
  *
- * The free first visit leads: it is real handyman work (up to 90 minutes, one
- * per home, no card), and it is what a stranger landing on a service page can
- * actually use. /book/free itself handles anyone who cannot: a member is sent
+ * The Free Visit leads: a free in-person visit where a team member goes over
+ * the customer's to-do list (no labor included, no account needed), and it is
+ * what a stranger landing on a service page can actually use. /book/free itself handles anyone who cannot: a member is sent
  * to their member calendar, and a home that has had its free visit is offered
  * a One-Time Visit or a plan - so the link never promises what the page will
  * then refuse.
@@ -103,7 +103,7 @@ export const membershipBenefits: MembershipBenefit[] = [
  * The One-Time CTA used to point at a bare /book, which opens Book Fixter -
  * the membership plan picker for a non-member - not the One-Time flow.
  */
-export const FREE_VISIT_CTA: CtaLink = { label: "Book Your Free First Visit", href: "/book/free" };
+export const FREE_VISIT_CTA: CtaLink = { label: "Book Your Free Visit", href: "/book/free" };
 export const ONE_TIME_CTA: CtaLink = { label: "Book One-Time Visit", href: "/book?visit=additional" };
 const MEMBERSHIP_CTA: CtaLink = { label: "Become a Member", href: "/membership/plans" };
 
@@ -421,8 +421,8 @@ export const handymanServices: SeoPageContent[] = [
   },
   /*
    * Five task pages added October 2026 for jobs Profixter already sells: each
-   * is on the live One-Time Visit list (and most appear in the Free First Visit
-   * booker). They are the plain searches - "faucet replacement", "ceiling fan
+   * is on the live One-Time Visit list (and most appear in the Book a Handyman
+   * picker). They are the plain searches - "faucet replacement", "ceiling fan
    * installation" - that a homeowner types long before they have heard of a
    * handyman membership. Scope lines use only the business's own published
    * exclusions (large electrical work, plumbing remodels, appliance repair).
@@ -1043,10 +1043,10 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Village of Lindenhurst, Town of Babylon",
     metaTitle: "Handyman in Lindenhurst, NY | Profixter",
     metaDescription:
-      "Profixter works out of Lindenhurst and has done more visits here than anywhere else on Long Island. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
+      "Profixter works out of Lindenhurst and has done more visits here than anywhere else on Long Island. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month.",
     h1: "Handyman help in Lindenhurst.",
     intro:
-      "Lindenhurst is where Profixter is based, and it is the town where the team has worked for the most customers - single jobs, free first visits and members who book visits as their list grows.",
+      "Lindenhurst is where Profixter is based, and it is the town where the team has worked for the most customers - single jobs, free visits and members who book visits as their list grows.",
     localContext:
       "Lindenhurst is an incorporated village in the Town of Babylon, on the Great South Bay. Mailing addresses marked Lindenhurst also reach past the village line into unincorporated parts of the town.",
     permits:
@@ -1062,7 +1062,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Babylon",
     metaTitle: "Handyman in West Babylon, NY | Profixter",
     metaDescription:
-      "Handyman visits in West Babylon from a team based next door in Lindenhurst. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
+      "Handyman visits in West Babylon from a team based next door in Lindenhurst. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month.",
     h1: "Handyman help in West Babylon.",
     intro:
       "West Babylon borders Lindenhurst, where Profixter is based, and it is one of the towns the team works in most often.",
@@ -1080,7 +1080,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Babylon",
     metaTitle: "Handyman in North Babylon, NY | Profixter",
     metaDescription:
-      "Handyman visits in North Babylon, a few minutes from Profixter's Lindenhurst base. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
+      "Handyman visits in North Babylon, a few minutes from Profixter's Lindenhurst base. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month.",
     h1: "Handyman help in North Babylon.",
     intro: "North Babylon is a few minutes from Profixter's base, and the team has a steady record of visits here.",
     localContext:
@@ -1097,7 +1097,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Village of Babylon, Town of Babylon",
     metaTitle: "Handyman in Babylon Village, NY | Profixter",
     metaDescription:
-      "Handyman visits in Babylon from a Town of Babylon team based in Lindenhurst. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
+      "Handyman visits in Babylon from a Town of Babylon team based in Lindenhurst. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month.",
     h1: "Handyman help in Babylon.",
     intro: "Profixter is based in the Town of Babylon and works in Babylon Village regularly.",
     localContext:
@@ -1115,7 +1115,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Village of Amityville, Town of Babylon",
     metaTitle: "Handyman in Amityville, NY | Profixter",
     metaDescription:
-      "Handyman visits in Amityville from a Town of Babylon team based in Lindenhurst. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
+      "Handyman visits in Amityville from a Town of Babylon team based in Lindenhurst. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month.",
     h1: "Handyman help in Amityville.",
     intro:
       "Amityville is at the western edge of the Town of Babylon, a short drive from Profixter's base. The team has completed visits in Amityville and neighboring Amity Harbor.",
@@ -1149,7 +1149,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Islip",
     metaTitle: "Handyman in West Islip, NY | Profixter",
     metaDescription:
-      "Handyman visits in West Islip, just across the Babylon town line from Profixter's base. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
+      "Handyman visits in West Islip, just across the Babylon town line from Profixter's base. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month.",
     h1: "Handyman help in West Islip.",
     intro: "West Islip sits just east of the Town of Babylon line, a short drive from Profixter's base in Lindenhurst.",
     localContext: "West Islip is an unincorporated hamlet in the Town of Islip, on the Great South Bay.",
@@ -1165,7 +1165,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Islip",
     metaTitle: "Handyman in Bay Shore, NY | Profixter",
     metaDescription:
-      "Handyman visits in Bay Shore. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month, from a team with a steady record of work here.",
+      "Handyman visits in Bay Shore. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month, from a team with a steady record of work here.",
     h1: "Handyman help in Bay Shore.",
     intro: "Bay Shore is the Town of Islip community where Profixter has worked for the most customers.",
     localContext: "Bay Shore is an unincorporated hamlet in the Town of Islip, on the Great South Bay.",
@@ -1197,7 +1197,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Oyster Bay",
     metaTitle: "Handyman in Massapequa, NY | Profixter",
     metaDescription:
-      "Handyman visits in Massapequa, just across the county line from Profixter's base. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
+      "Handyman visits in Massapequa, just across the county line from Profixter's base. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month.",
     h1: "Handyman help in Massapequa.",
     intro:
       "Massapequa is just across the county line from Profixter's base in the Town of Babylon, and it is the Nassau town where the team has worked for the most customers.",
@@ -1216,7 +1216,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Hempstead",
     metaTitle: "Handyman in Seaford, NY | Profixter",
     metaDescription:
-      "Handyman visits in Seaford. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month, from a team that works here regularly.",
+      "Handyman visits in Seaford. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month, from a team that works here regularly.",
     h1: "Handyman help in Seaford.",
     intro: "Seaford is one of the Nassau South Shore towns where Profixter works regularly.",
     localContext:
@@ -1233,7 +1233,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Village of Farmingdale, Town of Oyster Bay",
     metaTitle: "Handyman in Farmingdale, NY | Profixter",
     metaDescription:
-      "Handyman visits in Farmingdale and South Farmingdale. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
+      "Handyman visits in Farmingdale and South Farmingdale. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month.",
     h1: "Handyman help in Farmingdale.",
     intro:
       "Farmingdale is a short drive west of Profixter's base. The team works here and in neighboring South Farmingdale and Old Bethpage.",
@@ -1252,7 +1252,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Oyster Bay",
     metaTitle: "Handyman in Syosset, NY | Profixter",
     metaDescription:
-      "Handyman visits in Syosset. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month, from a team that works here regularly.",
+      "Handyman visits in Syosset. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month, from a team that works here regularly.",
     h1: "Handyman help in Syosset.",
     intro: "Syosset is the northern Nassau town where Profixter works most often.",
     localContext: "Syosset is an unincorporated hamlet in the Town of Oyster Bay, in northern Nassau.",
@@ -1268,7 +1268,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Huntington",
     metaTitle: "Handyman in Huntington, NY | Profixter",
     metaDescription:
-      "Handyman visits in Huntington. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month, from a team working across the Town of Huntington.",
+      "Handyman visits in Huntington. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month, from a team working across the Town of Huntington.",
     h1: "Handyman help in Huntington.",
     intro:
       "Profixter works across the Town of Huntington: Huntington itself, East Northport, Dix Hills and Commack.",
@@ -1287,7 +1287,7 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Huntington",
     metaTitle: "Handyman in East Northport, NY | Profixter",
     metaDescription:
-      "Handyman visits in East Northport. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month, from a team working across the Town of Huntington.",
+      "Handyman visits in East Northport. A free visit to go over your to-do list, One-Time Visits from $99, or a handyman membership from $149/month, from a team working across the Town of Huntington.",
     h1: "Handyman help in East Northport.",
     intro: "East Northport is one of the Town of Huntington communities where Profixter works regularly.",
     localContext:

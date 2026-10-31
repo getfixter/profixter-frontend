@@ -60,9 +60,9 @@ export default function BookOverview() {
       <section className="ui-container pb-12 pt-5 sm:pt-8">
         <h1 className="pg-book__title">{BOOK_HEADING}</h1>
         <p className="pg-book__sub">
-          Handyman visits across Nassau and Suffolk. New customers can start with a{" "}
+          Handyman visits across Nassau and Suffolk. Not sure yet? Start with a{" "}
           <Link href="/book/free" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
-            free first {STANDARD_VISIT_MINUTES}-minute visit
+            free visit to go over your to-do list
           </Link>
           .
         </p>

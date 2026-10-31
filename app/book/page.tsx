@@ -1305,7 +1305,7 @@ function BookExperience() {
      * One-Time for non-members (Account and the one-time confirmation link to
      * /book#your-visits), and it is the same single list the other tabs show.
      *
-     * The First Free Visit stays one line away for whoever can still have it;
+     * The Free Visit (a to-do list review, no labor) stays one line away for whoever can still have it;
      * its booker lives on the homepage and at /book/free.
      */
     const showFreeVisit = isAnonymous || freeVisit === "eligible";
@@ -1326,7 +1326,7 @@ function BookExperience() {
               data-book-free-visit
             >
               <span className="text-[color:var(--ui-text-2)]">
-                <b className="font-semibold text-[color:var(--ui-ink)]">Try us first.</b> Your first 90-minute visit is free.
+                <b className="font-semibold text-[color:var(--ui-ink)]">Not sure yet?</b> Book a free visit to go over your to-do list.
               </span>
               <span className="shrink-0 font-semibold text-[color:var(--ui-accent-ink)]">Book it →</span>
             </Link>
@@ -1341,7 +1341,7 @@ function BookExperience() {
               data-book-free-visit="needs-address"
             >
               <span className="text-[color:var(--ui-text-2)]">
-                <b className="font-semibold text-[color:var(--ui-ink)]">Try us first.</b> Your first 90-minute visit is free.
+                <b className="font-semibold text-[color:var(--ui-ink)]">Not sure yet?</b> Book a free visit to go over your to-do list.
               </span>
               <button
                 type="button"

@@ -184,6 +184,11 @@ export interface Booking {
   freeVisitChannel?: "" | "callback" | "online";
   /** A possible repeat customer the server flagged for the owner to verify. */
   freeVisitReview?: { required?: boolean; reasons?: string[] } | null;
+  /**
+   * "consultation" for a Free Visit booked under the current offer (a to-do
+   * list review, no labor); "" for older ones promised 90 minutes of labor.
+   */
+  freeVisitPurpose?: string;
 }
 
 export interface BlacklistEntry {
@@ -2411,6 +2416,8 @@ export interface FreeVisitDetail {
     status: string;
     /** "callback": call them, collect the address. "online": booked from their account, details complete. */
     channel?: "callback" | "online" | "";
+    /** "consultation": a to-do list review, no labor (current offer); "" for older 90-minute labor visits. */
+    freeVisitPurpose?: string;
     /** What the owner still has to collect before Confirm works: "name" | "phone" | "email" | "address". */
     missing?: string[];
     date: string;

@@ -69,9 +69,15 @@ function niceServiceType(value?: string) {
     case "on_demand":        return "On Demand";
     case "general_contractor": return "General Contractor";
     case "home_improvement": return "Home Improvement";
-    case "free_visit_request": return "Free visit · callback";
+    case "free_visit_request": return "Free visit request";
+    case "callback_request":   return "Callback requested";
     default:                 return value || "-";
   }
+}
+
+/* A callback request is a lead waiting on a phone call: it stands out until someone has made contact. */
+function needsCallback(request: RequestLead) {
+  return request.serviceType === "callback_request" && (!request.status || request.status === "new");
 }
 
 export default function RequestsTable({
@@ -129,7 +135,10 @@ export default function RequestsTable({
       {requests.map((request) => (
         <div
           key={request._id}
-          className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5"
+          className={`bg-white rounded-2xl border shadow-sm p-5 ${
+            needsCallback(request) ? "border-amber-300 ring-2 ring-amber-200" : "border-slate-200"
+          }`}
+          data-callback-request={request.serviceType === "callback_request" || undefined}
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-2">
@@ -137,7 +146,13 @@ export default function RequestsTable({
                 <h3 className="text-lg font-bold text-slate-900">
                   {request.name || "-"}
                 </h3>
-                <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-1 text-xs ${
+                    request.serviceType === "callback_request"
+                      ? "bg-amber-500 font-bold text-white"
+                      : "bg-slate-100 font-semibold text-slate-700"
+                  }`}
+                >
                   {niceServiceType(request.serviceType)}
                 </span>
                 <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">

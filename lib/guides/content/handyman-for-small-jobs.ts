@@ -130,7 +130,7 @@ export const guide: Guide = {
     { t: "h2", text: "Ways to get help from Profixter" },
     {
       t: "p",
-      text: "If you are in Nassau or Suffolk County, these are the options. New customers can start with a free first visit to see how it works.",
+      text: "If you are in Nassau or Suffolk County, these are the options. Not sure which fits? Book a free visit: we'll go over your to-do list and help you find the right Profixter service.",
     },
     { t: "component", name: "offers" },
   ],

@@ -32,7 +32,25 @@ export interface PublicWorkPhoto {
   fullUrl: string;
   width: number;
   height: number;
+  /* What We Do. Older API builds omit these; a missing kind is "photo". */
+  kind?: "before_after" | "photo";
+  group?: string;
+  illustrative?: boolean;
+  beforeThumbUrl?: string;
+  beforeImageUrl?: string;
+  beforeFullUrl?: string;
 }
+
+/** The What We Do groups, as the server accepts them (anything else is "Other"). */
+export const GALLERY_GROUPS = [
+  "Electrical",
+  "Bathroom",
+  "Kitchen",
+  "Doors & Trim",
+  "Walls & Paint",
+  "Outdoor",
+  "Other",
+] as const;
 
 export interface AdminWorkPhoto extends PublicWorkPhoto {
   status: WorkPhotoStatus;
@@ -136,6 +154,48 @@ export async function uploadPhotos(
     },
   });
   return data;
+}
+
+export interface PairFields {
+  title?: string;
+  caption?: string;
+  category?: string;
+  group?: string;
+  /** An example image (generated or staged), not a customer's real job. */
+  illustrative: boolean;
+  publishNow: boolean;
+}
+
+/**
+ * One before/after pair: two files, one row. Same auth and progress as a
+ * batch upload; the server answers { created: [photo], failed: [] }.
+ */
+export async function uploadPair(
+  before: File,
+  after: File,
+  fields: PairFields,
+  onProgress?: (percent: number) => void
+): Promise<UploadResult> {
+  const form = new FormData();
+  form.append("before", before);
+  form.append("after", after);
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") form.append(key, String(value));
+  });
+
+  const { data } = await API.post(`${BASE}/pair`, form, {
+    timeout: 180000,
+    onUploadProgress: (event) => {
+      if (!onProgress || !event.total) return;
+      onProgress(Math.min(99, Math.round((event.loaded / event.total) * 100)));
+    },
+  });
+  return {
+    created: data?.created || [],
+    failed: data?.failed || [],
+    batchId: data?.batchId || "",
+    message: data?.message || (data?.created?.[0]?.status === "published" ? "Before & after published" : "Before & after saved to Library"),
+  };
 }
 
 export async function publishPhoto(id: string): Promise<AdminWorkPhoto> {

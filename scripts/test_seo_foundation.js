@@ -135,10 +135,34 @@ const toPath = (url) => url.replace(SITE, "") || "/";
       .filter(([, t]) => t.length > 70);
     check("every sitemap page title is 70 characters or fewer", long.length === 0, long.map(([p, t]) => `${p} (${t.length})`).join(", "));
     check("sitemap includes /services/handyman-plumbing", urls.includes(`${SITE}/services/handyman-plumbing`));
+    /*
+     * What We Do (2026-10-30): /recent-work's gallery is before/after pairs,
+     * most of them illustrative examples rather than photographs of real jobs.
+     * They are still published as captioned ImageObjects, but an illustrative
+     * one must say so in its caption and the gallery must call itself examples;
+     * and the sitemap image list (which presents real job photos) must never
+     * carry one. Sitemap images are required only while the feed has real,
+     * captioned, non-illustrative photos.
+     */
     const gallery = jsonLd(pages["/recent-work"].html).find((b) => b.ok && b.data["@type"] === "ImageGallery");
     const media = gallery ? gallery.data.associatedMedia || [] : [];
     check("/recent-work publishes captioned ImageObjects", media.length > 0 && media.every((m) => m.caption && m.contentUrl), `${media.length} images`);
-    check("sitemap lists Recent Work images", /<image:image>/.test(sm.html));
+    const illustrativeMedia = media.filter((m) => /^Illustrative example/i.test(m.caption || ""));
+    check(
+      "/recent-work labels illustrative examples as examples, never as real jobs",
+      illustrativeMedia.length === 0 || /illustrative/i.test(`${gallery.data.name} ${gallery.data.description}`),
+      `${illustrativeMedia.length} illustrative`
+    );
+    const sitemapImages = [...sm.html.matchAll(/<image:loc>([^<]+)<\/image:loc>/g)].map((m) => m[1].replace(/&amp;/g, "&"));
+    check("sitemap image list carries no illustrative examples", illustrativeMedia.every((m) => !sitemapImages.includes(m.contentUrl)));
+    let realPhotos = -1;
+    try {
+      const feed = await (await fetch(`${API}/api/recent-work?limit=48`)).json();
+      realPhotos = (feed.photos || []).filter((p) => p.caption && p.imageUrl && !p.illustrative).length;
+    } catch {
+      /* Feed unreachable from here: fall back to requiring images, as before. */
+    }
+    check("sitemap lists Recent Work images while real job photos are published", realPhotos === 0 || /<image:image>/.test(sm.html), `${realPhotos} real photos in the feed`);
   }
 
   /* ---------------- no inherited homepage canonical ---------------- */

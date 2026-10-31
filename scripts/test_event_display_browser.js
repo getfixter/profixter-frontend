@@ -239,7 +239,7 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       const { context, page, state } = await open(browser, { token: null, photos, device: ipad });
       await run(page, 1500);
       let s = await snapshot(page);
-      check("opens on the brand moment, with the call to action", s.top === "brand" && s.ctaText === "Get My First Visit Free", `${s.top} / ${s.ctaText}`);
+      check("opens on the brand moment, with the call to action", s.top === "brand" && s.ctaText === "Get My Free Visit", `${s.top} / ${s.ctaText}`);
       await shot(page, "portrait-brand");
       await run(page, 9000);
       s = await snapshot(page);
@@ -248,7 +248,7 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       check("sends no Authorization header to the public feed", state.authHeadersOnFeed === 0);
       check("every image comes from our API, never a storage URL", s.srcs.every((u) => u.startsWith(IMG)), s.srcs.join(" "));
       check("there are no links on the page", s.links.length === 0, s.links.join(","));
-      check("the only button is the call to action", s.buttons.length === 1 && s.buttons[0] === "Get My First Visit Free", s.buttons.join(" | "));
+      check("the only button is the call to action", s.buttons.length === 1 && s.buttons[0] === "Get My Free Visit", s.buttons.join(" | "));
       check("no admin wording anywhere", !s.anyAdminText);
       check("text cannot be selected; browser gestures are off", s.selectable === "none" && s.touchAction === "none", `${s.selectable} ${s.touchAction}`);
       check("photos are not clickable or draggable", s.imgPointer && !s.imgDraggable);

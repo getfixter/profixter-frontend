@@ -129,7 +129,8 @@ function openDb(): Promise<IDBDatabase | null> {
 
 type StoredPhoto = { name: string; type: string; data: Blob };
 
-export async function savePhotos(files: File[]): Promise<void> {
+/** `slot` keeps separate drafts apart: "current" is the free visit, "handyman" the Book a Handyman draft. */
+export async function savePhotos(files: File[], slot = "current"): Promise<void> {
   const db = await openDb();
   if (!db) return;
   await new Promise<void>((resolve) => {
@@ -137,7 +138,7 @@ export async function savePhotos(files: File[]): Promise<void> {
       const tx = db.transaction(STORE, "readwrite");
       const store = tx.objectStore(STORE);
       const records: StoredPhoto[] = files.map((f) => ({ name: f.name, type: f.type, data: f }));
-      store.put({ savedAt: Date.now(), records }, "current");
+      store.put({ savedAt: Date.now(), records }, slot);
       tx.oncomplete = () => resolve();
       tx.onerror = () => resolve();
       tx.onabort = () => resolve();
@@ -148,12 +149,12 @@ export async function savePhotos(files: File[]): Promise<void> {
   db.close();
 }
 
-export async function loadPhotos(): Promise<File[]> {
+export async function loadPhotos(slot = "current"): Promise<File[]> {
   const db = await openDb();
   if (!db) return [];
   const value = await new Promise<{ savedAt?: number; records?: StoredPhoto[] } | undefined>((resolve) => {
     try {
-      const request = db.transaction(STORE, "readonly").objectStore(STORE).get("current");
+      const request = db.transaction(STORE, "readonly").objectStore(STORE).get(slot);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => resolve(undefined);
     } catch {

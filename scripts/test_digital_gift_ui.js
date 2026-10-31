@@ -717,9 +717,10 @@ check("gifting is discoverable high on the homepage", () => {
   // On the member homepage it sits straight under the shortcuts, ahead of
   // the gallery and everything else.
   const giftAt = homeMarketing.indexOf('aria-label="Give a membership"');
-  const workAt = homeMarketing.indexOf('aria-labelledby="hm-work"');
+  // The gallery is the What We Do section now (before/after pairs).
+  const workAt = homeMarketing.indexOf('<WhatWeDo variant="home"');
   assert.ok(giftAt > 0, "the homepage must promote gifting");
-  assert.ok(workAt > 0, "the real-work section should still be there");
+  assert.ok(workAt > 0, "the What We Do gallery should still be there");
   assert.ok(giftAt < workAt, "gifting should come before the rest of the page");
 });
 

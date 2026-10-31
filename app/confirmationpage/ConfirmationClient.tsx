@@ -68,11 +68,19 @@ export default function ConfirmationClient() {
   const startedAt = useRef<number>(Date.now());
   const cancelled = useRef(false);
 
+  /* Started from Book a Handyman: their visit is already described, so they go back to finish it. */
+  const fromHandyman = searchParams.get("next") === "handyman";
   const handleBookClick = () => {
     // The member has just paid and this is their first included visit, so it
     // goes to Book like every other booking action now does.
-    window.location.href = "/book?visit=membership";
+    window.location.href = fromHandyman ? "/book/handyman?resume=membership" : "/book?visit=membership";
   };
+  useEffect(() => {
+    if (phase !== "confirmed" || !fromHandyman) return;
+    // Long enough for the Subscribe event below to be sent from this page first.
+    const timer = window.setTimeout(() => window.location.replace("/book/handyman?resume=membership"), 2500);
+    return () => window.clearTimeout(timer);
+  }, [phase, fromHandyman]);
 
   /* ------------------------------------------------ activation reconciliation */
   const confirmMembership = useCallback(async () => {

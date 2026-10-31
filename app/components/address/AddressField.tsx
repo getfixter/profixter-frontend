@@ -50,7 +50,13 @@ export default function AddressField({ value, onChange, onServiceArea }: Props) 
   const [lookupDown, setLookupDown] = useState(() => !placesConfigured());
   const [showUnit, setShowUnit] = useState(false);
   const [areaState, setAreaState] = useState<ServiceAreaState>("unknown");
-  const [manualFields, setManualFields] = useState({ line1: "", city: "", state: "NY", zip: "" });
+  // Starts from the value it is given, so a restored draft shows its address instead of empty boxes.
+  const [manualFields, setManualFields] = useState(() => ({
+    line1: value?.line1 || "",
+    city: value?.city || "",
+    state: value?.state || "NY",
+    zip: value?.zip || "",
+  }));
 
   const listId = useId();
   const sessionToken = useRef<unknown>(null);

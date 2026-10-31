@@ -70,7 +70,7 @@ export default function LocationsPage() {
           eyebrow="Locations"
           title="Handyman help across Nassau and Suffolk."
           description={`Based in Lindenhurst, Profixter has completed more than ${COMPLETED_VISITS_ROUNDED} visits for about ${CUSTOMERS_ROUNDED} customers in ${COMMUNITIES_PHRASE} since ${DATA_SINCE}, ${COUNTY_SPLIT_PHRASE}.`}
-          primaryCta={{ label: "Book a free first visit", href: "/book/free" }}
+          primaryCta={{ label: "Book a free visit", href: "/book/free" }}
           secondaryCta={{ label: "Compare membership plans", href: "/membership/plans" }}
           breadcrumb={{ label: "Locations", href: "/locations" }}
         />

@@ -1,4 +1,10 @@
 /*
+ * SUPERSEDED 2026-10-30 (Customer Experience 4.0): this covers the old
+ * book-first FreeVisitBooker (describe, pick a time, sign up, book), which is
+ * no longer mounted anywhere. The Free Visit is now the account-free
+ * /book/free form and getting work done is /book/handyman; both are covered
+ * by scripts/test_cx4_ui.js. Kept for history; expect it to fail.
+ *
  * The book-first funnel, end to end, in a real browser.
  *
  *   node scripts/test_free_visit_funnel.js [baseUrl] [apiOrigin]
