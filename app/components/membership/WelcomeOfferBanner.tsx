@@ -9,15 +9,18 @@ import "./welcome-offer.css";
  * and gone the second the time is up. The countdown is not announced every
  * second to screen readers; the time left is readable on demand.
  */
-export default function WelcomeOfferBanner({ offer, className = "" }: { offer: WelcomeOffer; className?: string }) {
+/** `monthlyOnly` where only monthly billing is on offer (Book a Handyman). */
+export default function WelcomeOfferBanner({ offer, className = "", monthlyOnly = false }: { offer: WelcomeOffer; className?: string; monthlyOnly?: boolean }) {
   if (!offer.active) return null;
   return (
     <div className={`wo-banner ${className}`.trim()} data-welcome-offer>
       <div className="wo-banner__text">
-        <b>Welcome Offer &mdash; {offer.percentOff}% Off Your First Month</b>
-        <span>Monthly plans. Applied automatically at checkout.</span>
+        <b>
+          {offer.label} &mdash; {offer.percentOff}% Off Your First {monthlyOnly ? "Month" : "Payment"}
+        </b>
+        <span>{monthlyOnly ? "Monthly plans. Applied automatically at checkout." : "Any plan, monthly or annual. Applied automatically at checkout."}</span>
       </div>
-      <span className="wo-banner__clock" role="timer" aria-live="off" aria-label={`${formatCountdown(offer.remainingMs)} left on the welcome offer`} data-welcome-countdown>
+      <span className="wo-banner__clock" role="timer" aria-live="off" aria-label={`${formatCountdown(offer.remainingMs)} left on the ${offer.label.toLowerCase()}`} data-welcome-countdown>
         {formatCountdown(offer.remainingMs)}
       </span>
     </div>

@@ -477,7 +477,12 @@ const asRegistered = (complete = true) => async (ctx) => {
 
   /* ============ 8c. CX 4.2: the welcome offer, the annual comparison, the CTA reach ============ */
   {
-    const WELCOME = { basic: { monthlyCents: 14900, firstMonthCents: 11920 }, plus: { monthlyCents: 24900, firstMonthCents: 19920 }, premium: { monthlyCents: 34900, firstMonthCents: 27920 }, elite: { monthlyCents: 49900, firstMonthCents: 39920 } };
+    const WELCOME = {
+      basic: { monthlyCents: 14900, firstMonthCents: 11920, annualCents: 149000, firstYearCents: 119200 },
+      plus: { monthlyCents: 24900, firstMonthCents: 19920, annualCents: 249000, firstYearCents: 199200 },
+      premium: { monthlyCents: 34900, firstMonthCents: 27920, annualCents: 349000, firstYearCents: 279200 },
+      elite: { monthlyCents: 49900, firstMonthCents: 39920, annualCents: 499000, firstYearCents: 399200 },
+    };
     const offerState = { eligible: true, asks: 0, bodies: [], refuse: false };
     const { ctx, page } = await open(browser, 390, 844, async (c) => {
       await asRegistered(true)(c);
@@ -510,11 +515,11 @@ const asRegistered = (complete = true) => async (ctx) => {
     check("welcome: Elite shows $399.20 first month", m.figure === "$399.20", m.figure);
     await selectCycle(page, "Annual");
     m = await readActive(page);
-    check("welcome: annual is never discounted", m.figure === "$4,990" && m.unit === "/ year" && (await page.locator("[data-welcome-regular]").count()) === 0, `${m.figure} ${m.unit}`);
-    check("welcome: annual says the offer is monthly only", /monthly plans only/.test(await page.locator(".plan-box__offer-note").innerText().catch(() => "")), "");
+    check("welcome: annual Elite is 20% off the first year ($4,990 -> $3,992)", m.figure === "$3,992" && m.unit === "first year" && (await page.locator("[data-welcome-regular] s").innerText()) === "$4,990", `${m.figure} ${m.unit}`);
+    check("welcome: annual still says pay for 10 get 12, billed once a year, renewal named", /Pay for 10 months, get 12/.test(m.terms) && /Then \$4,990\/year afterward, billed once a year, plus applicable taxes/.test(m.terms), m.terms);
     await page.click(".plan-box__cta");
     await page.waitForTimeout(2500);
-    check("welcome: an annual checkout does not ask for the welcome price", offerState.bodies[0] && offerState.bodies[0].billingCycle === "annual" && offerState.bodies[0].welcomeOffer === false, JSON.stringify(offerState.bodies[0] || {}));
+    check("welcome: an annual checkout asks for the price it showed", offerState.bodies[0] && offerState.bodies[0].billingCycle === "annual" && offerState.bodies[0].welcomeOffer === true, JSON.stringify(offerState.bodies[0] || {}));
     await page.goto(BASE + "/membership/plans", { waitUntil: "domcontentloaded" });
     await page.waitForSelector("[data-welcome-offer]", { timeout: 10000 }).catch(() => {});
     await page.waitForTimeout(1200);
@@ -542,6 +547,43 @@ const asRegistered = (complete = true) => async (ctx) => {
       const regular = (await page.locator("[data-annual-regular] s").innerText()).trim();
       check(`annual ${plan}: 12-month total struck, 10-month total charged, billed yearly`, regular === `$${(CATALOG[plan].monthly * 12).toLocaleString("en-US")}` && m.figure === `$${CATALOG[plan].annual.toLocaleString("en-US")}` && m.unit === "/ year" && /Pay for 10 months, get 12/.test(m.terms) && /Billed once a year/.test(m.terms) && !/a month/.test(m.terms), `${regular} ${m.figure} ${m.terms}`);
     }
+    await ctx.close();
+  }
+
+  /* ============ 8d. Halloween campaign: landing page, activation once signed in ============ */
+  {
+    const { ctx, page } = await open(browser, 390, 844);
+    await page.goto(BASE + "/halloween?c=sms", { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("[data-halloween]", { timeout: 20000 });
+    await page.waitForTimeout(1200);
+    const text = await page.locator("[data-halloween]").innerText();
+    check("halloween: the landing page states the offer and its terms", /20% off your first membership payment/i.test(text) && /renewals are at the regular price/i.test(text) && /through November 2, 2026/.test(text) && /timer starts when you open the offer/i.test(text), "");
+    const prices = await page.locator("[data-halloween-prices]").innerText();
+    check("halloween: every plan priced, monthly and annual, from the live prices", /\$149\s*\$119\.20/.test(prices) && /\$499\s*\$399\.20/.test(prices) && /\$1,490\s*\$1,192/.test(prices) && /\$4,990\s*\$3,992/.test(prices), prices.replace(/\s+/g, " "));
+    check("halloween: signed out, an existing customer can sign in", (await page.getAttribute("[data-action='signin-halloween']", "href")) === "/signin?next=%2Fmembership%2Fplans%3Foffer%3Dhalloween");
+    check("halloween: the page is kept out of search", (await page.locator('meta[name="robots"]').getAttribute("content").catch(() => "")).includes("noindex"), "");
+    await page.click("[data-action='claim-halloween']");
+    await page.waitForURL(/\/membership\/plans\?offer=halloween/, { timeout: 15000 });
+    await page.waitForSelector(".plan-box", { timeout: 20000 });
+    await page.waitForTimeout(1500);
+    check("halloween: signed out on the plans page, the offer is explained (no timer yet)", (await page.locator("[data-campaign-note]").count()) === 1 && (await page.locator("[data-welcome-offer]").count()) === 0, "");
+    await ctx.close();
+  }
+  {
+    const activations = [];
+    const { ctx, page } = await open(browser, 390, 844, async (c) => {
+      await asRegistered(true)(c);
+      const expiresAt = new Date(Date.now() + 10 * 60000).toISOString();
+      await c.route("**/api/stripe/checkout/welcome-offer/activate", (r) => {
+        activations.push(JSON.parse(r.request().postData() || "{}"));
+        r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ eligible: true, serverNow: new Date().toISOString(), expiresAt, percentOff: 20, label: "Halloween Offer", plans: { basic: { monthlyCents: 14900, firstMonthCents: 11920, annualCents: 149000, firstYearCents: 119200 }, plus: { monthlyCents: 24900, firstMonthCents: 19920, annualCents: 249000, firstYearCents: 199200 }, premium: { monthlyCents: 34900, firstMonthCents: 27920, annualCents: 349000, firstYearCents: 279200 }, elite: { monthlyCents: 49900, firstMonthCents: 39920, annualCents: 499000, firstYearCents: 399200 } } }) });
+      });
+      await c.addInitScript(() => { try { sessionStorage.setItem("pf_offer_campaign", "halloween-2026"); } catch {} });
+    });
+    await page.waitForSelector("[data-welcome-offer]", { timeout: 15000 }).catch(() => {});
+    check("halloween: a signed-in customer who came through the campaign has it opened by the server", activations.length >= 1 && activations[0].campaign === "halloween-2026", JSON.stringify(activations[0] || {}));
+    check("halloween: banner says Halloween Offer, first payment, monthly or annual", /Halloween Offer .* 20% Off Your First Payment/.test(await page.locator("[data-welcome-offer]").innerText().catch(() => "")) && /monthly or annual/.test(await page.locator("[data-welcome-offer]").innerText().catch(() => "")), "");
+    check("halloween: Plus at $199.20 first month", (await readActive(page)).figure === "$199.20", (await readActive(page)).figure);
     await ctx.close();
   }
 
