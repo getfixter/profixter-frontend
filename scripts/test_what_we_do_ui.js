@@ -285,7 +285,14 @@ async function sample(handle, ms) {
 }
 
 (async () => {
-  const browser = await chromium.launch();
+  /*
+   * Headless Chrome does not run a touch fling to its end, so a swipe can stop
+   * between cards there although real phones (and headed Chrome) snap every
+   * time. The swipe-snap check runs in a headed browser; HEADLESS=1 forces
+   * headless and then reports that one check as not run.
+   */
+  const headless = process.env.HEADLESS === "1";
+  const browser = await chromium.launch({ headless });
 
   /* ============================ public page ============================ */
   for (const width of [390, 1440]) {
@@ -374,7 +381,12 @@ async function sample(handle, ms) {
           return [Math.abs(el.scrollLeft - max) < 2 || kids.some((k) => Math.abs(k.offsetLeft - kids[0].offsetLeft - el.scrollLeft) < 3), el.scrollLeft];
         });
       }
-      check(`${tag}: the carousel settles on a card (snap)`, snapped, `scrollLeft ${at}`);
+      if (headless) console.log(`  (not run headless) ${tag}: the carousel settles on a card after a swipe; scrollLeft ${at}`);
+      else check(`${tag}: the carousel settles on a card (snap)`, snapped, `scrollLeft ${at}`);
+      if (!headless) {
+        const count = (await page.locator("[data-testid=wwd-count]").innerText()).replace(/\s+/g, " ").trim();
+        check(`${tag}: one swipe moves exactly one card (snap-stop)`, count === "2 / 6", count);
+      }
       /* Deterministic too: left between two cards, it snaps to one. */
       const settled = await track.evaluate(async (el) => {
         const kids = Array.from(el.children);

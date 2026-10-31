@@ -95,6 +95,9 @@
   flex: 0 0 86%;
   min-width: 0;
   scroll-snap-align: start;
+  /* One swipe, one card: a hard fling no longer skips past several, so the
+     counter and the card in view always agree (CX 4.1). */
+  scroll-snap-stop: always;
   display: flex;
   flex-direction: column;
   padding: 8px;
