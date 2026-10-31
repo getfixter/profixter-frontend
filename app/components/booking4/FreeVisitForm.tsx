@@ -241,6 +241,8 @@ export default function FreeVisitForm() {
       address: address?.line1 ? { line1: address.line1, unit: address.unit, city: address.city, state: address.state || "NY", zip: address.zip, placeId: address.placeId, lat: address.lat, lng: address.lng } : null,
       date: when.date,
       time: when.time,
+      // They reviewed this time on the confirmation sheet and chose to go on with it.
+      timeConfirmed: Boolean(when.date && when.time),
       name: name.trim(),
       phone: phoneDigits(phone),
       email: email.trim(),

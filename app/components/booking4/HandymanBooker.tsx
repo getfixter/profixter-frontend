@@ -24,6 +24,8 @@ import {
 } from "@/lib/handyman-draft";
 import SlotPicker, { formatWhen } from "./SlotPicker";
 import PhotoPicker from "./PhotoPicker";
+import WelcomeOfferBanner from "@/app/components/membership/WelcomeOfferBanner";
+import { WELCOME_OFFER_ERROR_CODES, formatCents, useWelcomeOffer } from "@/lib/welcome-offer";
 
 /*
  * Book a Handyman (Customer Experience 4.0).
@@ -35,7 +37,8 @@ import PhotoPicker from "./PhotoPicker";
  *   5. Pay (Stripe) - then the request waits for the owner's approval
  *
  * The draft (lib/handyman-draft) survives sign-in, Stripe and back, a refresh
- * and a failed payment. Every money rule is the server's: one checkout per
+ * and a failed payment. Step 2 opens on the earliest opening already chosen
+ * (Customer Experience 4.2); nothing is held until they press Continue. Every money rule is the server's: one checkout per
  * press (clientRequestId), the slot held while paying, no second membership for
  * a home, the member seven-day lead time.
  */
@@ -60,6 +63,30 @@ function nyIso(date: string, time: string) {
   const offset = guess.getTime() - shown.getTime();
   return new Date(guess.getTime() + offset).toISOString();
 }
+/*
+ * One tap instead of typing (Customer Experience 4.2). From the jobs customers
+ * book most (lib/profixter-data TASK_MIX). A tap adds its sentence on its own
+ * line - never replacing what is there, never twice - and the text stays theirs
+ * to edit. Each is at least three words, the description's minimum.
+ */
+const JOB_SHORTCUTS: Array<{ label: string; text: string }> = [
+  { label: "Replace faucet", text: "Replace an existing faucet." },
+  { label: "Fix door", text: "Fix a door that sticks or won't latch." },
+  { label: "Light fixture", text: "Install a light fixture." },
+  { label: "Patch drywall", text: "Patch and repair drywall." },
+  { label: "Replace outlet", text: "Replace an outlet or switch." },
+  { label: "Fix cabinet", text: "Fix a cabinet door or hinge." },
+  { label: "Showerhead", text: "Replace a showerhead." },
+  { label: "Install shelves", text: "Install wall shelves." },
+  { label: "Paint touch-up", text: "Touch up paint on walls or trim." },
+];
+const hasTask = (task: string, text: string) => task.toLowerCase().includes(text.toLowerCase().replace(/\.$/, ""));
+function addTask(task: string, text: string) {
+  if (hasTask(task, text)) return task;
+  const kept = task.replace(/\s+$/, "");
+  return kept ? `${kept}\n${text}` : text;
+}
+
 function words(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
@@ -143,6 +170,21 @@ export default function HandymanBooker() {
   const earliestMember = addDays(todayNY(), MEMBER_LEAD_DAYS);
   // A member home books only its included visit, so it only sees times that visit can take.
   const memberCalendar = memberLead || isMemberHome;
+  // The new-customer welcome offer, for the home being booked (the server decides; this only shows it).
+  const offerHome = selectedHome ? { addressId: selectedHome._id } : draft.address ? { line1: draft.address.line1, zip: draft.address.zip } : null;
+  const offer = useWelcomeOffer(Boolean(user) && step === 4 && !isMemberHome, offerHome);
+  const planCents = (id: string, fallback: number) => offer.plans[id]?.monthlyCents ?? fallback * 100;
+  /* A changed day or time is a new suggestion until they press Continue on it. */
+  const onWhen = useCallback(
+    (w: { date: string; time: string }) =>
+      setDraft((prev) => {
+        if (prev.date === w.date && prev.time === w.time) return prev;
+        const next = { ...prev, date: w.date, time: w.time, timeConfirmed: false };
+        saveHandymanDraft(next);
+        return next;
+      }),
+    []
+  );
 
   /* Where to start once we know who they are. */
   useEffect(() => {
@@ -159,14 +201,15 @@ export default function HandymanBooker() {
     }
     if (canceled === "membership") setBanner({ tone: "warn", text: "Membership checkout canceled. Nothing was charged." });
     const hasJob = words(draft.task) >= 3 && (draft.addressId || draft.address);
-    const hasTime = Boolean(draft.date && draft.time);
+    // A time the picker chose for them is a suggestion; only one they pressed Continue on counts.
+    const hasTime = Boolean(draft.date && draft.time) && Boolean(draft.timeConfirmed || draft.holdToken);
     // A member home books its included visit, which the time picked before
     // signing in may be too soon for: say so now, not after a press.
     const tooSoonForMember = Boolean(user && isMemberHome && hasTime && draft.date < earliestMember && resume !== "membership");
     if (tooSoonForMember) {
       dropHold();
-      update({ time: "" });
-      setBanner({ tone: "info", text: "Member visits are booked at least 7 days ahead. Pick a later time." });
+      update({ time: "", timeConfirmed: false });
+      setBanner({ tone: "info", text: "Member visits are booked at least 7 days ahead, so we picked the earliest member time. Change it if you like." });
       setStep(2);
     } else if (user && hasJob && hasTime) setStep(4);
     else if (hasJob) setStep(hasTime ? 3 : 2);
@@ -219,8 +262,8 @@ export default function HandymanBooker() {
     } catch (error) {
       const f = failure(error, "");
       if (f.code === "SLOT_UNAVAILABLE") {
-        update({ time: "", holdToken: "", holdFor: "", holdExpiresAt: "" });
-        setErrors({ when: "That time was just taken. Pick another - everything else is saved." });
+        update({ time: "", timeConfirmed: false, holdToken: "", holdFor: "", holdExpiresAt: "" });
+        setErrors({ when: "That time was just taken, so we picked the next opening - everything else is saved." });
         setStep(2);
         return false;
       }
@@ -249,6 +292,7 @@ export default function HandymanBooker() {
     const held = await holdTime(draft.date, draft.time, draft.holdToken);
     setBusy(false);
     if (!held) return;
+    update({ timeConfirmed: true });
     trackEvent("handyman_time_selected", {});
     setStep(user ? 4 : 3);
   };
@@ -314,8 +358,8 @@ export default function HandymanBooker() {
       if (!saved.date || saved.date < earliestMember) {
         setMemberLead(true);
         dropHold();
-        update({ time: "" });
-        setBanner({ tone: "ok", text: "Welcome to Profixter! Member visits are booked at least 7 days ahead - pick a time below." });
+        update({ time: "", timeConfirmed: false });
+        setBanner({ tone: "ok", text: "Welcome to Profixter! Member visits are booked at least 7 days ahead, so we picked the earliest one. Change it if you like, then Continue." });
         setStep(2);
         return;
       }
@@ -351,8 +395,8 @@ export default function HandymanBooker() {
         if (draft.date < earliestMember) {
           setMemberLead(true);
           dropHold();
-          update({ time: "" });
-          setBanner({ tone: "info", text: "Member visits are booked at least 7 days ahead. Pick a later time." });
+          update({ time: "", timeConfirmed: false });
+          setBanner({ tone: "info", text: "Member visits are booked at least 7 days ahead, so we picked the earliest member time. Change it if you like." });
           setStep(2);
           return;
         }
@@ -382,14 +426,20 @@ export default function HandymanBooker() {
 
       // Membership: the visit is booked when they come back, as a member.
       trackInitiateCheckout({ content_name: `membership_${plan}`, currency: "USD" });
-      const res = await API.post("/api/stripe/checkout/create-checkout-session", { plan, addressId, billingCycle: "monthly", returnTo: "handyman" });
+      // welcomeOffer: the price they were shown. The server re-checks it and refuses rather than charge another.
+      const res = await API.post("/api/stripe/checkout/create-checkout-session", { plan, addressId, billingCycle: "monthly", returnTo: "handyman", welcomeOffer: offer.active });
       window.location.assign(res.data.url);
     } catch (error) {
       const f = failure(error, "Something went wrong. Please try again.");
       if (f.code === "SLOT_UNAVAILABLE") {
-        update({ time: "", clientRequestId: "", holdToken: "", holdFor: "", holdExpiresAt: "" });
-        setErrors({ when: "That time was just taken. Pick another - everything else is saved." });
+        update({ time: "", timeConfirmed: false, clientRequestId: "", holdToken: "", holdFor: "", holdExpiresAt: "" });
+        setErrors({ when: "That time was just taken, so we picked the next opening - everything else is saved." });
         setStep(2);
+      } else if (WELCOME_OFFER_ERROR_CODES.includes(f.code)) {
+        // Nothing was opened. The page re-prices to the regular price and they decide again.
+        offer.refresh();
+        update({ clientRequestId: "" });
+        setBanner({ tone: "warn", text: f.message });
       } else if (f.code === "ADDRESS_ALREADY_SUBSCRIBED") {
         await refreshUser();
         setChoice("member");
@@ -449,11 +499,22 @@ export default function HandymanBooker() {
 
       {step === 1 && (
         <section className="bk-card">
-          <label className="bk-field" data-error={errors.task ? "1" : undefined}>
-            <span className="bk-label">Describe the job</span>
-            <textarea className="bk-textarea" name="task" value={draft.task} onChange={(e) => update({ task: e.target.value })} placeholder="e.g. Mount a 55&quot; TV on drywall and hide the cables" maxLength={1200} />
+          <div className="bk-field" data-error={errors.task ? "1" : undefined}>
+            <label className="bk-label" htmlFor="bk-task">Describe the job</label>
+            <div className="bk-chips" role="group" aria-label="Common jobs - tap to add">
+              {JOB_SHORTCUTS.map((job) => {
+                const added = hasTask(draft.task, job.text);
+                return (
+                  <button key={job.label} type="button" className="bk-chip" aria-pressed={added} data-shortcut={job.label} onClick={() => update({ task: addTask(draft.task, job.text).slice(0, 1200) })}>
+                    <span aria-hidden="true">{added ? "✓" : "+"}</span>
+                    {job.label}
+                  </button>
+                );
+              })}
+            </div>
+            <textarea id="bk-task" className="bk-textarea" name="task" value={draft.task} onChange={(e) => update({ task: e.target.value })} placeholder="Tap a job above, or describe it in a few words" maxLength={1200} />
             {err("task")}
-          </label>
+          </div>
           <div className="bk-field" data-error={errors.address ? "1" : undefined}>
             <span className="bk-label">Service address</span>
             {!typedMode ? (
@@ -489,7 +550,7 @@ export default function HandymanBooker() {
       {step === 2 && (
         <section className="bk-card" data-error={errors.when ? "1" : undefined}>
           {memberCalendar && <p className="bk-note" style={{ marginBottom: 10 }}>Member visits start 7 days out.</p>}
-          <SlotPicker date={draft.date} time={draft.time} onChange={(w) => update({ date: w.date, time: w.time })} visit={memberCalendar ? "membership" : undefined} held={heldSlot} />
+          <SlotPicker date={draft.date} time={draft.time} onChange={onWhen} visit={memberCalendar ? "membership" : undefined} held={heldSlot} />
           {err("when")}
           <div className="bk-actions">
             <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={goStep3} disabled={busy} data-action="to-step-3">{busy ? "Holding your time…" : "Continue"}</button>
@@ -547,26 +608,41 @@ export default function HandymanBooker() {
                   </div>
                   <p>One visit, up to 90 minutes of work. Pay once, no commitment. Materials not included.</p>
                 </button>
+                <WelcomeOfferBanner offer={offer} className="bk-offer" />
                 <button type="button" className="bk-option" aria-pressed={choice === "membership"} onClick={() => setChoice("membership")} data-option="membership">
                   <div className="bk-option-top">
-                    <span className="bk-option-name">Membership</span>
-                    <span className="bk-option-price">from $149<small>/mo</small></span>
+                    <span className="bk-option-name">Membership{offer.active ? <span className="bk-badge">{offer.percentOff}% off 1st month</span> : null}</span>
+                    <span className="bk-option-price">from {formatCents(planCents("basic", PLAN_DETAILS[0].price))}<small>/mo</small></span>
                   </div>
-                  <p>Handyman visits as often as you need, all year. Best if you have more than one job. Member visits are booked 7+ days ahead.</p>
+                  <p>Your personal handyman membership. Labor included for covered tasks, with flexible month-to-month plans.</p>
                 </button>
                 {choice === "membership" && (
                   <div className="bk-plans" role="radiogroup" aria-label="Plan">
-                    {PLAN_DETAILS.map((p) => (
-                      <button key={p.id} type="button" role="radio" className="bk-plan" aria-checked={plan === p.id} data-plan={p.id} onClick={() => setPlan(p.id)}>
-                        <b>{p.name}</b>
-                        <span>${p.price}/mo · {p.id === "basic" ? "1 visit at a time" : "2 visits at a time"}</span>
-                      </button>
-                    ))}
+                    {PLAN_DETAILS.map((p) => {
+                      const monthly = planCents(p.id, p.price);
+                      const first = offer.plans[p.id]?.firstMonthCents;
+                      return (
+                        <button key={p.id} type="button" role="radio" className="bk-plan" aria-checked={plan === p.id} data-plan={p.id} onClick={() => setPlan(p.id)}>
+                          <b>{p.name}</b>
+                          <span className="bk-plan-labor">Labor included</span>
+                          {first != null ? (
+                            <span className="bk-plan-price" data-plan-offer>
+                              <s className="wo-was">{formatCents(monthly)}</s> <span className="wo-now">{formatCents(first)}</span> first month
+                            </span>
+                          ) : (
+                            <span className="bk-plan-price">{formatCents(monthly)}/mo</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
                 {choice === "membership" && (
-                  <p className="bk-note" style={{ marginTop: 10 }}>
-                    Monthly billing, cancel anytime. Prefer yearly? <Link href="/membership/plans">See all plans</Link>.
+                  <p className="bk-note bk-plan-terms" data-plan-terms>
+                    {offer.active && offer.plans[plan]
+                      ? `${formatCents(offer.plans[plan].firstMonthCents)} for your first month, then ${formatCents(offer.plans[plan].monthlyCents)}/month afterward, plus applicable taxes. Month to month, cancel anytime.`
+                      : "Billed monthly, plus applicable taxes. Month to month, cancel anytime."}{" "}
+                    <Link href="/membership/plans" data-link="all-plans">See all plans</Link>
                   </p>
                 )}
               </>
@@ -578,7 +654,15 @@ export default function HandymanBooker() {
           <div className="bk-actions">
             <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={submit} disabled={!choice || busy} data-action="book-handyman">
               {busy ? <span className="bk-spinner" aria-hidden="true" /> : null}
-              {choice === "member" ? "Book my visit" : choice === "one_time" ? `Continue to payment${price != null ? ` · $${price}` : ""}` : choice === "membership" ? "Continue to membership checkout" : "Choose an option"}
+              {choice === "member"
+                ? "Book my visit"
+                : choice === "one_time"
+                  ? `Continue to payment${price != null ? ` · $${price}` : ""}`
+                  : choice === "membership"
+                    ? offer.active && offer.plans[plan]
+                      ? `Continue to checkout · ${formatCents(offer.plans[plan].firstMonthCents)} first month`
+                      : "Continue to membership checkout"
+                    : "Choose an option"}
             </button>
             <p className="bk-note" style={{ textAlign: "center" }}>
               {choice === "member"

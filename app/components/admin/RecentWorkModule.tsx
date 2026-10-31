@@ -214,7 +214,7 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-slate-900">Recent Work</h2>
           <p className="text-[13px] text-slate-500">
-            Photos of real jobs, and the before &amp; after pairs shown in What We Do.
+            Photos of real jobs, and the before &amp; after pairs shown in What&rsquo;s Included.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

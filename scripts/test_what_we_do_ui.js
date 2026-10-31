@@ -320,7 +320,7 @@ async function sample(handle, ms) {
     );
     check(`${tag}: reveal plays once (no loop)`, (await sample(handle, 900)).every((v) => v === 50));
 
-    check(`${tag}: section renders with the H1 "What We Do"`, (await section.locator("h1").innerText()).trim() === "What We Do");
+    check(`${tag}: section renders with the H1 "What's Included"`, (await section.locator("h1").innerText()).trim() === "What\u2019s Included");
     check(`${tag}: six comparison cards`, (await cards.count()) === 6, String(await cards.count()));
     check(`${tag}: handle is a labelled slider`, (await handle.getAttribute("role")) === "slider" && /^Before and after comparison: Outlet replacement$/.test((await handle.getAttribute("aria-label")) || ""));
     check(`${tag}: Before and After chips on the image`, (await first.locator(".wwd-ba__chip--before").innerText()).trim().toLowerCase() === "before" && (await first.locator(".wwd-ba__chip--after").innerText()).trim().toLowerCase() === "after");
@@ -328,7 +328,7 @@ async function sample(handle, ms) {
     check(`${tag}: images carry width/height and a thumb+display srcset`, imgInfo.length === 2 && imgInfo.every((i) => i.w === "1280" && i.h === "960" && /480w/.test(i.srcset) && /1280w/.test(i.srcset)));
     const laterLoading = await cards.nth(2).locator("img").first().getAttribute("loading");
     check(`${tag}: first card eager, later cards lazy`, imgInfo[0].loading === "eager" && laterLoading === "lazy");
-    check(`${tag}: illustrative note shown`, (await page.locator("[data-testid=wwd-note]").innerText()).includes("Illustrative examples of the kinds of jobs we handle."));
+    check(`${tag}: illustrative note shown`, (await page.locator("[data-testid=wwd-note]").innerText()).includes("Illustrative examples of everyday jobs we handle."));
     await section.scrollIntoViewIfNeeded();
     await shot(page, `${tag}-01-gallery`);
 
@@ -475,6 +475,26 @@ async function sample(handle, ms) {
     const transition = await page.locator("[data-testid=wwd-track] > li").first().locator(".wwd-ba__before").evaluate((el) => getComputedStyle(el).transitionDuration);
     check("reduced motion: no transition on the comparison", /^0s(, 0s)*$/.test(transition), transition);
     check("reduced motion: no page errors", errors.length === 0, errors.join(" | "));
+    await ctx.close();
+  }
+
+  /* ====================== homepage (CX 4.2) ====================== */
+  for (const width of [390, 1440]) {
+    const tag = width < 700 ? "home-mobile" : "home-desktop";
+    console.log(`
+--- homepage, ${width}px ---`);
+    const { ctx, page, errors } = await open(browser, width);
+    await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+    const section = page.locator("[data-testid=what-we-do]");
+    await section.locator("[data-testid=wwd-track] > li").first().waitFor({ timeout: 20000 });
+    check(`${tag}: heading says What's Included`, (await section.locator("h2").innerText()).trim() === "What’s Included");
+    check(`${tag}: membership subtitle`, (await section.locator(".wwd-lede").innerText()).trim() === "Everyday home repairs and improvements, covered with your membership.");
+    check(`${tag}: placed immediately before Two ways to start`, await page.evaluate(() => document.querySelector("[data-testid=what-we-do]").nextElementSibling?.id === "book"));
+    check(`${tag}: one gallery, one heading`, (await page.locator("[data-testid=what-we-do]").count()) === 1 && (await page.locator("h2", { hasText: /What.s Included|What We Do/ }).count()) === 1);
+    check(`${tag}: no second set of booking buttons right before the choice`, (await section.locator(".wwd-cta").count()) === 0);
+    check(`${tag}: all pairs and the filters are there`, (await section.locator("[data-testid=wwd-track] > li").count()) === 6 && (await section.locator(".wwd-chip").count()) >= 2);
+    check(`${tag}: illustrative disclosure visible`, await page.locator("[data-testid=wwd-note]").isVisible());
+    check(`${tag}: no page errors`, errors.length === 0, errors.join(" | "));
     await ctx.close();
   }
 

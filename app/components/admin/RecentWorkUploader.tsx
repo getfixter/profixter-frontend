@@ -592,7 +592,7 @@ export function RecentWorkPairUploader({
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-slate-900">Publish now</span>
               <span className="block text-xs text-slate-500">
-                {publishNow ? "Shows in What We Do straight away." : "Saved to the Library. Nobody outside sees it."}
+                {publishNow ? "Shows in What’s Included straight away." : "Saved to the Library. Nobody outside sees it."}
               </span>
             </span>
           </label>

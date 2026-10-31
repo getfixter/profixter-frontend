@@ -11,6 +11,8 @@ import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
 import type { PlanType } from "@/lib/stripe-links";
 import type { Address } from "@/lib/auth-service";
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
+import WelcomeOfferBanner from "@/app/components/membership/WelcomeOfferBanner";
+import { WELCOME_OFFER_ERROR_CODES, formatCents, useWelcomeOffer, type WelcomeOffer, type WelcomePlanPrice } from "@/lib/welcome-offer";
 import {
   createBillingPortalSession,
   getSubscriptionActionErrorMessage,
@@ -133,12 +135,31 @@ function PlanPriceBlock({
   plan,
   billing,
   amountClassName,
+  welcome = null,
 }: {
   plan: Plan;
   billing: BillingCycle;
   amountClassName: string;
+  /** The new-customer first-month price, monthly only (lib/welcome-offer). */
+  welcome?: WelcomePlanPrice | null;
 }) {
   const pricing = getPlanPricing(plan, billing);
+
+  if (welcome) {
+    return (
+      <>
+        <div className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="wo-was text-[14px]">{formatCents(welcome.monthlyCents)}</span>
+          <span className="whitespace-nowrap rounded-[6px] bg-[#EEF4FF] px-2 py-[3px] text-[11px] font-semibold text-[#1F5ED8]">Welcome offer</span>
+        </div>
+        <div className="flex flex-wrap items-end gap-x-1">
+          <span className={amountClassName}>{formatCents(welcome.firstMonthCents)}</span>
+          <span className="pb-1 text-sm font-medium text-[#6E6E73]">first month</span>
+        </div>
+        <p className="mt-1 text-[13px] text-[#6E6E73]">Then {formatCents(welcome.monthlyCents)}/month, plus applicable taxes.</p>
+      </>
+    );
+  }
 
   return (
     <>
@@ -231,6 +252,18 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     Record<string, ManagedSubscription | null | undefined>
   >({});
   const [checkingAddr, setCheckingAddr] = useState(false);
+
+  /*
+   * The new-customer welcome offer (Customer Experience 4.2). The server says
+   * who is eligible and until when; it only ever touches a MONTHLY first
+   * invoice, so annual prices never change here.
+   */
+  const offer = useWelcomeOffer(isAuthenticated, selectedAddressId ? { addressId: selectedAddressId } : null);
+  const welcomeFor = (planName: string, cycle: BillingCycle = billing): WelcomePlanPrice | null => {
+    if (cycle !== "monthly" || !offer.active) return null;
+    const type = normalizePlanType(planName);
+    return (type && offer.plans[type]) || null;
+  };
 
   const mobilePlanOrder = useMemo(
     () => ["Basic", "Plus", "Premium", "Elite"] as const,
@@ -395,6 +428,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           email,
           billingCycle: cycle,
           ...(promoCode ? { code: promoCode } : {}),
+          // The price they were shown. The server re-checks and refuses rather than charge another.
+          welcomeOffer: Boolean(welcomeFor(planName, cycle)),
         },
         {
           headers: {
@@ -416,6 +451,13 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
       if (status === 409 && data?.code === "MEMBERSHIP_PAYMENT_RECOVERY_REQUIRED") {
         // A failed renewal is fixed by paying it, never by a second membership.
         window.location.href = "/account?tab=plan";
+        return;
+      }
+
+      if (status === 409 && WELCOME_OFFER_ERROR_CODES.includes(String(data?.code || ""))) {
+        // Nothing was opened: re-price to the regular price and let them decide again.
+        offer.refresh();
+        setActionError(String((data as { message?: string })?.message || "The welcome offer has ended. Prices shown are the regular prices."));
         return;
       }
 
@@ -863,6 +905,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   const renderPlanSelector = () => {
     const selectedPlan = plans.find((p) => p.name === selectedPlanName) || plans[0];
     const pricing = getPlanPricing(selectedPlan, billing);
+    const welcome = welcomeFor(selectedPlan.name);
     const action = getActionForPlan(selectedPlan.name);
     const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
     const activeIndex = plans.findIndex((p) => p.name === selectedPlan.name);
@@ -898,6 +941,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
 
     return (
       <div className="plan-box">
+        <WelcomeOfferBanner offer={offer} className="plan-box__offer" />
         {/* ---------- billing cycle, above the price it frames ---------- */}
         <div className="plan-box__billing" role="group" aria-label="Billing cycle">
           {(["monthly", "annual"] as const).map((cycle) => (
@@ -953,27 +997,45 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         </div>
 
         {/* ---------------------------- price --------------------------- */}
-        <div className="plan-box__price">
+        {/*
+          Customer Experience 4.2. The line above the figure is fixed-height and
+          says what the figure is measured against: the regular 12-month total
+          struck through on annual, the regular monthly price struck through
+          under the welcome offer, "Most popular" otherwise. The figure is what
+          is charged; its unit says how often.
+        */}
+        <div className="plan-box__price" data-billing={billing}>
           <div className="plan-box__pricetop">
-            {selectedPlan.name === "Plus" ? (
+            {billing === "annual" && pricing.regular !== null ? (
+              <span className="plan-box__regular" data-annual-regular>
+                <s>${formatMoney(pricing.regular)}</s> regular 12-month total
+              </span>
+            ) : welcome ? (
+              <span className="plan-box__regular" data-welcome-regular>
+                <s>{formatCents(welcome.monthlyCents)}</s> regular monthly price
+              </span>
+            ) : selectedPlan.name === "Plus" ? (
               <span className="plan-box__popular">Most popular</span>
             ) : null}
           </div>
 
-          <div className="plan-box__amount" key={`${selectedPlan.name}-${billing}`}>
-            <span className="plan-box__figure">${formatMoney(pricing.amount)}</span>
+          <div className="plan-box__amount" key={`${selectedPlan.name}-${billing}-${welcome ? "w" : "r"}`}>
+            <span className="plan-box__figure">{welcome ? formatCents(welcome.firstMonthCents) : `$${formatMoney(pricing.amount)}`}</span>
             <span className="plan-box__unit">
-              {billing === "annual" ? "/ year" : "/ month"}
+              {billing === "annual" ? "/ year" : welcome ? "first month" : "/ month"}
             </span>
           </div>
 
           <p className="plan-box__terms">
             {billing === "annual" ? (
               <>
-                Pay for 10 months, get 12.
-                <span className="plan-box__terms-sub">
-                  About ${formatMoney(Math.round(pricing.amount / MONTHS_PER_YEAR))} a month.
-                </span>
+                <b>Pay for 10 months, get 12.</b>
+                <span className="plan-box__terms-sub">Billed once a year, plus applicable taxes.</span>
+              </>
+            ) : welcome ? (
+              <>
+                <b>{offer.percentOff}% off your first month.</b>
+                <span className="plan-box__terms-sub">Then {formatCents(welcome.monthlyCents)}/month afterward, plus applicable taxes.</span>
               </>
             ) : (
               <>
@@ -983,6 +1045,21 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             )}
           </p>
         </div>
+
+        {/* ----------------------------- CTA ---------------------------- */}
+        {/* Under the price, so price and decision share the first screen on a phone. */}
+        <button
+          type="button"
+          onClick={() => handleSubscribe(selectedPlan.name)}
+          data-track="plans-cta"
+          disabled={disabled}
+          className="plan-box__cta"
+        >
+          {label}
+        </button>
+        {billing === "annual" && offer.active ? (
+          <p className="plan-box__offer-note">The welcome offer applies to monthly plans only.</p>
+        ) : null}
 
         {/* ------------- the seven rows, all four plans stacked ---------- */}
         <div className="plan-box__stack">
@@ -1042,17 +1119,6 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             );
           })}
         </div>
-
-        {/* ----------------------------- CTA ---------------------------- */}
-        <button
-          type="button"
-          onClick={() => handleSubscribe(selectedPlan.name)}
-          data-track="plans-cta"
-          disabled={disabled}
-          className="plan-box__cta"
-        >
-          {label}
-        </button>
 
         <p className="plan-box__foot">
           There&rsquo;s no monthly visit allowance. Book as often as you need &mdash; your plan
@@ -1124,6 +1190,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                   <PlanPriceBlock
                     plan={plan}
                     billing={billing}
+                    welcome={welcomeFor(plan.name)}
                     amountClassName="text-[30px] font-semibold tracking-[-0.03em] text-[#111111]"
                   />
                 </div>
@@ -1185,6 +1252,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
       <PlanResumeSheet
         planName={selectedPlanName}
         billing={billing}
+        welcome={welcomeFor(selectedPlanName)}
+        offer={offer}
         address={[selectedAddress.line1, selectedAddress.city].filter(Boolean).join(", ")}
         busy={actionLoadingPlan === selectedPlanName}
         error={actionError}
@@ -1215,7 +1284,18 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     const chosenPricing = getPlanPricing(chosen, billing);
     const chosenAction = isAuthenticated ? getActionForPlan(chosen.name) : null;
     const busy = actionLoadingPlan === chosen.name;
+    const chosenWelcome = welcomeFor(chosen.name);
     const priceLabel = (p: Plan) => {
+      const w = welcomeFor(p.name);
+      if (w) {
+        return (
+          <>
+            <s className="wo-was mr-1 text-[13px]">{formatCents(w.monthlyCents)}</s>
+            {formatCents(w.firstMonthCents)}
+            <span className="block text-[11px] font-medium text-[color:var(--ui-text-3)]">first month</span>
+          </>
+        );
+      }
       const pr = getPlanPricing(p, billing);
       return `$${pr.amount.toLocaleString("en-US")}${pr.suffix === "/mo" ? "/mo" : "/yr"}`;
     };
@@ -1255,6 +1335,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             ))}
           </div>
         </div>
+
+        <WelcomeOfferBanner offer={offer} className="mt-3" />
 
         {checkoutCanceled ? (
           <p className="mt-3 rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] px-4 py-2.5 text-[14px] text-[color:var(--ui-text-2)]">
@@ -1354,11 +1436,20 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           {busy ? (
             <><span className="fv-spinner" aria-hidden="true" /> One moment…</>
           ) : (
-            <>Choose {chosen.displayName} · ${chosenPricing.amount.toLocaleString("en-US")}{chosenPricing.suffix === "/mo" ? "/mo" : "/yr"}</>
+            chosenWelcome ? (
+              <>Choose {chosen.displayName} · {formatCents(chosenWelcome.firstMonthCents)} first month</>
+            ) : (
+              <>Choose {chosen.displayName} · ${chosenPricing.amount.toLocaleString("en-US")}{chosenPricing.suffix === "/mo" ? "/mo" : "/yr"}</>
+            )
           )}
         </button>
         <p className="mt-2 text-center text-[13px] text-[color:var(--ui-text-3)]">
-          {billing === "annual" ? "Billed once for the year · 12 months for the price of 10" : "Billed monthly · cancel anytime"} · tax at checkout
+          {billing === "annual"
+            ? "Billed once for the year · 12 months for the price of 10"
+            : chosenWelcome
+              ? `Then ${formatCents(chosenWelcome.monthlyCents)}/month afterward · cancel anytime`
+              : "Billed monthly · cancel anytime"}{" "}
+          · tax at checkout
         </p>
       </section>
     );
@@ -1518,6 +1609,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
 function PlanResumeSheet({
   planName,
   billing,
+  welcome,
+  offer,
   address,
   busy,
   error,
@@ -1526,6 +1619,8 @@ function PlanResumeSheet({
 }: {
   planName: string;
   billing: BillingCycle;
+  welcome: WelcomePlanPrice | null;
+  offer: WelcomeOffer;
   address: string;
   busy: boolean;
   error: string;
@@ -1556,7 +1651,15 @@ function PlanResumeSheet({
         <h2 id="plan-resume-title" className="ui-h3 !text-[22px]">
           {planName} · {billing === "annual" ? "Annual" : "Monthly"}
         </h2>
-        {pricing ? (
+        {welcome ? <WelcomeOfferBanner offer={offer} className="mt-3" /> : null}
+        {welcome ? (
+          <p className="mt-2 text-[color:var(--ui-ink)]" data-resume-welcome>
+            <s className="wo-was mr-2 text-[18px]">{formatCents(welcome.monthlyCents)}</s>
+            <span className="ui-num text-[36px] font-semibold tracking-[-0.04em]">{formatCents(welcome.firstMonthCents)}</span>
+            <span className="ml-1 text-[15px] font-medium text-[color:var(--ui-text-3)]">first month</span>
+            <span className="mt-1 block text-[14px] text-[color:var(--ui-text-2)]">Then {formatCents(welcome.monthlyCents)}/month afterward, plus applicable taxes.</span>
+          </p>
+        ) : pricing ? (
           <p className="mt-2 text-[color:var(--ui-ink)]">
             <span className="ui-num text-[36px] font-semibold tracking-[-0.04em]">${pricing.amount.toLocaleString("en-US")}</span>
             <span className="ml-1 text-[15px] font-medium text-[color:var(--ui-text-3)]">{pricing.suffix === "/mo" ? "/ month" : "/ year"}</span>

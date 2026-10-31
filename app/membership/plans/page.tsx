@@ -79,7 +79,7 @@ export default function MembershipPlansPage() {
               <p className="ui-lede">
                 {isMember
                   ? "Your current plan is marked. Move up or down at any time; the change follows your normal billing."
-                  : "Book as often as you need. Change plans whenever your home does."}
+                  : "Book as often as you need. Labor included."}
               </p>
 
               {isMember && (

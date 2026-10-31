@@ -56,6 +56,12 @@ export type HandymanDraft = {
   holdToken: string;
   holdFor: string;
   holdExpiresAt: string;
+  /**
+   * They pressed Continue on this time. The picker chooses the earliest opening
+   * for them, which on its own is a suggestion, not a decision: only a confirmed
+   * time is held or skipped past on the way back from signing in.
+   */
+  timeConfirmed?: boolean;
   updatedAt: number;
 };
 
@@ -76,6 +82,7 @@ export const EMPTY_HANDYMAN_DRAFT: HandymanDraft = {
   holdToken: "",
   holdFor: "",
   holdExpiresAt: "",
+  timeConfirmed: false,
   updatedAt: 0,
 };
 

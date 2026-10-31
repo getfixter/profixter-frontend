@@ -137,7 +137,7 @@ export const FOOTER_SEO_LINKS = [
   { label: "Services", href: "/services" },
   { label: "Locations", href: "/locations" },
   { label: "Homeowner guides", href: "/guides" },
-  { label: "What We Do", href: "/recent-work" },
+  { label: "What's Included", href: "/recent-work" },
   { label: "Renovations", href: "/renovations" },
 ] as const;
 
