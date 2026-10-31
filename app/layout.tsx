@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import { Cormorant_Garamond, Geist, Geist_Mono, Montserrat } from "next/font/google";
 import Script from "next/script";
 import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
 import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
 import SupportChat from "./components/support/SupportChat";
 import FixterStage from "./components/fixter/FixterStage";
+import { siteFontVariables } from "./site-fonts";
+import "./fonts.css";
 import "./globals.css";
 import "./free-visit.css";
 /* The Website 3.0 design system: tokens and ui-* components (see the file). */
@@ -27,54 +28,27 @@ import SurfaceMarker from "./components/SurfaceMarker";
 import { AUTH_PENDING_SCRIPT, IOS_VIEWPORT_SCRIPT, SURFACE_SCRIPT } from "@/lib/surface";
 
 /*
- * The customer site's typeface (app/ui.css sets it on html[data-surface="site"]).
- * Montserrat below stays loaded for the admin and the event kiosk, which keep
- * their look.
- */
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-/*
- * Not preloaded: the mono face appears in a few staff and code-like spots, never
- * above the fold of a customer page, so it should not compete with the fonts
- * that are. It still loads wherever it is used.
- */
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], preload: false });
-
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  /*
-   * Not preloaded: since Website 3.0 only the staff surfaces (admin, event
-   * kiosk) render in it, so customer pages should not download it first.
-   */
-  preload: false,
-});
-
-/*
- * The display face, used ONLY on Digital Gift surfaces.
+ * The site's four typefaces, self-hosted (app/site-fonts.ts, app/fonts.css):
  *
- * Montserrat is the ProFixter voice and stays the voice everywhere else. A
- * gift needs one register the geometric sans cannot reach: the occasion line
- * and the handwritten-feeling personal message. High-contrast old-style at a
- * large size is what makes those read as considered rather than as another
- * heading.
- *
- * Two weights and italic, latin only, exposed as a variable so it applies
- * where a component asks for it and nowhere else.
+ * - Geist (--font-geist-sans): the customer site's typeface (app/ui.css sets it
+ *   on html[data-surface="site"]). The only preloaded face, latin subset.
+ * - Geist Mono (--font-geist-mono): not preloaded. It appears in a few staff
+ *   and code-like spots, never above the fold of a customer page, so it should
+ *   not compete with the fonts that are. It still loads wherever it is used.
+ * - Montserrat (--font-montserrat), 400 to 700: not preloaded. Since Website
+ *   3.0 only the staff surfaces (admin, event kiosk) render in it, so customer
+ *   pages should not download it first.
+ * - Cormorant Garamond (--font-gift-display), 300 to 500 with italic: the
+ *   display face, used ONLY on Digital Gift surfaces. Montserrat is the
+ *   ProFixter voice and stays the voice everywhere else. A gift needs one
+ *   register the geometric sans cannot reach: the occasion line and the
+ *   handwritten-feeling personal message. High-contrast old-style at a large
+ *   size is what makes those read as considered rather than as another
+ *   heading. Not preloaded: six font files for a face used only on gift
+ *   surfaces were being preloaded on every page of the site, ahead of the
+ *   page's own content. Gift pages still get it; swap keeps the text visible
+ *   while it arrives.
  */
-const cormorant = Cormorant_Garamond({
-  variable: "--font-gift-display",
-  subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  style: ["normal", "italic"],
-  display: "swap",
-  /*
-   * Not preloaded. Six font files for a face used only on gift surfaces were
-   * being preloaded on every page of the site, ahead of the page's own content.
-   * Gift pages still get it; swap keeps the text visible while it arrives.
-   */
-  preload: false,
-});
 
 /*
  * The viewport, declared the way Next expects.
@@ -192,7 +166,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} ${cormorant.variable}`}
+      className={siteFontVariables}
       data-surface="site"
       suppressHydrationWarning
     >
