@@ -49,7 +49,8 @@ async function open(browser, emailPrefs, { width = 1280, height = 900, sms = { t
       if (req.method() === "PUT") {
         const body = JSON.parse(req.postData() || "{}");
         puts.push({ sms: body });
-        smsState = { ...smsState, ...body };
+        // Like the server: switching a channel on records the customer's own consent from account settings.
+        smsState = { ...smsState, ...body, ...(body.marketingEnabled === true ? { marketingConsentSource: "account_settings" } : {}) };
       }
       return json(smsState);
     }
@@ -90,6 +91,27 @@ async function open(browser, emailPrefs, { width = 1280, height = 900, sms = { t
     await page.waitForTimeout(500);
     check("turning it on saves exactly true", puts.length === 2 && puts[1].marketingEnabled === true, JSON.stringify(puts));
     check("no page errors", errors.length === 0, errors.join("; "));
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- offers switched on by staff after a phone call (Admin-assisted opt-in) ---");
+    const { ctx, page, errors, puts } = await open(browser, { marketingEnabled: true, status: "existing_customer", canChange: true }, { sms: { transactionalEnabled: true, marketingEnabled: true, marketingConsentSource: "admin_phone" } });
+    const confirmBox = page.locator("[data-sms-confirm]");
+    check("the customer is asked to confirm text offers themselves", (await confirmBox.count()) === 1 && /told ProFixter by phone/.test(await confirmBox.innerText()));
+    check("the confirmation carries the required disclosures", /Message frequency varies/.test(await confirmBox.innerText()) && /Reply STOP to opt out or HELP for help/.test(await confirmBox.innerText()));
+    check("the button uses the registered wording", (await page.locator("[data-action=confirm-sms-offers]").innerText()).trim() === "Text me occasional ProFixter offers.");
+    await page.locator("[data-action=confirm-sms-offers]").click();
+    await page.waitForTimeout(600);
+    check("confirming saves exactly marketingEnabled: true through the account-settings route", puts.length === 1 && JSON.stringify(puts[0]) === JSON.stringify({ sms: { marketingEnabled: true } }), JSON.stringify(puts));
+    check("once confirmed, the prompt is gone", (await confirmBox.count()) === 0);
+    check("no page errors", errors.length === 0, errors.join("; "));
+    await ctx.close();
+  }
+  {
+    console.log("\n--- offers the customer switched on themselves: no prompt ---");
+    const { ctx, page } = await open(browser, { marketingEnabled: true, status: "existing_customer", canChange: true }, { sms: { transactionalEnabled: true, marketingEnabled: true, marketingConsentSource: "account_settings" } });
+    check("no confirmation prompt for the customer's own consent", (await page.locator("[data-sms-confirm]").count()) === 0);
     await ctx.close();
   }
 

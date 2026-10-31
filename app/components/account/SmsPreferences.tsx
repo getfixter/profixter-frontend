@@ -31,6 +31,7 @@ import API from "@/lib/api";
 interface SmsPreferenceState {
   transactionalEnabled: boolean;
   marketingEnabled: boolean;
+  marketingConsentSource?: string;
   phoneOptedOut: boolean;
   phoneOptOutScope: string;
 }
@@ -105,8 +106,20 @@ export function SmsPreferences() {
 
   if (!state) return null;
 
+  /*
+   * ADMIN-ASSISTED OPT-IN (2026-10-31). When a customer agrees on a call,
+   * staff switch offers on in Admin ("admin_phone"). That is a record of what
+   * the customer said, not their own written consent, and the registered A2P
+   * campaign collects marketing consent only here, in account settings. So the
+   * customer confirms it here, themselves: the button saves the same choice
+   * through the same route as the checkbox, which records THEIR consent
+   * (source "account_settings", with this page's wording). Offers are texted
+   * only after that. The staff record stays in the consent history.
+   */
+  const needsConfirmation = state.marketingEnabled && state.marketingConsentSource === "admin_phone" && !state.phoneOptedOut;
+
   return (
-    <section className="acct-card" aria-labelledby="acct-sms" data-testid="sms-preferences">
+    <section id="texts" className="acct-card" aria-labelledby="acct-sms" data-testid="sms-preferences">
       <h2 id="acct-sms" className="acct-card__title">
         Text messages
       </h2>
@@ -115,6 +128,25 @@ export function SmsPreferences() {
         confirmations, receipts or reminders, and never affects your membership or
         bookings.
       </p>
+
+      {needsConfirmation ? (
+        <div className="acct-note mt-4" data-sms-confirm>
+          <p>
+            <span className="font-semibold">Please confirm text offers.</span> You told ProFixter by phone that you&rsquo;d like occasional
+            offers by text. Confirm here and we&rsquo;ll start sending them. Optional. Message frequency varies. Message and data rates may
+            apply. Reply STOP to opt out or HELP for help.
+          </p>
+          <button
+            type="button"
+            className="ui-btn ui-btn--primary mt-3"
+            disabled={saving !== null}
+            onClick={() => toggle("marketingEnabled", true)}
+            data-action="confirm-sms-offers"
+          >
+            Text me occasional ProFixter offers.
+          </button>
+        </div>
+      ) : null}
 
       <div className="mt-4 grid gap-4">
         {CHANNELS.map(({ field, label, help }) => (
