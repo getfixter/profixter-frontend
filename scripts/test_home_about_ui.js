@@ -224,6 +224,8 @@ async function scrollThrough(page) {
         }).length,
         overflowing: Array.from(document.querySelectorAll("section, img, h1, h2")).filter((e) => {
           if (e.closest(".start-screen")) return false;
+          // The What We Do carousel scrolls sideways on purpose; its later cards sit off-screen inside it.
+          if (e.closest("[data-testid=wwd-track]")) return false;
           return e.getBoundingClientRect().right > window.innerWidth + 2;
         }).length,
       }));
