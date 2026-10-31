@@ -29,8 +29,8 @@ import PhotoPicker from "./PhotoPicker";
  * Book a Handyman (Customer Experience 4.0).
  *
  *   1. What needs doing - the job, the address, optional photos
- *   2. When - a real open time
- *   3. Account - sign in or create one (Registration 2.0); the draft waits
+ *   2. When - a real open time, held for them from here (POST /api/bookings/hold)
+ *   3. Account - sign in or create one (Registration 2.0); the draft and the hold wait
  *   4. How to book - the member's included visit, a One-Time Visit, or a membership
  *   5. Pay (Stripe) - then the request waits for the owner's approval
  *
@@ -62,6 +62,10 @@ function nyIso(date: string, time: string) {
 }
 function words(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
+}
+function heldUntil(iso: string) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: TZ });
 }
 function sameAddress(a: { line1?: string; zip?: string }, b: { line1?: string; zip?: string }) {
   const norm = (v?: string) => String(v || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -156,6 +160,12 @@ export default function HandymanBooker() {
     const hasTime = Boolean(draft.date && draft.time);
     if (user && hasJob && hasTime) setStep(4);
     else if (hasJob) setStep(hasTime ? 3 : 2);
+    // Back from signing in: keep holding their time (extends it, or holds it
+    // afresh if it lapsed). Not after a checkout - their own pending booking
+    // still has the time until Stripe lets it go.
+    if (hasJob && hasTime && !canceled && !resume && !draft.pendingBookingId) {
+      void holdTime(draft.date, draft.time, draft.holdToken);
+    }
     if (resume === "membership" && user) {
       void finishAfterMembership();
     }
@@ -186,7 +196,36 @@ export default function HandymanBooker() {
     setStep(2);
   };
 
-  const goStep3 = () => {
+  /*
+   * Hold the chosen time while they sign in and choose how to book. A taken
+   * time sends them back to pick another; any other failure goes on without a
+   * hold - the booking re-checks the time when it is made.
+   */
+  const holdTime = async (date: string, time: string, token: string): Promise<boolean> => {
+    try {
+      const res = await API.post("/api/bookings/hold", { requestedDate: date, requestedTime: time, token: token || null });
+      update({ holdToken: res.data?.token || "", holdFor: res.data?.token ? `${date} ${time}` : "", holdExpiresAt: res.data?.holdExpiresAt || "" });
+      return true;
+    } catch (error) {
+      const f = failure(error, "");
+      if (f.code === "SLOT_UNAVAILABLE") {
+        update({ time: "", holdToken: "", holdFor: "", holdExpiresAt: "" });
+        setErrors({ when: "That time was just taken. Pick another - everything else is saved." });
+        setStep(2);
+        return false;
+      }
+      return true;
+    }
+  };
+
+  /* Their held time cannot be used (the member seven-day rule): let it go now. */
+  const dropHold = () => {
+    if (draft.holdToken) API.post("/api/bookings/hold/release", { token: draft.holdToken }).catch(() => undefined);
+    update({ holdToken: "", holdFor: "", holdExpiresAt: "" });
+  };
+
+  const goStep3 = async () => {
+    if (busy) return;
     if (!draft.date || !draft.time) {
       setErrors({ when: "Pick a day and a time." });
       return;
@@ -196,6 +235,10 @@ export default function HandymanBooker() {
       return;
     }
     setErrors({});
+    setBusy(true);
+    const held = await holdTime(draft.date, draft.time, draft.holdToken);
+    setBusy(false);
+    if (!held) return;
     trackEvent("handyman_time_selected", {});
     setStep(user ? 4 : 3);
   };
@@ -236,6 +279,7 @@ export default function HandymanBooker() {
       requestedTime: draft.time,
       images: photos,
       clientRequestId: draft.clientRequestId || newClientRequestId(),
+      holdToken: draft.holdToken || undefined,
     });
     trackEvent("member_visit_booked", { source: "book_a_handyman" });
     await clearHandymanDraft();
@@ -259,6 +303,7 @@ export default function HandymanBooker() {
       }
       if (!saved.date || saved.date < earliestMember) {
         setMemberLead(true);
+        dropHold();
         update({ time: "" });
         setBanner({ tone: "ok", text: "Welcome to Profixter! Member visits are booked at least 7 days ahead - pick a time below." });
         setStep(2);
@@ -295,6 +340,7 @@ export default function HandymanBooker() {
       if (choice === "member") {
         if (draft.date < earliestMember) {
           setMemberLead(true);
+          dropHold();
           update({ time: "" });
           setBanner({ tone: "info", text: "Member visits are booked at least 7 days ahead. Pick a later time." });
           setStep(2);
@@ -316,8 +362,10 @@ export default function HandymanBooker() {
           requestedTime: draft.time,
           clientRequestId,
           returnTo: "handyman",
+          holdToken: draft.holdToken || undefined,
         });
-        update({ pendingBookingId: res.bookingId });
+        // The booking took the time over; the hold is spent.
+        update({ pendingBookingId: res.bookingId, holdToken: "", holdFor: "", holdExpiresAt: "" });
         window.location.assign(res.url);
         return;
       }
@@ -329,7 +377,7 @@ export default function HandymanBooker() {
     } catch (error) {
       const f = failure(error, "Something went wrong. Please try again.");
       if (f.code === "SLOT_UNAVAILABLE") {
-        update({ time: "", clientRequestId: "" });
+        update({ time: "", clientRequestId: "", holdToken: "", holdFor: "", holdExpiresAt: "" });
         setErrors({ when: "That time was just taken. Pick another - everything else is saved." });
         setStep(2);
       } else if (f.code === "ADDRESS_ALREADY_SUBSCRIBED") {
@@ -367,6 +415,7 @@ export default function HandymanBooker() {
     );
   }
 
+  const heldSlot = draft.holdToken && draft.holdFor ? { date: draft.holdFor.slice(0, 10), time: draft.holdFor.slice(11) } : null;
   const err = (k: string) => (errors[k] ? <p className="bk-error">{errors[k]}</p> : null);
   const typedMode = !user || useNewAddress || !homes.length;
   const addressLine = selectedHome
@@ -430,10 +479,10 @@ export default function HandymanBooker() {
       {step === 2 && (
         <section className="bk-card" data-error={errors.when ? "1" : undefined}>
           {memberLead && <p className="bk-note" style={{ marginBottom: 10 }}>Member visits start 7 days out.</p>}
-          <SlotPicker date={draft.date} time={draft.time} onChange={(w) => update({ date: w.date, time: w.time })} visit={memberLead ? "membership" : undefined} />
+          <SlotPicker date={draft.date} time={draft.time} onChange={(w) => update({ date: w.date, time: w.time })} visit={memberLead ? "membership" : undefined} held={heldSlot} />
           {err("when")}
           <div className="bk-actions">
-            <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={goStep3} data-action="to-step-3">Continue</button>
+            <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={goStep3} disabled={busy} data-action="to-step-3">{busy ? "Holding your time…" : "Continue"}</button>
             <button type="button" className="bk-link" onClick={() => setStep(1)}>Back</button>
           </div>
         </section>
@@ -445,6 +494,9 @@ export default function HandymanBooker() {
             <span><b>{formatWhen(draft.date, draft.time)}</b></span>
             <span>{addressLine}</span>
           </div>
+          {draft.holdToken && heldUntil(draft.holdExpiresAt) && (
+            <p className="bk-note" data-hold-note style={{ marginTop: 0, marginBottom: 10 }}>We&apos;re holding this time for you until {heldUntil(draft.holdExpiresAt)}.</p>
+          )}
           <p className="bk-lede" style={{ marginTop: 0 }}>Sign in or create your account to choose how to book. Your details are saved.</p>
           <div className="bk-actions">
             <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={() => signIn("signup")} data-action="create-account">Create account</button>
@@ -461,6 +513,9 @@ export default function HandymanBooker() {
               <span><b>{formatWhen(draft.date, draft.time)}</b> · <button type="button" className="bk-link" onClick={() => setStep(2)}>Change</button></span>
               <span>{addressLine}</span>
               <span>{draft.task.length > 90 ? `${draft.task.slice(0, 90)}…` : draft.task}</span>
+              {draft.holdToken && heldUntil(draft.holdExpiresAt) && (
+                <span className="bk-note" data-hold-note>Held for you until {heldUntil(draft.holdExpiresAt)}</span>
+              )}
             </div>
           </section>
           <section className="bk-card" aria-label="How to book">

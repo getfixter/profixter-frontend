@@ -48,17 +48,21 @@ export default function SlotPicker({
   time,
   onChange,
   visit,
+  held,
 }: {
   date: string;
   time: string;
   onChange: (next: { date: string; time: string }) => void;
   visit?: "membership";
+  /** The time this customer is holding: the calendar counts it as taken, but it is theirs. */
+  held?: { date: string; time: string } | null;
 }) {
   const today = ymdInNY(new Date());
   const days = useMemo(() => Array.from({ length: DAYS_SHOWN }, (_, i) => addDays(today, i)), [today]);
   const [byDay, setByDay] = useState<Record<string, string[]> | null>(null);
   const [fresh, setFresh] = useState<{ date: string; slots: string[] } | null>(null);
-  const daySlots = !date ? null : fresh?.date === date ? fresh.slots : (byDay?.[date] ?? null);
+  const loaded = !date ? null : fresh?.date === date ? fresh.slots : (byDay?.[date] ?? null);
+  const daySlots = loaded && held && held.date === date && !loaded.includes(held.time) ? [...loaded, held.time].sort() : loaded;
 
   useEffect(() => {
     let alive = true;
@@ -95,7 +99,7 @@ export default function SlotPicker({
     };
   }, [date, visit]);
 
-  const hasAny = (ymd: string) => (byDay ? (byDay[ymd] || []).length > 0 : true);
+  const hasAny = (ymd: string) => (byDay ? (byDay[ymd] || []).length > 0 || held?.date === ymd : true);
 
   return (
     <div data-slot-picker>

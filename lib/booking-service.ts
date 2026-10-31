@@ -86,6 +86,8 @@ export interface BookingData {
   requestedTime?: string;
   /** One online free-visit submission: a retry with the same id gets the same booking back. */
   clientRequestId?: string;
+  /** Book a Handyman: the customer's own sign-in hold on this time, which gives way to the booking. */
+  holdToken?: string;
 }
 
 export interface OneTimeCheckoutData {
@@ -102,6 +104,8 @@ export interface OneTimeCheckoutData {
   clientRequestId?: string;
   /** "handyman": a canceled checkout returns to /book/handyman with the draft. */
   returnTo?: "handyman";
+  /** The customer's own sign-in hold on this time, which gives way to the booking. */
+  holdToken?: string;
 }
 
 export interface OneTimeCheckoutResponse {
@@ -320,6 +324,7 @@ export const createBooking = async (data: BookingData): Promise<BookingResponse>
   if (data.requestedTime) formData.append("requestedTime", data.requestedTime);
   if (data.libraryReference) formData.append("libraryReference", data.libraryReference);
   if (data.clientRequestId) formData.append("clientRequestId", data.clientRequestId);
+  if (data.holdToken) formData.append("holdToken", data.holdToken);
 
   data.images.forEach((img) => formData.append("images", img));
 
@@ -359,6 +364,7 @@ export const createOneTimeVisitCheckout = async (
   if (data.requestedTime) formData.append("requestedTime", data.requestedTime);
   if (data.libraryReference) formData.append("libraryReference", data.libraryReference);
   if (data.clientRequestId) formData.append("clientRequestId", data.clientRequestId);
+  if (data.holdToken) formData.append("holdToken", data.holdToken);
   if (data.returnTo) formData.append("returnTo", data.returnTo);
   data.images.forEach((img) => formData.append("images", img));
 

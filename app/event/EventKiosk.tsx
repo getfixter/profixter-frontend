@@ -4,7 +4,8 @@
  * The public event kiosk: an iPad on a tripod at a Profixter booth.
  *
  * A visitor can do exactly three things here: watch, swipe left/right, and
- * tap "Get My Free Visit". There are no other controls, no admin panel,
+ * tap "Get My Free Visit" (the Free Visit form, /book/free - no account
+ * needed). There are no other controls, no admin panel,
  * no keyboard shortcuts, no links, and the photos themselves are not
  * clickable, draggable or long-pressable. Photo management stays in
  * /admin/event-display/review, behind the admin API.
@@ -20,8 +21,8 @@
  * continuous space rather than a sequence of slides.
  *
  * The call to action signs out whatever session this browser holds, using
- * the site's own logout, before opening registration. The iPad may have been
- * set up while signed in as an admin, and a visitor must never register, or
+ * the site's own logout, before opening the Free Visit form. The iPad may have
+ * been set up while signed in as an admin, and a visitor must never book, or
  * see anything, inside that session.
  *
  * Built to run all day: a hard cap on cards (spatial.MAX_CARDS), only a small
@@ -49,7 +50,7 @@ import { compose, geometry, type Card } from "./spatial";
 import "./event-kiosk.css";
 
 const LOGO = "/images/logo-footer.svg";
-const SIGNUP_PATH = "/signup?source=event";
+const CTA_PATH = "/book/free?source=event";
 const REFRESH_MS = 30 * 60 * 1000;
 const REFRESH_WHEN_EMPTY_MS = 60 * 1000;
 const RELOAD_AFTER_MS = 4 * 60 * 60 * 1000;
@@ -442,7 +443,7 @@ export default function EventKiosk() {
   const { logout, isLoading: authLoading } = useAuth();
   const [ctaPending, setCtaPending] = useState(false);
 
-  const startSignup = useCallback(() => {
+  const startFreeVisit = useCallback(() => {
     setCtaPending(true);
     setLeaving(true);
   }, []);
@@ -456,8 +457,8 @@ export default function EventKiosk() {
     try {
       window.sessionStorage.setItem(KIOSK_RETURN_KEY, "1");
     } catch {}
-    // A full navigation, so registration starts from a fresh, signed-out app.
-    window.location.assign(SIGNUP_PATH);
+    // A full navigation, so the form starts from a fresh, signed-out app.
+    window.location.assign(CTA_PATH);
   }, [ctaPending, authLoading, logout]);
 
   const onBrand = sceneKind === "brand";
@@ -517,7 +518,7 @@ export default function EventKiosk() {
           className="ed-cta"
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
-          onClick={startSignup}
+          onClick={startFreeVisit}
           disabled={leaving}
         >
           <span>{leaving ? "One moment…" : "Get My Free Visit"}</span>

@@ -11,8 +11,10 @@ import { loadPhotos, savePhotos } from "./booking-draft";
  * (survives a new tab from an email sign-in code, too) and the photos in
  * IndexedDB (lib/booking-draft, slot "handyman"). It expires after a day.
  *
- * Nothing here reserves a time. The slot is held when checkout starts and the
- * server re-checks it then.
+ * The chosen time is held for 20 minutes once they reach sign-in or Step 4
+ * (POST /api/bookings/hold); holdToken proves the hold is theirs and is sent
+ * with the booking, which takes the time over. The server re-checks the time
+ * then either way, so an expired hold costs nothing but the guarantee.
  */
 
 const KEY = "pf_handyman_draft";
@@ -50,6 +52,10 @@ export type HandymanDraft = {
   plan: string;
   /** The held booking a One-Time checkout created, to release if they come back without paying. */
   pendingBookingId: string;
+  /** Their sign-in hold ("<id>.<secret>"), the time it holds ("YYYY-MM-DD HH:mm") and when it lapses (ISO). */
+  holdToken: string;
+  holdFor: string;
+  holdExpiresAt: string;
   updatedAt: number;
 };
 
@@ -67,6 +73,9 @@ export const EMPTY_HANDYMAN_DRAFT: HandymanDraft = {
   choice: "",
   plan: "",
   pendingBookingId: "",
+  holdToken: "",
+  holdFor: "",
+  holdExpiresAt: "",
   updatedAt: 0,
 };
 
