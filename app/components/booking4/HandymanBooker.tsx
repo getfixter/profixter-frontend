@@ -25,7 +25,7 @@ import {
 import SlotPicker, { formatWhen } from "./SlotPicker";
 import PhotoPicker from "./PhotoPicker";
 import WelcomeOfferBanner from "@/app/components/membership/WelcomeOfferBanner";
-import { WELCOME_OFFER_ERROR_CODES, formatCents, useWelcomeOffer } from "@/lib/welcome-offer";
+import { WELCOME_OFFER_ERROR_CODES, formatCents, offerPrice, useWelcomeOffer } from "@/lib/welcome-offer";
 
 /*
  * Book a Handyman (Customer Experience 4.0).
@@ -174,6 +174,8 @@ export default function HandymanBooker() {
   const offerHome = selectedHome ? { addressId: selectedHome._id } : draft.address ? { line1: draft.address.line1, zip: draft.address.zip } : null;
   const offer = useWelcomeOffer(Boolean(user) && step === 4 && !isMemberHome, offerHome);
   const planCents = (id: string, fallback: number) => offer.plans[id]?.monthlyCents ?? fallback * 100;
+  // This flow sells monthly memberships only.
+  const chosenOffer = offerPrice(offer, plan, "monthly");
   /* A changed day or time is a new suggestion until they press Continue on it. */
   const onWhen = useCallback(
     (w: { date: string; time: string }) =>
@@ -608,7 +610,7 @@ export default function HandymanBooker() {
                   </div>
                   <p>One visit, up to 90 minutes of work. Pay once, no commitment. Materials not included.</p>
                 </button>
-                <WelcomeOfferBanner offer={offer} className="bk-offer" />
+                <WelcomeOfferBanner offer={offer} className="bk-offer" monthlyOnly />
                 <button type="button" className="bk-option" aria-pressed={choice === "membership"} onClick={() => setChoice("membership")} data-option="membership">
                   <div className="bk-option-top">
                     <span className="bk-option-name">Membership{offer.active ? <span className="bk-badge">{offer.percentOff}% off 1st month</span> : null}</span>
@@ -639,8 +641,8 @@ export default function HandymanBooker() {
                 )}
                 {choice === "membership" && (
                   <p className="bk-note bk-plan-terms" data-plan-terms>
-                    {offer.active && offer.plans[plan]
-                      ? `${formatCents(offer.plans[plan].firstMonthCents)} for your first month, then ${formatCents(offer.plans[plan].monthlyCents)}/month afterward, plus applicable taxes. Month to month, cancel anytime.`
+                    {chosenOffer
+                      ? `${formatCents(chosenOffer.firstCents)} for your first month, then ${formatCents(chosenOffer.regularCents)}/month afterward, plus applicable taxes. Month to month, cancel anytime.`
                       : "Billed monthly, plus applicable taxes. Month to month, cancel anytime."}{" "}
                     <Link href="/membership/plans" data-link="all-plans">See all plans</Link>
                   </p>
@@ -659,8 +661,8 @@ export default function HandymanBooker() {
                 : choice === "one_time"
                   ? `Continue to payment${price != null ? ` · $${price}` : ""}`
                   : choice === "membership"
-                    ? offer.active && offer.plans[plan]
-                      ? `Continue to checkout · ${formatCents(offer.plans[plan].firstMonthCents)} first month`
+                    ? chosenOffer
+                      ? `Continue to checkout · ${formatCents(chosenOffer.firstCents)} first month`
                       : "Continue to membership checkout"
                     : "Choose an option"}
             </button>
