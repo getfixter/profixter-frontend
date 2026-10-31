@@ -373,32 +373,43 @@ async function fillAddress(scope, { line1, city, zip }) {
       await booker.waitFor({ timeout: 20000 });
       await booker.locator("textarea[name=task]").fill("Patch a hole in the hallway wall");
       await booker.locator("[data-action='to-step-2']").click();
-      const soon = await page.locator(".bk-day:not([disabled])").first().getAttribute("data-day");
-      await page.locator(`[data-day='${soon}']`).click();
-      await page.locator("[data-time='10:00']").click();
+      await page.locator(".bk-day[disabled]").first().waitFor({ timeout: 10000 });
+      await page.waitForTimeout(500);
+      const first = await page.locator(".bk-day:not([disabled])").first().getAttribute("data-day");
+      check(`${tag}: a member home sees only times its included visit can take (7+ days out)`, first >= ymd(7) && /Member visits start 7 days out/.test(await booker.innerText()), first);
+      await page.locator(`[data-day='${first}']`).click();
+      await page.locator("[data-time='13:00']").click();
       await booker.locator("[data-action='to-step-3']").click();
       await page.locator("[data-option='member']").waitFor({ timeout: 8000 });
       check(`${tag}: a member is offered the included visit, not a new membership`, (await page.locator("[data-option='membership']").count()) === 0 && /Included/.test(await page.locator("[data-option='member']").innerText()));
       await page.locator("[data-option='member']").click();
       await page.locator("[data-action='book-handyman']").click();
-      await page.waitForTimeout(800);
-      await shot(page, `${tag}-handy-06a-member-soon`);
-      await page.locator("text=Member visits are booked at least 7 days ahead").waitFor({ timeout: 5000 });
-      check(`${tag}: the seven-day member rule is explained, not silently refused`, state.bookings.length === 0);
-      const later = await page.locator(".bk-day:not([disabled])").first().getAttribute("data-day");
-      await page.locator(`[data-day='${later}']`).click();
-      await page.locator("[data-time='13:00']").click();
-      await booker.locator("[data-action='to-step-3']").click();
-      await page.locator("[data-option='member']").click();
-      await page.locator("[data-action='book-handyman']").click();
       await page.locator("[data-handyman-done]").waitFor({ timeout: 8000 });
-      check(`${tag}: member visit requested with the included visit`, state.bookings.length === 1 && state.bookings[0].addressId === "a1" && state.bookings[0].requestedTime === "13:00" && state.oneTime.length === 0 && state.memberships.length === 0);
-      const lastHold = state.holds[state.holds.length - 1];
-      check(`${tag}: signed in, Continue holds the time`, state.holds.length === 2 && state.holds[0].requestedTime === "10:00" && state.holds[1].requestedTime === "13:00", JSON.stringify(state.holds));
-      check(`${tag}: a time the seven-day rule refuses is let go at once`, state.releases.length === 1 && state.releases[0] === state.holds[0].issued && !state.holds[1].token && lastHold.issued !== state.holds[0].issued, JSON.stringify(state.releases));
-      check(`${tag}: the member booking carries the hold`, state.bookings[0].holdToken === lastHold.issued, String(state.bookings[0].holdToken));
+      check(`${tag}: member visit requested with the included visit, first press`, state.bookings.length === 1 && state.bookings[0].addressId === "a1" && state.bookings[0].requestedTime === "13:00" && state.bookings[0].requestedDate === first && state.oneTime.length === 0 && state.memberships.length === 0);
+      check(`${tag}: signed in, Continue holds the time and the booking carries it`, state.holds.length === 1 && state.holds[0].requestedTime === "13:00" && state.bookings[0].holdToken === state.holds[0].issued, JSON.stringify(state.holds));
       check(`${tag}: it says requested and awaiting review, not confirmed`, /review it and confirm/.test(await page.locator("[data-handyman-done]").innerText()));
       await shot(page, `${tag}-handy-06b-member-done`);
+      await ctx.close();
+    }
+
+    /* ======= A member whose draft already has a sooner time (picked before signing in) ======= */
+    {
+      const member = customer({ addresses: [{ ...ADDRESS, hasActiveSubscription: true, plan: "plus" }] });
+      const { ctx, page, state } = await open(browser, { width, height, me: member });
+      const soon = ymd(3);
+      await ctx.addInitScript((d) => {
+        try {
+          localStorage.setItem("pf_handyman_draft", JSON.stringify({ task: "Patch a hole in the hallway wall", addressId: "a1", address: null, date: d.date, time: "10:00", name: "", phone: "", email: "", photoCount: 0, clientRequestId: "", choice: "", plan: "", pendingBookingId: "", holdToken: "h0.secretsecretsecretsecretsecret", holdFor: `${d.date} 10:00`, holdExpiresAt: new Date(Date.now() + 600000).toISOString(), updatedAt: Date.now() }));
+        } catch {}
+      }, { date: soon });
+      await page.goto(`${BASE}/book/handyman`, { waitUntil: "load" });
+      const booker = page.locator("[data-handyman-booker]");
+      await page.locator("text=Member visits are booked at least 7 days ahead").first().waitFor({ timeout: 15000 });
+      await page.waitForTimeout(500);
+      await shot(page, `${tag}-handy-06a-member-soon`);
+      check(`${tag}: the seven-day member rule is explained up front, back on When, nothing booked`, state.bookings.length === 0 && (await booker.getAttribute("data-step")) === "2");
+      check(`${tag}: the held time the rule refuses is let go, and not held again`, state.releases.includes("h0.secretsecretsecretsecretsecret") && state.holds.length === 0, JSON.stringify({ r: state.releases, h: state.holds }));
+      check(`${tag}: the job is kept`, (await page.evaluate(() => JSON.parse(localStorage.getItem("pf_handyman_draft") || "{}").task)) === "Patch a hole in the hallway wall");
       await ctx.close();
     }
   }

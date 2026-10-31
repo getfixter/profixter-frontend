@@ -175,7 +175,8 @@ async function signedInWithoutHome(ctx, onSave) {
     localStorage.setItem("user", JSON.stringify(u));
   }, NO_HOME);
   let saved = null;
-  await ctx.route(/localhost:5001\/api\/(?!service-area)/, (route) => {
+  // Both API hosts: a build made for production must never reach it from a test.
+  await ctx.route(/(localhost:5001|api\.profixter\.com)\/api\/(?!service-area)/, (route) => {
     const req = route.request();
     const p = new URL(req.url()).pathname;
     const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "GET,POST,PUT,PATCH,OPTIONS" };
@@ -473,16 +474,19 @@ async function stepIsOne(page) {
         optionCount: opts.length,
         ctaH: btn ? btn.height : 0,
         fontSize: parseFloat(getComputedStyle(document.querySelector("#pf-address")).fontSize),
+        zoom: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--site-zoom")) || 1,
       };
     });
 
     check(`${width}px no horizontal overflow`, m.scrollW <= m.vw + 1, `scrollW=${m.scrollW} vw=${m.vw}`);
     check(`${width}px field fits inside the viewport`, m.fieldLeft >= 0 && m.fieldRight <= m.vw + 1, `${m.fieldLeft}..${m.fieldRight}`);
-    check(`${width}px field is a comfortable touch target`, m.fieldH >= 48, `${m.fieldH}px`);
+    // Compact site scale (3b324dd): controls are the 44px design-system height,
+    // drawn through the site zoom (0.82 phone, 0.88 desktop), so measure against that.
+    check(`${width}px field is a full design-system control`, m.fieldH >= 44 * m.zoom - 0.5, `${m.fieldH}px at zoom ${m.zoom}`);
     check(`${width}px 16px input text (no iOS zoom on focus)`, m.fontSize >= 16, `${m.fontSize}px`);
     check(`${width}px suggestions fit the width`, !m.optionOverflow, "");
     check(`${width}px suggestion rows are tappable`, m.optionMinH >= 44, `${m.optionMinH}px`);
-    check(`${width}px Continue is a comfortable target`, m.ctaH >= 44, `${m.ctaH}px`);
+    check(`${width}px Continue is a full design-system control`, m.ctaH >= 44 * m.zoom - 0.5, `${m.ctaH}px at zoom ${m.zoom}`);
 
     if (SHOTS) {
       await page.screenshot({ path: `${SHOTS}/signup-address-${width}.png` });

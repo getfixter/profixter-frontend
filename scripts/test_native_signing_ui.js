@@ -17,7 +17,8 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const read = (...parts) => fs.readFileSync(path.join(__dirname, "..", ...parts), "utf8");
+// Line endings normalised: a Windows checkout (core.autocrlf) must read the same source.
+const read = (...parts) => fs.readFileSync(path.join(__dirname, "..", ...parts), "utf8").replace(/\r\n/g, "\n");
 
 /**
  * Code with comments removed.

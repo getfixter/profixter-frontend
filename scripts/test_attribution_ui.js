@@ -54,7 +54,9 @@ async function fresh(browser, { seed } = {}) {
     const json = (status, body) => route.fulfill({ status, contentType: "application/json", headers: cors, body: JSON.stringify(body) });
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     if (p === "/api/track/visit") { state.visits.push(JSON.parse(req.postData() || "{}")); return route.fulfill({ status: 204, headers: cors }); }
-    if (p === "/api/auth/register" && req.method() === "POST") { state.register = JSON.parse(req.postData() || "{}"); return json(201, { token: TOKEN, user }); }
+    // Registration 2.0: a code by text; the verify call creates the account and carries the attribution.
+    if (p === "/api/auth/otp/phone/start" && req.method() === "POST") return json(200, { phoneMasked: "(•••) •••-0134", resendAfterSeconds: 30, expiresInSeconds: 600 });
+    if (p === "/api/auth/otp/phone/verify" && req.method() === "POST") { state.register = JSON.parse(req.postData() || "{}"); return json(200, { status: "signed_in", token: TOKEN, created: true, user }); }
     if (p === "/api/auth/me") return (req.headers()["authorization"] || "").includes(TOKEN) ? json(200, user) : json(401, {});
     if (p.startsWith("/api/service-area")) return json(200, { inServiceArea: true, serviceable: true, county: "Nassau", supported: true });
     if (p.startsWith("/api/track")) return route.fulfill({ status: 204, headers: cors });
@@ -70,31 +72,16 @@ async function go(page, path, referer) {
   await page.waitForTimeout(1200);
 }
 
-/* The real sign-up form, start to finish (address, name, contact, password). */
+/* The real sign-up, start to finish (Registration 2.0: mobile number, then the texted code). */
 async function register(page, state) {
   await go(page, "/signup");
-  await page.waitForSelector("#pf-address", { timeout: 15000 }).catch(() => {});
-  await page.fill("#pf-address", "12 Main St").catch(() => {});
-  await page.waitForTimeout(700);
-  await page.keyboard.press("Escape").catch(() => {});
-  const fallback = page.locator("[data-auth-fallback]");
-  if (await fallback.count()) await fallback.click();
-  if (await page.locator('[aria-label="Street address"]').count()) {
-    await page.fill('[aria-label="Street address"]', "12 Main St");
-    await page.fill('[aria-label="City"]', "Massapequa");
-    await page.fill('[aria-label="ZIP code"]', "11758");
-  }
-  await page.waitForTimeout(800);
-  await page.click('button[type="submit"]');
-  await page.fill("#name", "Test Person");
-  await page.click('button[type="submit"]');
-  await page.fill("#email", "test@example.com");
+  await page.waitForSelector(".auth-method--primary", { timeout: 15000 });
+  await page.click(".auth-method--primary");
+  await page.waitForSelector("#phone");
   await page.fill("#phone", "6315550134");
-  await page.check("#sms-service-consent", { force: true });
-  await page.click('button[type="submit"]');
-  await page.fill("#password", "correct-horse-1");
-  await page.check("#agree-terms", { force: true });
-  await page.click('button[type="submit"]');
+  await page.click(".auth-submit");
+  await page.waitForSelector(".auth-otp");
+  await page.fill(".auth-otp", "123456");
   for (let i = 0; i < 30 && !state.register; i++) await page.waitForTimeout(200);
   return state.register?.attribution || null;
 }
