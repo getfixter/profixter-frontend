@@ -35,9 +35,11 @@ const ADDRESS = { _id: "a1", label: "Primary", line1: "12 Elm St", city: "Farmin
 function customer(over = {}) {
   return { _id: "u1", userId: "40000001", name: "Dana Lopez", email: "dana@mailbox.org", phone: "+15165550123", role: "customer", permissions: [], addresses: [ADDRESS], ...over };
 }
+// Calendar days from today in New York, as the app counts them (not 24-hour steps,
+// which land a day short just after midnight in a week that crosses a DST change).
 function ymd(offset) {
-  const d = new Date(Date.now() + offset * 86400000);
-  return d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const [y, m, d] = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }).split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + offset, 12)).toISOString().slice(0, 10);
 }
 
 async function open(browser, { width, height, me = null }) {
