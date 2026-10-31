@@ -466,4 +466,33 @@
     background: #e6f3ec;
     color: var(--ui-success);
   }
+
+  /* ------------------------------------------------------------------ */
+  /* Price table on /gift                                                */
+  /* ------------------------------------------------------------------ */
+
+  /*
+   * On the narrowest phones the six columns scroll sideways. Two cues make
+   * that discoverable without any script:
+   *  - the plan column is pinned, so a price never loses its row label;
+   *  - a soft shadow sits on the right edge while columns are hidden. The
+   *    white cover is attached to the content (local) at the far end, so it
+   *    slides over the shadow exactly when the last column arrives.
+   * Where everything fits, the cover always sits on the shadow and nothing
+   * shows.
+   */
+  .ui-card.gf-prices {
+    background:
+      linear-gradient(to left, #fff 45%, rgba(255, 255, 255, 0)) right center / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 100% 50%, rgba(11, 22, 40, 0.16), rgba(11, 22, 40, 0)) right center / 16px 100% no-repeat scroll,
+      #fff;
+    overscroll-behavior-x: contain;
+  }
+  .gf-prices tr > th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #fff;
+    box-shadow: inset -1px 0 0 var(--ui-line);
+  }
 }
