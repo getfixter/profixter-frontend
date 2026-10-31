@@ -105,8 +105,13 @@ check("only real ProFixter colours are used", () => {
 });
 
 check("the display face is scoped to gift surfaces, not made global", () => {
-  has(layout, "Cormorant_Garamond", "the display face is loaded through next/font");
-  has(layout, "--font-gift-display", "it must be exposed as its own variable");
+  /* Self-hosted since 2026-10-31: next/font/local in site-fonts.ts, chained into one variable in fonts.css. */
+  const siteFonts = read("app", "site-fonts.ts");
+  const fontsCss = read("app", "fonts.css");
+  has(siteFonts, "next/font/local", "the display face is loaded through next/font");
+  has(siteFonts, "./fonts/cormorant-garamond/", "from the self-hosted Cormorant Garamond files");
+  has(layout, "siteFontVariables", "and its variables are applied at the root");
+  has(fontsCss, "--font-gift-display:", "it must be exposed as its own variable");
   lacks(
     css,
     "body {\n  font-family: var(--font-gift-display)",
