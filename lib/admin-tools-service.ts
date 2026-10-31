@@ -66,7 +66,14 @@ export const createCustomer = async (input: NewCustomerInput) =>
 export const resendCustomerAccess = async (userId: string) =>
   (await API.post(`/api/admin/customers/${userId}/resend-access`)).data as { delivery: Delivery; temporaryPasswordExpiresAt: string };
 
-export type SwitchState = { enabled: boolean; locked: string | null; changedAt: string | null; source: string };
+/*
+ * Marketing SMS only: whether texts may actually go out on the consent behind
+ * the switch (server: utils/consent/marketingSmsBasis.js).
+ */
+export type SmsConsentStatus = "off" | "qualifies" | "needs_confirmation" | "awaiting_registration";
+export type SmsConsent = { status: SmsConsentStatus; basis: string; method: string; evidence: string; confirmRequestedAt: string | null };
+export type SwitchState = { enabled: boolean; locked: string | null; changedAt: string | null; source: string; consent?: SmsConsent };
+export type ConsentMethod = "phone_call" | "customer_email" | "customer_text" | "signed_form";
 export type CommunicationState = {
   service: { email: SwitchState; sms: SwitchState };
   marketing: { email: SwitchState; sms: SwitchState };
@@ -75,8 +82,12 @@ export type CommunicationState = {
 export const getCommunication = async (userId: string) =>
   (await API.get(`/api/admin/users/${userId}/communication`)).data as CommunicationState;
 
-export const setCommunication = async (userId: string, key: CommunicationKey, enabled: boolean) =>
-  (await API.put(`/api/admin/users/${userId}/communication`, { key, enabled })).data as { changed: boolean; state: CommunicationState };
+export const setCommunication = async (userId: string, key: CommunicationKey, enabled: boolean, how: { method?: ConsentMethod; evidence?: string } = {}) =>
+  (await API.put(`/api/admin/users/${userId}/communication`, { key, enabled, ...how })).data as { changed: boolean; state: CommunicationState };
+
+/* Emails the customer the request to confirm offers by text. Changes no setting. */
+export const requestSmsConfirmation = async (userId: string) =>
+  (await API.post(`/api/admin/users/${userId}/communication/sms-confirmation`)).data as { sentTo: string; requestedAt: string; state: CommunicationState };
 
 /* ------------------------------ memberships ----------------------------- */
 

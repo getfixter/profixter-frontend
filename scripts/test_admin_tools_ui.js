@@ -110,8 +110,19 @@ async function open(browser, width, me = OWNER) {
       const body = JSON.parse(req.postData() || "{}");
       state.commPuts.push(body);
       const [purpose, channel] = body.key.split(".");
-      state.comm = { ...state.comm, [purpose]: { ...state.comm[purpose], [channel]: sw(body.enabled) } };
+      const next = sw(body.enabled);
+      // Marketing SMS carries whether offer texts may go out (BackEnd utils/consent/marketingSmsBasis.js).
+      if (body.key === "marketing.sms" && body.enabled) {
+        next.consent = { status: body.method === "phone_call" ? "needs_confirmation" : "awaiting_registration", basis: "", method: body.method, evidence: body.evidence || "", confirmRequestedAt: null };
+      }
+      state.comm = { ...state.comm, [purpose]: { ...state.comm[purpose], [channel]: next } };
       return json({ changed: true, state: state.comm });
+    }
+    if (p === "/api/admin/users/c1/communication/sms-confirmation" && m === "POST") {
+      state.confirmPosts = (state.confirmPosts || 0) + 1;
+      const at = new Date().toISOString();
+      state.comm.marketing.sms.consent = { ...state.comm.marketing.sms.consent, confirmRequestedAt: at };
+      return json({ sentTo: "casey@example.com", requestedAt: at, state: state.comm });
     }
     if (p === "/api/admin/sales/options") return json(OPTIONS);
     if (p === "/api/admin/customers/c1/membership-options") return json({ homes: [{ addressId: "a1", label: "Primary", line: "12 Oak Street, Massapequa, NY, 11758", current: null, canBuy: true, blocked: null }, { addressId: "a2", label: "Rental", line: "8 Bay Rd, Babylon, NY, 11702", current: { plan: "plus", billingCycle: "monthly", status: "active" }, canBuy: false, blocked: { code: "ADDRESS_ALREADY_SUBSCRIBED", message: "This address already has an active plan." } }], hasEmail: true, hasPhone: true });
@@ -223,6 +234,25 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     await panel.locator("[data-switch='marketing.sms']").click();
     await panel.locator("[data-comm-value='marketing.sms']:has-text('Off')").waitFor({ timeout: 5000 });
     check(`${tag}: toggling sends one change and shows it`, JSON.stringify(state.commPuts[0]) === JSON.stringify({ key: "marketing.sms", enabled: false }));
+
+    // Switching marketing SMS on asks how the customer agreed; nothing is sent until "Turn on".
+    await panel.locator("[data-switch='marketing.sms']").click();
+    const form = panel.locator("[data-sms-consent-form]");
+    await form.waitFor({ timeout: 5000 });
+    check(`${tag}: marketing SMS on asks how the customer agreed first`, state.commPuts.length === 1 && (await form.locator("input[type=radio]").count()) === 4);
+    await form.locator("[data-action=save-sms-consent]").click();
+    await panel.locator("[data-sms-consent=needs_confirmation]").waitFor({ timeout: 5000 });
+    check(`${tag}: a phone call is recorded and shown as waiting for the customer's confirmation`, JSON.stringify(state.commPuts[1]) === JSON.stringify({ key: "marketing.sms", enabled: true, method: "phone_call", evidence: "" }));
+    await shot(page, `${tag}-04b-sms-consent`);
+    await panel.locator("[data-action=email-sms-confirmation]").click();
+    await panel.locator("text=Confirmation request emailed to casey@example.com.").waitFor({ timeout: 5000 });
+    check(`${tag}: the confirmation request is emailed only on the button, once`, state.confirmPosts === 1 && (await panel.locator("text=/Request emailed/").count()) === 1);
+    await panel.locator("[data-action=add-written-consent]").click();
+    check(`${tag}: written permission cannot be saved without its evidence`, await form.locator("[data-action=save-sms-consent]").isDisabled());
+    await form.locator("[data-sms-consent-evidence]").fill("Email from casey@example.com 10/31 2:05 PM: yes, text me offers");
+    await form.locator("[data-action=save-sms-consent]").click();
+    await panel.locator("[data-sms-consent=awaiting_registration]").waitFor({ timeout: 5000 });
+    check(`${tag}: written permission is sent with its method and evidence`, state.commPuts[2]?.method === "customer_email" && /casey@example.com/.test(state.commPuts[2]?.evidence || ""));
     check(`${tag}: details view offers Membership and Visit`, (await page.locator("[data-action=open-buy-membership]").count()) === 1 && (await page.locator("[data-action=open-create-visit]").count()) === 1);
 
     /* ---------------- Buy membership ---------------- */

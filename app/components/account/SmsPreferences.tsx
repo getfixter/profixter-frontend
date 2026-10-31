@@ -116,7 +116,8 @@ export function SmsPreferences() {
    * (source "account_settings", with this page's wording). Offers are texted
    * only after that. The staff record stays in the consent history.
    */
-  const needsConfirmation = state.marketingEnabled && state.marketingConsentSource === "admin_phone" && !state.phoneOptedOut;
+  const needsConfirmation =
+    state.marketingEnabled && ["admin_phone", "admin_written", "sms_confirm_link"].includes(state.marketingConsentSource || "") && !state.phoneOptedOut;
 
   return (
     <section id="texts" className="acct-card" aria-labelledby="acct-sms" data-testid="sms-preferences">
