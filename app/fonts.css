@@ -1,0 +1,67 @@
+/*
+ * Self-hosted fonts, part two (part one is app/site-fonts.ts).
+ *
+ * 1. The metric-matched fallbacks next/font/google generated, with the same
+ *    names and values production used, so text set before a font arrives
+ *    takes the same space and nothing shifts when it swaps in.
+ * 2. Each family's subsets chained back into its one variable, most specific
+ *    subset first: within a single CSS family the last @font-face wins an
+ *    overlapping code point, and Google lists latin last.
+ */
+
+@font-face {
+  font-family: "Geist Fallback";
+  src: local("Arial");
+  ascent-override: 95.94%;
+  descent-override: 28.16%;
+  line-gap-override: 0.00%;
+  size-adjust: 104.76%;
+}
+
+@font-face {
+  font-family: "Geist Mono Fallback";
+  src: local("Arial");
+  ascent-override: 74.67%;
+  descent-override: 21.92%;
+  line-gap-override: 0.00%;
+  size-adjust: 134.59%;
+}
+
+@font-face {
+  font-family: "Montserrat Fallback";
+  src: local("Arial");
+  ascent-override: 85.79%;
+  descent-override: 22.25%;
+  line-gap-override: 0.00%;
+  size-adjust: 112.83%;
+}
+
+@font-face {
+  font-family: "Cormorant Garamond Fallback";
+  src: local("Times New Roman");
+  ascent-override: 95.27%;
+  descent-override: 29.59%;
+  line-gap-override: 0.00%;
+  size-adjust: 96.98%;
+}
+
+@font-face {
+  font-family: "Cinzel Fallback";
+  src: local("Times New Roman");
+  ascent-override: 71.31%;
+  descent-override: 27.18%;
+  line-gap-override: 0.00%;
+  size-adjust: 136.86%;
+}
+
+:root {
+  --font-geist-sans: var(--font-geist-sans-latin), var(--font-geist-sans-latin-ext), var(--font-geist-sans-vietnamese), var(--font-geist-sans-cyrillic), var(--font-geist-sans-cyrillic-ext), "Geist Fallback";
+  --font-geist-mono: var(--font-geist-mono-latin), var(--font-geist-mono-latin-ext), var(--font-geist-mono-vietnamese), var(--font-geist-mono-symbols2), var(--font-geist-mono-cyrillic), var(--font-geist-mono-cyrillic-ext), "Geist Mono Fallback";
+  --font-montserrat: var(--font-montserrat-latin), var(--font-montserrat-latin-ext), var(--font-montserrat-vietnamese), var(--font-montserrat-cyrillic), var(--font-montserrat-cyrillic-ext), "Montserrat Fallback";
+  --font-gift-display: var(--font-gift-display-latin), var(--font-gift-display-latin-ext), var(--font-gift-display-vietnamese), var(--font-gift-display-cyrillic), var(--font-gift-display-cyrillic-ext), "Cormorant Garamond Fallback";
+}
+
+/* Admin office only (app/components/admin/office/knight-font.ts). */
+.pf-font-knight {
+  --font-knight: var(--font-knight-latin), var(--font-knight-latin-ext), "Cinzel Fallback";
+}

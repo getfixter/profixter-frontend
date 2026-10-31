@@ -19,7 +19,6 @@
  */
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { Cinzel } from "next/font/google";
 import { useAuth } from "@/lib/useAuth";
 import { isAdminUser } from "@/lib/auth-routing";
 import { getCouncil, getOffice, type OfficeState, type RobotKey } from "@/lib/office";
@@ -27,11 +26,10 @@ import type { CameraApi, CouncilView, SceneTarget } from "./OfficeScene";
 import { CouncilPanel, ReportCopy, type CouncilTab } from "./CouncilPanel";
 import { RequestsPanel, ResultsPanel, RobotPanel, ago, type RobotTab } from "./OfficePanels";
 import { CopyButton, ToastProvider } from "./Talk";
+/** The order's lettering: a classic engraved serif for titles only. */
+import { knightFontVariables } from "./knight-font";
 import { ARTHUR_LOOK, ROBOT_LOOKS, ROBOT_ORDER, STATUS_LIGHT } from "./office-layout";
 import styles from "./office.module.css";
-
-/** The order's lettering: a classic engraved serif for titles only. */
-const knightFont = Cinzel({ subsets: ["latin"], weight: ["700"], variable: "--font-knight", display: "swap" });
 
 const OfficeScene = dynamic(() => import("./OfficeScene"), { ssr: false, loading: () => null });
 
@@ -303,7 +301,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
   return (
     <div
       ref={stage}
-      className={`${styles.stage} ${knightFont.variable} ${night ? styles.stageNight : ""} ${full ? styles.fullscreen : ""}`}
+      className={`${styles.stage} ${knightFontVariables} ${night ? styles.stageNight : ""} ${full ? styles.fullscreen : ""}`}
       style={full && typeof document !== "undefined" && !document.fullscreenElement ? { position: "fixed", inset: 0, zIndex: 1000 } : undefined}
     >
       {office && gl ? (
