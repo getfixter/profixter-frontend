@@ -141,6 +141,8 @@ export default function HandymanBooker() {
   const selectedHome = homes.find((h) => h._id === draft.addressId) || null;
   const isMemberHome = Boolean(selectedHome?.hasActiveSubscription);
   const earliestMember = addDays(todayNY(), MEMBER_LEAD_DAYS);
+  // A member home books only its included visit, so it only sees times that visit can take.
+  const memberCalendar = memberLead || isMemberHome;
 
   /* Where to start once we know who they are. */
   useEffect(() => {
@@ -158,12 +160,20 @@ export default function HandymanBooker() {
     if (canceled === "membership") setBanner({ tone: "warn", text: "Membership checkout canceled. Nothing was charged." });
     const hasJob = words(draft.task) >= 3 && (draft.addressId || draft.address);
     const hasTime = Boolean(draft.date && draft.time);
-    if (user && hasJob && hasTime) setStep(4);
+    // A member home books its included visit, which the time picked before
+    // signing in may be too soon for: say so now, not after a press.
+    const tooSoonForMember = Boolean(user && isMemberHome && hasTime && draft.date < earliestMember && resume !== "membership");
+    if (tooSoonForMember) {
+      dropHold();
+      update({ time: "" });
+      setBanner({ tone: "info", text: "Member visits are booked at least 7 days ahead. Pick a later time." });
+      setStep(2);
+    } else if (user && hasJob && hasTime) setStep(4);
     else if (hasJob) setStep(hasTime ? 3 : 2);
     // Back from signing in: keep holding their time (extends it, or holds it
     // afresh if it lapsed). Not after a checkout - their own pending booking
     // still has the time until Stripe lets it go.
-    if (hasJob && hasTime && !canceled && !resume && !draft.pendingBookingId) {
+    if (hasJob && hasTime && !tooSoonForMember && !canceled && !resume && !draft.pendingBookingId) {
       void holdTime(draft.date, draft.time, draft.holdToken);
     }
     if (resume === "membership" && user) {
@@ -230,7 +240,7 @@ export default function HandymanBooker() {
       setErrors({ when: "Pick a day and a time." });
       return;
     }
-    if (memberLead && draft.date < earliestMember) {
+    if (memberCalendar && draft.date < earliestMember) {
       setErrors({ when: "Member visits are booked at least 7 days ahead. Pick a later day." });
       return;
     }
@@ -478,8 +488,8 @@ export default function HandymanBooker() {
 
       {step === 2 && (
         <section className="bk-card" data-error={errors.when ? "1" : undefined}>
-          {memberLead && <p className="bk-note" style={{ marginBottom: 10 }}>Member visits start 7 days out.</p>}
-          <SlotPicker date={draft.date} time={draft.time} onChange={(w) => update({ date: w.date, time: w.time })} visit={memberLead ? "membership" : undefined} held={heldSlot} />
+          {memberCalendar && <p className="bk-note" style={{ marginBottom: 10 }}>Member visits start 7 days out.</p>}
+          <SlotPicker date={draft.date} time={draft.time} onChange={(w) => update({ date: w.date, time: w.time })} visit={memberCalendar ? "membership" : undefined} held={heldSlot} />
           {err("when")}
           <div className="bk-actions">
             <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={goStep3} disabled={busy} data-action="to-step-3">{busy ? "Holding your time…" : "Continue"}</button>

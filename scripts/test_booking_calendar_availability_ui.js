@@ -50,7 +50,14 @@ includes(source, "getMonthKey(currentMonthRef.current) !== requestedMonth", "sta
 includes(source, "loadingMonthKey === visibleMonthKey", "visible dates should remain disabled while their month loads");
 includes(source, "data-selected-date={ymdSelected}", "browser tests should be able to assert selected date without CSS scraping");
 includes(source, "const [availabilityError, setAvailabilityError] = useState(\"\");", "availability errors should not reuse the global form error banner");
-includes(source, "availabilityCanSubmit", "booking submit state should require availability readiness");
+// Renamed from availabilityCanSubmit in 8be77dc; the readiness rule itself is unchanged.
+includes(source, "const bookingActionDisabled =", "booking submit state should require availability readiness");
+includes(
+  source.replace(/\s+/g, " "),
+  "const bookingActionDisabled = loading || checkingAccess || calendarMode === \"initializing\" || showAvailabilityLoadError ||",
+  "booking submit should wait for availability and stop on availability errors"
+);
+includes(source, "disabled={bookingActionDisabled}", "the booking button should use the availability-aware disabled state");
 includes(source, "? \"Availability Unavailable\"", "booking button should communicate availability error state");
 includes(controller, "const parsed = new Date(year, (month || 1) - 1, day || 1);", "date keys should be parsed as local calendar dates");
 includes(controller, "const year = date.getFullYear();", "date keys should be formatted from local calendar parts");

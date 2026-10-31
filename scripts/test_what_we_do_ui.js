@@ -363,13 +363,18 @@ async function sample(handle, ms) {
       const scrollAfter = await track.evaluate((el) => el.scrollLeft);
       check(`${tag}: a swipe elsewhere on the picture does not move the divider`, (await valueOf(handle)) === held, `${held} -> ${await valueOf(handle)}`);
       check(`${tag}: ...and scrolls the carousel instead`, scrollAfter > scrollBefore + 20, `${scrollBefore} -> ${scrollAfter}`);
-      await wait(1200); // let the swipe's momentum and the snap finish
-      const snapped = await track.evaluate((el) => {
-        const kids = Array.from(el.children);
-        const max = el.scrollWidth - el.clientWidth;
-        return Math.abs(el.scrollLeft - max) < 2 || kids.some((k) => Math.abs(k.offsetLeft - kids[0].offsetLeft - el.scrollLeft) < 3);
-      });
-      check(`${tag}: the carousel settles on a card (snap)`, snapped);
+      // Let the swipe's momentum and the snap finish: poll rather than guess how long that takes.
+      let snapped = false;
+      let at = 0;
+      for (let i = 0; i < 20 && !snapped; i += 1) {
+        await wait(200);
+        [snapped, at] = await track.evaluate((el) => {
+          const kids = Array.from(el.children);
+          const max = el.scrollWidth - el.clientWidth;
+          return [Math.abs(el.scrollLeft - max) < 2 || kids.some((k) => Math.abs(k.offsetLeft - kids[0].offsetLeft - el.scrollLeft) < 3), el.scrollLeft];
+        });
+      }
+      check(`${tag}: the carousel settles on a card (snap)`, snapped, `scrollLeft ${at}`);
       /* Deterministic too: left between two cards, it snaps to one. */
       const settled = await track.evaluate(async (el) => {
         const kids = Array.from(el.children);

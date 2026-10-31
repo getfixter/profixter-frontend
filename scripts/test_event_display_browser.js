@@ -21,7 +21,8 @@ const args = process.argv.slice(2);
 const BASE = args.find((a) => !a.startsWith("--")) || "http://localhost:3000";
 const SHOTS = (args.find((a) => a.startsWith("--shots=")) || "").slice(8) || null;
 const MINUTES = Number((args.find((a) => a.startsWith("--minutes=")) || "--minutes=30").slice(10));
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+// The API the build was made with (production builds use api.profixter.com); every call to it is answered here.
+const API = process.env.NEXT_PUBLIC_API_URL || "https://api.profixter.com";
 const IMG = `${API}/api/event-display/photos/`;
 
 let passed = 0;
@@ -493,20 +494,19 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       await context.close();
     }
 
-    section("Footer link");
+    // Site shell 3.0 (eb14b62) took the kiosk out of the footer: the About &
+    // Information page (/info) gathers the links that left it, the kiosk among them.
+    section("Kiosk link");
     {
-      const { context, page } = await open(browser, { token: null, photos, viewport: { width: 1280, height: 900 }, path: "/about", clock: false });
+      const { context, page } = await open(browser, { token: null, photos, viewport: { width: 1280, height: 900 }, path: "/info", clock: false });
       await page.waitForTimeout(3000);
       const footer = await page.evaluate(() =>
-        [...document.querySelectorAll("footer nav[aria-label='Footer company'] a")].map((a) => [a.textContent.trim(), a.getAttribute("href")])
+        [...document.querySelectorAll("footer nav[aria-label='Footer company'] a")].map((a) => a.getAttribute("href"))
       );
-      const last = footer[footer.length - 1] || [];
-      check("the footer's Company links end with 'Event Page' → /event", last[0] === "Event Page" && last[1] === "/event", JSON.stringify(last));
-      check("the other Company links are unchanged",
-        JSON.stringify(footer.slice(0, -1).map((l) => l[0])) ===
-          JSON.stringify(["About Us", "Community Partnerships", "Careers", "Privacy Policy", "Terms of Service", "Communication Consent", "SMS Consent"]),
-        JSON.stringify(footer.map((l) => l[0])));
-      await page.locator("footer a[href='/event']").click();
+      check("the footer leads to About & Information, not to the kiosk itself", footer.includes("/info") && !footer.includes("/event"), JSON.stringify(footer));
+      const link = page.locator("main a[href='/event']");
+      check("/info has one quiet link to the kiosk", (await link.count()) === 1 && /Event display/.test(await link.innerText()));
+      await link.click();
       await page.waitForURL(/\/event$/, { timeout: 15000 });
       await page.waitForTimeout(2000);
       const s = await snapshot(page);

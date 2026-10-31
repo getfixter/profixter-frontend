@@ -82,7 +82,8 @@ async function open(browser, width) {
   }, USER);
   await ctx.route(TRACKERS, (r) => r.abort());
   const sessions = [];
-  await ctx.route(/localhost:5001\//, (route) => {
+  // Both API hosts: a build made for production must never reach it from a test.
+  await ctx.route(/(localhost:5001|api\.profixter\.com)\//, (route) => {
     const req = route.request();
     const cors = {
       "access-control-allow-origin": "*",

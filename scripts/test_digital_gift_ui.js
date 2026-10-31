@@ -34,6 +34,9 @@ const service = read("lib", "gift-service.ts");
 const callout = read("app", "components", "gift", "GiftCallout.tsx");
 const architecture = read("lib", "site-architecture.ts");
 const homeMarketing = read("app", "components", "sections", "HomeMarketing.tsx");
+// Since 7d2fc15 both homepages show gifting as the first tile of the shared
+// "More from Profixter" row (HomeExtras), not as a GiftCallout card.
+const homePersonal = read("app", "components", "home", "HomePersonal.tsx");
 
 let passed = 0;
 const failures = [];
@@ -491,10 +494,11 @@ check("the homepage offers it to members and visitors alike", () => {
    * line (8353809: somebody comparing prices for their own house is not
    * shopping for a present), so it is not asserted here.
    */
-  has(homeMarketing, '<GiftCallout variant="card" audience="member" />', "members see the gift card");
+  has(homeMarketing, "<HomeExtras />", "members see the More from Profixter row");
+  has(homePersonal, 'key: "gift"', "the row offers gifting");
+  has(homePersonal, 'href: "/gift"', "and leads to /gift");
   const landing = read("app", "components", "home", "HomeLanding.tsx");
-  has(landing, 'href="/gift"', "visitors are offered gifting too");
-  has(landing, "Buying for someone else?");
+  has(landing, "<HomeExtras", "visitors get the same row");
 });
 
 /*
@@ -655,10 +659,11 @@ check("gift marketing comes from ONE component, not a copy per page", () => {
     ["book", bookPage],
     ["account overview", overview],
     ["about", aboutPage],
-    ["homepage", homeMarketing],
   ]) {
     has(source, "GiftCallout", `${name} should use the shared component`);
   }
+  // The homepage offers gifting through the shared HomeExtras row, never a hand-rolled block.
+  lacks(codeOnly(homeMarketing), "gift-heading", "the homepage must not hand-roll a gift block");
   // /membership and /membership/plans dropped their gift blocks on purpose
   // (8353809); if one comes back it must be the shared component.
   for (const [name, source] of [
@@ -716,18 +721,19 @@ check("gifting is discoverable high on the homepage", () => {
   // It used to be the last thing on the page, which is why nobody found it.
   // On the member homepage it sits straight under the shortcuts, ahead of
   // the gallery and everything else.
-  const giftAt = homeMarketing.indexOf('aria-label="Give a membership"');
+  const giftAt = homeMarketing.indexOf("<HomeExtras />");
   // The gallery is the What We Do section now (before/after pairs).
   const workAt = homeMarketing.indexOf('<WhatWeDo variant="home"');
   assert.ok(giftAt > 0, "the homepage must promote gifting");
   assert.ok(workAt > 0, "the What We Do gallery should still be there");
   assert.ok(giftAt < workAt, "gifting should come before the rest of the page");
+  assert.ok(homePersonal.indexOf('key: "gift"') < homePersonal.indexOf('key: "kitchen-bath"'), "gift is the first tile of the row");
 });
 
 check("the homepage does not promote gifting twice", () => {
   // Two near-identical gift sections on one page is the clutter this was
   // meant to fix; the evergreen popup covers the second touch.
-  const occurrences = homeMarketing.split("<GiftCallout").length - 1;
+  const occurrences = homeMarketing.split("<GiftCallout").length - 1 + (homeMarketing.split("<HomeExtras").length - 1);
   assert.equal(occurrences, 1, `expected one gift block on the homepage, found ${occurrences}`);
 });
 

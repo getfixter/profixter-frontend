@@ -53,7 +53,8 @@ const MEMBER = { _id: "m1", name: "Dana", email: "dana@example.com", phone: "+16
 async function open(browser, width, height, path = "/signup", { me = CUSTOMER, created = true } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, isMobile: width < 700, hasTouch: width < 700 });
   let signedIn = false;
-  await ctx.route(/localhost:5001\//, (route) => {
+  // Both API hosts: a build made for production must never reach it from a test.
+  await ctx.route(/(localhost:5001|api\.profixter\.com)\//, (route) => {
     const req = route.request();
     const p = new URL(req.url()).pathname;
     const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "GET,POST,PUT,PATCH,OPTIONS" };
@@ -226,7 +227,8 @@ async function layout(page, primary) {
     // The free first visit, said once, quietly, on the sign-up screen only.
     const { ctx, page } = await open(browser, 390, 844);
     const t = await page.evaluate(() => document.body.innerText);
-    check("sign up states the free first visit once", (t.match(/First visit free/g) || []).length === 1, "");
+    // Customer Experience 4.0 (d8e15b9): the Free Visit is a to-do-list visit, so the line no longer says "First visit free".
+    check("sign up mentions the free visit once", (t.match(/Free visit available/g) || []).length === 1 && !/First visit free/.test(t), "");
     await ctx.close();
   }
 

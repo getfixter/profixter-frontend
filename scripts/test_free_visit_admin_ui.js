@@ -308,6 +308,10 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `$
   {
     const { ctx, page } = await open(browser, { width: 1280, height: 900 });
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".react-calendar", { timeout: 15000 }).catch(() => {});
+    // The fixtures sit five days out, which is next month near a month's end.
+    const thisMonth = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }).slice(0, 7);
+    if (DAY.slice(0, 7) !== thisMonth) await page.locator(".react-calendar__navigation__next-button").click();
     await page.waitForSelector(".bk-cal-dot", { timeout: 15000 }).catch(() => {});
     check("the calendar marks the day holding a pending request", (await page.locator(".bk-cal-dot--pending").count()) >= 1);
     await ctx.close();
