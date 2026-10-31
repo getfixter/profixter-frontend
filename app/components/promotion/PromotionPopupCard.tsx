@@ -27,59 +27,73 @@ export default function PromotionPopupCard({
     ? { href: undefined, onClick: (event: React.MouseEvent) => event.preventDefault() }
     : { href: popup.ctaUrl, onClick: onAction };
 
+  /*
+   * Drawn from the Website 3.0 tokens (ui.css) so the card reads like the rest
+   * of the site: navy ink, hairlines, Geist, one navy primary action.
+   *
+   * Touch targets are sized against the site zoom (site-scale.css draws the
+   * customer site at 0.82-0.88), so every control still lands at 44px or more
+   * on screen. The admin preview has no zoom and falls back to a plain 44px.
+   * The card sets its own font so that preview really is exact, rather than
+   * inheriting the admin's typeface. The title and code sizes are in rem so
+   * the legacy phone map (mobile-scale.css), which keys on px class names,
+   * leaves them alone.
+   */
+  const target = "min-h-[calc(44px/var(--site-zoom,1))]";
+
   return (
-    <div className="relative w-full max-w-[460px] overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.24)]">
-      <div className="h-1.5 bg-gradient-to-r from-[#306EEC] via-[#5B8EF3] to-[#D4A574]" />
-      <div className="p-4 sm:p-5">
+    <div className="relative w-full max-w-[460px] overflow-hidden rounded-[var(--ui-r-lg)] border border-[color:var(--ui-line)] bg-white font-[family-name:var(--ui-font)] text-[color:var(--ui-text)] shadow-[var(--ui-shadow-3)]">
+      <div className="p-5 sm:p-6">
         {onClose ? (
           <button
             type="button"
             onClick={onClose}
             aria-label="Close promotion"
-            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+            className="absolute right-2 top-2 flex size-[calc(44px/var(--site-zoom,1))] items-center justify-center rounded-full text-[color:var(--ui-text-3)] transition-colors hover:bg-[color:var(--ui-bg-soft)] hover:text-[color:var(--ui-ink)] sm:right-3 sm:top-3"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
             </svg>
           </button>
         ) : null}
 
         {popup.eyebrow ? (
-          <div className="pr-10 text-[10px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
+          <div className="ui-eyebrow ui-eyebrow--accent pr-11">
             {popup.eyebrow}
           </div>
         ) : null}
-        <h2 id="promotion-popup-title" className="mt-1.5 pr-8 text-[19px] font-black leading-[1.15] tracking-[-0.02em] text-[#0B1628] sm:text-[21px]">
+        <h2 id="promotion-popup-title" className="mt-1 pr-11 text-[1.375rem] font-semibold leading-[1.2] tracking-[-0.018em] text-[color:var(--ui-ink)] sm:text-[1.5rem]">
           {popup.title || "Your promotion title"}
         </h2>
-        <p className="mt-2 whitespace-pre-line text-[13.5px] leading-snug text-slate-600 sm:text-[14px]">
+        <p className="mt-2 whitespace-pre-line text-[length:var(--ui-fs-body)] leading-[1.55] text-[color:var(--ui-text-2)]">
           {popup.message || "Add a short, helpful message for visitors."}
         </p>
 
         {popup.promoCode ? (
-          <div className="mt-3 flex items-center justify-between gap-3 rounded-[8px] border border-dashed border-[#9DBAF7] bg-[#F4F7FF] px-3 py-2">
-            <div>
-              <div className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] py-1.5 pl-4 pr-1.5">
+            <div className="min-w-0">
+              <div className="text-[length:var(--ui-fs-small)] leading-[1.3] text-[color:var(--ui-text-3)]">
                 Promo code
               </div>
-              <div className="mt-0.5 font-mono text-[15px] font-black tracking-[0.08em] text-[#1D4ED8]">
+              <div className="font-mono text-[1.125rem] font-semibold leading-[1.3] tracking-[0.08em] break-all text-[color:var(--ui-ink)]">
                 {popup.promoCode}
               </div>
             </div>
             <button
               type="button"
               onClick={copyCode}
-              className="h-8 rounded-[6px] border border-[#C7D7F8] bg-white px-3 text-[12px] font-extrabold text-[#1D4ED8] transition hover:bg-[#EEF4FF]"
+              className={`ui-btn ui-btn--secondary ${target} min-w-[calc(64px/var(--site-zoom,1))] shrink-0 rounded-[8px] px-4`}
             >
               {copied ? "Copied" : "Copy"}
             </button>
           </div>
         ) : null}
 
-        <div className="mt-3 flex flex-row gap-2">
+        {/* Side by side when both labels fit; each takes the full width when they do not. */}
+        <div className="mt-5 flex flex-wrap gap-2">
           <a
             {...actionProps}
-            className="inline-flex min-h-10 flex-1 items-center justify-center rounded-[8px] bg-[#306EEC] px-3 text-center text-[13.5px] font-extrabold text-white transition hover:bg-[#2558C9]"
+            className={`ui-btn ui-btn--primary ${target} flex-[1_1_auto] whitespace-normal px-4 py-2 text-center leading-[1.2]`}
           >
             {popup.ctaText || "Primary action"}
           </a>
@@ -91,7 +105,7 @@ export default function PromotionPopupCard({
                   ? (event) => event.preventDefault()
                   : onAction
               }
-              className="inline-flex min-h-10 flex-1 items-center justify-center rounded-[8px] border border-slate-300 bg-white px-3 text-center text-[13.5px] font-extrabold text-slate-700 transition hover:bg-slate-50"
+              className={`ui-btn ui-btn--secondary ${target} flex-[1_1_auto] whitespace-normal px-4 py-2 text-center leading-[1.2]`}
             >
               {popup.secondaryText}
             </a>

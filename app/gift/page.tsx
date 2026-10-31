@@ -3,6 +3,7 @@ import Link from "next/link";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import GiftPurchaseClient from "./GiftPurchaseClient";
+import "./gift.css";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME } from "@/lib/seo";
 import { STANDARD_VISIT_MINUTES } from "@/lib/business";
 
@@ -127,14 +128,25 @@ export default async function GiftPage() {
             </ul>
 
             {plans.length ? (
-              <div className="ui-card relative mt-8 overflow-x-auto p-0">
-                <table className="w-full border-collapse text-left text-[15px]">
+              /*
+                Six columns do not fit the narrowest phones. The plan column
+                stays put while the prices scroll, and a soft edge on the right
+                shows there is more to see (gift.css, .gf-prices). The region
+                is labelled and focusable so the keyboard can scroll it too.
+              */
+              <div
+                className="gf-prices ui-card relative mt-8 overflow-x-auto p-0"
+                role="region"
+                aria-label="Gift membership prices by plan and length"
+                tabIndex={0}
+              >
+                <table className="w-full border-collapse whitespace-nowrap text-left text-[15px]">
                   <caption className="sr-only">Gift membership prices by plan and length</caption>
                   <thead>
                     <tr className="border-b border-[color:var(--ui-line)] text-[13px] text-[color:var(--ui-text-3)]">
-                      <th scope="col" className="px-4 py-3 font-semibold">Plan</th>
+                      <th scope="col" className="py-3 pl-4 pr-3 font-semibold sm:px-4">Plan</th>
                       {(durations || []).map((months) => (
-                        <th key={months} scope="col" className="px-4 py-3 text-right font-semibold">
+                        <th key={months} scope="col" className="px-2.5 py-3 text-right font-semibold sm:px-4">
                           {months} mo
                         </th>
                       ))}
@@ -143,11 +155,11 @@ export default async function GiftPage() {
                   <tbody>
                     {plans.map((plan) => (
                       <tr key={plan.plan} className="border-b border-[color:var(--ui-line)] last:border-b-0">
-                        <th scope="row" className="px-4 py-3 font-semibold text-[color:var(--ui-ink)]">{plan.label}</th>
+                        <th scope="row" className="py-3 pl-4 pr-3 font-semibold text-[color:var(--ui-ink)] sm:px-4">{plan.label}</th>
                         {(durations || []).map((months) => {
                           const quote = plan.quotes.find((q) => q.durationMonths === months);
                           return (
-                            <td key={months} className="ui-num px-4 py-3 text-right text-[color:var(--ui-ink)]">
+                            <td key={months} className="ui-num px-2.5 py-3 text-right text-[color:var(--ui-ink)] sm:px-4">
                               {quote ? dollars(quote.totalCents) : "—"}
                             </td>
                           );
