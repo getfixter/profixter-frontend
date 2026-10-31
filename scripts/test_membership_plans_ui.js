@@ -561,6 +561,8 @@ const asRegistered = (complete = true) => async (ctx) => {
     const prices = await page.locator("[data-halloween-prices]").innerText();
     check("halloween: every plan priced, monthly and annual, from the live prices", /\$149\s*\$119\.20/.test(prices) && /\$499\s*\$399\.20/.test(prices) && /\$1,490\s*\$1,192/.test(prices) && /\$4,990\s*\$3,992/.test(prices), prices.replace(/\s+/g, " "));
     check("halloween: signed out, an existing customer can sign in", (await page.getAttribute("[data-action='signin-halloween']", "href")) === "/signin?next=%2Fmembership%2Fplans%3Foffer%3Dhalloween");
+    await page.waitForTimeout(4000); // the gift popup's own delay, so its absence is real
+    check("halloween: no gift popup on top of the campaign page", (await page.locator("#promotion-popup-title").count()) === 0, "");
     check("halloween: the page is kept out of search", (await page.locator('meta[name="robots"]').getAttribute("content").catch(() => "")).includes("noindex"), "");
     await page.click("[data-action='claim-halloween']");
     await page.waitForURL(/\/membership\/plans\?offer=halloween/, { timeout: 15000 });

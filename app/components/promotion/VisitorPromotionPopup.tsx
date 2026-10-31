@@ -75,6 +75,8 @@ function targetMatches(popup: PromotionPopup, pathname: string) {
   if (pathname.startsWith("/membership")) return false;
   /* Book holds the plan picker and every booking flow - the same rule applies. */
   if (pathname === "/book" || pathname.startsWith("/book/")) return false;
+  /* A campaign landing page (Halloween 2026) is itself an offer: never a second one on top. */
+  if (pathname.startsWith("/halloween")) return false;
   return popup.target === "all_public";
 }
 
