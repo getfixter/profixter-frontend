@@ -72,6 +72,51 @@
   zoom: var(--site-zoom);
 }
 
+/* ---------------------------------------------------------------- */
+/* Tablet and desktop size (2026-11-01)                               */
+/*                                                                    */
+/* The owner, on a desktop monitor: "the entire website appears       */
+/* extremely small, with too much unused space on both sides". The    */
+/* phone factor above stays exactly as it is; from 640px up the zoom  */
+/* now GROWS with the screen instead of shrinking the page, and the   */
+/* container widens, so a 1920 monitor gets ~1550px of content at     */
+/* ~20px body text instead of ~1040px at 14px. The steps stop at      */
+/* 2400px: an ultrawide gets a larger page, centred, not one stretched */
+/* edge to edge.                                                      */
+/*                                                                    */
+/* EVERY rule here is inside a min-width: 640px query, so nothing     */
+/* below it - every phone - can change.                               */
+/* ---------------------------------------------------------------- */
+@media (min-width: 640px) {
+  :root[data-surface="site"] { --site-zoom: 0.94; }
+}
+@media (min-width: 768px) {
+  :root[data-surface="site"] { --site-zoom: 1; }
+}
+/* Desktop headings get their full ramp back (the zoom then scales them with the page). */
+@media (min-width: 1024px) {
+  :root[data-surface="site"] {
+    --ui-fs-display: clamp(40px, calc(1.6vw + 24px), 56px);
+    --ui-fs-h2: clamp(28px, calc(0.8vw + 20px), 36px);
+  }
+}
+@media (min-width: 1280px) {
+  :root[data-surface="site"] { --site-zoom: 1.05; --ui-container: 1240px; }
+}
+@media (min-width: 1440px) {
+  :root[data-surface="site"] { --site-zoom: 1.1; }
+}
+@media (min-width: 1680px) {
+  :root[data-surface="site"] { --site-zoom: 1.18; }
+}
+@media (min-width: 1920px) {
+  :root[data-surface="site"] { --site-zoom: 1.25; }
+}
+@media (min-width: 2400px) {
+  :root[data-surface="site"] { --site-zoom: 1.4; }
+}
+
+
 /* Full-height wrappers stay full height under the zoom. */
 :root[data-surface="site"] :is(.min-h-screen, .min-h-dvh) {
   min-height: calc(100dvh / var(--site-zoom));

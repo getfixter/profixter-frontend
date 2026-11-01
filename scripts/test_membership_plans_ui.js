@@ -410,7 +410,8 @@ const asRegistered = (complete = true) => async (ctx) => {
     check(`${w}px: still exactly one box`, d.boxes === 1, `${d.boxes}`);
     check(`${w}px: still one CTA, not four`, d.ctas === 1, `${d.ctas}`);
     check(`${w}px: still four tabs`, d.tabs === 4, `${d.tabs}`);
-    check(`${w}px: the box stays focused, not full-bleed`, d.width <= 640, `${d.width}`);
+    // Desktop zoom grows with the screen (app/site-scale.css), so "focused" is a share of it, not a fixed pixel cap.
+    check(`${w}px: the box stays focused, not full-bleed`, d.width <= Math.max(640, w * 0.4), `${d.width}`);
     await ctx.close();
   }
 
