@@ -87,7 +87,7 @@ function CredentialsCard() {
         <div className="mt-7 h-px w-full bg-white/10" />
 
         <ul className="mt-6 space-y-3">
-          <CheckItem light>Licensed Home Improvement Contractor</CheckItem>
+          <CheckItem light>Suffolk County licensed home improvement contractor</CheckItem>
           <CheckItem light>Fully insured</CheckItem>
           <CheckItem light>Nearly 10 years in construction</CheckItem>
           <CheckItem light>Founder-led and locally accountable</CheckItem>

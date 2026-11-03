@@ -21,11 +21,11 @@ const ROOFING_CONFIG = {
   cta: "Get Free Roofing Estimate",
   image: "/images/projects/p1.jpg",
   alt: "Completed roofing project on Long Island home",
-  trustBadges: ["Licensed HI-71484", "Fully Insured", "Long Island Local", "50-Year Warranty", "Financing Available"],
+  trustBadges: ["Suffolk County Licensed HI-71484", "Fully Insured", "Long Island Local", "50-Year Warranty", "Financing Available"],
   benefits: [
     { title: "Built for Long Island Weather", body: "Roofing systems selected for harsh winters, summer storms, and coastal conditions unique to Long Island." },
     { title: "50-Year Warranty Available", body: "Premium manufacturer warranty coverage reviewed and explained clearly before any work begins - no surprises." },
-    { title: "Licensed & Fully Insured", body: "Licensed HI-71484. Every job is fully insured, protecting you and your home throughout the project." },
+    { title: "Licensed & Fully Insured", body: "Suffolk County home improvement license HI-71484. Every job is fully insured, protecting you and your home throughout the project." },
     { title: "Clear Process, No Surprises", body: "Estimate, materials, timeline, and cost are all reviewed together before work begins. You decide, then we build." },
     { title: "Financing Available", body: "Qualified homeowners can finance their roof replacement. No need to delay protecting your home." },
     { title: "Local Long Island Team", body: "We work exclusively on Long Island. This is our neighborhood - we're accountable to this community." },
@@ -42,7 +42,7 @@ const ROOFING_CONFIG = {
   faq: [
     { q: "Is the estimate free?", a: "Yes. We review your project and follow up with the right next step for an on-site estimate. No cost, no commitment." },
     { q: "Do you offer financing?", a: "Yes. Financing options are available for qualified homeowners. We'll walk you through options during the estimate process." },
-    { q: "Are you licensed and insured?", a: "Yes. Profixter / Premium Island Construction is licensed HI-71484 and fully insured for all exterior project work on Long Island." },
+    { q: "Are you licensed and insured?", a: "Yes. Profixter / Premium Island Construction holds Suffolk County home improvement license HI-71484 and is fully insured for all exterior project work on Long Island." },
     { q: "How long does a roof replacement take?", a: "Most residential roof replacements on Long Island take 1–2 days depending on the size and complexity of the project." },
     { q: "What roofing materials do you work with?", a: "We work with asphalt shingles, architectural shingles, and premium systems with extended warranty options. We'll recommend what makes sense for your home and budget." },
     { q: "Do you work with insurance claims?", a: "Yes. We can review storm-related damage and help you understand what your options are if an insurance claim may be appropriate." },
@@ -57,11 +57,11 @@ const SIDING_CONFIG = {
   cta: "Get Free Siding Estimate",
   image: "/images/hero-bg.webp",
   alt: "Long Island home with premium siding",
-  trustBadges: ["Licensed HI-71484", "Fully Insured", "Long Island Local", "Warranty-Backed", "Financing Available"],
+  trustBadges: ["Suffolk County Licensed HI-71484", "Fully Insured", "Long Island Local", "Warranty-Backed", "Financing Available"],
   benefits: [
     { title: "Cleaner Exterior, Less Maintenance", body: "Modern siding systems resist weathering, moisture, and discoloration - so your home stays sharp with less ongoing effort." },
     { title: "Built for Long Island Weather", body: "Siding selected for Long Island's coastal humidity, temperature swings, and seasonal storm exposure." },
-    { title: "Licensed & Fully Insured", body: "Licensed HI-71484. All siding work is fully insured for your protection." },
+    { title: "Licensed & Fully Insured", body: "Suffolk County home improvement license HI-71484. All siding work is fully insured for your protection." },
     { title: "Stronger Structural Protection", body: "New siding adds a moisture barrier and insulation layer that protects the bones of your home - not just the surface." },
     { title: "Financing Available", body: "Qualified homeowners can finance exterior siding projects. Protect your home without putting it on hold." },
     { title: "Local Long Island Team", body: "We work exclusively on Long Island. No revolving crew. A team you can actually reach." },
@@ -80,7 +80,7 @@ const SIDING_CONFIG = {
     { q: "Is financing available?", a: "Yes. Financing options are available for qualified homeowners. We'll walk through the options during your estimate." },
     { q: "How long does siding installation take?", a: "Most residential siding projects on Long Island take 2–5 days depending on the size of the home and scope of work." },
     { q: "What siding materials do you work with?", a: "We work with vinyl, fiber cement, and premium siding systems. We'll recommend what makes sense for your home, budget, and Long Island weather exposure." },
-    { q: "Are you licensed and insured?", a: "Yes. Profixter / Premium Island Construction is licensed HI-71484 and fully insured for all exterior work." },
+    { q: "Are you licensed and insured?", a: "Yes. Profixter / Premium Island Construction holds Suffolk County home improvement license HI-71484 and is fully insured for all exterior work." },
     { q: "Does new siding help with insulation?", a: "Yes. Many modern siding systems include foam backing that improves your home's insulation and can help lower energy costs." },
   ],
 };
@@ -229,7 +229,7 @@ export default function ExteriorLandingPage({ project }: Props) {
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
               {[
-                { icon: "🛡️", text: "Licensed HI-71484" },
+                { icon: "🛡️", text: "Suffolk County Licensed HI-71484" },
                 { icon: "✓", text: "Fully Insured" },
                 { icon: "📍", text: "Long Island Local · 9+ Years" },
                 { icon: "⭐", text: "4.9 Google Rating" },
@@ -474,7 +474,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                   {[
                     "Free estimate - no cost, no commitment",
                     "Financing available for qualified homeowners",
-                    "Licensed HI-71484 · Fully insured",
+                    "Suffolk County Licensed HI-71484 · Fully insured",
                     "Local Long Island team · 9+ years",
                     "4.9 Google Rating",
                   ].map((item) => (
@@ -529,7 +529,7 @@ export default function ExteriorLandingPage({ project }: Props) {
               </a>
             </div>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-semibold text-white/25">
-              <span>Licensed HI-71484</span>
+              <span>Suffolk County Licensed HI-71484</span>
               <span aria-hidden="true">·</span>
               <span>Fully Insured</span>
               <span aria-hidden="true">·</span>

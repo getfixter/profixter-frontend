@@ -224,7 +224,7 @@ export default function RemodelingPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-x-7 gap-y-3">
-                  {["Licensed HI-71484", "Fully Insured", "Permitted & Inspected", "Workmanship warranty", "Financing available"].map((label) => (
+                  {["Suffolk County Licensed HI-71484", "Fully Insured", "Permitted & Inspected", "Workmanship warranty", "Financing available"].map((label) => (
                     <div key={label} className="flex items-center gap-2">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M5 12.5l4 4 10-10" stroke="#7BAEFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -893,7 +893,7 @@ export default function RemodelingPage() {
                   accent: "#D4A574",
                 },
                 {
-                  headline: "NY Licensed. Fully Insured. Verifiable.",
+                  headline: "Suffolk County Licensed. Fully Insured. Verifiable.",
                   body: "HI-71484 is verifiable through Suffolk County Consumer Affairs online. Proof of insurance provided before any work begins. Permits pulled on every project.",
                   accent: "#16A34A",
                 },
@@ -1130,7 +1130,7 @@ export default function RemodelingPage() {
                   </blockquote>
 
                   <div className="flex flex-wrap gap-5">
-                    {["9+ Years Construction", "Licensed HI-71484", "Fully Insured", "Founder-Led"].map((t) => (
+                    {["9+ Years Construction", "Suffolk County Licensed HI-71484", "Fully Insured", "Founder-Led"].map((t) => (
                       <div key={t} className="flex items-center gap-1.5">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                           <path d="M5 12.5l4 4 10-10" stroke="#306EEC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -1240,7 +1240,7 @@ export default function RemodelingPage() {
               <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-8 border-t border-white/[0.07]">
                 {[
                   "Free consultation · No obligation",
-                  "Licensed HI-71484",
+                  "Suffolk County Licensed HI-71484",
                   "Fully Insured",
                   "Workmanship warranty",
                   "Financing available",

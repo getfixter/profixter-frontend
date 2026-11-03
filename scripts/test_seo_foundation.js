@@ -216,6 +216,8 @@ const toPath = (url) => url.replace(SITE, "") || "/";
     [/active booking|active appointment/i, "active booking"],
     [/NY State Licensed|New York State Dept|NYS Department of State|NY HIC/i, "license attributed to New York State"],
     [/licensed in (both )?Nassau/i, "licensed in Nassau"],
+    /* The number never stands alone or under a state name: it is a Suffolk County license. */
+    [/\bNY Licensed\b|(?<!County )\bLicensed (#\s*)?HI-71484/i, "license number without Suffolk County"],
     [/\b(first|only) handyman membership\b/i, "first/only claim"],
     /* Removed in the final accuracy pass: not public policy, or not verifiable. */
     [/at least a week|week ahead|week out/i, "lead-time policy"],

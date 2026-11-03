@@ -296,7 +296,7 @@ export default function July4Page() {
         <div className="mx-auto grid max-w-[1120px] grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             ["Local", "Babylon-based company"],
-            ["Protected", "Licensed HI-71484"],
+            ["Protected", "Suffolk County Licensed HI-71484"],
             ["Responsible", "Fully insured"],
             ["Flexible", "Month-to-month"],
           ].map(([title, text]) => (
@@ -520,7 +520,7 @@ export default function July4Page() {
               stand behind.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              {["Based in Babylon", "Licensed HI-71484", "Fully insured", "631-599-1363"].map((item) => (
+              {["Based in Babylon", "Suffolk County Licensed HI-71484", "Fully insured", "631-599-1363"].map((item) => (
                 <span
                   key={item}
                   className="rounded-[6px] border border-white/12 bg-white/[0.06] px-4 py-2 text-[11px] font-bold text-white/72 sm:text-[12px]"

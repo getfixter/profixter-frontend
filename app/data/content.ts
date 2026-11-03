@@ -197,7 +197,7 @@ export const faqs: Faq[] = [
     id: "10",
     question: "Are you Licensed and Insured?",
     answer:
-      "Yes we are fully Licensed and Insured, here is our Licensed #HI-71484.",
+      "Yes. We hold Suffolk County home improvement license HI-71484 and are fully insured.",
     color: "dark",
     size: "large",
     offset: -30,
