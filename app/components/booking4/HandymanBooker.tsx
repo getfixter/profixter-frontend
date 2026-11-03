@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import API from "@/lib/api";
+import { checkoutTracking } from "@/lib/meta";
 import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
 import { useAuth } from "@/lib/useAuth";
@@ -570,6 +571,7 @@ export default function HandymanBooker({
         returnTo: "handyman",
         welcomeOffer: Boolean(chosenOffer),
         firstVisit: { draftId: firstVisitDraftId, holdToken: draft.holdToken || "", requestedDate: draft.date, requestedTime: draft.time },
+        ...checkoutTracking(),
       });
       // An expired hold is renewed under a new token: keep the one that now holds the time.
       if (res.data?.holdToken) update({ holdToken: res.data.holdToken, holdFor: `${draft.date} ${draft.time}`, holdExpiresAt: res.data.holdExpiresAt || draft.holdExpiresAt });

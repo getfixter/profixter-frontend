@@ -2,12 +2,21 @@ import type { Metadata } from "next";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import FreeVisitForm from "@/app/components/booking4/FreeVisitForm";
+import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Book Your Free Visit | Profixter",
   description:
     "Let's take a look at your to-do list. Book a free visit on Long Island: we'll visit your home, go over your list and help you find the right Profixter service. No account needed.",
   alternates: { canonical: "/book/free" },
+  openGraph: {
+    title: "Book Your Free Visit | Profixter",
+    description:
+      "A free visit on Long Island to go over your to-do list and find the right Profixter service. No account needed.",
+    url: absoluteUrl("/book/free"),
+    type: "website",
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 /**

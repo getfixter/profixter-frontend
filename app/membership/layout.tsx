@@ -7,8 +7,15 @@ export const metadata: Metadata = {
   },
   description:
     "A monthly handyman membership for Long Island homeowners. Book small repairs, maintenance, and installations with one trusted Profixter team.",
+  /*
+   * /membership/plans is the page for "handyman membership" with the plans and
+   * prices; this one is a thinner overview nothing links to, and the two split
+   * the query (SEO audit 2026-11-03). The page stays for every email and ad link
+   * that uses it; search gets pointed at the plans. Both child routes set their
+   * own canonical, so this applies to /membership only.
+   */
   alternates: {
-    canonical: "/membership",
+    canonical: "/membership/plans",
   },
   openGraph: {
     title: "Profixter Membership | Home Maintenance on Long Island",

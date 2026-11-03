@@ -175,12 +175,21 @@ export default function ConfirmationClient() {
       try {
         const api = process.env.NEXT_PUBLIC_API_URL || "https://api.profixter.com";
 
-        const r = await fetch(
-          `${api}/api/track/last-purchase-by-session?session_id=${encodeURIComponent(sessionId)}`,
-          { cache: "no-store" }
-        );
-
-        const data = await r.json();
+        /*
+         * The webhook writes this record. Arriving before it did meant a 404,
+         * and the browser half of the Subscribe was simply never sent. Retry
+         * for about half a minute; never fire without the server's record
+         * (its event id and the amount actually charged).
+         */
+        let data: { ok?: boolean; currency?: string; value?: number; plan?: string; billingCycle?: string; eventId?: string } | null = null;
+        for (let attempt = 0; attempt < 8 && !data?.ok; attempt++) {
+          if (attempt) await new Promise((resolve) => setTimeout(resolve, 1500 + attempt * 500));
+          const r = await fetch(
+            `${api}/api/track/last-purchase-by-session?session_id=${encodeURIComponent(sessionId)}`,
+            { cache: "no-store" }
+          ).catch(() => null);
+          data = r?.ok ? await r.json().catch(() => null) : null;
+        }
         if (!data?.ok) throw new Error("no data");
 
         trackSubscribe(

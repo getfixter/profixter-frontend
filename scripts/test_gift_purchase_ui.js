@@ -224,8 +224,12 @@ const text = (page, sel) => page.locator(sel).first().innerText();
         occasion: "birthday",
         personalMessage: "Happy birthday!",
       };
+      // Plus the Meta browser ids and page for the server Purchase (2026-11-03), checked apart.
+      const { fbp, fbc, sourceUrl, ...giftFields } = sent || {};
       check("one checkout session, with the unchanged payload", sessions.length === 1 &&
-        JSON.stringify(sent) === JSON.stringify(expected), JSON.stringify(sent));
+        JSON.stringify(giftFields) === JSON.stringify(expected), JSON.stringify(sent));
+      check("the checkout carries the page it started on, without its query", /\/gift$/.test(String(sourceUrl || "")) &&
+        typeof fbp === "string" && typeof fbc === "string", JSON.stringify({ fbp, fbc, sourceUrl }));
 
       // The receipt with Stripe's own figures.
       await page.waitForSelector('[data-testid="gift-total-paid"]');

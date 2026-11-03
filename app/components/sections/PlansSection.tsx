@@ -5,6 +5,7 @@ import Link from "next/link";
 import { plans, type Plan } from "@/app/data/content";
 import { BENEFIT_ROWS, benefitIncluded, benefitLabel } from "@/app/data/plan-benefits";
 import API from "@/lib/api";
+import { checkoutTracking } from "@/lib/meta";
 import { useAuth } from "@/lib/useAuth";
 import { useAddHome } from "@/app/components/address/AddHomeSheet";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
@@ -447,6 +448,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           ...(promoCode ? { code: promoCode } : {}),
           // The price they were shown. The server re-checks and refuses rather than charge another.
           welcomeOffer: Boolean(welcomeFor(planName, cycle)),
+          ...checkoutTracking(),
         },
         {
           headers: {

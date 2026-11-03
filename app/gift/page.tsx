@@ -89,7 +89,7 @@ export default async function GiftPage() {
           <div className="ui-container">
             <header className="mb-8 max-w-[640px] sm:mb-10">
               <p className="ui-eyebrow ui-eyebrow--accent">Gift a membership</p>
-              <h1 className="ui-display mt-3">Give someone a ProFixter membership.</h1>
+              <h1 className="ui-display mt-3">Give someone a Profixter membership.</h1>
               <p className="ui-lede mt-3">
                 A professional handyman at their home. You pay once, they book the visits, and nothing renews.
               </p>
