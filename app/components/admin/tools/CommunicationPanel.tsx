@@ -27,6 +27,18 @@ import {
  * sent is recorded with its evidence.
  */
 
+/*
+ * Why an On marketing switch still sends nothing. The consent reasons
+ * (needs_confirmation, awaiting_registration) are left out: the line under the
+ * SMS switch already explains those, with what to do about them.
+ */
+const DELIVERY_LABEL: Record<string, string> = {
+  marketing_email_paused: 'Not sending: marketing email is paused for everyone',
+  texts_off: 'Not sending: texts are switched off for everyone',
+  marketing_texts_off: 'Not sending: offer texts are switched off for everyone',
+  phone_undeliverable: 'Not sending: the carrier says this number cannot receive texts',
+};
+
 const LOCK_LABEL: Record<string, string> = {
   no_phone: 'No phone',
   no_email: 'No email',
@@ -100,6 +112,7 @@ export default function CommunicationPanel({ userId, canEdit }: { userId: string
     const item = state?.[purpose]?.[channel];
     const key = `${purpose}.${channel}` as CommunicationKey;
     const locked = item?.locked && !item.enabled ? LOCK_LABEL[item.locked] || item.locked : '';
+    const notSending = item?.enabled && item.delivery && !item.delivery.sending ? DELIVERY_LABEL[item.delivery.reason || ''] || '' : '';
     /* Switching marketing SMS on asks how the customer agreed first. */
     const onChange = (next: boolean) =>
       key === 'marketing.sms' && next ? setForm({ method: 'phone_call', evidence: '' }) : toggle(key, next);
@@ -108,9 +121,10 @@ export default function CommunicationPanel({ userId, canEdit }: { userId: string
         <div className="min-w-0">
           <div className="text-sm font-semibold text-slate-800">{channel === 'email' ? 'Email' : 'SMS'}</div>
           {locked && <div className="text-[11px] font-semibold text-amber-700">{locked}</div>}
+          {notSending && <div className="text-[11px] font-semibold text-amber-700" data-comm-not-sending={key}>{notSending}</div>}
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-xs font-bold ${item?.enabled ? 'text-emerald-700' : 'text-slate-500'}`} data-comm-value={key}>
+          <span className={`text-xs font-bold ${item?.enabled ? (notSending ? 'text-amber-700' : 'text-emerald-700') : 'text-slate-500'}`} data-comm-value={key}>
             {item ? (item.enabled ? 'On' : 'Off') : '…'}
           </span>
           <Switch

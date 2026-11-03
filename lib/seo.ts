@@ -95,7 +95,7 @@ export const PUBLIC_SITEMAP_ROUTES: readonly SitemapRoute[] = [
   { path: "/membership/plans", changeFrequency: "weekly", priority: 0.98, updated: CONTENT_RELEASE_DATE },
   /* The category explainer and the canonical "how Profixter membership works". */
   { path: "/handyman-membership", changeFrequency: "monthly", priority: 0.96, updated: CONTENT_RELEASE_DATE },
-  { path: "/membership", changeFrequency: "weekly", priority: 0.9, updated: "2026-09-20" },
+  /* /membership is not listed: it canonicalises to /membership/plans (2026-11-03). */
   { path: "/book", changeFrequency: "weekly", priority: 0.94, updated: CONTENT_RELEASE_DATE },
   /*
    * The free first visit has its own booker and its own canonical, and was

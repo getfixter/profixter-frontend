@@ -4,7 +4,7 @@ import Footer from "@/app/components/sections/Footer";
 import Link from "next/link";
 import WhatWeDo from "@/app/components/whatwedo/WhatWeDo";
 import { getWhatWeDoPairs } from "@/lib/offers";
-import { SITE_URL } from "@/lib/seo";
+import { DEFAULT_OG_IMAGE, SITE_URL } from "@/lib/seo";
 import { COMPLETED_VISITS_ROUNDED, DATA_AS_OF, DATA_SINCE, MULTI_TASK_REQUEST_PHRASE, TASK_MIX } from "@/lib/profixter-data";
 
 export const metadata: Metadata = {
@@ -14,7 +14,8 @@ export const metadata: Metadata = {
    * browser tab, and every search result, read "... | Profixter | Profixter".
    * The Open Graph title below is not templated and keeps its own suffix.
    */
-  title: "What's Included",
+  // Says what the page is (before/after examples), which "What's Included" did not.
+  title: "Handyman Before & After Examples",
   /*
    * No longer "photographs of real jobs": the gallery is now before/after
    * pairs, many of them illustrative examples, and the description must not
@@ -24,11 +25,12 @@ export const metadata: Metadata = {
     "Small fixes, done right: outlets, light fixtures, caulking, faucets, doors, trim, drywall and more. See before-and-after examples of the everyday handyman jobs Profixter handles on Long Island.",
   alternates: { canonical: "https://www.profixter.com/recent-work" },
   openGraph: {
-    title: "What's Included | Profixter",
+    title: "Handyman Before & After Examples | Profixter",
     description:
       "Small fixes, done right: before-and-after examples of the everyday handyman jobs Profixter handles on Long Island.",
     url: "https://www.profixter.com/recent-work",
     type: "website",
+    images: [DEFAULT_OG_IMAGE],
   },
 };
 

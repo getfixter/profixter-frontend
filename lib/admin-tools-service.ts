@@ -72,7 +72,9 @@ export const resendCustomerAccess = async (userId: string) =>
  */
 export type SmsConsentStatus = "off" | "qualifies" | "needs_confirmation" | "awaiting_registration";
 export type SmsConsent = { status: SmsConsentStatus; basis: string; method: string; evidence: string; confirmRequestedAt: string | null };
-export type SwitchState = { enabled: boolean; locked: string | null; changedAt: string | null; source: string; consent?: SmsConsent };
+/** Marketing only: whether an On switch will actually reach the customer, and the first reason it will not. */
+export type MarketingDelivery = { sending: boolean; reason: string | null };
+export type SwitchState = { enabled: boolean; locked: string | null; changedAt: string | null; source: string; consent?: SmsConsent; delivery?: MarketingDelivery };
 export type ConsentMethod = "phone_call" | "customer_email" | "customer_text" | "signed_form";
 export type CommunicationState = {
   service: { email: SwitchState; sms: SwitchState };

@@ -85,6 +85,24 @@ function readCookie(name: string): string {
  * fbclid we captured at landing, in the exact format Meta specifies:
  * `fb.1.<timestamp-ms>.<fbclid>`.
  */
+/**
+ * What a checkout request sends so the server's conversion keeps the click.
+ *
+ * The API is another origin, so the _fbp/_fbc cookies never reach it; the
+ * Stripe webhook's Purchase/Subscribe had no browser ids at all. The page URL
+ * goes without its query string (it can carry tokens or ids).
+ */
+export function checkoutTracking(): { fbp: string; fbc: string; sourceUrl: string } {
+  if (typeof window === "undefined") return { fbp: "", fbc: "", sourceUrl: "" };
+  const { fbp, fbc } = getFbCookies();
+  return { fbp: fbp || "", fbc: fbc || "", sourceUrl: `${window.location.origin}${window.location.pathname}` };
+}
+
+/** The same, appended to a multipart body. */
+export function appendCheckoutTracking(form: FormData): void {
+  for (const [key, value] of Object.entries(checkoutTracking())) if (value) form.append(key, value);
+}
+
 export function getFbCookies(): { fbp: string; fbc: string } {
   const fbp = readCookie("_fbp");
   let fbc = readCookie("_fbc");

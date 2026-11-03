@@ -1,4 +1,5 @@
 import API from "./api";
+import { appendCheckoutTracking } from "./meta";
 
 export interface CalendarConfig {
   timezone: string;
@@ -367,6 +368,7 @@ export const createOneTimeVisitCheckout = async (
   if (data.holdToken) formData.append("holdToken", data.holdToken);
   if (data.returnTo) formData.append("returnTo", data.returnTo);
   data.images.forEach((img) => formData.append("images", img));
+  appendCheckoutTracking(formData);
 
   const token = localStorage.getItem("token") || "";
   const response = await fetch(
@@ -482,6 +484,7 @@ async function postFullDay<T>(path: string, data: FullDayBookingData): Promise<T
   formData.append("note", data.note);
   if (data.libraryReference) formData.append("libraryReference", data.libraryReference);
   data.images.forEach((image) => formData.append("images", image));
+  if (path.endsWith("/checkout")) appendCheckoutTracking(formData);
 
   const token = localStorage.getItem("token") || "";
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {

@@ -85,9 +85,13 @@ export default async function LocationPage({ params }: PageProps) {
         name: `${area.county}, NY`,
       },
     },
-    provider: {
-      "@id": `${SITE_URL}/#business`,
-      name: "Profixter",
+    // `provider` is not a WebPage property (a Rich Results warning): the
+    // service offered in this town carries it instead.
+    mainEntity: {
+      "@type": "Service",
+      serviceType: "Handyman services",
+      areaServed: { "@type": "Place", name: `${area.name}, NY` },
+      provider: { "@id": `${SITE_URL}/#business`, name: "Profixter" },
     },
   };
 

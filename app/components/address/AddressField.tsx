@@ -75,20 +75,50 @@ export default function AddressField({ value, onChange, onServiceArea, placehold
     [onServiceArea]
   );
 
+  /*
+   * Google Maps (~320 KB of script) loads when somebody starts on the address -
+   * first focus, touch or click in the field - or after the page has loaded and
+   * gone idle, not as the page mounts (2026-11-03). It held the main thread on phones during every homepage and
+   * booking-page load, for the many visitors who never reach this field.
+   * loadPlaces() is shared and idempotent, so warming it twice costs nothing.
+   */
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
+  const warmPlaces = useCallback(async () => {
+    if (!placesConfigured()) return false;
+    const ok = await loadPlaces();
+    if (!mounted.current) return ok;
+    if (!ok) {
+      setLookupDown(true);
+      setManual(true);
+    } else if (!sessionToken.current) {
+      sessionToken.current = beginSession();
+    }
+    return ok;
+  }, []);
+  /*
+   * And once the page has loaded and gone quiet, whichever comes first: Maps
+   * stays out of the load itself, and a phone where it cannot load at all
+   * (blocked, offline) still shows the manual address form without waiting
+   * for a tap that would only reveal it then.
+   */
   useEffect(() => {
     if (!placesConfigured()) return;
-    let cancelled = false;
-    loadPlaces().then((ok) => {
-      if (cancelled) return;
-      if (!ok) {
-        setLookupDown(true);
-        setManual(true);
-      } else {
-        sessionToken.current = beginSession();
-      }
-    });
-    return () => { cancelled = true; };
-  }, []);
+    let timer: number | undefined;
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    const later = () => {
+      timer = window.setTimeout(() => {
+        if (w.requestIdleCallback) w.requestIdleCallback(() => void warmPlaces(), { timeout: 3000 });
+        else void warmPlaces();
+      }, 3500);
+    };
+    if (document.readyState === "complete") later();
+    else window.addEventListener("load", later, { once: true });
+    return () => {
+      window.removeEventListener("load", later);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [warmPlaces]);
 
   // A click anywhere else is a dismissal, not a selection.
   useEffect(() => {
@@ -122,13 +152,14 @@ export default function AddressField({ value, onChange, onServiceArea, placehold
 
   const runSearch = useCallback((text: string) => {
     const seq = ++requestSeq.current;
-    fetchSuggestions(text, sessionToken.current).then((next) => {
+    // Normally loaded already by the first focus; typed before it finished, this waits for it.
+    warmPlaces().then((ok) => (ok ? fetchSuggestions(text, sessionToken.current) : [])).then((next) => {
       if (seq !== requestSeq.current) return;
       setSuggestions(next);
       setOpen(next.length > 0);
       setActive(-1);
     });
-  }, []);
+  }, [warmPlaces]);
 
   const handleType = (text: string) => {
     setQuery(text);
@@ -219,7 +250,7 @@ export default function AddressField({ value, onChange, onServiceArea, placehold
   const inputBase = "auth-input";
 
   return (
-    <div ref={boxRef} className="w-full">
+    <div ref={boxRef} className="w-full" onFocusCapture={warmPlaces} onPointerDownCapture={warmPlaces}>
       {!manual ? (
         <>
           <label htmlFor="pf-address" className="sr-only">Home address</label>

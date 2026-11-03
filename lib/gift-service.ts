@@ -1,4 +1,5 @@
 import API from "./api";
+import { checkoutTracking } from "./meta";
 
 /**
  * Gift memberships, from the browser's side.
@@ -239,7 +240,7 @@ export async function createGiftCheckoutSession(
   } & Partial<GiftPresentationInput>
 ): Promise<{ url: string; sessionId: string }> {
   try {
-    const { data } = await API.post("/api/gifts/checkout-session", input);
+    const { data } = await API.post("/api/gifts/checkout-session", { ...input, ...checkoutTracking() });
     return data;
   } catch (error) {
     throw toGiftError(error);
