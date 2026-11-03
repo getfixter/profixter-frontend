@@ -32,7 +32,7 @@ import ShareFinishedProject from "@/app/components/workPhotos/ShareFinishedProje
 import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
 import FullDayVisitPanel from "@/app/components/booking/FullDayVisitPanel";
 import PhotoLibraryPicker from "@/app/components/booking/PhotoLibraryPicker";
-import PlansSection from "@/app/components/sections/PlansSection";
+import HandymanBooker from "@/app/components/booking4/HandymanBooker";
 import { useFreeVisitEligibility } from "@/lib/free-visit";
 import MembershipUpgradePrompt, { normalizePlanKey } from "@/app/components/membership/MembershipUpgradePrompt";
 import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
@@ -1297,9 +1297,11 @@ function BookExperience() {
    */
   if (!isMember && visit === "membership") {
     /*
-     * Book Fixter is the membership tab for everybody, so a non-member chooses
-     * a plan right here - four short rows, confirm, checkout - instead of
-     * reading a pitch and being sent to another page to choose.
+     * Book Fixter is the membership tab for everybody. A non-member (new, or a
+     * former member) books first (2026-11-03): the job, the address, photos,
+     * a real time held for them, then the plan and Stripe - the same
+     * HandymanBooker as /book/handyman and the homepage, with the membership
+     * chosen. Their first visit may be sooner than the member seven days.
      *
      * Their visit history comes along: it is why this tab used to default to
      * One-Time for non-members (Account and the one-time confirmation link to
@@ -1315,8 +1317,10 @@ function BookExperience() {
         {nav}
         <h1 className="sr-only">{BOOK_HEADING}</h1>
         <section className="ui-container ui-container--narrow pb-12 pt-5 sm:pt-8">
-          <div className="pg-panel !p-4 sm:!p-6">
-            <PlansSection picker />
+          <div className="pg-panel !p-4 sm:!p-6" data-membership-booker>
+            <Suspense fallback={<div style={{ minHeight: 320 }} />}>
+              <HandymanBooker embedded intent="membership" />
+            </Suspense>
           </div>
           {showFreeVisit ? (
             <Link

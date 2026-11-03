@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { surfaceFor } from "@/lib/surface";
 import Sheet from "@/app/components/ui/Sheet";
 import CodeStep, { outcomeFromError, type CodeOutcome } from "./CodeStep";
 import { useAuth } from "@/lib/useAuth";
@@ -40,13 +42,16 @@ function ContactSheet({
   needs,
   onDone,
   onCancel,
+  required = false,
 }: {
   open: boolean;
   needs: { name: boolean; phone: boolean; email: boolean };
   onDone: () => void;
   onCancel: () => void;
+  /** Cannot be closed (PhoneRequiredGate); offers "Sign out" instead. */
+  required?: boolean;
 }) {
-  const { refreshUser, updateUser } = useAuth();
+  const { refreshUser, updateUser, logout } = useAuth();
   const [stage, setStage] = useState<Stage>(needs.name ? "name" : needs.phone ? "phone" : "email");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -173,7 +178,7 @@ function ContactSheet({
         : "Add your email";
 
   return (
-    <Sheet open={open} onClose={onCancel} title={title}>
+    <Sheet open={open} onClose={onCancel} title={title} dismissible={!required}>
       {stage === "name" ? (
         <form onSubmit={saveName} noValidate className="mt-2 space-y-3">
           <p className="text-[14.5px] text-[#5b6577]">So your Fixter knows who to ask for.</p>
@@ -294,6 +299,11 @@ function ContactSheet({
           changeLabel={stage === "phone-code" ? "Change number" : "Change email"}
         />
       ) : null}
+      {required ? (
+        <button type="button" className="auth-text-button mx-auto mt-3 block" onClick={logout} data-action="phone-required-sign-out">
+          Sign out
+        </button>
+      ) : null}
     </Sheet>
   );
 }
@@ -348,4 +358,29 @@ export function useContactCompletion(): {
   ) : null;
 
   return { ensureContact, contactSheet };
+}
+
+/**
+ * A new account's mobile number (2026-11-03). Every customer account made from
+ * today must verify one before it is set up; phone sign-ups already have, and
+ * email-code, Google and Apple sign-ups are asked here, the moment they land,
+ * on whatever page that is - so a booking they started stays exactly where it
+ * was under the sheet. The server decides who (user.phoneRequired, BackEnd
+ * routes/auth.js phoneRequiredFor): never an older account, staff, or a
+ * customer who already verified a number. It cannot be closed, only completed
+ * or signed out of. One mount, in the root layout.
+ */
+export function PhoneRequiredGate() {
+  const { user, isAuthenticated, refreshUser } = useAuth();
+  const pathname = usePathname() || "/";
+  if (!isAuthenticated || !user?.phoneRequired || surfaceFor(pathname) !== "site") return null;
+  return (
+    <ContactSheet
+      open
+      required
+      needs={{ name: false, phone: true, email: false }}
+      onDone={() => void refreshUser()}
+      onCancel={() => undefined}
+    />
+  );
 }

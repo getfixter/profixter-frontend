@@ -13,6 +13,8 @@ export interface Address {
 
   // Provided by backend /api/auth/me
   hasActiveSubscription?: boolean;
+  /** A membership bought after booking its first visit, not booked yet: that visit is not held to the member lead time. */
+  firstVisitExempt?: boolean;
   plan?: "basic" | "plus" | "premium" | "elite" | null;
 }
 
@@ -65,6 +67,8 @@ export interface User {
    * may be "" and phone may be "", and addresses may be [].
    */
   phoneVerified?: boolean;
+  /** A new account (from 2026-11-03) that must verify a mobile number before anything else (PhoneRequiredGate). */
+  phoneRequired?: boolean;
   emailVerified?: boolean;
   hasPassword?: boolean;
   /* True when the account has no real name yet (phone-only signup). */

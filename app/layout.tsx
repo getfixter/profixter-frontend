@@ -5,6 +5,7 @@ import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
 import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
 import FloatingCallButton from "./components/FloatingCallButton";
+import { PhoneRequiredGate } from "./components/auth/ContactCompletion";
 import SupportChat from "./components/support/SupportChat";
 import FixterStage from "./components/fixter/FixterStage";
 import { siteFontVariables } from "./site-fonts";
@@ -292,6 +293,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           <SupportChat />
           {/* Its mirror on the left: one tap to call (customer pages only). */}
           <FloatingCallButton />
+          {/* A new account verifies a mobile number before anything else (customer pages only). */}
+          <PhoneRequiredGate />
         </Providers>
       </body>
     </html>

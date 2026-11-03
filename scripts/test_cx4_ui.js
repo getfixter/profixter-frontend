@@ -397,7 +397,8 @@ async function fillAddress(scope, { line1, city, zip }) {
       check(`${tag}: signed out, it asks to sign in or create an account (not payment)`, (await booker.locator("[data-action='create-account']").count()) === 1 && (await booker.locator("[data-action='sign-in']").count()) === 1);
       const firstHold = state.holds[0]?.issued;
       check(`${tag}: the chosen time is held at the sign-in step (new hold, no token yet)`, state.holds.length === 1 && state.holds[0].requestedDate === day && state.holds[0].requestedTime === "08:00" && !state.holds[0].token && !!firstHold, JSON.stringify(state.holds));
-      check(`${tag}: the account step says the time is held`, /holding this time for you until/.test(await booker.locator("[data-hold-note]").innerText()));
+      // The hold countdown (2026-11-03): "Held for you · 29:58".
+      check(`${tag}: the account step says the time is held`, /Held for you · \d+:\d\d/.test(await booker.locator("[data-hold-note]").innerText()));
       check(`${tag}: the hold token is saved with the draft`, (await page.evaluate(() => JSON.parse(localStorage.getItem("pf_handyman_draft") || "{}").holdToken)) === firstHold);
       await shot(page, `${tag}-handy-03-account`);
       await booker.locator("[data-action='create-account']").click();
@@ -413,11 +414,11 @@ async function fillAddress(scope, { line1, city, zip }) {
       check(`${tag}: back from sign-in, straight to how to book, draft intact`, (await booker.getAttribute("data-step")) === "4" && /9 Pine Ct/.test(await booker.locator("[data-summary]").innerText()));
       await page.waitForTimeout(400);
       check(`${tag}: back from sign-in, the same hold is extended`, state.holds.length === 2 && state.holds[1].token === firstHold && state.holds[1].issued === firstHold, JSON.stringify(state.holds.map((h) => h.token)));
-      check(`${tag}: step 4 shows the hold`, /Held for you until/.test(await booker.locator("[data-summary]").innerText()));
+      check(`${tag}: step 4 shows the hold`, /Held for you · \d+:\d\d/.test(await booker.locator("[data-summary]").innerText()));
       check(`${tag}: One-Time and Membership offered with real prices`, /\$99/.test(await page.locator("[data-option='one_time']").innerText()) && /\$149/.test(await page.locator("[data-option='membership']").innerText()));
       check(`${tag}: no included-visit option for a non-member`, (await page.locator("[data-option='member']").count()) === 0);
       const memberCard = await page.locator("[data-option='membership']").innerText();
-      check(`${tag}: membership card sells benefits, not rules`, /Labor included for covered tasks/.test(memberCard) && /month-to-month/.test(memberCard) && !/7\+ days|seven|all year|more than one job/i.test(memberCard), memberCard);
+      check(`${tag}: membership card sells benefits, not rules`, /Labor included for covered tasks/.test(memberCard) && /Monthly, or annual/.test(memberCard) && !/7\+ days|seven|all year|more than one job/i.test(memberCard), memberCard);
       await page.locator("[data-option='membership']").click();
       check(`${tag}: membership shows the real plans`, (await page.locator("[data-plan]").count()) === 4);
       const planTexts = await page.locator("[data-plan]").allInnerTexts();

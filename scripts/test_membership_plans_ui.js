@@ -415,19 +415,24 @@ const asRegistered = (complete = true) => async (ctx) => {
     await ctx.close();
   }
 
-  /* ============ 7. guard: signed out -> signup, plan preserved ============ */
+  /*
+   * ============ 7. book first (2026-11-03): signed out -> the booking flow, plan preserved ============
+   * Somebody without a membership describes the job and picks a held time
+   * before paying (Book a Handyman, membership); signing in comes inside that
+   * flow. The plan and cycle chosen here come along.
+   */
   {
     const { ctx, page } = await open(browser, 390, 844);
     await selectPlan(page, "Elite");
     await page.click(".plan-box__cta");
-    await page.waitForURL(/\/signup/, { timeout: 25000 });
-    const url = page.url();
-    check("signed out: Choose sends to signup", /\/signup/.test(url), url);
-    check("signed out: the chosen plan survives the redirect", /plan%3Delite|plan=elite/i.test(url), url);
+    await page.waitForURL(/\/book\/handyman/, { timeout: 25000 });
+    const url = new URL(page.url());
+    check("signed out: Choose opens the booking flow first", url.pathname === "/book/handyman", page.url());
+    check("signed out: the chosen plan and cycle survive the redirect", url.searchParams.get("membership") === "elite" && url.searchParams.get("cycle") === "monthly", page.url());
     await ctx.close();
   }
 
-  /* ============ 8. guard: registered non-member reaches Stripe ============ */
+  /* ============ 8. book first: a registered non-member books the visit before Stripe ============ */
   {
     const { ctx, page } = await open(browser, 390, 844, asRegistered(true));
     let checkoutBody = null;
@@ -443,17 +448,14 @@ const asRegistered = (complete = true) => async (ctx) => {
     await selectPlan(page, "Premium");
     check("registered non-member: CTA names the plan", (await readActive(page)).cta === "Choose Premium", "");
     await page.click(".plan-box__cta");
-    await page.waitForTimeout(3500);
-    check("registered non-member: checkout session is requested", !!checkoutBody, "");
-    check(
-      "registered non-member: checkout asks for the plan that was selected",
-      JSON.stringify(checkoutBody || {}).toLowerCase().includes("premium"),
-      JSON.stringify(checkoutBody || {}).slice(0, 120)
-    );
+    await page.waitForURL(/\/book\/handyman/, { timeout: 25000 });
+    const url = new URL(page.url());
+    check("registered non-member: Choose opens the booking flow with the plan", url.searchParams.get("membership") === "premium", page.url());
+    check("registered non-member: no checkout from the plans page before the visit is booked", !checkoutBody, JSON.stringify(checkoutBody || {}).slice(0, 120));
     await ctx.close();
   }
 
-  /* ============ 8b. guard: missing contact is asked for before Stripe ============ */
+  /* ============ 8b. guard: a non-member without a phone is not sent to Stripe from here ============ */
   {
     const { ctx, page } = await open(browser, 390, 844, asRegistered(false));
     let requested = false;
@@ -464,15 +466,10 @@ const asRegistered = (complete = true) => async (ctx) => {
     await selectPlan(page, "Plus");
     check("no phone on file: CTA still names the plan", (await readActive(page)).cta === "Choose Plus", "");
     await page.click(".plan-box__cta");
-    const sheet = page.locator('.pf-sheet[role="dialog"]');
-    await sheet.waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
-    check("no phone on file: the contact sheet opens first", await sheet.isVisible(), "");
-    check("no phone on file: it asks for the mobile number", /mobile number/i.test((await sheet.innerText().catch(() => "")) || ""), "");
-    await page.waitForTimeout(1500);
-    check("no phone on file: no checkout session behind the sheet", !requested, "");
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(800);
-    check("closing the sheet does not start checkout", !requested && !/stripe|canceled=true/.test(page.url()), page.url());
+    await page.waitForURL(/\/book\/handyman/, { timeout: 25000 });
+    // The booking flow asks for missing contact details before its own checkout (test_home_booking_ui / test_cx4_ui).
+    check("no phone on file: the booking flow opens, with the plan", new URL(page.url()).searchParams.get("membership") === "plus", page.url());
+    check("no phone on file: no checkout session from the plans page", !requested, "");
     await ctx.close();
   }
 
@@ -518,21 +515,12 @@ const asRegistered = (complete = true) => async (ctx) => {
     m = await readActive(page);
     check("welcome: annual Elite is 20% off the first year ($4,990 -> $3,992)", m.figure === "$3,992" && m.unit === "first year" && (await page.locator("[data-welcome-regular] s").innerText()) === "$4,990", `${m.figure} ${m.unit}`);
     check("welcome: annual still says pay for 10 get 12, billed once a year, renewal named", /Pay for 10 months, get 12/.test(m.terms) && /Then \$4,990\/year afterward, billed once a year, plus applicable taxes/.test(m.terms), m.terms);
+    // Book first: the annual Elite choice goes to the booking flow, which shows the same offer and asks for it at its checkout (test_home_booking_ui).
     await page.click(".plan-box__cta");
-    await page.waitForTimeout(2500);
-    check("welcome: an annual checkout asks for the price it showed", offerState.bodies[0] && offerState.bodies[0].billingCycle === "annual" && offerState.bodies[0].welcomeOffer === true, JSON.stringify(offerState.bodies[0] || {}));
-    await page.goto(BASE + "/membership/plans", { waitUntil: "domcontentloaded" });
-    await page.waitForSelector("[data-welcome-offer]", { timeout: 10000 }).catch(() => {});
-    await page.waitForTimeout(1200);
-    await selectPlan(page, "Basic");
-    offerState.refuse = true;
-    await page.click(".plan-box__cta");
-    await page.waitForTimeout(2500);
-    const sentWelcome = offerState.bodies[1];
-    check("welcome: a monthly checkout asks for the welcome price it showed", sentWelcome && sentWelcome.billingCycle === "monthly" && sentWelcome.welcomeOffer === true, JSON.stringify(sentWelcome || {}));
-    m = await readActive(page);
-    check("welcome: refused by the server -> regular price, offer gone, no Stripe", m.figure === "$149" && m.unit === "/ month" && (await page.locator("[data-welcome-offer]").count()) === 0 && !/canceled=true/.test(page.url()), `${m.figure} ${page.url()}`);
-    check("welcome: the customer is told why", /welcome offer has ended/i.test(await page.locator("body").innerText()), "");
+    await page.waitForURL(/\/book\/handyman/, { timeout: 25000 });
+    const handoff = new URL(page.url());
+    check("welcome: the annual Elite choice is carried into the booking flow", handoff.searchParams.get("membership") === "elite" && handoff.searchParams.get("cycle") === "annual", page.url());
+    check("welcome: no checkout opened from the plans page", offerState.bodies.length === 0, JSON.stringify(offerState.bodies[0] || {}));
     await ctx.close();
   }
   {
