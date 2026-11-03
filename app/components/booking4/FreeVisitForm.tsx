@@ -32,8 +32,12 @@ import PhotoPicker from "./PhotoPicker";
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
-/* Must match routes/freeVisitRequests.js exactly: it is the consent the confirmation text is sent on. */
-const CONTACT_CONSENT_TEXT = "By booking, you agree to be contacted by call or text about your visit. Msg & data rates may apply.";
+/*
+ * Must match routes/freeVisitRequests.js exactly: it is the consent this visit's
+ * texts are sent on. v2 (2026-11-03) adds the brand, frequency and STOP/HELP;
+ * the SMS Terms and Privacy links sit right after it.
+ */
+const CONTACT_CONSENT_TEXT = "By requesting a visit, you agree that ProFixter may call or text you about this visit. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out or HELP for help.";
 const PHONE_HREF = `tel:+1${BUSINESS_PHONE_DISPLAY.replace(/\D/g, "")}`;
 
 type Errors = Partial<Record<"name" | "phone" | "email" | "address" | "when" | "form", string>>;
@@ -389,7 +393,16 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
         <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={review} data-action="review-free-visit">
           Request my Free Visit
         </button>
-        <p className="bk-fine">{CONTACT_CONSENT_TEXT}</p>
+        <p className="bk-fine" data-contact-consent>
+          {CONTACT_CONSENT_TEXT}{" "}
+          <a href="/communication-consent#service-texts" target="_blank" rel="noopener noreferrer">
+            SMS Terms
+          </a>
+          {" · "}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer">
+            Privacy
+          </a>
+        </p>
       </div>
 
       {sheet && (

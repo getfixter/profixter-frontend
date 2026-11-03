@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AddressField, { type AddressValue } from '@/app/components/address/AddressField';
-import AdminSheet, { FieldError, Notice, PrimaryButton, Segmented, deliveryText, inputClass, labelClass } from './AdminSheet';
+import AdminSheet, { FieldError, Notice, PrimaryButton, Segmented, SmsAgreedChoice, deliveryText, inputClass, labelClass } from './AdminSheet';
 import { openInNewTab } from './BuyMembershipSheet';
 import { compressImage } from '@/lib/compressImage';
 import { getFullDayAvailability, getTimeSlots } from '@/lib/booking-service';
@@ -61,7 +61,8 @@ export default function CreateVisitSheet({
   const [guestPhone, setGuestPhone] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestAddress, setGuestAddress] = useState<AddressValue | null>(null);
-  const [guestSms, setGuestSms] = useState(true);
+  // Asked on the call, never pre-selected: null until staff choose Yes or No.
+  const [guestSms, setGuestSms] = useState<boolean | null>(null);
 
   const [type, setType] = useState<VisitType | null>(null);
   const [date, setDate] = useState('');
@@ -155,7 +156,7 @@ export default function CreateVisitSheet({
     if (type === 'membership') setType(null);
   };
 
-  const whoReady = mode === 'existing' ? !!customer && !!addressId : !!guestName.trim() && !!guestPhone.trim() && !!guestEmail.trim() && !!guestAddress?.line1;
+  const whoReady = mode === 'existing' ? !!customer && !!addressId : !!guestName.trim() && !!guestPhone.trim() && !!guestEmail.trim() && !!guestAddress?.line1 && guestSms !== null;
   const whenReady = isFullDay ? !!date && fullDayOk?.ok !== false : !!date && !!time;
   const ready = whoReady && !!type && whenReady && !!task.trim() && (!paid || payment === 'phone' || channels.length > 0);
 
@@ -172,7 +173,7 @@ export default function CreateVisitSheet({
         addressId: addressId || undefined,
         guest:
           mode === 'guest' && guestAddress
-            ? { name: guestName.trim(), phone: guestPhone.trim(), email: guestEmail.trim(), line1: guestAddress.line1, unit: guestAddress.unit, city: guestAddress.city, state: guestAddress.state || 'NY', zip: guestAddress.zip, smsConsent: guestSms }
+            ? { name: guestName.trim(), phone: guestPhone.trim(), email: guestEmail.trim(), line1: guestAddress.line1, unit: guestAddress.unit, city: guestAddress.city, state: guestAddress.state || 'NY', zip: guestAddress.zip, smsConsent: guestSms === true }
             : undefined,
         type,
         date,
@@ -330,10 +331,7 @@ export default function CreateVisitSheet({
             <AddressField value={guestAddress} onChange={setGuestAddress} />
             <FieldError message={errors.guest_line1 || errors.guest_city || errors.guest_zip} />
           </div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <input type="checkbox" className="h-4 w-4" checked={guestSms} onChange={(e) => setGuestSms(e.target.checked)} />
-            OK to text about this visit (agreed on the call)
-          </label>
+          <SmsAgreedChoice value={guestSms} onChange={setGuestSms} testId="guest-sms" question="Did they agree to texts about this visit?" />
         </div>
       )}
 

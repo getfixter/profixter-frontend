@@ -262,7 +262,15 @@ const toPath = (url) => url.replace(SITE, "") || "/";
    * check counts script ELEMENTS, not string matches.)
    */
   const pixelScript = (html) => attr(html, /<script id="meta-pixel">([\s\S]*?)<\/script>/);
-  const gtmSnippet = (html) => attr(html, /(\(function\(w,d,s,l,i\)[\s\S]*?'GTM-KFPSD2P6'\);)/);
+  /*
+   * The GTM snippet only exists in React's serialized payload, which Next
+   * streams as several self.__next_f.push chunks. Where a chunk boundary falls
+   * inside the snippet (it does on the homepage), the raw match carried the
+   * boundary's markup and no other page could ever equal it. The chunks are
+   * joined back into one stream before matching.
+   */
+  const joinFlight = (html) => html.replace(/"\]\)<\/script><script>self\.__next_f\.push\(\[1,"/g, "");
+  const gtmSnippet = (html) => attr(joinFlight(html), /(\(function\(w,d,s,l,i\)[\s\S]*?'GTM-KFPSD2P6'\);)/);
   const prodHome = await (await fetch(SITE + "/")).text();
   const prodPixel = pixelScript(prodHome);
   const prodGtm = gtmSnippet(prodHome);

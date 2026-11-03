@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import AddressField, { type AddressValue } from '@/app/components/address/AddressField';
-import AdminSheet, { FieldError, Notice, PrimaryButton, Switch, deliveryText, inputClass, labelClass } from './AdminSheet';
+import AdminSheet, { FieldError, Notice, PrimaryButton, SmsAgreedChoice, Switch, deliveryText, inputClass, labelClass } from './AdminSheet';
 import { createCustomer, readFailure, type CommunicationKey, type CreatedCustomer } from '@/lib/admin-tools-service';
 
 /*
@@ -10,13 +10,15 @@ import { createCustomer, readFailure, type CommunicationKey, type CreatedCustome
  *
  * The account is active at once; the customer gets an email and a text with
  * their temporary password (their phone number) and must set their own on
- * first sign-in. All four communication switches start on: the call is the
- * consent, and the server records who took it.
+ * first sign-in. Email switches start on (marketing email is opt-out, with an
+ * unsubscribe link in every one). Texts are different (2026-11-03): service
+ * texts are a Yes/No staff must ask on the call - nothing pre-selected - and
+ * marketing texts start off, because a spoken yes never qualifies for them
+ * (the customer confirms in their account). The server records who took it.
  */
 
 const SWITCHES: Array<{ key: CommunicationKey; label: string }> = [
   { key: 'service.email', label: 'Service email' },
-  { key: 'service.sms', label: 'Service texts' },
   { key: 'marketing.email', label: 'Marketing email' },
   { key: 'marketing.sms', label: 'Marketing texts' },
 ];
@@ -37,10 +39,12 @@ export default function CreateCustomerSheet({
   const [address, setAddress] = useState<AddressValue | null>(null);
   const [communication, setCommunication] = useState<Record<CommunicationKey, boolean>>({
     'service.email': true,
-    'service.sms': true,
+    'service.sms': false,
     'marketing.email': true,
-    'marketing.sms': true,
+    'marketing.sms': false,
   });
+  // Service texts: asked on the call, answered by staff. null = not asked yet.
+  const [serviceSms, setServiceSms] = useState<boolean | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [existing, setExisting] = useState<Existing>(null);
@@ -48,6 +52,10 @@ export default function CreateCustomerSheet({
   const [saving, setSaving] = useState(false);
 
   const submit = async (allowSharedPhone = false) => {
+    if (phone.trim() && serviceSms === null) {
+      setErrors({ serviceSms: 'Ask whether they agree to texts about their visits, then choose Yes or No.' });
+      return;
+    }
     setSaving(true);
     setErrors({});
     setMessage('');
@@ -60,7 +68,7 @@ export default function CreateCustomerSheet({
         addresses: address?.line1
           ? [{ line1: address.line1, unit: address.unit, city: address.city, state: address.state || 'NY', zip: address.zip, placeId: address.placeId, lat: address.lat, lng: address.lng }]
           : [],
-        communication,
+        communication: { ...communication, 'service.sms': serviceSms === true },
         allowSharedPhone,
       });
       const warn = result.warnings.includes('address_outside_service_area') ? ' Address is outside the service area.' : '';
@@ -145,6 +153,12 @@ export default function CreateCustomerSheet({
 
       <div className="rounded-2xl border border-slate-200 p-3">
         <div className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Messages (agreed on this call)</div>
+        {phone.trim() ? (
+          <div className="mb-3">
+            <SmsAgreedChoice value={serviceSms} onChange={setServiceSms} testId="new-service.sms" />
+            <FieldError message={errors.serviceSms} />
+          </div>
+        ) : null}
         <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
           {SWITCHES.map((item) => (
             <div key={item.key} className="flex items-center justify-between gap-2">

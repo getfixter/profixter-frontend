@@ -404,9 +404,13 @@ export default function TermsPage() {
   Text messages are optional. Creating an account asks for no SMS consent: a
   phone sign-up sends only a one-time verification code that you request. Service
   texts are offered as an optional unticked box when you book and in your account
-  settings. Marketing texts are separate and optional, offered only in your
-  account settings, and are never required to create an account, book, or buy
-  anything. Providing a phone number is not by itself
+  settings; a Free Visit requested without an account may be texted about under
+  the line shown next to the request button, about that visit only; and when you
+  book by phone, our staff ask whether you agree to texts about your visits and
+  record your answer. Marketing texts are separate and optional, turned on by you
+  in your account settings (or on the confirmation page we email you if you ask
+  our staff for them), never on a spoken yes, and are never required to create an
+  account, book, or buy anything. Providing a phone number is not by itself
   consent to text you, and either category can be switched off in your account
   settings at any time.
 </p>
@@ -441,9 +445,11 @@ export default function TermsPage() {
   support messages and account updates from Premium Island Homes Inc.
   (Profixter). If you separately opt in to marketing texts, you may also receive
   occasional offers. Service texts are offered as an unchecked box when you book
-  and in your account settings; marketing texts only in your account settings.
-  Neither box is pre-ticked, neither is required, and either can be switched off
-  in your account settings at any time.
+  and in your account settings, by the line under the Free Visit request button
+  (texts about that visit only), and by our staff asking you on a call; marketing
+  texts only by your own choice in your account settings or on the confirmation
+  page we email you. Neither box is pre-ticked, neither is required, and either
+  can be switched off in your account settings, or by replying STOP, at any time.
 </p>
 
               <ul className="list-disc list-inside space-y-2">

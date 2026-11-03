@@ -154,6 +154,13 @@ async function open(browser, emailPrefs, { width = 1280, height = 900, sms = { t
     check("the offers box is shown, once", (await offers.count()) === 1);
     check("the service box is unticked", (await service.count()) === 1 && !(await service.isChecked()));
     check("the offers box is unticked", (await offers.count()) === 1 && !(await offers.isChecked()));
+    /* 2026-11-03: the sending number and the three documents, under the two boxes. */
+    const docs = page.locator("[data-sms-documents]");
+    check("the documents line names the sending number", (await docs.count()) === 1 && ((await docs.textContent()) || "").replace(/\s+/g, " ").trim().startsWith("Texts come from ProFixter at (631) 888-6340."));
+    for (const [name, href] of [["SMS Terms", "/communication-consent"], ["Privacy Policy", "/privacy"], ["Terms of Service", "/terms"]]) {
+      const link = docs.getByRole("link", { name, exact: true });
+      check(`settings link "${name}" goes to ${href} in a new tab`, (await link.count()) === 1 && (await link.getAttribute("href")) === href && (await link.getAttribute("target")) === "_blank");
+    }
     if ((await service.count()) === 1) {
       await service.check();
       await page.waitForTimeout(500);

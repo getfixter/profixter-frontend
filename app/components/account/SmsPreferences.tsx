@@ -165,6 +165,21 @@ export function SmsPreferences() {
           </label>
         ))}
       </div>
+      {/* The documents behind both switches, at the switches (2026-11-03). */}
+      <p className="acct-check__help mt-3" data-sms-documents>
+        Texts come from ProFixter at (631) 888-6340.{" "}
+        <a href="/communication-consent" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+          SMS Terms
+        </a>
+        {" · "}
+        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+          Privacy Policy
+        </a>
+        {" · "}
+        <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+          Terms of Service
+        </a>
+      </p>
 
       {state.phoneOptedOut ? (
         /*

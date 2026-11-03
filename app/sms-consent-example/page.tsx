@@ -31,12 +31,25 @@ import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
  * REGISTRATION 2.0. The registered campaign makes text consent optional and
  * asks for none at sign-up. Sign-in codes are sent through Twilio Verify,
  * outside the campaign, and a code the person requests needs no checkbox. So
- * sign-up has no SMS boxes; service texts are one optional unticked box at the
- * booking step ("Text me about my visits") and in account settings; marketing
- * texts only in account settings. The wording quoted below is the wording in
- * BackEnd utils/consent/consentText.js ("terms.continue.v1",
- * "sms_service.booking.v1", "sms_service.settings.v1",
- * "sms_marketing.settings.v1").
+ * sign-up has no SMS boxes.
+ *
+ * 2026-11-03: this page used to say consent was collected in exactly two
+ * places and that there was no verbal opt-in. Neither was true any more, so it
+ * now lists every place consent is collected, as the code does it:
+ *   1. the booking-step box, "Text me about my ProFixter visits"
+ *      ("sms_service.booking.v2");
+ *   2. the line under the guest Free Visit request button (no account, no
+ *      checkbox; FrontEnd booking4/FreeVisitForm.tsx, BackEnd
+ *      routes/freeVisitRequests.js), for texts about that one visit only
+ *      (BackEnd utils/sms/smsEligibility.js GUEST_VISIT_TYPES);
+ *   3. account settings ("sms_service.settings.v1", "sms_marketing.settings.v1");
+ *   4. staff recording a caller's yes or no in Admin, for texts about their
+ *      visits ("sms_service.admin_phone.v1", or the guest visit's own record) -
+ *      never marketing (BackEnd utils/consent/marketingSmsBasis.js);
+ *   5. profixter.com/texts/confirm, for marketing, held until
+ *      SMS_ADMIN_ASSISTED_OPTIN_REGISTERED=true.
+ * The wording quoted below is the wording in BackEnd
+ * utils/consent/consentText.js and on those screens, word for word.
  *
  * The two phone numbers are stated apart on purpose. 631-888-6340 is the
  * carrier-registered number the texts come from; 631-599-1363 is the office
@@ -45,7 +58,7 @@ import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 const TITLE = "How ProFixter collects SMS consent";
 const DESCRIPTION =
-  "Evidence for carrier and A2P review: how ProFixter collects SMS consent, with annotated screenshots. Sign-up asks for no SMS consent; service texts are an optional unticked box at booking and in account settings; marketing texts are optional and offered only in account settings.";
+  "Evidence for carrier and A2P review: how ProFixter collects SMS consent, with annotated screenshots. Sign-up asks for no SMS consent. Texts about visits are optional: a box at booking, the line at the Free Visit request button, account settings, or a yes recorded by staff on a call. Customers switch on marketing texts themselves, in account settings.";
 
 export const metadata: Metadata = {
   title: { absolute: `${TITLE} | ProFixter` },
@@ -139,7 +152,11 @@ export default function SmsConsentExamplePage() {
           <Link href="/signup" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
             profixter.com/signup
           </Link>
-          , the booking step, and account settings.{" "}
+          , the booking step, the Free Visit request form at{" "}
+          <Link href="/book/free" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
+            profixter.com/book/free
+          </Link>
+          , account settings, and what our staff record on a phone call.{" "}
           <span className="font-semibold">It is not itself a way to sign up for text messages.</span> Nothing on this
           page collects information, and there is no checkbox, form or button here that subscribes anyone to anything.
         </div>
@@ -174,28 +191,56 @@ export default function SmsConsentExamplePage() {
           <section>
             <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">2. Where consent is collected</h2>
             <p>
-              Text messages are optional at every point. There are exactly two places where SMS consent is collected,
-              and neither is the sign-up screen:
+              Text messages are optional at every point, and the sign-up screen collects none. SMS consent is collected
+              in these five places, and nowhere else:
             </p>
-            <ul className="list-disc list-inside space-y-2 mt-3">
+            <ol className="list-decimal list-inside space-y-2 mt-3">
               <li>
-                <span className="font-semibold">The booking step</span> &mdash; one optional, unchecked box,{" "}
-                &ldquo;Text me about my visits&rdquo;, just above the booking button, for service texts only.
+                <span className="font-semibold">The booking step</span> (signed-in customers) &mdash; one optional,
+                unchecked box, &ldquo;Text me about my ProFixter visits&rdquo;, just above the final booking button, for
+                service texts only.
+              </li>
+              <li>
+                <span className="font-semibold">The Free Visit request form</span> (no account needed) &mdash; at
+                profixter.com/book/free and on the homepage. There is no checkbox. The line directly under the
+                &ldquo;Request my Free Visit&rdquo; button states what the person agrees to, with links to the SMS Terms
+                and the Privacy Policy; pressing the button is the agreement. It covers calls and texts about that one
+                requested visit and nothing else, never marketing.
               </li>
               <li>
                 <span className="font-semibold">Account settings</span> &mdash; two separate, unchecked boxes, one for
-                service texts and one for marketing texts. This is the only place marketing texts are offered.
+                service texts and one for marketing texts. This is the only place customers switch on marketing texts.
               </li>
-            </ul>
+              <li>
+                <span className="font-semibold">A phone call with ProFixter staff</span> &mdash; for texts about the
+                caller&apos;s own visits only. Staff must ask, and record the answer in our admin system: when they
+                create a customer or a visit, they must choose Yes or No, and neither is pre-selected. The record names
+                the staff member and the time. A yes given on a call is never used for marketing texts.
+              </li>
+              <li>
+                <span className="font-semibold">The confirmation page profixter.com/texts/confirm</span> &mdash; for
+                marketing texts, and only once this method is registered with the carriers. A customer who has asked
+                our staff for offers by text is emailed a link to it, and presses &ldquo;Yes, text me occasional
+                ProFixter offers&rdquo; themselves. Until it is registered, that email links to account settings
+                instead, and no marketing text is sent on a confirmation recorded on that page.
+              </li>
+            </ol>
             <p className="mt-3">
               <span className="font-semibold">Sign-up collects no SMS consent.</span> The sign-up screen has no
               text-message checkboxes. A person who signs up with a phone number receives a one-time verification code
               that they request themselves, sent through Twilio Verify and not under this messaging campaign.
             </p>
             <p className="mt-3">
-              We do not use keyword sign-up. We do not accept verbal opt-ins. We do not accept paper opt-ins. We never
-              buy, rent, or accept a shared or transferred list of phone numbers. Consent is collected by ProFixter, for
-              ProFixter, and is never shared with third parties or affiliates for marketing or promotional purposes.
+              <span className="font-semibold">Marketing texts are never sent on what staff record.</span> If a caller
+              asks for offers by text, staff can note it, but nothing is sent until the customer switches offers on
+              themselves in account settings. Written permission a customer sends us (their own email or text message,
+              or a signed form), which staff record with a description of it, is held the same way as the confirmation
+              page: no marketing text is sent on it until that method is registered with the carriers.
+            </p>
+            <p className="mt-3">
+              We do not use keyword sign-up. We never buy, rent, or accept a shared or transferred list of phone numbers.
+              Consent is collected by ProFixter, for ProFixter, and is never shared with third parties or affiliates for
+              marketing or promotional purposes.
             </p>
           </section>
 
@@ -203,11 +248,12 @@ export default function SmsConsentExamplePage() {
           <section>
             <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">3. The exact wording on each screen</h2>
             <p>
-              Verbatim, followed by what each choice covers. Every &ldquo;Details&rdquo; or document link opens the{" "}
+              Verbatim, followed by what each choice covers. The document links at the booking box, the Free Visit line
+              and account settings (the{" "}
               <a href="/communication-consent" className="underline underline-offset-4">
                 SMS Terms
-              </a>{" "}
-              in a new tab and never ticks a box.
+              </a>
+              , the Privacy Policy and the Terms of Service) open in a new tab, and following one never ticks a box.
             </p>
 
             <div className="mt-4 rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5 space-y-4">
@@ -224,13 +270,28 @@ export default function SmsConsentExamplePage() {
 
               <Wording
                 label="Booking step - service texts (optional, unchecked by default)"
-                quote="Text me about my visits"
+                quote="Text me about my ProFixter visits"
               >
-                Shown beside a single checkbox just above the booking button, with a &ldquo;Details&rdquo; link to the
-                service-texts section of the SMS Terms and this line beneath it: &ldquo;Booking confirmations,
-                appointment reminders and arrival updates. Message frequency varies. Message and data rates may apply.
-                Reply STOP to opt out or HELP for help.&rdquo; It covers service texts only, never marketing. It is
-                never pre-ticked, it is not required to book, and the booking goes ahead whether or not it is ticked.
+                Shown beside a single checkbox just above the final booking button, with this line beneath it:
+                &ldquo;Optional. Booking confirmations, appointment reminders and arrival updates. Message frequency
+                varies. Message and data rates may apply. Reply STOP to opt out or HELP for help.&rdquo; followed by the
+                links &ldquo;SMS Terms&rdquo; (the service-texts section of the SMS Terms), &ldquo;Privacy&rdquo; and
+                &ldquo;Terms&rdquo;. It is shown to a signed-in customer with a phone number on their account who has
+                not already turned service texts on. It covers service texts only, never marketing. It is never
+                pre-ticked, it is not required to book, and the booking goes ahead whether or not it is ticked; a tick
+                is saved only after the booking has been accepted.
+              </Wording>
+
+              <Wording
+                label="Free Visit request form - the line under the “Request my Free Visit” button (no account, no checkbox)"
+                quote="By requesting a visit, you agree that ProFixter may call or text you about this visit. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out or HELP for help."
+              >
+                Followed by the links &ldquo;SMS Terms&rdquo; (the service-texts section of the SMS Terms) and
+                &ldquo;Privacy&rdquo;. The person gives their name, mobile number, email, address and a preferred time,
+                and presses the button directly above this line; that press is the agreement. The request stores the
+                exact line shown and the time. It covers messages about that requested visit only: that the request was
+                received, its confirmation, reminders, a reschedule or cancellation, and who is coming. It is never used
+                for marketing or for any other visit, and a STOP ends it like any other text.
               </Wording>
 
               <Wording
@@ -246,8 +307,45 @@ export default function SmsConsentExamplePage() {
                 quote="Text me occasional ProFixter offers."
               >
                 &ldquo;Optional, and separate from the service texts above. Message frequency varies. Message and data
-                rates may apply. Reply STOP to opt out or HELP for help.&rdquo; This is the only place marketing texts
-                are offered: never at sign-up, never at booking, and never combined with anything required.
+                rates may apply. Reply STOP to opt out or HELP for help.&rdquo; This is the only place customers switch
+                on marketing texts: never at sign-up, never at booking, never at the Free Visit request, and never
+                combined with anything required.
+              </Wording>
+
+              <Wording
+                label="Account settings - the line under both boxes"
+                quote="Texts come from ProFixter at (631) 888-6340."
+              >
+                Followed by the links &ldquo;SMS Terms&rdquo;, &ldquo;Privacy Policy&rdquo; and &ldquo;Terms of
+                Service&rdquo;.
+              </Wording>
+
+              <Wording
+                label="Our admin system, used by staff on a phone call - the question staff must answer (Yes or No, nothing pre-selected)"
+                quote="Did they agree to texts about their visits?"
+              >
+                When creating a visit for a caller who has no account, the question reads &ldquo;Did they agree to texts
+                about this visit?&rdquo;. The two answers are &ldquo;Yes, asked and agreed&rdquo; and &ldquo;No&rdquo;;
+                a customer with a phone number cannot be created, and that visit cannot be booked, until staff choose
+                one, and either answer lets them go ahead. For an existing customer, staff who have asked on a call
+                switch service texts on in the customer&apos;s record. A yes for a customer account is recorded as: &ldquo;Agreed by phone with ProFixter staff, who
+                recorded it in Admin: text messages about this customer&apos;s account and visits - account access,
+                booking confirmations, reminders, arrival and service updates, billing notices. Message frequency
+                varies. Message and data rates may apply. Reply STOP to opt out, HELP for help.&rdquo; A yes for a visit
+                without an account is recorded on that visit as: &ldquo;Agreed by phone to be contacted by call or text
+                about this visit; recorded in Admin by&rdquo; followed by the staff member&apos;s name. Both are stored
+                with the time. The customer can turn these texts off in their account, and STOP always wins.
+              </Wording>
+
+              <Wording
+                label="profixter.com/texts/confirm - marketing texts (used only once registered with the carriers)"
+                quote="Yes, text me occasional ProFixter offers"
+              >
+                The page opens from an email ProFixter sends a customer who asked our staff for offers by text. It
+                shows the last four digits of their phone number and, under the button: &ldquo;Optional, and not
+                required to buy anything. Message frequency varies. Message and data rates may apply. Reply STOP to opt
+                out or HELP for help.&rdquo; followed by links to the SMS Terms, the Privacy Policy and the Terms of
+                Service. Opening the page changes nothing; only pressing the button records consent.
               </Wording>
             </div>
           </section>
@@ -261,11 +359,14 @@ export default function SmsConsentExamplePage() {
                 account, to book a visit, or to buy anything.
               </li>
               <li>
-                <span className="font-semibold">Marketing SMS is separately optional</span>, offered only in account
-                settings, with its own box and its own record.
+                <span className="font-semibold">Marketing SMS is separately optional</span>. Customers switch it on
+                themselves in account settings, with its own box and its own record. It is never switched on by
+                booking, by requesting a Free Visit, or by anything said on a phone call.
               </li>
               <li>
                 Every SMS box is unchecked by default and never pre-ticked: the customer performs the tick themselves.
+                The Free Visit request has no box: the agreement is pressing &ldquo;Request my Free Visit&rdquo;, with
+                the full line directly under it. On a call, staff must choose Yes or No, and neither is pre-selected.
               </li>
               <li>
                 Declining texts changes nothing about price, availability or service. Confirmations, reminders and
@@ -287,18 +388,20 @@ export default function SmsConsentExamplePage() {
               </li>
               <li>
                 <span className="font-semibold">Texting ProFixter is not SMS consent.</span> Sending us a message does
-                not subscribe you to any category of message.
+                not subscribe you to any category of message. Someone who texts 631-888-6340 gets at most one automated
+                reply a day, saying the number is not monitored and giving our customer-service number.
               </li>
               <li>
                 <span className="font-semibold">Replying START or UNSTOP is not SMS consent.</span> See section 6.
               </li>
               <li>
-                There is no verbal opt-in, no paper opt-in, no keyword opt-in, and no purchased, rented or shared list.
+                There is no keyword opt-in, and no purchased, rented or shared list. A yes given on a phone call covers
+                only texts about that caller&apos;s visits, and is never used for marketing texts.
               </li>
             </ul>
             <p className="mt-3">
-              Where a customer has not ticked a box, we hold no consent, and we send no text. Silence is never treated
-              as agreement.
+              Without one of the consents described on this page, we send no text, apart from that single reply to
+              someone who texted us first. Silence is never treated as agreement.
             </p>
           </section>
 
@@ -312,7 +415,7 @@ export default function SmsConsentExamplePage() {
 
             <Evidence
               label="A - The phone sign-up screen: no checkboxes"
-              src="/compliance/a2p-v2-signup.png"
+              src="/compliance/a2p-v3-signup.png"
               alt="The ProFixter phone sign-up screen at phone width: a heading, the mobile number field, the Text me a code button and one line of terms text beneath it, with no checkboxes."
               width={390}
               height={844}
@@ -321,21 +424,36 @@ export default function SmsConsentExamplePage() {
 
             <Evidence
               label="B - The booking step: one optional, unticked box"
-              src="/compliance/a2p-v2-booking.png"
-              alt="The ProFixter booking step at phone width, with the unticked checkbox Text me about my visits directly above the booking button."
+              src="/compliance/a2p-v3-booking.png"
+              alt="The ProFixter booking step at phone width, with the unticked checkbox Text me about my ProFixter visits, its disclosure line and the SMS Terms, Privacy and Terms links, directly above the final booking button."
               width={390}
               height={844}
-              caption="“Text me about my visits” sits just above the booking button, unticked. It covers service texts only, links to the SMS Terms, and states frequency, rates, STOP and HELP. The booking goes ahead whether or not it is ticked."
+              caption="“Text me about my ProFixter visits” sits just above the final booking button, unticked. It covers service texts only, states frequency, rates, STOP and HELP, and links to the SMS Terms, Privacy Policy and Terms of Service. The booking goes ahead whether or not it is ticked."
             />
 
             <Evidence
-              label="C - Account settings: two separate, unticked boxes"
-              src="/compliance/a2p-v2-settings.png"
-              alt="ProFixter account settings at phone width, showing two separate unchecked text message boxes: Text me about my ProFixter visits, and Text me occasional ProFixter offers."
+              label="C - The Free Visit request form: no account, no checkbox"
+              src="/compliance/a2p-v3-free-visit.png"
+              alt="The ProFixter Free Visit request form at phone width: the Request my Free Visit button with the consent line directly under it and links to the SMS Terms and Privacy Policy. There is no checkbox."
               width={390}
               height={844}
-              caption="Account settings. Service texts and marketing texts are two independent, unticked boxes; turning one on never turns the other on, and either can be switched off at any time. This is the only place marketing texts are offered."
+              caption="The line directly under “Request my Free Visit” says ProFixter may call or text about this visit, with frequency, rates, STOP and HELP, and links to the SMS Terms and Privacy Policy. Pressing the button is the agreement. It covers that one requested visit only, never marketing."
             />
+
+            <Evidence
+              label="D - Account settings: two separate, unticked boxes"
+              src="/compliance/a2p-v3-settings.png"
+              alt="ProFixter account settings at phone width, showing two separate unchecked text message boxes, Text me about my ProFixter visits and Text me occasional ProFixter offers, and under them the sending number with links to the SMS Terms, Privacy Policy and Terms of Service."
+              width={390}
+              height={844}
+              caption="Account settings. Service texts and marketing texts are two independent, unticked boxes; turning one on never turns the other on, and either can be switched off at any time. Under them: the number texts come from, and the SMS Terms, Privacy Policy and Terms of Service. This is the only place customers switch on marketing texts."
+            />
+
+            <p className="mt-6">
+              Our admin system is not public, so it is not pictured. On a call, staff see the question &ldquo;Did they
+              agree to texts about their visits?&rdquo; with two buttons, &ldquo;Yes, asked and agreed&rdquo; and
+              &ldquo;No&rdquo;, neither selected until staff choose one (section 3).
+            </p>
           </section>
 
           {/* 6 */}
@@ -355,10 +473,13 @@ export default function SmsConsentExamplePage() {
               </li>
               <li>
                 <span className="font-semibold">START or UNSTOP removes the block on the handset and nothing more.</span>{" "}
-                It does not grant service SMS consent and it does not grant marketing SMS consent. After replying START,
-                a customer still receives no text messages from us until they switch a category back on themselves in
-                their account settings. This is deliberately more conservative than the carrier default, so that our
-                record always reflects a choice the customer actually made.
+                It does not grant service SMS consent and it does not grant marketing SMS consent. STOP switched both
+                account choices off, and START does not switch them back on: a customer with an account still receives
+                no text messages from us until they switch a category back on themselves in their account settings, or
+                agree again on a call for texts about their visits. The one difference is a visit requested without an
+                account: once the block is lifted, texts about that one visit can resume on the agreement given when it
+                was requested. This is deliberately more conservative than the carrier default, so that our record
+                always reflects a choice the customer actually made.
               </li>
               <li>Message frequency varies. Message and data rates may apply.</li>
             </ul>
@@ -367,15 +488,21 @@ export default function SmsConsentExamplePage() {
           {/* 7 */}
           <section>
             <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">7. What we keep as a consent record</h2>
-            <p>For each of the two choices, independently, we retain:</p>
+            <p>For each of the two choices on an account, service texts and marketing texts, independently, we retain:</p>
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>the consent status &mdash; on, off, or never chosen;</li>
               <li>the date and time it was recorded;</li>
               <li>
-                the place it came from &mdash; the booking step, or the customer&apos;s own account settings &mdash; and
-                the exact wording shown there.
+                the place it came from &mdash; the booking step, the customer&apos;s own account settings, a phone call
+                recorded by staff, or the confirmation page &mdash; and the exact wording that applied;
               </li>
+              <li>where staff recorded it, the name of the staff member.</li>
             </ul>
+            <p className="mt-3">
+              For a Free Visit requested without an account, the request and the visit keep the exact line shown under
+              the button and the time the button was pressed. For a visit staff booked by phone for someone without an
+              account, the visit keeps the staff member&apos;s note that the caller agreed, with their name and the time.
+            </p>
             <p className="mt-3">
               Service texts and marketing texts are recorded separately, and neither is ever inferred from the other.
               &ldquo;Never chosen&rdquo; and &ldquo;switched off&rdquo; are stored as different states and stay
@@ -411,6 +538,12 @@ export default function SmsConsentExamplePage() {
                   https://www.profixter.com/signup
                 </Link>{" "}
                 &mdash; the sign-up screen (no SMS consent is collected there)
+              </li>
+              <li>
+                <Link href="/book/free" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
+                  https://www.profixter.com/book/free
+                </Link>{" "}
+                &mdash; the Free Visit request form (the consent line is under the request button)
               </li>
               <li>
                 <Link href="/privacy" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">

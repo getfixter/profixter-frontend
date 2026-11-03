@@ -201,7 +201,9 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     await createBtn.click();
     const cc = page.locator("[data-admin-sheet=create-customer]");
     await cc.waitFor();
-    check(`${tag}: all four message switches start on`, (await cc.locator("[role=switch][aria-checked=true]").count()) === 4);
+    // 2026-11-03: email starts on, marketing texts start off, service texts are ASKED (nothing pre-selected).
+    check(`${tag}: email switches start on, marketing texts start off`, (await cc.locator("[role=switch][aria-checked=true]").count()) === 2 &&
+      (await cc.locator("[role=switch]").count()) === 3);
     await shot(page, `${tag}-01-create-customer`);
     check(`${tag}: create sheet fits without sideways scroll`, await noSideScroll(page));
     await cc.locator("[data-action=create-customer-submit]").click();
@@ -211,7 +213,13 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     await cc.locator("input[name=lastName]").fill("Diaz");
     await cc.locator("input[name=phone]").fill("(516) 555-0142");
     await cc.locator("input[name=email]").fill("rosa@example.com");
-    await cc.locator("[data-switch='new-marketing.sms']").click();
+    const asked = cc.locator("[data-sms-agreed='new-service.sms']");
+    check(`${tag}: service texts are a question, nothing pre-selected`, (await asked.count()) === 1 && (await asked.locator("[aria-pressed=true]").count()) === 0);
+    const createsBefore = state.creates.length;
+    await cc.locator("[data-action=create-customer-submit]").click();
+    await cc.locator("text=Ask whether they agree to texts about their visits").waitFor({ timeout: 5000 });
+    check(`${tag}: cannot create until staff answer the texts question`, state.creates.length === createsBefore);
+    await cc.locator("[data-testid='new-service.sms-yes']").click();
     await cc.locator("[data-action=create-customer-submit]").click();
     await cc.locator("[data-action=create-customer-shared-phone]").waitFor({ timeout: 5000 });
     check(`${tag}: a shared phone asks for confirmation, naming the other account`, (await cc.locator("text=Dana Smith").count()) === 1);
@@ -313,6 +321,8 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     await shot(page, `${tag}-07-create-visit`);
     check(`${tag}: visit sheet fits without sideways scroll`, await noSideScroll(page));
     const submitVisit = cv.locator("[data-action=create-visit-submit]");
+    check(`${tag}: a guest visit waits for the texts question to be answered`, await submitVisit.isDisabled());
+    await cv.locator("[data-testid='guest-sms-yes']").click();
     const guestReady = await submitVisit.isEnabled();
     check(`${tag}: guest visit can be submitted`, guestReady);
     if (guestReady) {
