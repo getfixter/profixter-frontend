@@ -21,22 +21,23 @@ import Footer from "@/app/components/sections/Footer";
 import { PLAN_DETAILS } from "@/lib/stripe-links";
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/analytics";
-import { HALLOWEEN_CAMPAIGN, formatCents, rememberCampaign } from "@/lib/welcome-offer";
+import { CAMPAIGN_ENDS, HALLOWEEN_CAMPAIGN, formatCents, rememberCampaign } from "@/lib/welcome-offer";
 import { buttonClass } from "@/app/components/ui/Button";
 
-// Through Monday, November 2, 2026, 11:59 PM New York time (the server enforces the same date).
-const CAMPAIGN_ENDS = Date.parse("2026-11-03T04:59:59Z");
+// Through Monday, November 2, 2026, 11:59 PM New York time (lib/welcome-offer; the server enforces the same date).
+const ENDS = CAMPAIGN_ENDS[HALLOWEEN_CAMPAIGN];
 const PLANS_URL = "/membership/plans?offer=halloween";
 const first = (cents: number) => Math.round(cents * 0.8);
 
 export default function HalloweenPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const [ended, setEnded] = useState(false);
+  // Read at render too, so a page built after the end never shows the offer, not even for a moment.
+  const [ended, setEnded] = useState(() => Date.now() > ENDS);
 
   useEffect(() => {
     const channel = new URLSearchParams(window.location.search).get("c") || "direct";
-    const over = Date.now() > CAMPAIGN_ENDS;
+    const over = Date.now() > ENDS;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- the clock is read in the browser, after mount
     setEnded(over);
     if (!over) rememberCampaign(HALLOWEEN_CAMPAIGN);
@@ -58,7 +59,7 @@ export default function HalloweenPage() {
         <section className="ui-section ui-section--tight ui-section--soft">
           <div className="ui-container ui-container--narrow" data-halloween>
             <p className="ui-eyebrow ui-eyebrow--accent">Happy Halloween 🎃</p>
-            <h1 className="ui-display">20% off your first membership payment.</h1>
+            <h1 className="ui-display">{ended ? "Our Halloween offer has ended." : "20% off your first membership payment."}</h1>
             {ended ? (
               <>
                 <p className="ui-lede" data-campaign-ended>
@@ -89,6 +90,9 @@ export default function HalloweenPage() {
               </>
             )}
 
+            {/* The offer's prices and terms only while it runs: after the end, the regular plans page has the prices. */}
+            {ended ? null : (
+            <>
             <div className="mt-8 overflow-hidden rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-white">
               <table className="w-full text-left text-[15px]" data-halloween-prices>
                 <thead className="bg-[color:var(--ui-bg-soft)] text-[13px] text-[color:var(--ui-text-3)]">
@@ -135,6 +139,8 @@ export default function HalloweenPage() {
                 applicable taxes. One per customer and home. Not available with an active membership. Offer available through November 2, 2026.
               </p>
             </div>
+            </>
+            )}
           </div>
         </section>
       </main>

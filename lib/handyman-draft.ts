@@ -52,6 +52,8 @@ export type HandymanDraft = {
   plan: string;
   /** Monthly or annual, for the membership chosen at Step 4. */
   cycle?: "monthly" | "annual";
+  /** The visit saved on the server for the membership checkout; the Stripe webhook books it. */
+  firstVisitDraftId?: string;
   /** The held booking a One-Time checkout created, to release if they come back without paying. */
   pendingBookingId: string;
   /** Their sign-in hold ("<id>.<secret>"), the time it holds ("YYYY-MM-DD HH:mm") and when it lapses (ISO). */

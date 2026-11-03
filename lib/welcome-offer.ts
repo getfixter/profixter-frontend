@@ -44,6 +44,19 @@ export const WELCOME_OFFER_ERROR_CODES = ["WELCOME_OFFER_ENDED", "WELCOME_OFFER_
 
 /* The campaign a customer arrived through, kept for this tab (survives sign-in and sign-up). */
 export const HALLOWEEN_CAMPAIGN = "halloween-2026";
+/*
+ * When each campaign stops (the server enforces the same dates,
+ * BackEnd utils/welcomeOffer.js CAMPAIGNS). After it, a campaign link or a
+ * remembered campaign is ignored, so no page shows an offer that has ended.
+ */
+export const CAMPAIGN_ENDS: Record<string, number> = {
+  // Through Monday, November 2, 2026, 11:59 PM New York time.
+  [HALLOWEEN_CAMPAIGN]: Date.parse("2026-11-03T04:59:59Z"),
+};
+export function campaignOpen(id: string, now = Date.now()) {
+  const ends = CAMPAIGN_ENDS[id];
+  return Boolean(ends && now < ends);
+}
 const CAMPAIGN_KEY = "pf_offer_campaign";
 export function rememberCampaign(id: string) {
   try {
@@ -52,7 +65,8 @@ export function rememberCampaign(id: string) {
 }
 export function rememberedCampaign(): string {
   try {
-    return sessionStorage.getItem(CAMPAIGN_KEY) || "";
+    const id = sessionStorage.getItem(CAMPAIGN_KEY) || "";
+    return id && campaignOpen(id) ? id : "";
   } catch {
     return "";
   }

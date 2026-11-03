@@ -12,7 +12,7 @@ import type { PlanType } from "@/lib/stripe-links";
 import type { Address } from "@/lib/auth-service";
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
 import WelcomeOfferBanner from "@/app/components/membership/WelcomeOfferBanner";
-import { WELCOME_OFFER_ERROR_CODES, formatCents, offerPrice, rememberedCampaign, rememberCampaign, HALLOWEEN_CAMPAIGN, useWelcomeOffer, type WelcomeOffer } from "@/lib/welcome-offer";
+import { WELCOME_OFFER_ERROR_CODES, formatCents, offerPrice, rememberedCampaign, rememberCampaign, campaignOpen, HALLOWEEN_CAMPAIGN, useWelcomeOffer, type WelcomeOffer } from "@/lib/welcome-offer";
 
 /* The 20% first-payment price for one plan on the cycle being shown. */
 type OfferPrice = { regularCents: number; firstCents: number; cycle: "monthly" | "annual" };
@@ -270,7 +270,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
    */
   const [campaign, setCampaign] = useState("");
   useEffect(() => {
-    const fromUrl = new URLSearchParams(window.location.search).get("offer") === "halloween" ? HALLOWEEN_CAMPAIGN : "";
+    // An ended campaign's link (old texts and emails) shows the regular page.
+    const fromUrl = new URLSearchParams(window.location.search).get("offer") === "halloween" && campaignOpen(HALLOWEEN_CAMPAIGN) ? HALLOWEEN_CAMPAIGN : "";
     if (fromUrl) rememberCampaign(fromUrl);
     setCampaign(fromUrl || rememberedCampaign());
   }, []);
