@@ -374,7 +374,7 @@ async function ready(page) {
     await booker.locator("[data-time='13:00']").tap();
     await page.locator("[data-action='to-step-3']").tap();
     await booker.locator("[data-auth-step]").waitFor({ timeout: 5000 });
-    check("Continue holds the time (20 minutes)", state.holds.length === 1 && state.holds[0].requestedTime === "13:00" && /holding this time/i.test(await booker.innerText()));
+    check("Continue holds the time (30-minute countdown)", state.holds.length === 1 && state.holds[0].requestedTime === "13:00" && /Held for you · \d+:\d\d/.test(await booker.innerText()), (await booker.locator("[data-hold-note]").innerText().catch(() => "none")));
     await shot(page, "handyman-3");
     await page.locator("[data-action='create-account']").tap();
     await page.waitForURL(/\/signup\?/, { timeout: 10000 });

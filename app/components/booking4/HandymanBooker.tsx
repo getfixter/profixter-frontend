@@ -26,6 +26,12 @@ import SlotPicker, { formatWhen } from "./SlotPicker";
 import PhotoPicker from "./PhotoPicker";
 import WelcomeOfferBanner from "@/app/components/membership/WelcomeOfferBanner";
 import { WELCOME_OFFER_ERROR_CODES, formatCents, offerPrice, useWelcomeOffer } from "@/lib/welcome-offer";
+import HoldCountdown from "./HoldCountdown";
+import { useServiceTextsOptIn } from "@/app/components/booking/ServiceTextsOptIn";
+
+/* Annual members pay for ten months and get twelve (as on the plans page; Stripe holds the real price). */
+const ANNUAL_MONTHS_CHARGED = 10;
+const PLAN_IDS: string[] = PLAN_DETAILS.map((p) => p.id);
 
 /*
  * Book a Handyman (Customer Experience 4.0).
@@ -41,6 +47,15 @@ import { WELCOME_OFFER_ERROR_CODES, formatCents, offerPrice, useWelcomeOffer } f
  * (Customer Experience 4.2); nothing is held until they press Continue. Every money rule is the server's: one checkout per
  * press (clientRequestId), the slot held while paying, no second membership for
  * a home, the member seven-day lead time.
+ *
+ * Membership first visit (2026-11-03): somebody without a membership books
+ * the job and the time first, then picks a plan (monthly or annual) and pays.
+ * The checkout carries their held time (`firstVisit`), the server holds it
+ * through the Stripe page, and back here the visit is booked at that time -
+ * the new membership's first visit is not held to the member seven days
+ * (address.firstVisitExempt; BackEnd utils/membershipFirstVisit.js).
+ * `intent="membership"` (and /book/handyman?membership=<plan>&cycle=) opens
+ * with the membership chosen.
  *
  * `embedded`: the same flow inside the homepage's booking panel
  * (home/HomeBookingPanel) - no h1 (the page has its own), drawn compact. Signing
@@ -95,20 +110,22 @@ function addTask(task: string, text: string) {
 function words(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
-function heldUntil(iso: string) {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: TZ });
-}
 function sameAddress(a: { line1?: string; zip?: string }, b: { line1?: string; zip?: string }) {
   const norm = (v?: string) => String(v || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   return norm(a.line1) === norm(b.line1) && norm(a.zip) === norm(b.zip);
 }
 
-export default function HandymanBooker({ embedded = false, fromFreeVisit = false }: { embedded?: boolean; fromFreeVisit?: boolean } = {}) {
+export default function HandymanBooker({
+  embedded = false,
+  fromFreeVisit = false,
+  intent,
+}: { embedded?: boolean; fromFreeVisit?: boolean; intent?: "membership" } = {}) {
   const router = useRouter();
   const params = useSearchParams();
   const { user, isLoading, refreshUser } = useAuth();
   const { ensureContact, contactSheet } = useContactCompletion();
+  // The optional, unticked "Text me about my visits" (consent sms_service.booking.v1), saved only once the booking goes through.
+  const { serviceTextsOptIn, applyServiceTextsOptIn } = useServiceTextsOptIn();
 
   const [ready, setReady] = useState(false);
   const [step, setStep] = useState<Step>(1);
@@ -119,6 +136,7 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
   const [useNewAddress, setUseNewAddress] = useState(false);
   const [choice, setChoice] = useState<Choice>("");
   const [plan, setPlan] = useState("basic");
+  const [cycle, setCycle] = useState<"monthly" | "annual">("monthly");
   const [price, setPrice] = useState<number | null>(null);
   const [banner, setBanner] = useState<{ tone: "info" | "warn" | "ok"; text: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -148,12 +166,24 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
         setDraft(saved);
         setChoice(saved.choice || "");
         if (saved.plan) setPlan(saved.plan);
+        if (saved.cycle === "annual") setCycle("annual");
         if (saved.address) {
           setTypedAddress({ ...saved.address, unit: saved.address.unit || "", placeId: saved.address.placeId || "", lat: saved.address.lat ?? null, lng: saved.address.lng ?? null, formatted: [saved.address.line1, saved.address.city, saved.address.state, saved.address.zip].filter(Boolean).join(", "), verified: Boolean(saved.address.placeId) });
           setUseNewAddress(true);
         }
       }
       setPhotos(savedPhotos);
+      // Came to book a membership (a plan button, or the membership booking tab): it is chosen at Step 4.
+      const wantPlan = String(params.get("membership") || "").toLowerCase();
+      if (intent === "membership" || PLAN_IDS.includes(wantPlan)) {
+        const nextPlan = PLAN_IDS.includes(wantPlan) ? wantPlan : saved?.plan || "basic";
+        const wantCycle = params.get("cycle");
+        const nextCycle: "monthly" | "annual" = wantCycle === "annual" ? "annual" : wantCycle === "monthly" ? "monthly" : saved?.cycle || "monthly";
+        setChoice("membership");
+        setPlan(nextPlan);
+        setCycle(nextCycle);
+        saveHandymanDraft({ choice: "membership", plan: nextPlan, cycle: nextCycle });
+      }
       setReady(true);
       trackEvent("handyman_booking_viewed", { resumed: Boolean(saved) });
     })();
@@ -163,6 +193,8 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
     return () => {
       alive = false;
     };
+    // Once, on arrival: the draft, and the plan the customer came for.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -173,15 +205,19 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
   const homes = useMemo(() => user?.addresses || [], [user]);
   const selectedHome = homes.find((h) => h._id === draft.addressId) || null;
   const isMemberHome = Boolean(selectedHome?.hasActiveSubscription);
+  // The first visit of a membership bought after booking it: any open time, not the member seven days.
+  const exemptHome = Boolean(selectedHome?.firstVisitExempt);
   const earliestMember = addDays(todayNY(), MEMBER_LEAD_DAYS);
   // A member home books only its included visit, so it only sees times that visit can take.
-  const memberCalendar = memberLead || isMemberHome;
+  const memberCalendar = memberLead || (isMemberHome && !exemptHome);
   // The new-customer welcome offer, for the home being booked (the server decides; this only shows it).
   const offerHome = selectedHome ? { addressId: selectedHome._id } : draft.address ? { line1: draft.address.line1, zip: draft.address.zip } : null;
   const offer = useWelcomeOffer(Boolean(user) && step === 4 && !isMemberHome, offerHome);
   const planCents = (id: string, fallback: number) => offer.plans[id]?.monthlyCents ?? fallback * 100;
-  // This flow sells monthly memberships only.
-  const chosenOffer = offerPrice(offer, plan, "monthly");
+  const chosenOffer = offerPrice(offer, plan, cycle);
+  /* The plan's price this cycle, in cents: the server's own when it sent them, else the published price. */
+  const cycleCents = (id: string, monthly: number) =>
+    cycle === "annual" ? (offer.plans[id]?.annualCents ?? monthly * ANNUAL_MONTHS_CHARGED * 100) : planCents(id, monthly);
   /* A changed day or time is a new suggestion until they press Continue on it. */
   const onWhen = useCallback(
     (w: { date: string; time: string }) =>
@@ -213,7 +249,7 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
     const hasTime = Boolean(draft.date && draft.time) && Boolean(draft.timeConfirmed || draft.holdToken);
     // A member home books its included visit, which the time picked before
     // signing in may be too soon for: say so now, not after a press.
-    const tooSoonForMember = Boolean(user && isMemberHome && hasTime && draft.date < earliestMember && resume !== "membership");
+    const tooSoonForMember = Boolean(user && isMemberHome && !exemptHome && hasTime && draft.date < earliestMember && resume !== "membership");
     if (tooSoonForMember) {
       dropHold();
       update({ time: "", timeConfirmed: false });
@@ -351,6 +387,7 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
       holdToken: draft.holdToken || undefined,
     });
     trackEvent("member_visit_booked", { source: "book_a_handyman" });
+    await applyServiceTextsOptIn();
     await clearHandymanDraft();
     setDone({ when: formatWhen(draft.date, draft.time) });
     return res;
@@ -360,17 +397,24 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
   const finishAfterMembership = async () => {
     setBusy(true);
     try {
-      const fresh = await refreshUser();
       const saved = loadHandymanDraft();
-      if (!saved || !fresh) return;
-      const home = (fresh.addresses || []).find((h) => h._id === saved.addressId);
+      if (!saved) return;
+      // Stripe's webhook can land a few seconds after the customer does: give it a moment before saying so.
+      let fresh = await refreshUser();
+      let home = (fresh?.addresses || []).find((h) => h._id === saved.addressId);
+      for (let i = 0; i < 6 && fresh && !home?.hasActiveSubscription; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        fresh = await refreshUser();
+        home = (fresh?.addresses || []).find((h) => h._id === saved.addressId);
+      }
+      if (!fresh) return;
       if (!home?.hasActiveSubscription) {
         setBanner({ tone: "info", text: "Your membership is being set up. Give it a moment, then press Book my visit." });
         setChoice("member");
         setStep(4);
         return;
       }
-      if (!saved.date || saved.date < earliestMember) {
+      if (!saved.date || (saved.date < earliestMember && !home.firstVisitExempt)) {
         setMemberLead(true);
         dropHold();
         update({ time: "", timeConfirmed: false });
@@ -403,11 +447,11 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
         return;
       }
       const clientRequestId = draft.clientRequestId || newClientRequestId();
-      update({ clientRequestId, choice, plan });
+      update({ clientRequestId, choice, plan, cycle });
       trackEvent("handyman_option_selected", { choice, plan: choice === "membership" ? plan : undefined });
 
       if (choice === "member") {
-        if (draft.date < earliestMember) {
+        if (draft.date < earliestMember && !exemptHome) {
           setMemberLead(true);
           dropHold();
           update({ time: "", timeConfirmed: false });
@@ -435,14 +479,25 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
         });
         // The booking took the time over; the hold is spent.
         update({ pendingBookingId: res.bookingId, holdToken: "", holdFor: "", holdExpiresAt: "" });
+        await applyServiceTextsOptIn();
         window.location.assign(res.url);
         return;
       }
 
-      // Membership: the visit is booked when they come back, as a member.
+      // Membership: the visit is booked when they come back, as a member, at the time held for them through Stripe.
       trackInitiateCheckout({ content_name: `membership_${plan}`, currency: "USD" });
       // welcomeOffer: the price they were shown. The server re-checks it and refuses rather than charge another.
-      const res = await API.post("/api/stripe/checkout/create-checkout-session", { plan, addressId, billingCycle: "monthly", returnTo: "handyman", welcomeOffer: offer.active });
+      const res = await API.post("/api/stripe/checkout/create-checkout-session", {
+        plan,
+        addressId,
+        billingCycle: cycle,
+        returnTo: "handyman",
+        welcomeOffer: Boolean(chosenOffer),
+        firstVisit: { holdToken: draft.holdToken || "", requestedDate: draft.date, requestedTime: draft.time },
+      });
+      // An expired hold is renewed under a new token: keep the one that now holds the time.
+      if (res.data?.holdToken) update({ holdToken: res.data.holdToken, holdFor: `${draft.date} ${draft.time}`, holdExpiresAt: res.data.holdExpiresAt || draft.holdExpiresAt });
+      await applyServiceTextsOptIn();
       window.location.assign(res.data.url);
     } catch (error) {
       const f = failure(error, "Something went wrong. Please try again.");
@@ -585,9 +640,7 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
             <span><b>{formatWhen(draft.date, draft.time)}</b></span>
             <span>{addressLine}</span>
           </div>
-          {draft.holdToken && heldUntil(draft.holdExpiresAt) && (
-            <p className="bk-note" data-hold-note style={{ marginTop: 0, marginBottom: 10 }}>We&apos;re holding this time for you until {heldUntil(draft.holdExpiresAt)}.</p>
-          )}
+          {draft.holdToken && draft.holdExpiresAt ? <HoldCountdown expiresAt={draft.holdExpiresAt} style={{ marginTop: 0, marginBottom: 10 }} /> : null}
           <p className="bk-lede" style={{ marginTop: 0 }}>Sign in or create your account to choose how to book. Your details are saved.</p>
           <div className="bk-actions">
             <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={() => signIn("signup")} data-action="create-account">Create account</button>
@@ -604,9 +657,7 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
               <span><b>{formatWhen(draft.date, draft.time)}</b> · <button type="button" className="bk-link" onClick={() => setStep(2)}>Change</button></span>
               <span>{addressLine}</span>
               <span>{draft.task.length > 90 ? `${draft.task.slice(0, 90)}…` : draft.task}</span>
-              {draft.holdToken && heldUntil(draft.holdExpiresAt) && (
-                <span className="bk-note" data-hold-note>Held for you until {heldUntil(draft.holdExpiresAt)}</span>
-              )}
+              {draft.holdToken && draft.holdExpiresAt ? <HoldCountdown expiresAt={draft.holdExpiresAt} /> : null}
             </div>
           </section>
           <section className="bk-card" aria-label="How to book">
@@ -632,25 +683,46 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
                 <button type="button" className="bk-option" aria-pressed={choice === "membership"} onClick={() => setChoice("membership")} data-option="membership">
                   <div className="bk-option-top">
                     <span className="bk-option-name">Membership{offer.active ? <span className="bk-badge">{offer.percentOff}% off 1st month</span> : null}</span>
-                    <span className="bk-option-price">from {formatCents(planCents("basic", PLAN_DETAILS[0].price))}<small>/mo</small></span>
+                    <span className="bk-option-price">from {formatCents(cycleCents("basic", PLAN_DETAILS[0].price))}<small>{cycle === "annual" ? "/yr" : "/mo"}</small></span>
                   </div>
-                  <p>Your personal handyman membership. Labor included for covered tasks, with flexible month-to-month plans.</p>
+                  <p>Your personal handyman membership. Labor included for covered tasks. Monthly, or annual with 2 months free.</p>
                 </button>
+                {choice === "membership" && (
+                  <div className="bk-cycle" role="radiogroup" aria-label="Billing">
+                    {(["monthly", "annual"] as const).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        role="radio"
+                        aria-checked={cycle === c}
+                        className="bk-cycle-btn"
+                        data-cycle={c}
+                        onClick={() => {
+                          setCycle(c);
+                          update({ cycle: c });
+                        }}
+                      >
+                        {c === "monthly" ? "Monthly" : "Annual"}
+                        {c === "annual" ? <small>2 months free</small> : null}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {choice === "membership" && (
                   <div className="bk-plans" role="radiogroup" aria-label="Plan">
                     {PLAN_DETAILS.map((p) => {
-                      const monthly = planCents(p.id, p.price);
-                      const first = offer.plans[p.id]?.firstMonthCents;
+                      const monthly = cycleCents(p.id, p.price);
+                      const first = cycle === "annual" ? offer.plans[p.id]?.firstYearCents : offer.plans[p.id]?.firstMonthCents;
                       return (
                         <button key={p.id} type="button" role="radio" className="bk-plan" aria-checked={plan === p.id} data-plan={p.id} onClick={() => setPlan(p.id)}>
                           <b>{p.name}</b>
                           <span className="bk-plan-labor">Labor included</span>
                           {first != null ? (
                             <span className="bk-plan-price" data-plan-offer>
-                              <s className="wo-was">{formatCents(monthly)}</s> <span className="wo-now">{formatCents(first)}</span> first month
+                              <s className="wo-was">{formatCents(monthly)}</s> <span className="wo-now">{formatCents(first)}</span> first {cycle === "annual" ? "year" : "month"}
                             </span>
                           ) : (
-                            <span className="bk-plan-price">{formatCents(monthly)}/mo</span>
+                            <span className="bk-plan-price">{formatCents(monthly)}{cycle === "annual" ? "/yr" : "/mo"}</span>
                           )}
                         </button>
                       );
@@ -659,9 +731,13 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
                 )}
                 {choice === "membership" && (
                   <p className="bk-note bk-plan-terms" data-plan-terms>
-                    {chosenOffer
-                      ? `${formatCents(chosenOffer.firstCents)} for your first month, then ${formatCents(chosenOffer.regularCents)}/month afterward, plus applicable taxes. Month to month, cancel anytime.`
-                      : "Billed monthly, plus applicable taxes. Month to month, cancel anytime."}{" "}
+                    {cycle === "annual"
+                      ? chosenOffer
+                        ? `${formatCents(chosenOffer.firstCents)} for your first year, then ${formatCents(chosenOffer.regularCents)}/year, plus applicable taxes. Pay for 10 months, get 12. Billed once a year.`
+                        : "Pay for 10 months, get 12. Billed once a year, plus applicable taxes."
+                      : chosenOffer
+                        ? `${formatCents(chosenOffer.firstCents)} for your first month, then ${formatCents(chosenOffer.regularCents)}/month afterward, plus applicable taxes. Month to month, cancel anytime.`
+                        : "Billed monthly, plus applicable taxes. Month to month, cancel anytime."}{" "}
                     <Link href="/membership/plans" data-link="all-plans">See all plans</Link>
                   </p>
                 )}
@@ -671,6 +747,7 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
               Need a whole day? <Link href="/book?visit=full-day">Book a Full Day</Link>
             </p>
           </section>
+          {serviceTextsOptIn ? <div className="bk-texts">{serviceTextsOptIn}</div> : null}
           <div className="bk-actions">
             <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={submit} disabled={!choice || busy} data-action="book-handyman">
               {busy ? <span className="bk-spinner" aria-hidden="true" /> : null}
@@ -680,7 +757,7 @@ export default function HandymanBooker({ embedded = false, fromFreeVisit = false
                   ? `Continue to payment${price != null ? ` · $${price}` : ""}`
                   : choice === "membership"
                     ? chosenOffer
-                      ? `Continue to checkout · ${formatCents(chosenOffer.firstCents)} first month`
+                      ? `Continue to checkout · ${formatCents(chosenOffer.firstCents)} first ${cycle === "annual" ? "year" : "month"}`
                       : "Continue to membership checkout"
                     : "Choose an option"}
             </button>

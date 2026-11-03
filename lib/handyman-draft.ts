@@ -50,6 +50,8 @@ export type HandymanDraft = {
   /** The choice they made at Step 4, so a return from Stripe lands back there. */
   choice: "" | "member" | "one_time" | "membership";
   plan: string;
+  /** Monthly or annual, for the membership chosen at Step 4. */
+  cycle?: "monthly" | "annual";
   /** The held booking a One-Time checkout created, to release if they come back without paying. */
   pendingBookingId: string;
   /** Their sign-in hold ("<id>.<secret>"), the time it holds ("YYYY-MM-DD HH:mm") and when it lapses (ISO). */
@@ -78,6 +80,7 @@ export const EMPTY_HANDYMAN_DRAFT: HandymanDraft = {
   clientRequestId: "",
   choice: "",
   plan: "",
+  cycle: "monthly",
   pendingBookingId: "",
   holdToken: "",
   holdFor: "",

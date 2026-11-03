@@ -725,6 +725,21 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
       return;
     }
 
+    /*
+     * Book first (2026-11-03). Somebody without a membership - signed out, new,
+     * or a former member - describes the job and picks a real time, which is
+     * held for them through sign-in and Stripe, before paying; the plan and
+     * cycle chosen here come along preselected (Book a Handyman, membership).
+     * Members keep this page's own checkout: changing a plan, or a membership
+     * for another home.
+     */
+    const isMember = Boolean(user?.addresses?.some((a) => a.hasActiveSubscription));
+    if (!isMember) {
+      trackEvent("plan_selected", { plan: planType, billing_cycle: billing, signed_in: Boolean(user), flow: "book_first" });
+      window.location.href = `/book/handyman?membership=${encodeURIComponent(planType)}&cycle=${encodeURIComponent(billing)}`;
+      return;
+    }
+
     if (!isAuthenticated || !user) {
       trackEvent("plan_selected", { plan: planType, billing_cycle: billing, signed_in: false });
       sendToSignupWithPlan(planType, billing, planName);
