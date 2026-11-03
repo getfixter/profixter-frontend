@@ -50,10 +50,13 @@ const PLAN_IDS: string[] = PLAN_DETAILS.map((p) => p.id);
  *
  * Membership first visit (2026-11-03): somebody without a membership books
  * the job and the time first, then picks a plan (monthly or annual) and pays.
- * The checkout carries their held time (`firstVisit`), the server holds it
- * through the Stripe page, and back here the visit is booked at that time -
- * the new membership's first visit is not held to the member seven days
- * (address.firstVisitExempt; BackEnd utils/membershipFirstVisit.js).
+ * Before Stripe opens, the visit (job, home, photos, time, hold) is saved on
+ * the server (POST /api/bookings/first-visit-draft) and the checkout names it;
+ * the Stripe webhook books it when the payment is confirmed, whether or not
+ * the customer comes back (BackEnd utils/membershipFirstVisitFulfillment.js).
+ * Back here, the page only shows what the server made - or, if the webhook is
+ * slow, asks the server to finish it once Stripe says paid. The new
+ * membership's first visit is not held to the member seven days.
  * `intent="membership"` (and /book/handyman?membership=<plan>&cycle=) opens
  * with the membership chosen.
  *
@@ -141,7 +144,7 @@ export default function HandymanBooker({
   const [banner, setBanner] = useState<{ tone: "info" | "warn" | "ok"; text: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<null | { when: string }>(null);
+  const [done, setDone] = useState<null | { when: string; pending?: boolean }>(null);
   const [memberLead, setMemberLead] = useState(false);
   const pressing = useRef(false);
   const resumed = useRef(false);
@@ -393,12 +396,75 @@ export default function HandymanBooker({
     return res;
   };
 
+  /*
+   * Back from a membership checkout whose visit the server books: show what it
+   * made. The webhook usually has; if not yet, wait a little, then ask the
+   * server to finish it (it checks the payment with Stripe first). Nothing is
+   * booked from here.
+   */
+  const showServerFirstVisit = async (draftId: string) => {
+    type View = { status: string; reason?: string; requestedDate: string; requestedTime: string; booking?: { bookingNumber: string } | null };
+    let view: View | null = null;
+    for (let i = 0; i < 8; i++) {
+      try {
+        view = (await API.get(`/api/bookings/first-visit-draft/${draftId}`)).data as View;
+      } catch {
+        view = null;
+      }
+      if (view && !["draft", "checkout_open", "paid", "fulfilling"].includes(view.status)) break;
+      if (i === 4) {
+        try {
+          view = (await API.post(`/api/bookings/first-visit-draft/${draftId}/fulfill`)).data as View;
+          if (view && !["draft", "checkout_open", "paid", "fulfilling"].includes(view.status)) break;
+        } catch {
+          /* keep waiting */
+        }
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    await refreshUser();
+    if (view?.status === "booked" || view?.status === "rebooked") {
+      trackEvent("member_visit_booked", { source: "membership_first_visit" });
+      await clearHandymanDraft();
+      setDone({ when: formatWhen(view.requestedDate, view.requestedTime) });
+      return;
+    }
+    if (view?.status === "needs_admin") {
+      // Their membership is active; the time could not be kept. They pick another (the server already told the owner).
+      update({ firstVisitDraftId: "", time: "", timeConfirmed: false, holdToken: "", holdFor: "", holdExpiresAt: "", clientRequestId: "" });
+      setChoice("member");
+      if (view.reason === "member_lead_time") setMemberLead(true);
+      setBanner({
+        tone: "info",
+        text:
+          view.reason === "member_lead_time"
+            ? "Your membership is active. Member visits are booked at least 7 days ahead, so please pick a time below - we've also emailed you."
+            : "Your membership is active. The time you chose was just taken, so please pick another below - we've also emailed you, and we can book it by phone.",
+      });
+      setStep(2);
+      return;
+    }
+    if (view?.status === "expired") {
+      setBanner({ tone: "warn", text: "That checkout expired before it was paid. Nothing was charged - your details are saved." });
+      update({ firstVisitDraftId: "" });
+      setStep(4);
+      return;
+    }
+    // Paid but not finished yet (Stripe or the membership still on its way): the server books it and emails them.
+    await clearHandymanDraft();
+    setDone({ when: formatWhen(view?.requestedDate || draft.date, view?.requestedTime || draft.time), pending: true });
+  };
+
   /* Back from a membership checkout: book the visit they described. */
   const finishAfterMembership = async () => {
     setBusy(true);
     try {
       const saved = loadHandymanDraft();
       if (!saved) return;
+      if (saved.firstVisitDraftId) {
+        await showServerFirstVisit(saved.firstVisitDraftId);
+        return;
+      }
       // Stripe's webhook can land a few seconds after the customer does: give it a moment before saying so.
       let fresh = await refreshUser();
       let home = (fresh?.addresses || []).find((h) => h._id === saved.addressId);
@@ -484,8 +550,18 @@ export default function HandymanBooker({
         return;
       }
 
-      // Membership: the visit is booked when they come back, as a member, at the time held for them through Stripe.
+      // Membership: the visit is saved on the server first; the payment books it (webhook), not this page.
       trackInitiateCheckout({ content_name: `membership_${plan}`, currency: "USD" });
+      const fvForm = new FormData();
+      fvForm.append("addressId", addressId);
+      fvForm.append("note", draft.task.trim());
+      fvForm.append("requestedDate", draft.date);
+      fvForm.append("requestedTime", draft.time);
+      fvForm.append("holdToken", draft.holdToken || "");
+      for (const file of photos) fvForm.append("images", file, file.name || "photo.jpg");
+      const saved = await API.post("/api/bookings/first-visit-draft", fvForm);
+      const firstVisitDraftId = String(saved.data?.draftId || "");
+      update({ firstVisitDraftId });
       // welcomeOffer: the price they were shown. The server re-checks it and refuses rather than charge another.
       const res = await API.post("/api/stripe/checkout/create-checkout-session", {
         plan,
@@ -493,7 +569,7 @@ export default function HandymanBooker({
         billingCycle: cycle,
         returnTo: "handyman",
         welcomeOffer: Boolean(chosenOffer),
-        firstVisit: { holdToken: draft.holdToken || "", requestedDate: draft.date, requestedTime: draft.time },
+        firstVisit: { draftId: firstVisitDraftId, holdToken: draft.holdToken || "", requestedDate: draft.date, requestedTime: draft.time },
       });
       // An expired hold is renewed under a new token: keep the one that now holds the time.
       if (res.data?.holdToken) update({ holdToken: res.data.holdToken, holdFor: `${draft.date} ${draft.time}`, holdExpiresAt: res.data.holdExpiresAt || draft.holdExpiresAt });
@@ -534,9 +610,15 @@ export default function HandymanBooker({
         <div className="bk-card bk-done">
           <div className="bk-done-icon" aria-hidden="true">✓</div>
           {embedded ? <h2 className="bk-title">Visit requested</h2> : <h1 className="bk-title">Visit requested</h1>}
-          <p className="bk-lede">
-            We have your request for <b>{done.when}</b>. We&apos;ll review it and confirm your appointment shortly.
-          </p>
+          {done.pending ? (
+            <p className="bk-lede" data-done-pending>
+              Payment received. We&apos;re booking your visit for <b>{done.when}</b> and will email you the details - you don&apos;t need to stay on this page.
+            </p>
+          ) : (
+            <p className="bk-lede">
+              We have your request for <b>{done.when}</b>. We&apos;ll review it and confirm your appointment shortly.
+            </p>
+          )}
           <div className="bk-actions">
             <Link className="bk-btn bk-btn--primary bk-btn--block" href="/account">See my visits</Link>
           </div>

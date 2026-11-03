@@ -549,6 +549,12 @@ const asRegistered = (complete = true) => async (ctx) => {
     // The campaign ended 2026-11-03 04:59:59Z: from then on the page says so and offers nothing (app/halloween/page.tsx).
     if (Date.now() > Date.parse("2026-11-03T04:59:59Z")) {
       check("halloween (after the end): the page says the offer has ended and offers no claim", (await page.locator("[data-campaign-ended]").count()) === 1 && (await page.locator("[data-action='claim-halloween']").count()) === 0, text.slice(0, 160));
+      check("halloween (after the end): no offer prices, terms or 20% headline", (await page.locator("[data-halloween-prices]").count()) === 0 && (await page.locator("[data-halloween-terms]").count()) === 0 && !/20% off/i.test(await page.locator("h1").innerText()), "");
+      // An old campaign link to the plans page shows the regular page: no Halloween note, regular prices.
+      await page.goto(BASE + "/membership/plans?offer=halloween", { waitUntil: "domcontentloaded" });
+      await page.waitForSelector(".plan-box", { timeout: 20000 });
+      await page.waitForTimeout(1200);
+      check("halloween (after the end): an old link to the plans page shows no Halloween offer", (await page.locator("[data-campaign-note]").count()) === 0 && !/Halloween/i.test(await page.locator(".plan-box").innerText()), "");
       await ctx.close();
     } else {
     check("halloween: the landing page states the offer and its terms", /20% off your first membership payment/i.test(text) && /renewals are at the regular price/i.test(text) && /through November 2, 2026/.test(text) && /timer starts when you open the offer/i.test(text), "");
@@ -566,7 +572,21 @@ const asRegistered = (complete = true) => async (ctx) => {
     await ctx.close();
     }
   }
-  {
+  if (Date.now() > Date.parse("2026-11-03T04:59:59Z")) {
+    // After the end: a remembered Halloween campaign opens nothing.
+    const activations = [];
+    const { ctx, page } = await open(browser, 390, 844, async (c) => {
+      await asRegistered(true)(c);
+      await c.route("**/api/stripe/checkout/welcome-offer/activate", (r) => {
+        activations.push(JSON.parse(r.request().postData() || "{}"));
+        r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ eligible: false, serverNow: new Date().toISOString(), percentOff: 20 }) });
+      });
+      await c.addInitScript(() => { try { sessionStorage.setItem("pf_offer_campaign", "halloween-2026"); } catch {} });
+    });
+    await page.waitForTimeout(2500);
+    check("halloween (after the end): a remembered campaign asks the server for nothing", activations.length === 0, JSON.stringify(activations));
+    await ctx.close();
+  } else {
     const activations = [];
     const { ctx, page } = await open(browser, 390, 844, async (c) => {
       await asRegistered(true)(c);

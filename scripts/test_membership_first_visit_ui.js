@@ -15,8 +15,14 @@
  *   prices, the switch) with a countdown -> checkout asks for the plan, the
  *   cycle and the held visit (firstVisit), and keeps a renewed hold token.
  * - /book?visit=membership for a non-member is the same booking flow.
- * - Back from Stripe with the membership active and the first visit exempt,
- *   a time inside the member seven days is booked at once (no detour), once.
+ * - The visit (job, home, photos, time, hold) is saved on the server before
+ *   Stripe (POST /api/bookings/first-visit-draft) and the checkout names it.
+ * - Back from Stripe the page only shows what the server booked (the Stripe
+ *   webhook books it, BackEnd utils/membershipFirstVisitFulfillment.js): it
+ *   never posts a booking itself; a slow webhook gets one "finish it" request;
+ *   a time the server could not keep sends them to pick another, explained;
+ *   a payment still being confirmed says so and that they need not wait.
+ * - An older checkout with no saved draft still books on return (old tabs).
  * - A taken time at checkout sends them back to pick another, details kept.
  * - A new account without a verified phone gets "Add your mobile number",
  *   which cannot be dismissed; verifying it lets them carry on. It asks for no
@@ -41,7 +47,7 @@ function ymd(offset) {
 const ADDRESS = { _id: "a1", label: "Primary", line1: "12 Elm St", city: "Farmingdale", state: "NY", zip: "11735", hasActiveSubscription: false, plan: null };
 const customer = (over = {}) => ({ _id: "u1", userId: "40000001", name: "Dana Lopez", email: "dana@mailbox.org", phone: "+15165550123", phoneVerified: true, role: "customer", permissions: [], addresses: [ADDRESS], ...over });
 
-async function open(browser, { width = 390, height = 844, me = null, draft = null, checkout = null } = {}) {
+async function open(browser, { width = 390, height = 844, me = null, draft = null, checkout = null, serverDraft = null } = {}) {
   const mobile = width < 700;
   const ctx = await browser.newContext({ viewport: { width, height }, isMobile: mobile, hasTouch: mobile });
   await ctx.addInitScript(
@@ -57,7 +63,7 @@ async function open(browser, { width = 390, height = 844, me = null, draft = nul
     },
     { signedIn: Boolean(me), draftJson: draft ? JSON.stringify(draft) : "" }
   );
-  const state = { me, holds: [], checkouts: [], bookings: [], otpStarts: [], otpVerifies: [], unexpected: [] };
+  const state = { me, holds: [], checkouts: [], bookings: [], drafts: [], draftViews: 0, draftFinishes: 0, otpStarts: [], otpVerifies: [], unexpected: [] };
   await ctx.route(/maps\.googleapis\.com|places\.googleapis\.com/, (r) => r.abort());
   await ctx.route("https://checkout.stripe.test/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<h1>Stripe test checkout</h1>" }));
   await ctx.route(/\/api\//, async (route) => {
@@ -105,6 +111,19 @@ async function open(browser, { width = 390, height = 844, me = null, draft = nul
       state.checkouts.push(body);
       if (checkout?.refuse) return json({ code: "SLOT_UNAVAILABLE", message: "That time was just taken. Pick another - everything else is saved." }, 409);
       return json({ url: "https://checkout.stripe.test/cs_member", sessionId: "cs_member", holdToken: "h9.renewedrenewedrenewedrenewed", holdExpiresAt: new Date(Date.now() + 41 * 60000).toISOString(), firstVisitExempt: true });
+    }
+    if (p === "/api/bookings/first-visit-draft" && m === "POST") {
+      const t = text();
+      state.drafts.push({ addressId: field(t, "addressId"), note: field(t, "note"), requestedDate: field(t, "requestedDate"), requestedTime: field(t, "requestedTime"), holdToken: field(t, "holdToken"), photos: (t.match(/name="images"; filename=/g) || []).length });
+      return json({ draftId: "d0000000000000000000001" }, 201);
+    }
+    if (p.startsWith("/api/bookings/first-visit-draft/") && m === "GET") {
+      state.draftViews += 1;
+      return json(serverDraft ? serverDraft(state) : { status: "booked", requestedDate: ymd(3), requestedTime: "10:00", booking: { bookingNumber: "55554444" } });
+    }
+    if (p.startsWith("/api/bookings/first-visit-draft/") && p.endsWith("/fulfill") && m === "POST") {
+      state.draftFinishes += 1;
+      return json(serverDraft ? serverDraft(state) : { status: "booked", requestedDate: ymd(3), requestedTime: "10:00", booking: { bookingNumber: "55554444" } });
     }
     if (p === "/api/bookings" && m === "POST") {
       const t = text();
@@ -178,7 +197,9 @@ const shot = async (page, name) => {
     await page.locator("[data-action='book-handyman']").click();
     await page.waitForURL(/checkout\.stripe\.test/, { timeout: 10000 });
     const body = state.checkouts[0] || {};
-    check(`${tag}: checkout asks for the plan, the cycle and the held visit`, body.plan === "plus" && body.billingCycle === "annual" && body.returnTo === "handyman" && body.firstVisit && body.firstVisit.requestedDate === ymd(2) && /^h1\./.test(body.firstVisit.holdToken || ""), JSON.stringify(body));
+    const saved0 = state.drafts[0] || {};
+    check(`${tag}: the visit is saved on the server first (job, home, time, hold)`, state.drafts.length === 1 && saved0.addressId === "a1" && /faucet/i.test(saved0.note || "") && saved0.requestedDate === ymd(2) && /^h1\./.test(saved0.holdToken || ""), JSON.stringify(saved0));
+    check(`${tag}: checkout asks for the plan, the cycle and the saved, held visit`, body.plan === "plus" && body.billingCycle === "annual" && body.returnTo === "handyman" && body.firstVisit && body.firstVisit.draftId === "d0000000000000000000001" && body.firstVisit.requestedDate === ymd(2) && /^h1\./.test(body.firstVisit.holdToken || ""), JSON.stringify(body));
     // Read back on the site's own origin (the page is now at the Stripe test origin).
     await page.goto(`${BASE}/terms`, { waitUntil: "domcontentloaded" });
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("pf_handyman_draft") || "{}"));
@@ -215,19 +236,60 @@ const shot = async (page, name) => {
     await ctx.close();
   }
 
-  /* ===================== Back from Stripe: the first visit is booked, inside the seven days ===================== */
+  /* ===================== Back from Stripe: the page shows what the server booked ===================== */
+  const returning = (over = {}) => ({ task: "Replace an existing faucet.", addressId: "a1", address: null, date: ymd(3), time: "10:00", name: "", phone: "", email: "", photoCount: 0, clientRequestId: "fv-1", choice: "membership", plan: "plus", cycle: "annual", pendingBookingId: "", holdToken: "h9.renewedrenewedrenewedrenewed", holdFor: `${ymd(3)} 10:00`, holdExpiresAt: new Date(Date.now() + 30 * 60000).toISOString(), timeConfirmed: true, firstVisitDraftId: "d0000000000000000000001", updatedAt: Date.now(), ...over });
+  const activeMember = customer({ addresses: [{ ...ADDRESS, hasActiveSubscription: true, plan: "plus", firstVisitExempt: false }] });
   {
-    const soon = ymd(3);
-    const draft = { task: "Replace an existing faucet.", addressId: "a1", address: null, date: soon, time: "10:00", name: "", phone: "", email: "", photoCount: 0, clientRequestId: "fv-1", choice: "membership", plan: "plus", cycle: "annual", pendingBookingId: "", holdToken: "h9.renewedrenewedrenewedrenewed", holdFor: `${soon} 10:00`, holdExpiresAt: new Date(Date.now() + 30 * 60000).toISOString(), timeConfirmed: true, updatedAt: Date.now() };
+    const { ctx, page, state, errors } = await open(browser, { me: activeMember, draft: returning() });
+    await page.goto(`${BASE}/book/handyman?resume=membership`, { waitUntil: "networkidle" });
+    await page.locator("[data-handyman-done]").waitFor({ timeout: 15000 });
+    check("back from Stripe: the server's booking is shown", /review it and confirm/i.test(await page.locator("[data-handyman-done]").innerText()) && state.draftViews >= 1);
+    check("back from Stripe: the page books nothing itself", state.bookings.length === 0, JSON.stringify(state.bookings));
+    check("back from Stripe: the draft is cleared once shown", (await page.evaluate(() => localStorage.getItem("pf_handyman_draft"))) === null);
+    check("back from Stripe: no page errors", errors.length === 0, errors.join(" | "));
+    await shot(page, "back-from-stripe");
+    await ctx.close();
+  }
+  {
+    // The webhook is late: after a short wait the page asks the server once to finish it.
+    let calls = 0;
+    const serverDraft = (state) => (state.draftFinishes ? { status: "booked", requestedDate: ymd(3), requestedTime: "10:00", booking: { bookingNumber: "55554444" } } : (calls++, { status: "checkout_open", requestedDate: ymd(3), requestedTime: "10:00" }));
+    const { ctx, page, state } = await open(browser, { me: activeMember, draft: returning(), serverDraft });
+    await page.goto(`${BASE}/book/handyman?resume=membership`, { waitUntil: "networkidle" });
+    await page.locator("[data-handyman-done]").waitFor({ timeout: 30000 });
+    check("slow webhook: the page asks the server to finish it (once), then shows the booking", state.draftFinishes === 1 && state.bookings.length === 0 && calls >= 1, `${state.draftFinishes} ${calls}`);
+    await ctx.close();
+  }
+  {
+    // The server could not keep the time (taken before the payment came through).
+    const serverDraft = () => ({ status: "needs_admin", reason: "slot_unavailable", requestedDate: ymd(3), requestedTime: "10:00" });
     const member = customer({ addresses: [{ ...ADDRESS, hasActiveSubscription: true, plan: "plus", firstVisitExempt: true }] });
-    const { ctx, page, state, errors } = await open(browser, { me: member, draft });
+    const { ctx, page, state } = await open(browser, { me: member, draft: returning(), serverDraft });
+    await page.goto(`${BASE}/book/handyman?resume=membership`, { waitUntil: "networkidle" });
+    const booker = page.locator("[data-handyman-booker]");
+    await booker.locator(".bk-banner").waitFor({ timeout: 20000 });
+    check("time not kept: membership active, pick another time, explained", (await booker.getAttribute("data-step")) === "2" && /membership is active/i.test(await booker.innerText()) && /just taken/i.test(await booker.innerText()) && state.bookings.length === 0);
+    const day = await booker.locator(".bk-day[aria-pressed=true]").getAttribute("data-day").catch(() => "");
+    check("time not kept: the calendar still offers soon times (the exemption is theirs)", day && day < ymd(7), day);
+    await ctx.close();
+  }
+  {
+    // Paid, but the server has not finished yet: they are told it will be booked and emailed.
+    const serverDraft = () => ({ status: "paid", requestedDate: ymd(3), requestedTime: "10:00" });
+    const { ctx, page, state } = await open(browser, { me: activeMember, draft: returning(), serverDraft });
+    await page.goto(`${BASE}/book/handyman?resume=membership`, { waitUntil: "networkidle" });
+    await page.locator("[data-done-pending]").waitFor({ timeout: 40000 });
+    check("still confirming: told the visit is being booked and emailed, no need to wait", /Payment received/.test(await page.locator("[data-done-pending]").innerText()) && state.bookings.length === 0);
+    await ctx.close();
+  }
+  {
+    // An older tab (checkout opened before this release, no saved draft) still books on return, inside the seven days.
+    const member = customer({ addresses: [{ ...ADDRESS, hasActiveSubscription: true, plan: "plus", firstVisitExempt: true }] });
+    const { ctx, page, state } = await open(browser, { me: member, draft: returning({ firstVisitDraftId: "" }) });
     await page.goto(`${BASE}/book/handyman?resume=membership`, { waitUntil: "networkidle" });
     await page.locator("[data-handyman-done]").waitFor({ timeout: 15000 });
     const b = state.bookings[0] || {};
-    check("back from Stripe: the visit is booked at the held time (inside the member seven days)", state.bookings.length === 1 && b.requestedDate === soon && b.requestedTime === "10:00" && b.holdToken === "h9.renewedrenewedrenewedrenewed", JSON.stringify(state.bookings));
-    check("back from Stripe: it awaits the owner's review", /review it and confirm/i.test(await page.locator("[data-handyman-done]").innerText()));
-    check("back from Stripe: no page errors", errors.length === 0, errors.join(" | "));
-    await shot(page, "back-from-stripe");
+    check("older tab: booked at the held time on return", state.bookings.length === 1 && b.requestedDate === ymd(3) && b.requestedTime === "10:00", JSON.stringify(state.bookings));
     await ctx.close();
   }
   {
