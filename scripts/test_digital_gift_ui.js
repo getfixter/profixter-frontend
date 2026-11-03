@@ -73,7 +73,7 @@ function codeOnly(src) {
 console.log("\nReal brand assets\n");
 
 check("the card uses the real ProFixter logo file, not an invented mark", () => {
-  has(card, '"/images/logo-footer.svg"', "the card must use the repository's logo");
+  has(card, '"/images/profixter-logo.webp"', "the card must use the repository's logo (the 2026-11-03 badge)");
   lacks(card, "<svg", "no hand-drawn logo may be introduced");
   for (const fake of ["placeholder", "logo-gift", "gift-logo"]) {
     lacks(card.toLowerCase(), fake, `a ${fake} asset must not be referenced`);

@@ -116,7 +116,8 @@ async function layout(page, primary) {
       inputs: inputs.map((i) => ({ ...r(i), font: parseFloat(getComputedStyle(i).fontSize) })),
       btn: btn ? r(btn) : null,
       brand: q(".auth-brand") ? r(q(".auth-brand")) : null,
-      wordmark: !!q(".auth-brand svg.ui-wordmark"),
+      // The logo badge (2026-11-03), loaded, not a broken image.
+      wordmark: (() => { const i = q(".auth-brand img.ui-wordmark"); return !!i && i.complete && i.naturalWidth > 0 && /profixter-logo/.test(i.getAttribute("src") || ""); })(),
       darkLeftovers: document.querySelectorAll('[class*="text-white"],[class*="bg-white/"]').length,
     };
   }, primary);

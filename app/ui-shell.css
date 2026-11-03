@@ -48,8 +48,9 @@
     min-height: 44px;
     border-radius: 6px;
   }
+  /* The logo badge (ui/Wordmark): most of the bar's height, so its lettering stays legible. */
   .hd__mark {
-    height: 16px;
+    --wm-h: 42px;
   }
   .hd__nav {
     display: none;
@@ -129,7 +130,7 @@
 
   @media (min-width: 640px) {
     .hd__mark {
-      height: 17px;
+      --wm-h: 44px;
     }
   }
 
@@ -138,7 +139,7 @@
       height: 64px;
     }
     .hd__mark {
-      height: 18px;
+      --wm-h: 48px;
     }
     .hd__nav {
       display: flex;
@@ -507,7 +508,7 @@
     grid-column: 1 / -1;
   }
   .ft__mark {
-    height: 18px;
+    --wm-h: 56px;
   }
   .ft__line {
     margin: 8px 0 0;
@@ -660,3 +661,67 @@
     }
   }
 }
+
+/*
+ * The floating Call button (components/FloatingCallButton), bottom left, the
+ * mirror of the support chat button: the same bottom offset, centred on the
+ * same line. The dot is small; the link around it is the --tap target (44
+ * screen pixels at any zoom). Icon only below 1024px, a "Call" pill above.
+ */
+.pf-call {
+  --pf-call-h: max(44px, var(--tap, 44px));
+  position: fixed;
+  left: max(10px, env(safe-area-inset-left, 0px));
+  bottom: calc(var(--pf-support-chat-bottom-mobile, 16px) - (var(--pf-call-h) - 44px) / 2);
+  z-index: 55;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--pf-call-h);
+  height: var(--pf-call-h);
+  color: var(--ui-ink, #0b1628);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.pf-call__dot {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--ui-line-2, #d9dee7);
+  border-radius: 999px;
+  background: var(--ui-bg, #fff);
+  color: var(--ui-accent, #2f6fe4);
+  box-shadow: 0 6px 18px rgba(11, 22, 40, 0.12);
+  transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+.pf-call:hover .pf-call__dot { border-color: #c5cbd8; box-shadow: 0 8px 22px rgba(11, 22, 40, 0.16); }
+.pf-call:focus-visible { outline: none; }
+.pf-call:focus-visible .pf-call__dot { outline: 2px solid var(--ui-accent, #2f6fe4); outline-offset: 2px; }
+.pf-call__label {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.pf-call { transition: opacity 140ms ease, visibility 0s linear 0s; }
+.pf-call[data-covering="1"] { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 140ms ease, visibility 0s linear 140ms; }
+.pf-call[data-typing="1"],
+html[data-pf-start="covering"] .pf-call { display: none; }
+@media (min-width: 1024px) {
+  .pf-call {
+    left: max(16px, env(safe-area-inset-left, 0px));
+    bottom: var(--pf-support-chat-bottom, 24px);
+    height: 44px;
+  }
+  .pf-call__dot {
+    width: auto;
+    height: 40px;
+    gap: 7px;
+    padding: 0 14px 0 12px;
+    grid-auto-flow: column;
+  }
+  .pf-call__label {
+    position: static; width: auto; height: auto; overflow: visible; clip: auto;
+    font-size: 14px; font-weight: 600; color: var(--ui-ink, #0b1628);
+  }
+}
+@media print { .pf-call { display: none; } }
+@media (prefers-reduced-motion: reduce) { .pf-call__dot { transition: none; } }

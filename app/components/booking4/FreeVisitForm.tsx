@@ -24,6 +24,11 @@ import PhotoPicker from "./PhotoPicker";
  *
  * The server (routes/freeVisitRequests.js, formVersion "cx4") reserves the slot
  * as a booking pending the owner's approval; nothing here calls it confirmed.
+ *
+ * `embedded`: the same form inside the homepage's booking panel
+ * (home/HomeBookingPanel) - no heading of its own (the page has its h1), drawn
+ * compact, and "I Need a Handyman Instead" hands over to the panel's other tab
+ * through `onNeedHandyman` instead of opening /book/handyman.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
@@ -71,7 +76,7 @@ function urlParamsNow() {
   }
 }
 
-export default function FreeVisitForm() {
+export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { embedded?: boolean; onNeedHandyman?: () => void } = {}) {
   const router = useRouter();
   const { user } = useAuth();
   const [name, setName] = useState("");
@@ -139,7 +144,7 @@ export default function FreeVisitForm() {
   const markStarted = () => {
     if (started.current) return;
     started.current = true;
-    trackEvent("free_visit_flow_started", { placement: "free_visit_form" });
+    trackEvent("free_visit_flow_started", { placement: embedded ? "home_booking_panel" : "free_visit_form" });
   };
 
   const validate = (): Errors => {
@@ -209,7 +214,8 @@ export default function FreeVisitForm() {
         writeDraft(null);
         setSheet(false);
         setPhase("done");
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        if (embedded) rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        else window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
       setSheet(false);
@@ -251,7 +257,10 @@ export default function FreeVisitForm() {
       choice: "",
     });
     await saveHandymanPhotos(photos);
-    router.push("/book/handyman?from=free-visit");
+    if (onNeedHandyman) {
+      setSheet(false);
+      onNeedHandyman();
+    } else router.push("/book/handyman?from=free-visit");
   };
 
   const requestCallback = async () => {
@@ -286,18 +295,21 @@ export default function FreeVisitForm() {
   };
 
   if (phase === "done") {
+    const Title = embedded ? "h2" : "h1";
     return (
-      <div className="bk" data-free-visit-done>
+      <div className={embedded ? "bk bk--embedded" : "bk"} data-free-visit-done ref={rootRef}>
         <div className="bk-card bk-done">
           <div className="bk-done-icon" aria-hidden="true">✓</div>
-          <h1 className="bk-title">Request received</h1>
+          <Title className="bk-title">Request received</Title>
           <p className="bk-lede">
             We&apos;ve reserved <b>{formatWhen(when.date, when.time)}</b> for your Free Visit. A Profixter team member will confirm it with you shortly.
           </p>
           <p className="bk-note" style={{ marginTop: 12 }}>The details are on their way to your email and phone.</p>
-          <div className="bk-actions">
-            <Link className="bk-btn" href="/">Back to home</Link>
-          </div>
+          {!embedded && (
+            <div className="bk-actions">
+              <Link className="bk-btn" href="/">Back to home</Link>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -315,12 +327,14 @@ export default function FreeVisitForm() {
   });
 
   return (
-    <div className="bk bk--free" data-free-visit-form onFocusCapture={markStarted} ref={rootRef}>
-      <header className="bk-head">
-        <span className="bk-eyebrow">Free · No account needed</span>
-        <h1 className="bk-title">Let&apos;s look at your to-do list</h1>
-        <p className="bk-lede">We visit, go over what you need and recommend the right service.</p>
-      </header>
+    <div className={`bk bk--free${embedded ? " bk--embedded" : ""}`} data-free-visit-form onFocusCapture={markStarted} ref={rootRef}>
+      {!embedded && (
+        <header className="bk-head">
+          <span className="bk-eyebrow">Free · No account needed</span>
+          <h1 className="bk-title">Let&apos;s look at your to-do list</h1>
+          <p className="bk-lede">We visit, go over what you need and recommend the right service.</p>
+        </header>
+      )}
 
       {errors.form && <div className="bk-banner bk-banner--warn">{errors.form}</div>}
 

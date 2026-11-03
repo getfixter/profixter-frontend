@@ -4,6 +4,7 @@ import Script from "next/script";
 import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
 import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
+import FloatingCallButton from "./components/FloatingCallButton";
 import SupportChat from "./components/support/SupportChat";
 import FixterStage from "./components/fixter/FixterStage";
 import { siteFontVariables } from "./site-fonts";
@@ -289,6 +290,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           <CustomerSiteMobileNav />
           {/* The floating customer-support assistant; it decides for itself where it shows. */}
           <SupportChat />
+          {/* Its mirror on the left: one tap to call (customer pages only). */}
+          <FloatingCallButton />
         </Providers>
       </body>
     </html>

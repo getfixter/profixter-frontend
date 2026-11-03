@@ -56,11 +56,10 @@ async function scrollThrough(page) {
 
   /* ---------------- the first screen: two ways to start ---------------- */
   /*
-   * Customer Experience 4.0 (2026-10-30): no booking form on Home. The first
-   * screen on a phone names the product and offers the two ways to start -
-   * Free Visit (/book/free, a to-do-list visit, no account) and Book a
-   * Handyman (/book/handyman) - both visible without scrolling. Nothing on
-   * Home sends a new visitor to a signup form first.
+   * Homepage booking panel (2026-11-03): the first screen on a phone names the
+   * product and opens the two ways to start in place - a Free Visit | Book a
+   * Handyman switch with the real Free Visit form (no account) already open.
+   * Nothing on Home sends a new visitor to a signup form first.
    */
   {
     const { ctx, page } = await openPage(browser, 390, 844);
@@ -77,9 +76,9 @@ async function scrollThrough(page) {
       return {
         headline: t.includes("Your home.") && t.includes("Your handyman."),
         noLaborPromise: !/first 90-minute visit|90 minutes are on us/i.test(t),
-        freeVisitFirstScreen: onScreen("[data-hero-cta='free-visit']"),
-        handymanFirstScreen: onScreen("[data-hero-cta='book-handyman']"),
-        noForm: !document.querySelector("[data-fv='note'], [data-free-visit-form]"),
+        freeVisitFirstScreen: onScreen("[data-home-tab='free']"),
+        handymanFirstScreen: onScreen("[data-home-tab='handyman']"),
+        formOpen: !!document.querySelector("[data-home-booking] [data-free-visit-form]"),
         noStartScreen: !document.querySelector(".start-screen"),
         noSignupWall: !document.querySelector('a[href^="/signup"]'),
         oldAnchor: !!document.getElementById("book"),
@@ -89,7 +88,7 @@ async function scrollThrough(page) {
     check("no free-labor promise on Home", s.noLaborPromise, "");
     check("Free Visit on the first screen (390px)", s.freeVisitFirstScreen, "");
     check("Book a Handyman on the first screen (390px)", s.handymanFirstScreen, "");
-    check("no booking form competing on Home", s.noForm, "");
+    check("the Free Visit form is open on Home", s.formOpen, "");
     check("old links to /#book still land on the ways to start", s.oldAnchor, "");
     check("old start screen removed", s.noStartScreen, "");
     check("no signup link anywhere on Home", s.noSignupWall, "");

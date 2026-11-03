@@ -215,10 +215,10 @@ export default function DigitalGiftReveal({
           <span className="relative z-10 flex w-full flex-col items-center justify-center gap-[62px] px-7 sm:gap-[74px]">
             <span className="flex flex-col items-center gap-3 sm:gap-3.5">
               <Image
-                src="/images/logo-footer.svg"
+                src="/images/profixter-logo.webp"
                 alt=""
-                width={113}
-                height={24}
+                width={81}
+                height={34}
                 className="gift-card-logo"
               />
               <span className="text-[12px] font-medium uppercase tracking-[0.24em] text-[#A8BEE2]">

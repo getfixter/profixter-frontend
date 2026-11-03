@@ -10,15 +10,20 @@
  * Included (before/after, moved up in Customer Experience 4.2), what each path
  * is, membership, trust, questions.
  *
- * Short text only. Details live behind links and a closed FAQ. There is no
- * booking form on this page: each path has its own focused page
- * (/book/free, /book/handyman), so nothing here competes with them.
+ * Short text only. Details live behind links and a closed FAQ.
+ *
+ * Homepage booking panel (2026-11-03): the two ways to start are no longer
+ * tiles that open another page. Under the headline sits the panel itself
+ * (HomeBookingPanel) - a Free Visit | Book a Handyman switch with the real form
+ * already open - and the photo follows it. /book/free and /book/handyman stay
+ * for direct links, ads and the event kiosk; all three share one component each.
  */
 
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import { HomeExtras, MemberPromo } from "./HomePersonal";
+import HomeBookingPanel from "./HomeBookingPanel";
 import GoogleRatingCompact from "@/app/components/home/GoogleRatingCompact";
 import WhatWeDo from "@/app/components/whatwedo/WhatWeDo";
 import Reveal from "@/app/components/ui/Reveal";
@@ -97,27 +102,9 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
             <p className="ui-lede hm-hero__lede ui-rise" style={{ animationDelay: "120ms" }}>
               Local Fixters for the small jobs around your house. Nassau &amp; Suffolk.
             </p>
-            <div className="hm-choices ui-rise" style={{ animationDelay: "180ms" }} data-hero-choices>
-              <Link
-                href="/book/free"
-                className="hm-choice"
-                data-hero-cta="free-visit"
-                onClick={() => trackEvent("free_visit_cta_clicked", { placement: "home_hero" })}
-              >
-                <span className="hm-choice__name">Free Visit</span>
-                <span className="hm-choice__desc">We&rsquo;ll look at your to-do list</span>
-                <span className="hm-choice__go" aria-hidden="true"><Arrow /></span>
-              </Link>
-              <Link
-                href="/book/handyman"
-                className="hm-choice hm-choice--primary"
-                data-hero-cta="book-handyman"
-                onClick={() => trackEvent("book_handyman_clicked", { placement: "home_hero" })}
-              >
-                <span className="hm-choice__name">Book a Handyman</span>
-                <span className="hm-choice__desc">Get the work done</span>
-                <span className="hm-choice__go" aria-hidden="true"><Arrow /></span>
-              </Link>
+            {/* Not .ui-rise: its lasting transform would trap the forms' full-screen confirmation sheet. */}
+            <div className="hm-book" data-hero-choices>
+              <HomeBookingPanel />
             </div>
             <p className="hm-hero__offer ui-rise" style={{ animationDelay: "240ms" }}>
               <span>

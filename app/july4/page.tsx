@@ -176,12 +176,12 @@ export default function July4Page() {
             className="rounded-[6px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
           >
             <Image
-              src="/images/logo-footer.svg"
+              src="/images/profixter-logo.webp"
               alt="Profixter"
-              width={160}
-              height={42}
+              width={640}
+              height={270}
               priority
-              className="h-auto w-[126px] sm:w-[150px]"
+              className="h-auto w-[110px] sm:w-[130px]"
             />
           </Link>
           <a
@@ -610,11 +610,11 @@ export default function July4Page() {
         <div className="mx-auto flex max-w-[1120px] flex-col items-center justify-between gap-5 sm:flex-row">
           <Link href="/">
             <Image
-              src="/images/logo-footer.svg"
+              src="/images/profixter-logo.webp"
               alt="Profixter"
-              width={135}
-              height={36}
-              className="h-auto w-[125px]"
+              width={640}
+              height={270}
+              className="h-auto w-[120px]"
             />
           </Link>
           <div className="flex flex-wrap items-center justify-center gap-5 text-[12px] font-semibold text-white/45">

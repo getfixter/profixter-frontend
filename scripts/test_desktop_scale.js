@@ -91,10 +91,14 @@ const probe = (page, cls) => page.evaluate((c) => {
     await ctx.close();
   }
   console.log("   home h1:", JSON.stringify(sizes));
-  /* Compact pass: the display size comes from app/site-scale.css (27px on a phone, 44px at most), before the site zoom. */
+  /*
+   * The display size comes from app/site-scale.css before the site zoom: 27px
+   * on a phone; from 1024px it ramps clamp(40px, 1.6vw + 24px, 56px) (desktop
+   * sizing, fe 8e4283b) - 47px at 1440, never above 56px.
+   */
   check("phone keeps the phone display size", sizes.phone === 27, `${sizes.phone}px`);
-  check("designed size from 1440px wide", sizes["1440"] === 44, `${sizes["1440"]}px`);
-  check("never above the designed size", sizes["1920"] === 44 && sizes["2560"] === 44);
+  check("designed size at 1440px wide", sizes["1440"] === 47, `${sizes["1440"]}px`);
+  check("never above the designed size", sizes["1920"] <= 56 && sizes["2560"] === 56, `${sizes["1920"]} / ${sizes["2560"]}`);
   check("a laptop gets a smaller headline", sizes.laptop < sizes["1280"] && sizes["1280"] < sizes["1440"], `${sizes.laptop} < ${sizes["1280"]} < ${sizes["1440"]}`);
   check("150% zoom gets smaller still", sizes["150% zoom"] < sizes.laptop && sizes["150% zoom"] >= 36, `${sizes["150% zoom"]}px`);
 
@@ -125,10 +129,10 @@ const probe = (page, cls) => page.evaluate((c) => {
 
   for (const [w, h] of [[1024, 768], [1366, 657], [1920, 969]]) {
     const { ctx, page } = await open(browser, w, h, "/");
-    /* Customer Experience 4.0: the two ways to start; neither tile may clip or overflow. */
+    /* The homepage booking panel's two tabs (2026-11-03); neither may clip or overflow. */
     await page.waitForSelector("[data-hero-choices]", { timeout: 5000 }).catch(() => {});
     const out = await page.evaluate(() => {
-      const tiles = [...document.querySelectorAll("[data-hero-cta]")];
+      const tiles = [...document.querySelectorAll("[data-home-tab]")];
       if (tiles.length !== 2) return null;
       return tiles
         .filter((t) => {

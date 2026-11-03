@@ -170,10 +170,10 @@ export default function DigitalGiftCard({
         {/* Content stops before the ribbon rather than running under it. */}
         <div className="relative">
           <Image
-            src="/images/logo-footer.svg"
+            src="/images/profixter-logo.webp"
             alt="ProFixter"
-            width={113}
-            height={24}
+            width={81}
+            height={34}
             className={compact ? "gift-card-logo-compact" : "gift-card-logo"}
           />
 
