@@ -72,7 +72,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
           <p>
             &copy; 2026 Premium Island Homes Inc., d/b/a ProFixter. All rights reserved. &middot; Suffolk County Licensed HI-71484
           </p>
-          <p>Licensed &amp; insured &middot; Serving Nassau &amp; Suffolk</p>
+          <p>Fully insured &middot; Serving Nassau &amp; Suffolk</p>
         </div>
       </div>
     </footer>

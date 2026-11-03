@@ -18,7 +18,7 @@ const OG_IMAGE = {
 
 const TITLE = "Kitchen & Bathroom Remodeling in the Hamptons | Profixter";
 const DESCRIPTION =
-  "Profixter renovates kitchens and bathrooms across the Hamptons and Long Island. See real completed projects, then request an estimate. Licensed HI-71484, fully insured.";
+  "Profixter renovates kitchens and bathrooms across the Hamptons and Long Island. See real completed projects, then request an estimate. Suffolk County licensed (HI-71484), fully insured.";
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
