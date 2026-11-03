@@ -7,8 +7,10 @@
  * The mock answers as BackEnd routes/freeVisitRequests.js, requests.js,
  * bookings.js and stripe.js do (pinned by BackEnd scripts/test_cx4_integration.js).
  *
- * - Homepage: both ways to start (Free Visit, Book a Handyman) are inside the
- *   first screen at common phone sizes; headline readable; no sideways scroll.
+ * - Homepage: both tabs of the booking panel (Free Visit, Book a Handyman) are
+ *   inside the first screen at common phone sizes, the Free Visit form open;
+ *   headline readable; no sideways scroll (the panel itself:
+ *   test_home_booking_ui.js).
  * - Free Visit: only name, phone, email, address, day and time are required;
  *   the sheet says labor isn't included; Confirm submits once (formVersion
  *   cx4, address fields); Call Us dials; Request a Callback creates one lead;
@@ -207,16 +209,16 @@ async function fillAddress(scope, { line1, city, zip }) {
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await page.locator("[data-hero-choices]").waitFor({ timeout: 20000 });
     await page.waitForTimeout(700);
-    const free = await inFirstScreen(page, "[data-hero-cta='free-visit']");
-    const handy = await inFirstScreen(page, "[data-hero-cta='book-handyman']");
+    /* Homepage booking panel (2026-11-03): both tabs and the open Free Visit form are in the first screen. */
+    const free = await inFirstScreen(page, "[data-home-tab='free']");
+    const handy = await inFirstScreen(page, "[data-home-tab='handyman']");
     check(`${name}: Free Visit visible without scrolling`, free.ok, JSON.stringify(free));
     check(`${name}: Book a Handyman visible without scrolling`, handy.ok, JSON.stringify(handy));
     const title = await inFirstScreen(page, "#hm-title");
     const size = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector("#hm-title")).fontSize));
     check(`${name}: headline on screen and readable`, title.ok && size >= 22, `font ${size}`);
-    check(`${name}: links go to the two flows`, (await page.getAttribute("[data-hero-cta='free-visit']", "href")) === "/book/free" && (await page.getAttribute("[data-hero-cta='book-handyman']", "href")) === "/book/handyman");
+    check(`${name}: Free Visit is open first, with the real form`, (await page.getAttribute("[data-home-tab='free']", "aria-selected")) === "true" && (await page.locator("[data-home-booking] [data-free-visit-form].bk--embedded").count()) === 1);
     check(`${name}: no sideways scroll`, await noSideScroll(page));
-    check(`${name}: no booking form competing on the homepage`, (await page.locator("form, [data-free-visit-form]").count()) === 0);
     check(`${name}: no page errors`, errors.length === 0, errors.join(" | "));
     await shot(page, `home-${name}`);
     await ctx.close();

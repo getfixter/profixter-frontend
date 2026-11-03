@@ -49,7 +49,7 @@ import {
 import { compose, geometry, type Card } from "./spatial";
 import "./event-kiosk.css";
 
-const LOGO = "/images/logo-footer.svg";
+const LOGO = "/images/profixter-logo.webp";
 const CTA_PATH = "/book/free?source=event";
 const REFRESH_MS = 30 * 60 * 1000;
 const REFRESH_WHEN_EMPTY_MS = 60 * 1000;

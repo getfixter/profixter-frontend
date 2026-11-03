@@ -558,6 +558,11 @@ const asRegistered = (complete = true) => async (ctx) => {
     await page.waitForSelector("[data-halloween]", { timeout: 20000 });
     await page.waitForTimeout(1200);
     const text = await page.locator("[data-halloween]").innerText();
+    // The campaign ended 2026-11-03 04:59:59Z: from then on the page says so and offers nothing (app/halloween/page.tsx).
+    if (Date.now() > Date.parse("2026-11-03T04:59:59Z")) {
+      check("halloween (after the end): the page says the offer has ended and offers no claim", (await page.locator("[data-campaign-ended]").count()) === 1 && (await page.locator("[data-action='claim-halloween']").count()) === 0, text.slice(0, 160));
+      await ctx.close();
+    } else {
     check("halloween: the landing page states the offer and its terms", /20% off your first membership payment/i.test(text) && /renewals are at the regular price/i.test(text) && /through November 2, 2026/.test(text) && /timer starts when you open the offer/i.test(text), "");
     const prices = await page.locator("[data-halloween-prices]").innerText();
     check("halloween: every plan priced, monthly and annual, from the live prices", /\$149\s*\$119\.20/.test(prices) && /\$499\s*\$399\.20/.test(prices) && /\$1,490\s*\$1,192/.test(prices) && /\$4,990\s*\$3,992/.test(prices), prices.replace(/\s+/g, " "));
@@ -571,6 +576,7 @@ const asRegistered = (complete = true) => async (ctx) => {
     await page.waitForTimeout(1500);
     check("halloween: signed out on the plans page, the offer is explained (no timer yet)", (await page.locator("[data-campaign-note]").count()) === 1 && (await page.locator("[data-welcome-offer]").count()) === 0, "");
     await ctx.close();
+    }
   }
   {
     const activations = [];

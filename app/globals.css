@@ -427,19 +427,20 @@ select:-webkit-autofill:active {
    utilities, which live in a cascade layer. A utility class here renders the
    mark at its full 357x76 intrinsic size and swallows the card.
 */
+/* The logo badge is about half as wide for its height as the old wordmark: taller, to read at the same size. */
 .gift-card-logo {
-  height: 19px;
+  height: 34px;
   width: auto;
 }
 
 @media (min-width: 640px) {
   .gift-card-logo {
-    height: 23px;
+    height: 40px;
   }
 }
 
 .gift-card-logo-compact {
-  height: 15px;
+  height: 28px;
   width: auto;
 }
 
@@ -728,12 +729,12 @@ select:-webkit-autofill:active {
 }
 
 .auth-brand .ui-wordmark {
-  height: 17px;
+  --wm-h: 40px;
 }
 
 @media (min-width: 640px) {
   .auth-brand .ui-wordmark {
-    height: 19px;
+    --wm-h: 44px;
   }
 }
 

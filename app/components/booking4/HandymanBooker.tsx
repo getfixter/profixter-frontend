@@ -41,6 +41,11 @@ import { WELCOME_OFFER_ERROR_CODES, formatCents, offerPrice, useWelcomeOffer } f
  * (Customer Experience 4.2); nothing is held until they press Continue. Every money rule is the server's: one checkout per
  * press (clientRequestId), the slot held while paying, no second membership for
  * a home, the member seven-day lead time.
+ *
+ * `embedded`: the same flow inside the homepage's booking panel
+ * (home/HomeBookingPanel) - no h1 (the page has its own), drawn compact. Signing
+ * in and both checkouts still return to /book/handyman, where the saved draft
+ * picks up exactly where the homepage left it.
  */
 
 const TZ = "America/New_York";
@@ -99,7 +104,7 @@ function sameAddress(a: { line1?: string; zip?: string }, b: { line1?: string; z
   return norm(a.line1) === norm(b.line1) && norm(a.zip) === norm(b.zip);
 }
 
-export default function HandymanBooker() {
+export default function HandymanBooker({ embedded = false, fromFreeVisit = false }: { embedded?: boolean; fromFreeVisit?: boolean } = {}) {
   const router = useRouter();
   const params = useSearchParams();
   const { user, isLoading, refreshUser } = useAuth();
@@ -122,6 +127,7 @@ export default function HandymanBooker() {
   const [memberLead, setMemberLead] = useState(false);
   const pressing = useRef(false);
   const resumed = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const update = useCallback((patch: Partial<HandymanDraft>) => {
     setDraft((prev) => {
@@ -194,7 +200,7 @@ export default function HandymanBooker() {
     resumed.current = true;
     const canceled = params.get("canceled");
     const resume = params.get("resume");
-    if (params.get("from") === "free-visit") setBanner({ tone: "info", text: "Your details came with you. Tell us what needs doing." });
+    if (params.get("from") === "free-visit" || fromFreeVisit) setBanner({ tone: "info", text: "Your details came with you. Tell us what needs doing." });
     if (canceled === "1") {
       const id = params.get("booking_id") || draft.pendingBookingId;
       if (id && user) API.post(`/api/bookings/one-time/${id}/abandon`).catch(() => undefined);
@@ -226,6 +232,13 @@ export default function HandymanBooker() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, isLoading]);
+
+  // On the homepage a step can open above the screen (the job card is taller than the calendar): bring its top back.
+  useEffect(() => {
+    if (!embedded) return;
+    const el = rootRef.current;
+    if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [step, embedded]);
 
   // A signed-in customer with homes: preselect their first one if none chosen.
   useEffect(() => {
@@ -458,14 +471,14 @@ export default function HandymanBooker() {
     }
   };
 
-  if (!ready) return <div className="bk" style={{ minHeight: 420 }} aria-busy="true" />;
+  if (!ready) return <div className={embedded ? "bk bk--embedded" : "bk"} style={{ minHeight: embedded ? 320 : 420 }} aria-busy="true" />;
 
   if (done) {
     return (
-      <div className="bk" data-handyman-done>
+      <div className={embedded ? "bk bk--embedded" : "bk"} data-handyman-done>
         <div className="bk-card bk-done">
           <div className="bk-done-icon" aria-hidden="true">✓</div>
-          <h1 className="bk-title">Visit requested</h1>
+          {embedded ? <h2 className="bk-title">Visit requested</h2> : <h1 className="bk-title">Visit requested</h1>}
           <p className="bk-lede">
             We have your request for <b>{done.when}</b>. We&apos;ll review it and confirm your appointment shortly.
           </p>
@@ -487,13 +500,18 @@ export default function HandymanBooker() {
       : "";
 
   return (
-    <div className="bk" data-handyman-booker data-step={step}>
-      <header className="bk-head">
-        <span className="bk-eyebrow">Book a Handyman</span>
-        <h1 className="bk-title">
-          {step === 1 ? "What needs doing?" : step === 2 ? "When works for you?" : step === 3 ? "Almost there" : "How would you like to book?"}
-        </h1>
-      </header>
+    <div className={embedded ? "bk bk--embedded" : "bk"} data-handyman-booker data-step={step} ref={rootRef}>
+      {/* On the homepage the panel's tab names the flow, and step 1's own label says what to do. */}
+      {!embedded ? (
+        <header className="bk-head">
+          <span className="bk-eyebrow">Book a Handyman</span>
+          <h1 className="bk-title">
+            {step === 1 ? "What needs doing?" : step === 2 ? "When works for you?" : step === 3 ? "Almost there" : "How would you like to book?"}
+          </h1>
+        </header>
+      ) : step > 1 ? (
+        <h2 className="bk-step-title">{step === 2 ? "When works for you?" : step === 3 ? "Almost there" : "How would you like to book?"}</h2>
+      ) : null}
       <div className="bk-steps" aria-hidden="true">
         {[1, 2, 3, 4].map((n) => <span key={n} data-on={step >= n ? "1" : "0"} />)}
       </div>

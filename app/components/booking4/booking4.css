@@ -335,3 +335,40 @@
 .bk-plan-terms { margin-top: 10px; }
 .bk-offer { margin-bottom: 10px; }
 @media (prefers-reduced-motion: reduce) { .bk-chip { transition: none; } }
+
+/* ---- Homepage booking panel (2026-11-03) ------------------------------ */
+/*
+ * The same forms inside the homepage's panel (home/HomeBookingPanel), which
+ * is the card: no card of their own, no page padding, tighter spacing. Fields,
+ * days, times and buttons keep the --tap minimum (44 screen pixels). Only
+ * .bk--embedded is touched; /book/free and /book/handyman draw as before.
+ */
+.bk--embedded { --bk-field-h: max(50px, var(--tap, 48px)); max-width: none; margin: 0; padding: 0; }
+.bk--embedded .bk-card { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.bk--embedded .bk-card + .bk-card { margin-top: 12px; }
+.bk--embedded .bk-field { margin-bottom: 8px; }
+.bk--embedded .bk-row--pair { gap: 8px; margin-bottom: 8px; }
+.bk--embedded .bk-row--pair > .bk-field { margin-bottom: 0; }
+.bk--embedded .bk-input--float { padding: 20px 13px 4px; }
+.bk--embedded .bk-input--float:focus + .bk-float-label,
+.bk--embedded .bk-input--float:not(:placeholder-shown) + .bk-float-label,
+.bk--embedded .bk-input--float:-webkit-autofill + .bk-float-label { top: 13px; font-size: 12px; }
+.bk--embedded .bk-label { margin-bottom: 4px; font-size: 14px; }
+.bk--embedded .bk-when { margin-top: 2px; }
+.bk--embedded .bk-days { gap: 6px; padding-bottom: 6px; }
+.bk--embedded .bk-day { width: 54px; min-height: var(--tap, 44px); padding: 4px 0; }
+.bk--embedded .bk-day b { font-size: 17px; }
+.bk--embedded .bk-day span { font-size: 11px; }
+.bk--embedded .bk-day--ghost { height: 58px; }
+.bk--embedded .bk-times { gap: 6px; margin-top: 2px; }
+.bk--embedded .bk-time { min-height: var(--tap, 44px); font-size: 14.5px; }
+.bk--embedded .bk-more { margin-top: 0; }
+.bk--embedded .bk-optional { margin-top: 8px; }
+.bk--embedded .bk-textarea { min-height: 72px; }
+.bk--embedded .bk-chips { margin-bottom: 6px; }
+.bk--embedded .bk-steps { margin-bottom: 10px; }
+.bk--embedded .bk-step-title { margin: 0 0 8px; font-size: 17px; font-weight: 800; line-height: var(--ui-lh-tight); color: var(--ui-ink); }
+.bk--embedded .bk-banner { margin-bottom: 10px; padding: 10px 12px; }
+.bk--embedded .bk-actions { margin-top: 10px; gap: 6px; }
+.bk--embedded .bk-option { padding: 12px 14px; }
+.bk--embedded .bk-done { padding: var(--ui-s5) 0 var(--ui-s3); }

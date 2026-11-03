@@ -66,8 +66,8 @@ const text = (page) => page.locator("main").first().innerText().catch(() => "");
     await page.waitForTimeout(800);
     check("visitor: the visitor homepage", /Your home\.\s*Your handyman\./.test(await text(page)));
     check("visitor: no membership promotion, no signed-in extras", (await page.locator("[data-home-promo]").count()) === 0 && (await page.locator("[data-home-extra]").count()) === 0);
-    // Customer Experience 4.0: the two ways to start, as links to their own pages (no form on the homepage).
-    check("visitor: Free Visit and Book a Handyman in the hero", (await page.locator("[data-hero-cta='free-visit'][href='/book/free']").count()) === 1 && (await page.locator("[data-hero-cta='book-handyman'][href='/book/handyman']").count()) === 1);
+    // Homepage booking panel (2026-11-03): the two ways to start as tabs, the Free Visit form open.
+    check("visitor: Free Visit and Book a Handyman in the hero", (await page.locator("[data-home-tab='free'][aria-selected='true']").count()) === 1 && (await page.locator("[data-home-tab='handyman']").count()) === 1 && (await page.locator("[data-home-booking] [data-free-visit-form]").count()) === 1);
     check("no membership map anywhere, never requested", (await page.locator("#membership-map-heading").count()) === 0 && seen.map === 0, `requests=${seen.map}`);
     check("visitor: no page errors", errors.length === 0, errors.join(" | "));
     await ctx.close();

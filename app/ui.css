@@ -467,12 +467,11 @@
     transform: scale(1.03);
   }
 
-  /* Inline SVG wordmark (app/components/ui/Wordmark.tsx): set a height, width follows. */
+  /* The logo (app/components/ui/Wordmark.tsx): set --wm-h (its height); the width follows. See the unlayered rule at the end of this file. */
   .ui-wordmark {
     display: block;
-    width: auto;
-    height: 18px;
-    aspect-ratio: 357 / 52;
+    aspect-ratio: 1231 / 520;
+    object-fit: contain;
   }
 
   .ui-hairline {
@@ -633,4 +632,15 @@
   .ui-rise {
     animation: none;
   }
+}
+
+/*
+ * Unlayered on purpose: globals.css has an unlayered `img { height: auto }`,
+ * and an unlayered rule beats every layered one whatever its specificity. The
+ * logo's height comes from --wm-h, which the header, footer and others set.
+ */
+img.ui-wordmark {
+  width: auto;
+  max-width: none;
+  height: var(--wm-h, 18px);
 }
