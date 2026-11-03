@@ -24,6 +24,21 @@ async function openPage(browser, width, height, path = "/") {
   const ctx = await browser.newContext({ viewport: { width, height }, isMobile: width < 700, hasTouch: width < 700 });
   /* Optional: a local build on a port the API's CORS list does not include. */
   if (process.env.PF_CORS_PROXY) await require(process.env.PF_CORS_PROXY)(ctx);
+  /*
+   * The What's Included gallery is fed by the public recent-work API, which a
+   * local build cannot reach (CORS) - and the section rightly hides itself
+   * then. Two fixture pairs keep the check about the page, not about the
+   * network. Images are the site's own.
+   */
+  await ctx.route(/\/api\/recent-work(\?|$)/, (route) => {
+    const pair = (id, title) => ({
+      id, title, caption: title, kind: "before_after", group: "Walls & Paint", illustrative: true, width: 1200, height: 896,
+      thumbUrl: "/images/og-default.jpg", imageUrl: "/images/og-default.jpg", fullUrl: "/images/og-default.jpg",
+      beforeThumbUrl: "/images/og-default.jpg", beforeImageUrl: "/images/og-default.jpg", beforeFullUrl: "/images/og-default.jpg",
+    });
+    route.fulfill({ contentType: "application/json", headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify({ photos: [pair("f1", "Drywall hole repair"), pair("f2", "Door adjustment")], page: 1, limit: 24, total: 2, hasMore: false }) });
+  });
   const page = await ctx.newPage();
   const heavy = [];
   page.on("request", (r) => {
@@ -116,8 +131,8 @@ async function scrollThrough(page) {
         beats: {
           how: /two ways to start/i.test(t),
           plans: t.includes("One membership. Every small job."),
-          // The What We Do gallery renders only when the API has pairs; the section heading is the beat.
-          work: /what we do/i.test(t) || /real work/i.test(t),
+          // The before/after gallery (headed "What's Included" since CX 4.2), found by its stable test id.
+          work: (document.querySelector('[data-testid="what-we-do"]')?.querySelectorAll("li").length || 0) >= 2,
           proof: t.includes("A local company, not a marketplace."),
           faq: !!document.querySelector("details.lx-faq"),
         },

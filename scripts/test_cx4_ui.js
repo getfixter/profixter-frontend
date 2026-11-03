@@ -34,6 +34,8 @@ const SCHEDULE = ["08:00", "10:00", "13:00", "15:30"];
 // Four days out is fully booked: every time taken. It must never be offered.
 const FULL_DAY_OFFSET = 4;
 const WELCOME_PLANS = { basic: { monthlyCents: 14900, firstMonthCents: 11920 }, plus: { monthlyCents: 24900, firstMonthCents: 19920 }, premium: { monthlyCents: 34900, firstMonthCents: 27920 }, elite: { monthlyCents: 49900, firstMonthCents: 39920 } };
+// The guest consent line, word for word (BackEnd routes/freeVisitRequests.js CONTACT_CONSENT_TEXT).
+const GUEST_LINE = "By requesting a visit, you agree that ProFixter may call or text you about this visit. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out or HELP for help.";
 const SHOTS = process.argv[3] || "";
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
@@ -248,6 +250,11 @@ async function fillAddress(scope, { line1, city, zip }) {
       await form.locator("input[name=name]").focus();
       await page.keyboard.press("Enter");
       check(`${tag}: keyboard Next moves from name to phone, without submitting`, (await page.evaluate(() => document.activeElement?.getAttribute("name"))) === "phone" && (await form.locator(".bk-error").count()) === 0);
+      /* 2026-11-03: the consent line under the button, word for word, with its documents; no checkbox. */
+      const consentLine = page.locator("[data-action='review-free-visit'] + [data-contact-consent]");
+      check(`${tag}: the consent line sits right under the Request button, word for word`, (await consentLine.count()) === 1 && (await consentLine.innerText()).replace(/\s+/g, " ").trim() === `${GUEST_LINE} SMS Terms · Privacy`, await consentLine.innerText().catch(() => ""));
+      check(`${tag}: it links the SMS Terms and Privacy in a new tab`, (await consentLine.locator("a[href='/communication-consent#service-texts'][target=_blank]").count()) === 1 && (await consentLine.locator("a[href='/privacy'][target=_blank]").count()) === 1);
+      check(`${tag}: no checkbox on the Free Visit form`, (await form.locator("input[type=checkbox]").count()) === 0);
       await shot(page, `${tag}-free-01-empty`);
       await page.locator("[data-action='review-free-visit']").click();
       check(`${tag}: required fields are named`, (await form.locator(".bk-error").count()) >= 4);
@@ -299,7 +306,8 @@ async function fillAddress(scope, { line1, city, zip }) {
       await page.locator("[data-free-visit-done]").waitFor({ timeout: 8000 });
       check(`${tag}: Confirm submits once, even on a double tap`, state.freeVisits.length === 1);
       const sent = state.freeVisits[0];
-      check(`${tag}: the new form version with the address, date and time`, sent.formVersion === "cx4" && sent.line1 === "12 Elm St" && sent.zip === "11735" && sent.date === day && sent.time === "10:00" && /contacted by call or text/.test(sent.consent));
+      check(`${tag}: the new form version with the address, date and time`, sent.formVersion === "cx4" && sent.line1 === "12 Elm St" && sent.zip === "11735" && sent.date === day && sent.time === "10:00");
+      check(`${tag}: the request carries exactly the consent line it showed`, sent.consent === GUEST_LINE, sent.consent);
       const doneText = await page.locator("[data-free-visit-done]").innerText();
       check(`${tag}: success says reserved and pending - never confirmed`, /reserved/.test(doneText) && /confirm it with you shortly/.test(doneText) && !/is confirmed/i.test(doneText));
       check(`${tag}: free visit has no page errors`, errors.length === 0, errors.join(" | "));
@@ -417,6 +425,15 @@ async function fillAddress(scope, { line1, city, zip }) {
       check(`${tag}: step 4 shows the hold`, /Held for you · \d+:\d\d/.test(await booker.locator("[data-summary]").innerText()));
       check(`${tag}: One-Time and Membership offered with real prices`, /\$99/.test(await page.locator("[data-option='one_time']").innerText()) && /\$149/.test(await page.locator("[data-option='membership']").innerText()));
       check(`${tag}: no included-visit option for a non-member`, (await page.locator("[data-option='member']").count()) === 0);
+      /* 2026-11-03 (sms_service.booking.v2): the optional box above the button, unticked, with its documents. */
+      const textsBox = page.locator("[data-service-texts-optin]");
+      const textsLine = ((await textsBox.innerText().catch(() => "")) || "").replace(/\s+/g, " ").trim();
+      check(`${tag}: the texts box is offered above the button, unticked, word for word`,
+        (await textsBox.count()) === 1 && !(await textsBox.locator("input[type=checkbox]").isChecked()) &&
+          textsLine === "Text me about my ProFixter visits Optional. Booking confirmations, appointment reminders and arrival updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help. SMS Terms · Privacy · Terms", textsLine);
+      check(`${tag}: the texts box links the SMS Terms, Privacy and Terms in a new tab`,
+        (await textsBox.locator("a[href='/communication-consent#service-texts'][target=_blank]").count()) === 1 &&
+          (await textsBox.locator("a[href='/privacy'][target=_blank]").count()) === 1 && (await textsBox.locator("a[href='/terms'][target=_blank]").count()) === 1);
       const memberCard = await page.locator("[data-option='membership']").innerText();
       check(`${tag}: membership card sells benefits, not rules`, /Labor included for covered tasks/.test(memberCard) && /Monthly, or annual/.test(memberCard) && !/7\+ days|seven|all year|more than one job/i.test(memberCard), memberCard);
       await page.locator("[data-option='membership']").click();

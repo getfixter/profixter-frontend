@@ -184,3 +184,44 @@ export function deliveryText(delivery: { email?: string | null; sms?: string | n
   };
   return [part('Email', delivery.email), part('Text', delivery.sms)].filter(Boolean).join(' · ') || 'Nothing sent';
 }
+
+/*
+ * Did the caller agree to texts about their visits? Asked, never assumed
+ * (2026-11-03): nothing is pre-selected, so the record only ever says "agreed
+ * on the call" when staff actually asked and the customer said yes. Staff
+ * answer No as easily - the booking goes ahead either way.
+ */
+export function SmsAgreedChoice({
+  value,
+  onChange,
+  testId,
+  question = 'Did they agree to texts about their visits?',
+}: {
+  value: boolean | null;
+  onChange: (next: boolean) => void;
+  testId: string;
+  question?: string;
+}) {
+  const option = (answer: boolean, label: string) => (
+    <button
+      type="button"
+      onClick={() => onChange(answer)}
+      aria-pressed={value === answer}
+      data-testid={`${testId}-${answer ? 'yes' : 'no'}`}
+      className={`rounded-lg border px-3 py-1.5 text-sm font-bold ${
+        value === answer ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700'
+      }`}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2" data-sms-agreed={testId}>
+      <span className="text-sm font-semibold text-slate-800">{question}</span>
+      <span className="flex gap-2">
+        {option(true, 'Yes, asked and agreed')}
+        {option(false, 'No')}
+      </span>
+    </div>
+  );
+}

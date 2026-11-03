@@ -20,14 +20,19 @@ import { useAuth } from "@/lib/useAuth";
  *   server refuses marketing with source "booking_step" anyway. Marketing texts
  *   are offered in account settings and nowhere else.
  *
- * The wording is consent version "sms_service.booking.v1" in
+ * The wording is consent version "sms_service.booking.v2" in
  * BackEnd/utils/consent/consentText.js, word for word. Change one, change both
  * (as a NEW version there).
  */
 
-const LABEL = "Text me about my visits";
+/*
+ * v2 (2026-11-03): the brand is in the label (it was only implied), and the
+ * SMS Terms, Privacy Policy and Terms of Service are linked at the box - the
+ * disclosures a carrier reviewer looks for at every opt-in.
+ */
+const LABEL = "Text me about my ProFixter visits";
 const DETAILS =
-  "Booking confirmations, appointment reminders and arrival updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help.";
+  "Optional. Booking confirmations, appointment reminders and arrival updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help.";
 
 function ServiceTextsOptIn({
   checked,
@@ -52,15 +57,20 @@ function ServiceTextsOptIn({
           {LABEL}
         </label>{" "}
         {/* Outside the label: reading what a consent means must never tick it. */}
-        <a
-          href="/communication-consent#service-texts"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[13px] font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2"
-        >
-          Details
-        </a>
-        <p className="mt-0.5 text-[13px] leading-[1.45] text-[color:var(--ui-text-3)]">{DETAILS}</p>
+        <p className="mt-0.5 text-[13px] leading-[1.45] text-[color:var(--ui-text-3)]">
+          {DETAILS}{" "}
+          <a href="/communication-consent#service-texts" target="_blank" rel="noopener noreferrer" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
+            SMS Terms
+          </a>
+          {" · "}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
+            Privacy
+          </a>
+          {" · "}
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
+            Terms
+          </a>
+        </p>
       </div>
     </div>
   );
