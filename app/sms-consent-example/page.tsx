@@ -222,7 +222,8 @@ export default function SmsConsentExamplePage() {
                 Google or Apple) or changes it. Under the number field there is one optional, unchecked box,
                 &ldquo;Text me ProFixter offers, too.&rdquo;, for marketing texts only. It is recorded only after the
                 customer enters the code that verifies the number, and the account works the same whether or not it is
-                ticked. When a customer changes their number, consent given for the old number does not move to the new
+                ticked. Like the confirmation page below, no marketing text is sent on this box until this method is
+                registered with the carriers. When a customer changes their number, consent given for the old number does not move to the new
                 one, so a second optional, unchecked box, &ldquo;Text me about my ProFixter visits&rdquo;, is also shown.
               </li>
               <li>

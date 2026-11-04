@@ -839,8 +839,8 @@ export default function HandymanBooker({
                   </div>
                   <p>One visit, up to 90 minutes of work. Pay once, no commitment. Materials not included.</p>
                 </button>
-                {/* The server's offer covers the first payment of monthly and annual plans alike (utils/welcomeOffer.js). */}
-                <WelcomeOfferBanner offer={offer} className="bk-offer" />
+                {/* "First Month" or "First Payment", as the server prices it: monthly only, or annual too (utils/welcomeOffer.js). */}
+                <WelcomeOfferBanner offer={offer} className="bk-offer" monthlyOnly={!Object.values(offer.plans).some((p) => p.firstYearCents != null)} />
                 <button type="button" className="bk-option" aria-pressed={choice === "membership"} onClick={() => setChoice("membership")} data-option="membership">
                   <div className="bk-option-top">
                     <span className="bk-option-name">

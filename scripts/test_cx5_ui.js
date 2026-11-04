@@ -239,6 +239,7 @@ async function inView(page, selector) {
     check("offer: $119.20 first month, exact cents", /\$119\.20/.test(t) && /first month/.test(t), t.replace(/\s+/g, " "));
     check("offer: $149 struck through", (await teaser.locator("s.wo-was").innerText()) === "$149");
     check("offer: says it is the first monthly payment only, then $149/mo", /first monthly payment only; then \$149\/mo/.test(t));
+    check("offer: the banner says First Payment when the server prices annual too", /20% Off Your First Payment/.test(await page.locator("[data-welcome-offer]").innerText()));
     await shot(page, "cx5-offer-on");
     await teaser.click();
     await page.locator("[data-cycle='annual']").click();
@@ -270,6 +271,7 @@ async function inView(page, selector) {
     await page.goto(`${BASE}/book/handyman`, { waitUntil: "networkidle" });
     await page.locator("[data-option='membership']").waitFor({ timeout: 15000 });
     await page.waitForTimeout(800);
+    check("monthly-only offer: the banner says First Month", /20% Off Your First Month/.test(await page.locator("[data-welcome-offer]").innerText().catch(() => "")));
     check("monthly-only offer on annual: no discount shown", (await page.locator("[data-membership-teaser='offer']").count()) === 0 && !/1,192/.test(await page.locator("[data-handyman-booker]").innerText()));
     await ctx.close();
   }
