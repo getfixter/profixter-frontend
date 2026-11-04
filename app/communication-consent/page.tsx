@@ -314,7 +314,8 @@ export default function CommunicationConsentPage() {
               <li>
                 <span className="font-semibold">The mobile-number screen</span> (signed in), where you add or change the mobile
                 number on your account: one optional, unchecked box, &ldquo;Text me ProFixter offers, too.&rdquo;, for marketing
-                texts, recorded only after you enter the code that verifies the number. When you change your number, consent given
+                texts, recorded only after you enter the code that verifies the number; offer texts on it start only once this
+                method is registered with the carriers. When you change your number, consent given
                 for the old one does not move to the new one, so an optional, unchecked &ldquo;Text me about my ProFixter
                 visits&rdquo; box is shown there too.
               </li>
