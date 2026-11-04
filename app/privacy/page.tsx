@@ -130,8 +130,9 @@ export default function PrivacyPage() {
               about that visit; and when you book by phone, our staff ask whether
               you agree to texts about your visits and record your answer.
               Marketing texts are a separate, optional choice that you turn on
-              yourself in your account settings, and are never a condition of
-              anything. Both can be switched off in your account settings, or by
+              yourself, in your account settings or with the optional box on the
+              screen where you add or change your mobile number, and are never a
+              condition of anything. Both can be switched off in your account settings, or by
               replying STOP, at any time.
             </p>
 
@@ -156,9 +157,11 @@ export default function PrivacyPage() {
                   Marketing messages (separate optional opt-in):
                 </span>{" "}
                 Promotional texts are sent only if you tick the separate,
-                optional marketing box in your account settings, or confirm on the
-                page we email you if you ask our staff for offers by text. It is
-                unchecked by default, it is not the same box as the service one,
+                optional marketing box in your account settings or on the screen
+                where you add or change your mobile number (recorded only after you
+                verify the number with its code), or confirm on the page we email
+                you if you ask our staff for offers by text. It is unchecked by
+                default, it is not the same box as the service one,
                 ticking either never ticks the other, and a spoken yes on a call is
                 never used for marketing texts. We keep timestamped records of opt-in and opt-out actions.
               </li>

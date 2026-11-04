@@ -8,6 +8,7 @@ import Sheet from "@/app/components/ui/Sheet";
 import CodeStep, { outcomeFromError, type CodeOutcome } from "./CodeStep";
 import { useAuth } from "@/lib/useAuth";
 import type { User } from "@/lib/auth-service";
+import { revealField } from "@/lib/form-guide";
 import {
   formatPhoneInput,
   isValidEmail,
@@ -16,15 +17,19 @@ import {
   otpErrorMessage,
   phoneToE164,
   readApiError,
+  sessionIsFresh,
   startEmailOtp,
   startPhoneOtp,
+  startReauth,
   updateProfileName,
   verifyEmailOtp,
   verifyPhoneOtp,
+  verifyReauth,
 } from "@/lib/auth2";
 
 /**
- * Contact completion before a booking or checkout.
+ * Contact completion before a booking or checkout - and, since 2026-11-03,
+ * the customer's own way to change their name, email and mobile number.
  *
  * A Booking needs a phone AND an email, and an account made with one of them
  * (or with Google/Apple) may lack the other. Before submitting, a booking flow
@@ -33,9 +38,78 @@ import {
  * missing, verifies it with a code (mode:"attach", signed in), and resolves
  * true so the booking continues. Closing the sheet resolves false.
  *
- * Nothing already on the account is asked for again.
+ * `editContact(field)` (Account → Personal info) opens the same sheet to
+ * change a detail. A new email or phone replaces the old one only once its
+ * code is entered, so cancelling at any point leaves the account as it was.
+ * Replacing one that is already VERIFIED first asks "Confirm it's you": a code
+ * to a contact the account already trusts, unless they signed in minutes ago
+ * (the server decides; routes/authV2.js recentlyConfirmed).
+ *
+ * THE OFFERS BOX. The "Add your mobile number" screen carries one optional,
+ * unticked box, "Text me ProFixter offers, too." (consent
+ * sms_marketing.phone_verify.v1). Verifying a number is never consent; the box
+ * is recorded by the server only after the code proves the number, and a STOP
+ * from that handset still wins. It is not shown to someone already receiving
+ * offers. When a number is CHANGED, text consent stays with the old number
+ * (utils/sms/consentOnPhoneChange.js), so both boxes are offered, unticked.
  */
-type Stage = "name" | "phone" | "phone-code" | "email" | "email-code";
+type Stage = "name" | "confirm" | "confirm-code" | "phone" | "phone-code" | "email" | "email-code" | "notice";
+export type ContactField = "name" | "phone" | "email";
+
+const FINE = "mt-1 text-[12.5px] leading-[1.45] text-[color:var(--ui-text-3)]";
+const LINK = "font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2";
+
+function OptInBox({
+  id,
+  checked,
+  onChange,
+  label,
+  details,
+  termsHash,
+  attr,
+}: {
+  id: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+  details: string;
+  termsHash: string;
+  attr: string;
+}) {
+  return (
+    <div className="flex items-start gap-2.5 text-left" {...{ [attr]: "" }}>
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-[2px] h-[18px] w-[18px] flex-shrink-0 cursor-pointer rounded border-[color:var(--ui-line-2)] accent-[#0B1628]"
+      />
+      <div className="min-w-0 text-[14px] leading-[1.4] text-[color:var(--ui-text-2)]">
+        <label htmlFor={id} className="cursor-pointer font-medium text-[color:var(--ui-ink)]">
+          {label}
+        </label>
+        {/* Outside the label: reading what a consent means must never tick it. */}
+        <p className={FINE}>
+          {details}{" "}
+          <a href={`/communication-consent#${termsHash}`} target="_blank" rel="noopener noreferrer" className={LINK}>
+            SMS Terms
+          </a>
+          {" · "}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className={LINK}>
+            Privacy
+          </a>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* Word for word what sms_marketing.phone_verify.v1 and sms_service.phone_change.v1 record (BackEnd utils/consent/consentText.js). */
+const OFFERS_LABEL = "Text me ProFixter offers, too.";
+const OFFERS_DETAILS = "Optional, not required to buy. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help.";
+const VISITS_LABEL = "Text me about my ProFixter visits";
+const VISITS_DETAILS = "Booking confirmations, reminders and arrival updates. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help.";
 
 function ContactSheet({
   open,
@@ -43,6 +117,7 @@ function ContactSheet({
   onDone,
   onCancel,
   required = false,
+  change = null,
 }: {
   open: boolean;
   needs: { name: boolean; phone: boolean; email: boolean };
@@ -50,21 +125,56 @@ function ContactSheet({
   onCancel: () => void;
   /** Cannot be closed (PhoneRequiredGate); offers "Sign out" instead. */
   required?: boolean;
+  /** Changing a detail the account already has (Account → Personal info). */
+  change?: ContactField | null;
 }) {
-  const { refreshUser, updateUser, logout } = useAuth();
-  const [stage, setStage] = useState<Stage>(needs.name ? "name" : needs.phone ? "phone" : "email");
-  const [name, setName] = useState("");
+  const { user, refreshUser, updateUser, logout } = useAuth();
+  const changingVerified =
+    (change === "phone" && Boolean(user?.phone) && user?.phoneVerified === true) ||
+    (change === "email" && Boolean(user?.email) && user?.emailVerified === true);
+  const firstStage = (): Stage => {
+    if (change === "name") return "name";
+    if (change && changingVerified && !sessionIsFresh()) return "confirm";
+    if (change) return change;
+    return needs.name ? "name" : needs.phone ? "phone" : "email";
+  };
+  const [stage, setStage] = useState<Stage>(firstStage);
+  const [name, setName] = useState(change === "name" ? String(user?.name || "") : "");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [masked, setMasked] = useState("");
   const [resendAt, setResendAt] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  // The two optional boxes: unticked, never restored from anywhere.
+  const [offers, setOffers] = useState(false);
+  const [visitTexts, setVisitTexts] = useState(false);
+  // Confirm it's you.
+  const confirmChannels = ([] as Array<"sms" | "email">)
+    .concat(user?.phoneVerified && user?.phone ? ["sms"] : [])
+    .concat(user?.emailVerified && user?.email && !user?.emailIsAppleRelay ? ["email"] : []);
+  // Changing the phone: confirm by email first when we can (the old phone may be gone), and the other way round.
+  const preferred: "sms" | "email" | null =
+    change === "phone" ? (confirmChannels.includes("email") ? "email" : confirmChannels[0] || null) : confirmChannels.includes("sms") ? "sms" : confirmChannels[0] || null;
+  const [confirmChannel, setConfirmChannel] = useState<"sms" | "email" | null>(preferred);
+  const reauthToken = useRef("");
+  const pendingCode = useRef("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const savedUser = useRef<User | null>(null);
 
-  const attached = async (user: User | undefined, nextStage: Stage | null) => {
-    if (user) updateUser(user);
-    const fresh = await refreshUser().catch(() => null);
-    const stillMissing = missingContact(fresh || user || null);
+  const showOffers = change === "phone" || user?.smsMarketingTexts !== true;
+  const showVisitTexts = change === "phone";
+
+  const fail = (message: string) => {
+    setError(message);
+    revealField(inputRef.current);
+  };
+
+  const attached = async (fresh: User | undefined, nextStage: Stage | null) => {
+    if (fresh) updateUser(fresh);
+    const latest = await refreshUser().catch(() => null);
+    const stillMissing = missingContact(latest || fresh || null);
     if (nextStage === "email" && stillMissing.email) {
       setStage("email");
       return;
@@ -76,21 +186,36 @@ function ContactSheet({
   const saveName = async (e: FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    if (!name.trim()) {
-      setError("Please enter your name.");
-      return;
-    }
+    if (!name.trim()) return fail("Please enter your name.");
     setLoading(true);
     setError("");
     try {
-      const { user } = await updateProfileName(name);
-      updateUser(user);
-      const still = missingContact(user);
+      const { user: saved } = await updateProfileName(name);
+      updateUser(saved);
+      if (change === "name") return onDone();
+      const still = missingContact(saved);
       if (needs.phone && still.phone) setStage("phone");
       else if (needs.email && still.email) setStage("email");
       else onDone();
     } catch (err) {
-      setError(readApiError(err).message || "Couldn't save your name. Please try again.");
+      fail(readApiError(err).message || "Couldn't save your name. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendConfirm = async (channel: "sms" | "email") => {
+    if (loading) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await startReauth(channel);
+      setConfirmChannel(channel);
+      setMasked(res.destination);
+      setResendAt(Date.now() + (res.resendAfterSeconds || 30) * 1000);
+      setStage("confirm-code");
+    } catch (err) {
+      setError(otpErrorMessage(readApiError(err), channel === "sms" ? "phone" : "email"));
     } finally {
       setLoading(false);
     }
@@ -100,10 +225,8 @@ function ContactSheet({
     e.preventDefault();
     if (loading) return;
     const e164 = phoneToE164(phone);
-    if (!e164) {
-      setError("Enter a valid mobile number, like (631) 555-0123.");
-      return;
-    }
+    if (!e164) return fail("Enter a valid mobile number, like (631) 555-0123.");
+    if (change === "phone" && e164 === phoneToE164(String(user?.phone || ""))) return fail("That is the number already on your account.");
     setLoading(true);
     setError("");
     try {
@@ -112,7 +235,7 @@ function ContactSheet({
       setResendAt(Date.now() + (res.resendAfterSeconds || 30) * 1000);
       setStage("phone-code");
     } catch (err) {
-      setError(otpErrorMessage(readApiError(err), "phone"));
+      fail(otpErrorMessage(readApiError(err), "phone"));
     } finally {
       setLoading(false);
     }
@@ -121,19 +244,17 @@ function ContactSheet({
   const sendEmail = async (e: FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    if (!isValidEmail(email)) {
-      setError("Enter a valid email address.");
-      return;
-    }
+    if (!isValidEmail(email)) return fail("Enter a valid email address.");
+    if (change === "email" && email.trim().toLowerCase() === String(user?.email || "").toLowerCase()) return fail("That is the email already on your account.");
     setLoading(true);
     setError("");
     try {
-      const res = await startEmailOtp(email);
+      const res = await startEmailOtp(email, { mode: "attach" });
       setMasked(res.emailMasked || email.trim().toLowerCase());
       setResendAt(Date.now() + (res.resendAfterSeconds || 30) * 1000);
       setStage("email-code");
     } catch (err) {
-      setError(otpErrorMessage(readApiError(err), "email"));
+      fail(otpErrorMessage(readApiError(err), "email"));
     } finally {
       setLoading(false);
     }
@@ -141,28 +262,63 @@ function ContactSheet({
 
   const verify = async (code: string): Promise<CodeOutcome> => {
     const channel = stage === "phone-code" ? "phone" : "email";
+    pendingCode.current = code;
     try {
       const res =
         channel === "phone"
-          ? await verifyPhoneOtp({ phone: phoneToE164(phone) || phone, code, mode: "attach" })
-          : await verifyEmailOtp({ email, code, mode: "attach" });
+          ? await verifyPhoneOtp({
+              phone: phoneToE164(phone) || phone,
+              code,
+              mode: "attach",
+              ...(showOffers || showVisitTexts ? { smsOptIn: { marketing: showOffers && offers, service: showVisitTexts && visitTexts } } : {}),
+              ...(reauthToken.current ? { reauthToken: reauthToken.current } : {}),
+            })
+          : await verifyEmailOtp({ email, code, mode: "attach", ...(reauthToken.current ? { reauthToken: reauthToken.current } : {}) });
       if (res.status !== "attached" && res.status !== "signed_in") {
         return { error: "Something went wrong. Please try again." };
       }
-      await attached(res.user, channel === "phone" && needs.email ? "email" : null);
+      if (res.status === "attached" && res.smsOptIn?.blocked === "stopped") {
+        // The number is saved; the STOP stands, and they are told rather than left believing texts will come.
+        // The account is refreshed when they press Done: refreshing now would close a sheet that waits for a phone.
+        savedUser.current = res.user || null;
+        setNotice("Your number is saved. It had replied STOP to our texts, so we can't text it until you text START to (631) 888-6340.");
+        setStage("notice");
+        return null;
+      }
+      await attached(res.user, channel === "phone" && needs.email && !change ? "email" : null);
       return null;
     } catch (err) {
+      // Rare (the session aged past ten minutes on this screen): the code is not used up - confirm, then enter it again.
+      if (readApiError(err).code === "REAUTH_REQUIRED") {
+        setStage("confirm");
+        return null;
+      }
       return outcomeFromError(err, channel);
+    }
+  };
+
+  const verifyConfirm = async (code: string): Promise<CodeOutcome> => {
+    const channel = confirmChannel || "sms";
+    try {
+      const res = await verifyReauth(channel, code);
+      reauthToken.current = res.reauthToken;
+      setError("");
+      // Came here from a refused code: back to it (still valid), otherwise on to the new number or email.
+      if (pendingCode.current && (phone || email)) {
+        setStage(change === "email" ? "email-code" : "phone-code");
+      } else {
+        setStage(change === "email" ? "email" : "phone");
+      }
+      return null;
+    } catch (err) {
+      return outcomeFromError(err, channel === "sms" ? "phone" : "email");
     }
   };
 
   const resend = async (): Promise<CodeOutcome> => {
     const channel = stage === "phone-code" ? "phone" : "email";
     try {
-      const res =
-        channel === "phone"
-          ? await startPhoneOtp({ phone: phoneToE164(phone) || phone })
-          : await startEmailOtp(email);
+      const res = channel === "phone" ? await startPhoneOtp({ phone: phoneToE164(phone) || phone }) : await startEmailOtp(email, { mode: "attach" });
       setResendAt(Date.now() + (res.resendAfterSeconds || 30) * 1000);
       return null;
     } catch (err) {
@@ -170,48 +326,108 @@ function ContactSheet({
     }
   };
 
+  const resendConfirm = async (): Promise<CodeOutcome> => {
+    const channel = confirmChannel || "sms";
+    try {
+      const res = await startReauth(channel);
+      setResendAt(Date.now() + (res.resendAfterSeconds || 30) * 1000);
+      return null;
+    } catch (err) {
+      return outcomeFromError(err, channel === "sms" ? "phone" : "email");
+    }
+  };
+
   const title =
-    stage === "name"
-      ? "What's your name?"
-      : stage === "phone" || stage === "phone-code"
-        ? "Add your mobile number"
-        : "Add your email";
+    stage === "confirm" || stage === "confirm-code"
+      ? "Confirm it's you"
+      : stage === "notice"
+        ? "Number saved"
+        : stage === "name"
+          ? change === "name"
+            ? "Your name"
+            : "What's your name?"
+          : stage === "phone" || stage === "phone-code"
+            ? change === "phone"
+              ? "Change your mobile number"
+              : "Add your mobile number"
+            : change === "email"
+              ? "Change your email"
+              : "Add your email";
 
   return (
     <Sheet open={open} onClose={onCancel} title={title} dismissible={!required}>
       {stage === "name" ? (
         <form onSubmit={saveName} noValidate className="mt-2 space-y-3">
-          <p className="text-[14.5px] text-[#5b6577]">So your Fixter knows who to ask for.</p>
+          <p className="text-[14.5px] text-[#5b6577]">{change === "name" ? "As it appears on your visits and receipts." : "So your Fixter knows who to ask for."}</p>
           <label htmlFor="contact-name" className="sr-only">
             Your name
           </label>
           <input
+            ref={inputRef}
             id="contact-name"
             type="text"
             autoComplete="name"
             autoCapitalize="words"
+            maxLength={120}
             value={name}
             onChange={(e) => {
               setName(e.target.value);
               if (error) setError("");
             }}
             placeholder="Your name"
+            aria-invalid={error ? "true" : undefined}
             className="auth-input"
           />
           <div aria-live="polite">{error ? <p className="auth-error" role="alert">{error}</p> : null}</div>
           <button type="submit" className="auth-submit !mt-3" disabled={loading}>
             {loading ? <span className="auth-spinner" aria-hidden="true" /> : null}
-            Continue
+            {change === "name" ? "Save" : "Continue"}
           </button>
         </form>
       ) : null}
+
+      {stage === "confirm" ? (
+        <div className="mt-2 space-y-3" data-contact-confirm>
+          {confirmChannel ? (
+            <>
+              <p className="text-[14.5px] text-[#5b6577]">
+                Before we change your {change === "email" ? "email" : "mobile number"}, we&apos;ll send a code to the{" "}
+                {confirmChannel === "sms" ? "mobile number" : "email"} already on your account.
+              </p>
+              <div aria-live="polite">{error ? <p className="auth-error" role="alert">{error}</p> : null}</div>
+              <button type="button" className="auth-submit" disabled={loading} onClick={() => void sendConfirm(confirmChannel)} data-action="confirm-send">
+                {loading ? <span className="auth-spinner" aria-hidden="true" /> : null}
+                {confirmChannel === "sms" ? "Text me a code" : "Email me a code"}
+              </button>
+              {confirmChannels.length > 1 ? (
+                <button
+                  type="button"
+                  className="auth-text-button mx-auto block"
+                  onClick={() => setConfirmChannel(confirmChannel === "sms" ? "email" : "sms")}
+                  data-action="confirm-other"
+                >
+                  {confirmChannel === "sms" ? "Use my email instead" : "Use my phone instead"}
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <p className="text-[14.5px] text-[#5b6577]" role="alert">
+              We can&apos;t confirm it&apos;s you online. Please call <a href="tel:+16315991363" className={LINK}>631-599-1363</a> and we&apos;ll update it for you.
+            </p>
+          )}
+        </div>
+      ) : null}
+
       {stage === "phone" ? (
         <form onSubmit={sendPhone} noValidate className="mt-2 space-y-3">
-          <p className="text-[14.5px] text-[#5b6577]">Your Fixter uses it to reach you on the day of the visit.</p>
+          <p className="text-[14.5px] text-[#5b6577]">
+            {change === "phone" ? "We'll text a code to the new number. Your current number stays until you enter it." : "Your Fixter uses it to reach you on the day of the visit."}
+          </p>
           <label htmlFor="contact-phone" className="sr-only">
             Mobile number
           </label>
           <input
+            ref={inputRef}
             id="contact-phone"
             type="tel"
             inputMode="tel"
@@ -223,17 +439,40 @@ function ContactSheet({
             }}
             placeholder="(631) 555-0123"
             aria-describedby="contact-terms-continue"
+            aria-invalid={error ? "true" : undefined}
             className="auth-input"
           />
           <div aria-live="polite">{error ? <p className="auth-error" role="alert">{error}</p> : null}</div>
+          {showOffers ? (
+            <OptInBox
+              id="contact-sms-offers"
+              checked={offers}
+              onChange={setOffers}
+              label={OFFERS_LABEL}
+              details={OFFERS_DETAILS}
+              termsHash="marketing"
+              attr="data-phone-offers-optin"
+            />
+          ) : null}
+          {showVisitTexts ? (
+            <OptInBox
+              id="contact-sms-visits"
+              checked={visitTexts}
+              onChange={setVisitTexts}
+              label={VISITS_LABEL}
+              details={VISITS_DETAILS}
+              termsHash="service-texts"
+              attr="data-phone-visits-optin"
+            />
+          ) : null}
           <button type="submit" className="auth-submit !mt-3" disabled={loading}>
             {loading ? <span className="auth-spinner" aria-hidden="true" /> : null}
             {loading ? "Sending code" : "Text me a code"}
           </button>
           {/*
             * Consent version "terms.continue.v1", word for word, as on sign-up.
-            * No checkbox: the code is a one-time text the person requests
-            * (Twilio Verify), and service texts are offered at the booking step.
+            * The code is a one-time text the person requests (Twilio Verify);
+            * it is never consent to anything else - only the boxes above are.
             */}
           <p id="contact-terms-continue" className="auth-fineprint !mt-2.5" data-terms-continue>
             By continuing, you agree to the{" "}
@@ -255,11 +494,14 @@ function ContactSheet({
 
       {stage === "email" ? (
         <form onSubmit={sendEmail} noValidate className="mt-2 space-y-3">
-          <p className="text-[14.5px] text-[#5b6577]">We send your booking confirmation and receipts here.</p>
+          <p className="text-[14.5px] text-[#5b6577]">
+            {change === "email" ? "We'll email a code to the new address. Your current email stays until you enter it." : "We send your booking confirmation and receipts here."}
+          </p>
           <label htmlFor="contact-email" className="sr-only">
             Email address
           </label>
           <input
+            ref={inputRef}
             id="contact-email"
             type="email"
             inputMode="email"
@@ -272,6 +514,7 @@ function ContactSheet({
               if (error) setError("");
             }}
             placeholder="you@example.com"
+            aria-invalid={error ? "true" : undefined}
             className="auth-input"
           />
           <div aria-live="polite">{error ? <p className="auth-error" role="alert">{error}</p> : null}</div>
@@ -294,11 +537,42 @@ function ContactSheet({
           onResend={resend}
           onChangeDestination={() => {
             setError("");
+            pendingCode.current = "";
             setStage(stage === "phone-code" ? "phone" : "email");
           }}
           changeLabel={stage === "phone-code" ? "Change number" : "Change email"}
         />
       ) : null}
+
+      {stage === "confirm-code" ? (
+        <CodeStep
+          key="confirm"
+          compact
+          idPrefix="contact-confirm"
+          channel={confirmChannel === "email" ? "email" : "phone"}
+          destination={masked}
+          resendAt={resendAt}
+          onVerify={verifyConfirm}
+          onResend={resendConfirm}
+          onChangeDestination={() => {
+            setError("");
+            setStage("confirm");
+          }}
+          changeLabel="Use another way"
+        />
+      ) : null}
+
+      {stage === "notice" ? (
+        <div className="mt-2 space-y-3" data-contact-notice>
+          <p className="text-[14.5px] text-[#5b6577]" role="status">
+            {notice}
+          </p>
+          <button type="button" className="auth-submit" onClick={() => void attached(savedUser.current || undefined, null)}>
+            Done
+          </button>
+        </div>
+      ) : null}
+
       {required ? (
         <button type="button" className="auth-text-button mx-auto mt-3 block" onClick={logout} data-action="phone-required-sign-out">
           Sign out
@@ -312,11 +586,11 @@ function ContactSheet({
  * `const ok = await ensureContact()` before submitting; render `contactSheet`.
  * Pass `{ fields: ["email"] }` when only some details are needed (a gift needs
  * an email for its receipt, not a phone), so nobody is asked for more.
+ * `editContact("email")` opens the sheet to change a detail the account has.
  */
-type ContactField = "name" | "phone" | "email";
-
 export function useContactCompletion(): {
   ensureContact: (options?: { fields?: ContactField[] }) => Promise<boolean>;
+  editContact: (field: ContactField) => Promise<boolean>;
   contactSheet: ReactNode;
 } {
   const { user, isAuthenticated } = useAuth();
@@ -325,6 +599,7 @@ export function useContactCompletion(): {
     userRef.current = user;
   }, [user]);
   const [needs, setNeeds] = useState<{ name: boolean; phone: boolean; email: boolean } | null>(null);
+  const [change, setChange] = useState<ContactField | null>(null);
   const [sheetKey, setSheetKey] = useState(0);
   const resolver = useRef<((ok: boolean) => void) | null>(null);
 
@@ -341,7 +616,19 @@ export function useContactCompletion(): {
     if (!missing.name && !missing.phone && !missing.email) return true;
     resolver.current?.(false);
     setSheetKey((k) => k + 1);
+    setChange(null);
     setNeeds(missing);
+    return new Promise<boolean>((resolve) => {
+      resolver.current = resolve;
+    });
+  }, [isAuthenticated]);
+
+  const editContact = useCallback(async (field: ContactField) => {
+    if (!isAuthenticated || !userRef.current) return false;
+    resolver.current?.(false);
+    setSheetKey((k) => k + 1);
+    setChange(field);
+    setNeeds({ name: field === "name", phone: field === "phone", email: field === "email" });
     return new Promise<boolean>((resolve) => {
       resolver.current = resolve;
     });
@@ -349,15 +636,16 @@ export function useContactCompletion(): {
 
   const settle = (ok: boolean) => {
     setNeeds(null);
+    setChange(null);
     resolver.current?.(ok);
     resolver.current = null;
   };
 
   const contactSheet = needs ? (
-    <ContactSheet key={sheetKey} open needs={needs} onDone={() => settle(true)} onCancel={() => settle(false)} />
+    <ContactSheet key={sheetKey} open needs={needs} change={change} onDone={() => settle(true)} onCancel={() => settle(false)} />
   ) : null;
 
-  return { ensureContact, contactSheet };
+  return { ensureContact, editContact, contactSheet };
 }
 
 /**

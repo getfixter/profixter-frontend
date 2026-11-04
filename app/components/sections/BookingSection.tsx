@@ -7,6 +7,7 @@ import { getLoyaltyStatus, type LoyaltyStatus } from "@/lib/subscription-service
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
+import { revealField } from "@/lib/form-guide";
 import { useServiceTextsOptIn } from "@/app/components/booking/ServiceTextsOptIn";
 import { trackEvent } from "@/lib/analytics";
 import {
@@ -1151,8 +1152,7 @@ if (next?.date) {
               : firstMissing === "note"
                 ? noteFieldRef.current
                 : photosFieldRef.current;
-        target?.focus({ preventScroll: true });
-        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+        revealField(target);
       });
       return;
     }
@@ -2143,6 +2143,7 @@ if (next?.date) {
         {/* ── Quick Booking Modal ── */}
         {quickBookOpen && (
           <div
+            data-kb-overlay
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-[2px] px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] sm:pb-0"
             onClick={() => { if (!quickBookingLoading) setQuickBookOpen(false); }}
           >

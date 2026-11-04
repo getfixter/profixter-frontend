@@ -79,6 +79,10 @@ export interface User {
   smsPreferences?: { transactionalEnabled?: boolean; marketingEnabled?: boolean } | null;
   /* Service texts are on (GET /api/auth/me). Hides the booking-step offer. */
   smsServiceTexts?: boolean;
+  /** A private relay address from Sign in with Apple: never used to confirm a change. */
+  emailIsAppleRelay?: boolean;
+  /** Offer texts switched on (the phone screen then does not offer them again). */
+  smsMarketingTexts?: boolean;
 }
 
 export interface AuthResponse {

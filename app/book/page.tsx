@@ -39,6 +39,7 @@ import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routin
 import { useAddHome } from "@/app/components/address/AddHomeSheet";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
 import { useServiceTextsOptIn } from "@/app/components/booking/ServiceTextsOptIn";
+import { useHashAnchor } from "@/lib/form-guide";
 
 const ONE_TIME_SERVICE_OPTIONS = [
   "Replace Light Fixture",
@@ -1261,6 +1262,8 @@ function BookExperience() {
 
   const visit = resolveVisitType(searchParams.get("visit"));
   const nav = <VisitTypeNav active={visit} isMember={isMember} />;
+  // "See my visits" after a payment, Account's links and old /account?tab=bookings all land on the list.
+  useHashAnchor("your-visits", !isLoading);
 
   if (visit === "additional") return <AdditionalVisitBooking navSlot={nav} />;
 

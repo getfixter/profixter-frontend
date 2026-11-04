@@ -78,6 +78,8 @@ async function open(browser, width, me = OWNER) {
     me,
     creates: [],
     commPuts: [],
+    reviewed: { reviewedUs: null, lastAskedAt: "2026-10-12T15:00:00.000Z", canEdit: true },
+    reviewedPuts: [],
     comm: { service: { email: sw(true), sms: sw(true) }, marketing: { email: sw(true), sms: sw(true) } },
     sales: [],
     visits: [],
@@ -105,6 +107,14 @@ async function open(browser, width, me = OWNER) {
       if (!body.allowSharedPhone) return json({ code: "PHONE_IN_USE", message: "This phone number is already on another customer's account.", errors: { phone: "Already on another account." }, existing: [{ id: "c9", name: "Dana Smith", email: "da***@example.com" }] }, 409);
       return json({ customer: { _id: "c2", userId: "30000001", name: `${body.firstName} ${body.lastName}`, email: body.email, phone: body.phone, addresses: [] }, delivery: { email: "sent", sms: "sent" }, temporaryPasswordExpiresAt: new Date(Date.now() + 72 * 3600000).toISOString(), warnings: [] }, 201);
     }
+    if (p === "/api/admin/users/c1/reviewed-us" && m === "GET") return json(state.reviewed);
+    if (p === "/api/admin/users/c1/reviewed-us" && m === "PUT") {
+      const body = JSON.parse(req.postData() || "{}");
+      state.reviewedPuts.push(body);
+      state.reviewed = { ...state.reviewed, reviewedUs: body.reviewed ? { at: "2026-11-03T20:00:00.000Z", byName: "Owner" } : null };
+      return json(state.reviewed);
+    }
+    if (p === "/api/admin/review-requests/summary") return json({ days: 30, sent: 12, skipped: { customer_cooldown: 30, reviewed_us: 2 }, linkOpens: { email: 5, account: 1 }, reviewedCustomers: 3 });
     if (p === "/api/admin/users/c1/communication" && m === "GET") return json(state.comm);
     if (p === "/api/admin/users/c1/communication" && m === "PUT") {
       const body = JSON.parse(req.postData() || "{}");
@@ -242,6 +252,17 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     await panel.locator("[data-switch='marketing.sms']").click();
     await panel.locator("[data-comm-value='marketing.sms']:has-text('Off')").waitFor({ timeout: 5000 });
     check(`${tag}: toggling sends one change and shows it`, JSON.stringify(state.commPuts[0]) === JSON.stringify({ key: "marketing.sms", enabled: false }));
+
+    // Reviewed us: one switch for the owner; marking it sends only the mark, and says who and when.
+    const reviewed = page.locator("[data-reviewed-us-panel]");
+    await reviewed.waitFor({ timeout: 5000 });
+    check(`${tag}: Reviewed us shows not marked, and when they were last asked`, /Not marked/.test(await reviewed.innerText()) && /Oct 12, 2026/.test(await reviewed.innerText()));
+    await reviewed.locator("[data-switch='reviewed-us']").click();
+    await reviewed.locator("text=/Marked Nov 3, 2026 by Owner/").waitFor({ timeout: 5000 });
+    check(`${tag}: marking it sends only { reviewed: true } and shows who and when`, JSON.stringify(state.reviewedPuts[0]) === JSON.stringify({ reviewed: true }) && /no review emails/.test(await reviewed.innerText()));
+    await reviewed.locator("[data-switch='reviewed-us']").click();
+    await reviewed.locator("text=/Not marked/").waitFor({ timeout: 5000 });
+    check(`${tag}: the owner can correct it`, JSON.stringify(state.reviewedPuts[1]) === JSON.stringify({ reviewed: false }));
 
     // Switching marketing SMS on asks how the customer agreed; nothing is sent until "Turn on".
     await panel.locator("[data-switch='marketing.sms']").click();

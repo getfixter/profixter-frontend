@@ -1,6 +1,13 @@
 "use client";
 
-const GOOGLE_REVIEWS_URL = "https://maps.app.goo.gl/Zgf97uUDCh6HBK5o8";
+import { GOOGLE_READ_REVIEWS_URL } from "@/lib/google-review";
+
+/*
+ * "View Reviews" is for READING them, so it opens the profile - by its Place ID,
+ * no longer the short link under the business's former name. Writing a review
+ * goes through /review (lib/google-review.ts).
+ */
+const GOOGLE_REVIEWS_URL = GOOGLE_READ_REVIEWS_URL;
 
 const MOST_ACTIVE_TOWNS = [
   "Babylon",

@@ -21,6 +21,7 @@ import CreateCustomerSheet from './tools/CreateCustomerSheet';
 import BuyMembershipSheet from './tools/BuyMembershipSheet';
 import CreateVisitSheet from './tools/CreateVisitSheet';
 import CommunicationPanel from './tools/CommunicationPanel';
+import ReviewedUsPanel from './ReviewedUsPanel';
 import { CalendarDaysIcon, CreditCardIcon, GiftIcon, PencilSquareIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 
 type PlanFilter = 'all' | 'basic' | 'plus' | 'premium' | 'elite' | 'cancel';
@@ -1302,6 +1303,10 @@ export default function UsersTable({
 
               {showCustomerPanels && <div className="mb-5 border-b border-slate-200 pb-5">
                 <SmsConsentPanel userId={historyUser._id} />
+              </div>}
+
+              {showCustomerPanels && <div className="mb-5 border-b border-slate-200 pb-5">
+                <ReviewedUsPanel key={historyUser._id} userId={historyUser._id} />
               </div>}
 
               {/* Admin corrections to names, phone, email and addresses, with before and after. */}

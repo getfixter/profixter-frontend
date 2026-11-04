@@ -9,6 +9,7 @@ import { checkoutTracking } from "@/lib/meta";
 import { useAuth } from "@/lib/useAuth";
 import { useAddHome } from "@/app/components/address/AddHomeSheet";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
+import { afterLayout, keepInView } from "@/lib/form-guide";
 import type { PlanType } from "@/lib/stripe-links";
 import type { Address } from "@/lib/auth-service";
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
@@ -277,6 +278,14 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     setCampaign(fromUrl || rememberedCampaign());
   }, []);
   const offer = useWelcomeOffer(isAuthenticated, selectedAddressId ? { addressId: selectedAddressId } : null, campaign);
+  // A refused checkout (an ended offer, a home already covered): its message is brought into view, not left below the fold.
+  useEffect(() => {
+    if (!actionError) return;
+    afterLayout(() => {
+      const el = document.querySelector("[data-plans-error]");
+      if (el) keepInView(el);
+    });
+  }, [actionError]);
   const welcomeFor = (planName: string, cycle: BillingCycle = billing): OfferPrice | null => {
     const type = normalizePlanType(planName);
     const price = type ? offerPrice(offer, type, cycle) : null;
@@ -1464,7 +1473,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </label>
         ) : null}
 
-        {actionError && !resumeOpen ? <p className="fv-error" role="alert">{actionError}</p> : null}
+        {actionError && !resumeOpen ? <p className="fv-error" role="alert" data-plans-error>{actionError}</p> : null}
         {actionMessage ? <p className="mt-2 text-[14px] text-[color:var(--ui-text-2)]">{actionMessage}</p> : null}
 
         <button
@@ -1566,7 +1575,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             </div>
           ) : null}
           {actionError ? (
-            <div className="pg-error" role="alert">
+            <div className="pg-error" role="alert" data-plans-error>
               {actionError}
             </div>
           ) : null}

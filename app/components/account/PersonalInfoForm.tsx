@@ -24,13 +24,17 @@ type Field = "name" | "email" | "phone";
  * that opens the same verified ContactCompletion sheet booking and checkout
  * use (a code to the new phone or email, mode "attach"), so nothing is ever
  * stored unverified and nothing already on the account is asked for again.
- * Changing a detail that is already there stays a call to the office, as it
- * always has.
+ *
+ * SELF-SERVICE CHANGES (2026-11-03). A detail that is already there has a
+ * compact "Edit" that opens the same sheet in change mode: a name is saved at
+ * once; a new email or phone replaces the old one only after its code, and an
+ * already-verified one first asks "Confirm it's you" (routes/authV2.js). The
+ * customer stays signed in, and membership, gifts and visits are untouched.
  */
 export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
   const addresses = (formData?.addresses || []) as AccountAddress[];
   const { user } = useAuth();
-  const { ensureContact, contactSheet } = useContactCompletion();
+  const { ensureContact, editContact, contactSheet } = useContactCompletion();
 
   const rows: { field: Field; label: string; value: string; verified?: boolean }[] = [
     { field: "name", label: "Name", value: (formData?.name || "").trim() },
@@ -74,13 +78,20 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
                 >
                   Add {row.field === "phone" ? "mobile" : row.field}
                 </button>
-              ) : null}
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void editContact(row.field)}
+                  className={buttonClass({ variant: "secondary", size: "sm" })}
+                  aria-label={`Edit ${row.label.toLowerCase()}`}
+                  data-acct-edit={row.field}
+                >
+                  Edit
+                </button>
+              )}
             </div>
           ))}
         </dl>
-        <p className="ui-small mt-2">
-          Need to change your name, email, or phone? Call 631-599-1363 and we&apos;ll help.
-        </p>
         {contactSheet}
       </section>
 
@@ -97,7 +108,8 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
         * toggle would make opting out harder than opting in, which is the
         * asymmetry these rules exist to prevent.
         */}
-      <SmsPreferences />
+      {/* Remounted when the number changes: text consent belongs to the number, and the switches re-read it. */}
+      <SmsPreferences key={String(user?.phone || "")} />
       <EmailPreferences />
     </div>
   );

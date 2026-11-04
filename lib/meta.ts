@@ -682,3 +682,27 @@ export function trackStep(step: FunnelStepName): void {
     /* never throws */
   }
 }
+
+/**
+ * The Google review link (profixter.com/review) was opened: counted on the
+ * server once per browser, day and place - "email", "account", "home", or
+ * "other" - with nothing personal (BackEnd models/ReviewLinkClick). Sent as
+ * text/plain with keepalive, so it needs no preflight and survives the page
+ * leaving for Google straight away. Skipped for automation.
+ */
+export function trackReviewOpen(via: string): void {
+  try {
+    if (!API_BASE) return;
+    if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;
+    const id = visitorId();
+    if (!id) return;
+    void fetch(`${API_BASE}/api/track/review-open`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ visitorId: id, via }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* never throws */
+  }
+}

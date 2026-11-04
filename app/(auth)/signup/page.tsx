@@ -52,6 +52,7 @@ import {
 import type { AppleCredential } from "@/app/components/auth/AppleAuth";
 import { useCompleteSignIn, type AuthMethod } from "@/app/components/auth/useCompleteSignIn";
 import { hasBookableDraft, loadDraft } from "@/lib/booking-draft";
+import { afterLayout, revealFirstError } from "@/lib/form-guide";
 
 /*
  * Registration & Authentication 2.0.
@@ -114,6 +115,11 @@ export default function SignUpPage() {
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; phone?: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // A field the screen just marked wrong is brought into view and focused (lib/form-guide), above the keyboard.
+  useEffect(() => {
+    if (!fieldErrors.email && !fieldErrors.phone) return;
+    afterLayout(() => revealFirstError(document));
+  }, [fieldErrors]);
   const [offerEmail, setOfferEmail] = useState(false);
 
   const [returnTo, setReturnTo] = useState("");

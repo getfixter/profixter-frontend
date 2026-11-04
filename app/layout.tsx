@@ -5,6 +5,7 @@ import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
 import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
 import FloatingCallButton from "./components/FloatingCallButton";
+import KeyboardAware from "./components/KeyboardAware";
 import { PhoneRequiredGate } from "./components/auth/ContactCompletion";
 import SupportChat from "./components/support/SupportChat";
 import FixterStage from "./components/fixter/FixterStage";
@@ -65,6 +66,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  /*
+   * Android Chrome shrinks the page for the keyboard instead of laying it
+   * over the page, so fixed bars, 100dvh sheets and the focused field all stay
+   * above it (app/components/KeyboardAware.tsx covers iPhone, which ignores this).
+   */
+  interactiveWidget: "resizes-content",
   themeColor: "#0B1628",
 };
 
@@ -295,6 +302,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           <FloatingCallButton />
           {/* A new account verifies a mobile number before anything else (customer pages only). */}
           <PhoneRequiredGate />
+          <KeyboardAware />
         </Providers>
       </body>
     </html>

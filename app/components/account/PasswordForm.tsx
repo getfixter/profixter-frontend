@@ -121,6 +121,7 @@ function DeleteAccountModal({
 
   return (
     <div
+      data-kb-overlay
       className="fixed inset-0 z-[9999] flex items-end justify-center bg-[rgba(11,22,40,0.5)] sm:items-center sm:p-4"
       onClick={phase === "deleting" ? undefined : onClose}
     >

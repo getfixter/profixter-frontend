@@ -264,6 +264,7 @@ export default function WorkPhotoUploadSheet({
 
   return (
     <div
+      data-kb-overlay
       className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/60 px-0 backdrop-blur-sm sm:items-center sm:px-4"
       onClick={close}
       role="dialog"

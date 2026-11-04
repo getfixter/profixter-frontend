@@ -35,7 +35,12 @@ export type LinkRequiredResult = {
   hint: { maskedEmail: string | null; hasPassword: boolean };
 };
 
-export type AttachedResult = { status: "attached"; user: User };
+export type AttachedResult = {
+  status: "attached";
+  user: User;
+  /* What the phone screen's boxes switched on; blocked "stopped" when that handset had texted STOP. */
+  smsOptIn?: { marketing: boolean; service: boolean; blocked?: "stopped" };
+};
 
 /** Several accounts verified the same (household) phone: the person picks one. */
 export type ChooseAccountResult = {
@@ -72,7 +77,15 @@ export async function startPhoneOtp(input: { phone: string }): Promise<OtpStartR
 }
 
 export async function verifyPhoneOtp(
-  input: { phone: string; code: string; mode?: "attach" } & Partial<ConversionFields>
+  input: {
+    phone: string;
+    code: string;
+    mode?: "attach";
+    /* The optional boxes on the phone screen; only literal true is consent, recorded after the code. */
+    smsOptIn?: { marketing?: boolean; service?: boolean };
+    /* Changing a verified number: the proof from confirmReauth (or a session signed into minutes ago). */
+    reauthToken?: string;
+  } & Partial<ConversionFields>
 ): Promise<VerifyResult> {
   const { data } = await API.post<VerifyResult>("/api/auth/otp/phone/verify", input);
   return data;
@@ -90,15 +103,46 @@ export async function createAccountForPhone(
   return data;
 }
 
-export async function startEmailOtp(email: string): Promise<OtpStartResponse> {
+export async function startEmailOtp(email: string, options: { mode?: "attach" } = {}): Promise<OtpStartResponse> {
   const { data } = await API.post<OtpStartResponse>("/api/auth/otp/email/start", {
     email: email.trim().toLowerCase(),
+    // Signed in and adding/changing it: the server refuses an address another account uses before sending a code.
+    ...(options.mode ? { mode: options.mode } : {}),
   });
   return data;
 }
 
+/*
+ * Confirm it's you, before replacing an email or phone the account already
+ * verified: a code to a contact the account trusts (never one typed here).
+ */
+export async function startReauth(channel: "sms" | "email"): Promise<OtpStartResponse & { destination: string; channel: "sms" | "email" }> {
+  const { data } = await API.post("/api/auth/reauth/start", { channel });
+  return data;
+}
+
+export async function verifyReauth(channel: "sms" | "email", code: string): Promise<{ reauthToken: string; expiresInSeconds: number }> {
+  const { data } = await API.post("/api/auth/reauth/verify", { channel, code });
+  return data;
+}
+
+/*
+ * Whether this browser signed in a few minutes ago. The server then accepts a
+ * change without a second code; it decides for itself either way, so this only
+ * saves a step and never grants anything.
+ */
+export function sessionIsFresh(maxAgeMs = 9 * 60 * 1000): boolean {
+  try {
+    const token = localStorage.getItem("token") || "";
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof payload?.iat === "number" && Date.now() - payload.iat * 1000 < maxAgeMs;
+  } catch {
+    return false;
+  }
+}
+
 export async function verifyEmailOtp(
-  input: { email: string; code: string; linkToken?: string; mode?: "attach" } & Partial<ConversionFields>
+  input: { email: string; code: string; linkToken?: string; mode?: "attach"; reauthToken?: string } & Partial<ConversionFields>
 ): Promise<VerifyResult> {
   const { data } = await API.post<VerifyResult>("/api/auth/otp/email/verify", {
     ...input,
@@ -233,6 +277,10 @@ export function otpErrorMessage(err: AuthApiError, channel: "phone" | "email"): 
         : "This email already belongs to another Profixter account.";
     case "NETWORK":
       return "We couldn't reach Profixter. Check your connection and try again.";
+    case "REAUTH_REQUIRED":
+      return "Please confirm it's you first.";
+    case "REAUTH_UNAVAILABLE":
+      return "We can't confirm it's you online. Please call 631-599-1363 and we'll help.";
     default:
       return err.message || "Something went wrong. Please try again.";
   }
