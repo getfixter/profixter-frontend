@@ -68,6 +68,8 @@ async function open(browser, { width = 390, height = 844, me = null, draft = nul
   );
   const state = { me, checkouts: [], bookingPosts: [], draftViews: 0, otpStarts: [], otpVerifies: [], emailStarts: [], emailVerifies: [], reauthStarts: [], reauthVerifies: [], profile: [], reviewOpens: [], unexpected: [] };
   await ctx.route(/maps\.googleapis\.com|places\.googleapis\.com/, (r) => r.abort());
+  // Never report test visits to analytics or ad accounts (matters when run against the live site).
+  await ctx.route(/facebook\.(net|com)|googletagmanager\.com|google-analytics\.com|clarity\.ms|doubleclick\.net/, (r) => r.abort());
   await ctx.route(/search\.google\.com/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<h1>Google review form</h1>" }));
   await ctx.route(/\/api\//, async (route) => {
     const req = route.request();
