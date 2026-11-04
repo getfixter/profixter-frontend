@@ -29,6 +29,7 @@ import WelcomeOfferBanner from "@/app/components/membership/WelcomeOfferBanner";
 import { WELCOME_OFFER_ERROR_CODES, formatCents, offerPrice, useWelcomeOffer } from "@/lib/welcome-offer";
 import HoldCountdown from "./HoldCountdown";
 import { useServiceTextsOptIn } from "@/app/components/booking/ServiceTextsOptIn";
+import { afterLayout, revealFirstError, scrollBehavior } from "@/lib/form-guide";
 
 /* Annual members pay for ten months and get twelve (as on the plans page; Stripe holds the real price). */
 const ANNUAL_MONTHS_CHARGED = 10;
@@ -145,7 +146,9 @@ export default function HandymanBooker({
   const [banner, setBanner] = useState<{ tone: "info" | "warn" | "ok"; text: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<null | { when: string; pending?: boolean }>(null);
+  const [done, setDone] = useState<null | { when: string; pending?: boolean; draftId?: string }>(null);
+  // Still asking the server whether a paid first visit is booked (the "See my visits" button waits for the answer).
+  const [checkingVisit, setCheckingVisit] = useState(false);
   const [memberLead, setMemberLead] = useState(false);
   const pressing = useRef(false);
   const resumed = useRef(false);
@@ -219,6 +222,8 @@ export default function HandymanBooker({
   const offer = useWelcomeOffer(Boolean(user) && step === 4 && !isMemberHome, offerHome);
   const planCents = (id: string, fallback: number) => offer.plans[id]?.monthlyCents ?? fallback * 100;
   const chosenOffer = offerPrice(offer, plan, cycle);
+  // The Membership card's "from" price: the lowest plan, on the cycle shown.
+  const teaserOffer = offerPrice(offer, "basic", cycle);
   /* The plan's price this cycle, in cents: the server's own when it sent them, else the published price. */
   const cycleCents = (id: string, monthly: number) =>
     cycle === "annual" ? (offer.plans[id]?.annualCents ?? monthly * ANNUAL_MONTHS_CHARGED * 100) : planCents(id, monthly);
@@ -273,12 +278,17 @@ export default function HandymanBooker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, isLoading]);
 
-  // On the homepage a step can open above the screen (the job card is taller than the calendar): bring its top back.
+  // A new step can open above the screen (the job card is taller than the calendar): bring its top back - on the homepage and on Book alike.
   useEffect(() => {
-    if (!embedded) return;
     const el = rootRef.current;
-    if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [step, embedded]);
+    if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+  }, [step]);
+
+  // A press found something missing: take them to the first field it is about (lib/form-guide).
+  useEffect(() => {
+    if (!Object.keys(errors).length) return;
+    afterLayout(() => revealFirstError(rootRef.current));
+  }, [errors]);
 
   // A signed-in customer with homes: preselect their first one if none chosen.
   useEffect(() => {
@@ -453,8 +463,55 @@ export default function HandymanBooker({
     }
     // Paid but not finished yet (Stripe or the membership still on its way): the server books it and emails them.
     await clearHandymanDraft();
-    setDone({ when: formatWhen(view?.requestedDate || draft.date, view?.requestedTime || draft.time), pending: true });
+    setDone({ when: formatWhen(view?.requestedDate || draft.date, view?.requestedTime || draft.time), pending: true, draftId });
   };
+
+  /*
+   * Paid, but the server had not booked the visit yet: keep asking, read-only,
+   * for up to two minutes. Booked turns the screen into the normal "requested"
+   * one; anything else (Admin will call, or still waiting) keeps the honest
+   * pending text, and the button stops waiting either way.
+   */
+  useEffect(() => {
+    const draftId = done?.pending ? done.draftId : "";
+    if (!draftId) return;
+    let alive = true;
+    let tries = 0;
+    let timer = 0;
+    setCheckingVisit(true);
+    const ask = async () => {
+      tries += 1;
+      let status = "";
+      let view: { status?: string; requestedDate?: string; requestedTime?: string } | null = null;
+      try {
+        view = (await API.get(`/api/bookings/first-visit-draft/${draftId}`)).data;
+        status = String(view?.status || "");
+      } catch {
+        status = "";
+      }
+      if (!alive) return;
+      if (status === "booked" || status === "rebooked") {
+        await refreshUser();
+        if (!alive) return;
+        trackEvent("member_visit_booked", { source: "membership_first_visit" });
+        setDone((prev) => ({ when: (view?.requestedDate && view?.requestedTime ? formatWhen(view.requestedDate, view.requestedTime) : "") || prev?.when || "" }));
+        setCheckingVisit(false);
+        return;
+      }
+      const stillWorking = !status || ["draft", "checkout_open", "paid", "fulfilling"].includes(status);
+      if (!stillWorking || tries >= 30) {
+        setCheckingVisit(false);
+        return;
+      }
+      timer = window.setTimeout(ask, 4000);
+    };
+    void ask();
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done?.pending, done?.draftId]);
 
   /* Back from a membership checkout: book the visit they described. */
   const finishAfterMembership = async () => {
@@ -606,6 +663,17 @@ export default function HandymanBooker({
 
   if (!ready) return <div className={embedded ? "bk bk--embedded" : "bk"} style={{ minHeight: embedded ? 320 : 420 }} aria-busy="true" />;
 
+  /*
+   * "See my visits" opens Book, where a member's visits are listed and managed
+   * (BookingsSection under #your-visits) - not the Account overview.
+   *
+   * After a paid membership the visit is booked by the server (the Stripe
+   * webhook, or the draft sweep). If it has not finished yet the button waits,
+   * saying so, while this screen keeps asking - read-only: nothing is booked
+   * or paid from here, so pressing it can never make a second booking or open
+   * a second checkout.
+   */
+
   if (done) {
     return (
       <div className={embedded ? "bk bk--embedded" : "bk"} data-handyman-done>
@@ -622,7 +690,15 @@ export default function HandymanBooker({
             </p>
           )}
           <div className="bk-actions">
-            <Link className="bk-btn bk-btn--primary bk-btn--block" href="/account">See my visits</Link>
+            {done.pending && checkingVisit ? (
+              <button type="button" className="bk-btn bk-btn--primary bk-btn--block" disabled aria-busy="true" data-see-visits="waiting">
+                Finishing your booking…
+              </button>
+            ) : (
+              <Link className="bk-btn bk-btn--primary bk-btn--block" href="/book#your-visits" data-see-visits="ready">
+                See my visits
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -671,7 +747,7 @@ export default function HandymanBooker({
                 );
               })}
             </div>
-            <textarea id="bk-task" className="bk-textarea" name="task" value={draft.task} onChange={(e) => update({ task: e.target.value })} placeholder="Tap a job above, or describe it in a few words" maxLength={1200} />
+            <textarea id="bk-task" className="bk-textarea" name="task" aria-invalid={errors.task ? "true" : undefined} value={draft.task} onChange={(e) => update({ task: e.target.value })} placeholder="Tap a job above, or describe it in a few words" maxLength={1200} />
             {err("task")}
           </div>
           <div className="bk-field" data-error={errors.address ? "1" : undefined}>
@@ -763,13 +839,37 @@ export default function HandymanBooker({
                   </div>
                   <p>One visit, up to 90 minutes of work. Pay once, no commitment. Materials not included.</p>
                 </button>
-                <WelcomeOfferBanner offer={offer} className="bk-offer" monthlyOnly />
+                {/* The server's offer covers the first payment of monthly and annual plans alike (utils/welcomeOffer.js). */}
+                <WelcomeOfferBanner offer={offer} className="bk-offer" />
                 <button type="button" className="bk-option" aria-pressed={choice === "membership"} onClick={() => setChoice("membership")} data-option="membership">
                   <div className="bk-option-top">
-                    <span className="bk-option-name">Membership{offer.active ? <span className="bk-badge">{offer.percentOff}% off 1st month</span> : null}</span>
-                    <span className="bk-option-price">from {formatCents(cycleCents("basic", PLAN_DETAILS[0].price))}<small>{cycle === "annual" ? "/yr" : "/mo"}</small></span>
+                    <span className="bk-option-name">
+                      Membership{teaserOffer ? <span className="bk-badge">{offer.percentOff}% off 1st {cycle === "annual" ? "year" : "month"}</span> : null}
+                    </span>
+                    {/*
+                      * The lowest plan's price, as the server prices it right now. While the
+                      * offer is on, the regular price is struck through beside the exact
+                      * first-payment price; the moment the countdown ends (or the server says
+                      * no) this is the regular price again - same render, no reload.
+                      */}
+                    {teaserOffer ? (
+                      <span className="bk-option-price bk-option-price--offer" data-membership-teaser="offer">
+                        <small>from </small>
+                        <s className="wo-was">{formatCents(teaserOffer.regularCents)}</s> <span className="wo-now">{formatCents(teaserOffer.firstCents)}</span>
+                        <small> first {cycle === "annual" ? "year" : "month"}</small>
+                      </span>
+                    ) : (
+                      <span className="bk-option-price" data-membership-teaser="regular">from {formatCents(cycleCents("basic", PLAN_DETAILS[0].price))}<small>{cycle === "annual" ? "/yr" : "/mo"}</small></span>
+                    )}
                   </div>
-                  <p>Your personal handyman membership. Labor included for covered tasks. Monthly, or annual with 2 months free.</p>
+                  <p>
+                    Your personal handyman membership. Labor included for covered tasks. Monthly, or annual with 2 months free.
+                    {teaserOffer ? (
+                      <span className="bk-option-note" data-membership-teaser-note>
+                        {" "}{offer.percentOff}% off your first {cycle === "annual" ? "yearly" : "monthly"} payment only; then {formatCents(teaserOffer.regularCents)}/{cycle === "annual" ? "yr" : "mo"}.
+                      </span>
+                    ) : null}
+                  </p>
                 </button>
                 {choice === "membership" && (
                   <div className="bk-cycle" role="radiogroup" aria-label="Billing">

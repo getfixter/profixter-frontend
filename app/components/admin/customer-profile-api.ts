@@ -142,3 +142,39 @@ export const getCustomerProfileHistory = async (
   const response = await API.get(`/api/admin/users/${userId}/profile-history`);
   return response.data;
 };
+
+/*
+ * Customer details → "Reviewed us": the owner's own mark that this customer
+ * left a Google review, which stops the post-visit review email for them
+ * (BackEnd jobs/bookingReviewRequests.js). Only the owner may change it; the
+ * server says so in canEdit.
+ */
+export interface ReviewedUsState {
+  reviewedUs: { at: string; byName: string } | null;
+  lastAskedAt: string | null;
+  canEdit: boolean;
+}
+
+export const getReviewedUs = async (userId: string): Promise<ReviewedUsState> => {
+  const response = await API.get(`/api/admin/users/${userId}/reviewed-us`);
+  return response.data;
+};
+
+export const setReviewedUs = async (userId: string, reviewed: boolean): Promise<ReviewedUsState> => {
+  const response = await API.put(`/api/admin/users/${userId}/reviewed-us`, { reviewed });
+  return response.data;
+};
+
+/* Review requests at a glance: sent, held back (and why), and opens of the Google link - never "reviews posted". */
+export interface ReviewSummary {
+  days: number;
+  sent: number;
+  skipped: Record<string, number>;
+  linkOpens: Record<string, number>;
+  reviewedCustomers: number;
+}
+
+export const getReviewSummary = async (days = 30): Promise<ReviewSummary> => {
+  const response = await API.get(`/api/admin/review-requests/summary?days=${days}`);
+  return response.data;
+};

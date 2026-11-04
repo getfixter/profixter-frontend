@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import API from "@/lib/api";
 import EmailComposer from "./EmailComposer";
+import { getReviewSummary, type ReviewSummary } from "./customer-profile-api";
 
 /**
  * Communications: every system message, in one place.
@@ -750,6 +751,51 @@ function EmailList({ items, reload }: { items: EmailTemplate[]; reload: () => vo
   );
 }
 
+/*
+ * The post-visit review email at a glance, last 30 days: how many went out,
+ * how many were held back and why (one per customer per 90 days, "Reviewed
+ * us", or a visit too old to ask about), and how often the Google link was
+ * opened. An open is someone reaching Google's review form - never proof that
+ * a review was posted. Hidden for anyone the server does not show it to.
+ */
+function ReviewRequestsSummary() {
+  const [summary, setSummary] = useState<ReviewSummary | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getReviewSummary(30)
+      .then((next) => alive && setSummary(next))
+      .catch(() => alive && setSummary(null));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  if (!summary) return null;
+  const held = Object.values(summary.skipped).reduce((a, b) => a + b, 0);
+  const opens = Object.values(summary.linkOpens).reduce((a, b) => a + b, 0);
+  const reasons = [
+    summary.skipped.customer_cooldown ? `${summary.skipped.customer_cooldown} asked in the last 90 days` : "",
+    summary.skipped.reviewed_us ? `${summary.skipped.reviewed_us} marked Reviewed us` : "",
+    summary.skipped.too_old ? `${summary.skipped.too_old} visit too old` : "",
+  ].filter(Boolean);
+  const via = [
+    summary.linkOpens.email ? `${summary.linkOpens.email} from the email` : "",
+    summary.linkOpens.account ? `${summary.linkOpens.account} from visit history` : "",
+    summary.linkOpens.home ? `${summary.linkOpens.home} from the homepage` : "",
+    summary.linkOpens.other ? `${summary.linkOpens.other} other` : "",
+  ].filter(Boolean);
+  return (
+    <div className="mb-4 rounded-xl border border-[#D7DEE9] bg-white px-4 py-3 text-sm text-[#313234]" data-review-summary>
+      <p className="font-semibold">Review requests · last {summary.days} days</p>
+      <p className="mt-1 text-[#6A6D71]">
+        {summary.sent} sent · {held} held back{reasons.length ? ` (${reasons.join(", ")})` : ""} · Google review link opened {opens}{" "}
+        {opens === 1 ? "time" : "times"}
+        {via.length ? ` (${via.join(", ")})` : ""}. {summary.reviewedCustomers} {summary.reviewedCustomers === 1 ? "customer is" : "customers are"} marked Reviewed us.
+      </p>
+      <p className="mt-1 text-xs text-[#8A8D91]">An open means someone reached Google&apos;s review form, not that a review was posted.</p>
+    </div>
+  );
+}
+
 export default function CommunicationsModule() {
   const [tab, setTab] = useState<"emails" | "sms" | "history">("sms");
   const [sms, setSms] = useState<SmsTemplate[]>([]);
@@ -809,6 +855,8 @@ export default function CommunicationsModule() {
           customer was already told stays exactly as it was sent.
         </p>
       </div>
+
+      <ReviewRequestsSummary />
 
       <div className="mb-4 flex flex-wrap gap-2">
         {(

@@ -139,10 +139,12 @@ export default function CommunicationConsentPage() {
               <li>
                 <span className="font-semibold">Marketing texts require a second, separate opt-in.</span> Promotional texts are sent
                 only if you switch on <span className="font-semibold">&ldquo;Text me occasional ProFixter offers.&rdquo;</span> in
-                your account settings, which is the only place you can turn marketing texts on today. It is unchecked by default, it
-                is not the same box as the service one, and ticking either never ticks the other. Marketing texts are never offered
-                at sign-up, at booking or with a Free Visit request, and telling our staff on a call that you want offers by text
-                does not start them: you confirm it yourself.{" "}
+                your account settings, or tick <span className="font-semibold">&ldquo;Text me ProFixter offers, too.&rdquo;</span> on
+                the screen where you add or change your mobile number. Either box is unchecked by default, neither is the same box
+                as the service one, and ticking one never ticks another. The box on the mobile-number screen is recorded only after
+                you enter the code that verifies the number. Marketing texts are never offered on the phone sign-up screen, at
+                booking or with a Free Visit request, and telling our staff on a call that you want offers by text does not start
+                them: you confirm it yourself.{" "}
                 <span className="font-semibold">
                   Providing a phone number is never by itself treated as consent to marketing.
                 </span>
@@ -223,7 +225,9 @@ export default function CommunicationConsentPage() {
                   <li>Limited-time campaigns (example: new service area, early-bird discounts)</li>
                 </ul>
                 <p className="mt-3 text-[color:var(--ui-text-2)]">
-                  Offered in your account settings, as the unchecked box &ldquo;Text me occasional ProFixter offers.&rdquo; Once
+                  Offered in your account settings, as the unchecked box &ldquo;Text me occasional ProFixter offers.&rdquo;, and on
+                  the screen where you add or change your mobile number, as the unchecked box &ldquo;Text me ProFixter offers,
+                  too.&rdquo; Once
                   this method is registered with the carriers, a customer who asks our staff for offers by text may instead be
                   emailed a link to profixter.com/texts/confirm and press &ldquo;Yes, text me occasional ProFixter offers&rdquo;
                   there. Marketing consent is optional and is not required to purchase services. If you opt out of marketing, you
@@ -287,11 +291,12 @@ export default function CommunicationConsentPage() {
           <section>
             <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">7. How We Collect Opt-In (Consent Records)</h2>
             <p>
-              Account sign-up collects no SMS consent: it has no text-message checkboxes, and continuing accepts the Terms of
-              Service and Privacy Policy and a one-time verification text the person requests, sent through Twilio Verify. Neither
-              service texts nor marketing texts are required to book or to use ProFixter.
+              The phone sign-up screen collects no SMS consent: it has no text-message checkboxes, and continuing accepts the Terms
+              of Service and Privacy Policy and a one-time verification text the person requests, sent through Twilio Verify.
+              Verifying a number is never consent by itself. Neither service texts nor marketing texts are required to book or to
+              use ProFixter.
             </p>
-            <p className="mt-3">We collect SMS consent in these five places and nowhere else:</p>
+            <p className="mt-3">We collect SMS consent in these six places and nowhere else:</p>
             <ol className="list-decimal list-inside space-y-2 mt-3">
               <li>
                 <span className="font-semibold">The booking step</span> (signed in): one optional, unchecked box, &ldquo;Text me
@@ -307,6 +312,13 @@ export default function CommunicationConsentPage() {
                 one for marketing texts.
               </li>
               <li>
+                <span className="font-semibold">The mobile-number screen</span> (signed in), where you add or change the mobile
+                number on your account: one optional, unchecked box, &ldquo;Text me ProFixter offers, too.&rdquo;, for marketing
+                texts, recorded only after you enter the code that verifies the number. When you change your number, consent given
+                for the old one does not move to the new one, so an optional, unchecked &ldquo;Text me about my ProFixter
+                visits&rdquo; box is shown there too.
+              </li>
+              <li>
                 <span className="font-semibold">A phone call with our staff</span>, for texts about your visits only: staff must
                 ask and record Yes or No; neither answer is pre-selected. It is never used for marketing texts.
               </li>
@@ -317,7 +329,8 @@ export default function CommunicationConsentPage() {
               </li>
             </ol>
             <p className="mt-3">
-              Marketing texts are offered to customers only in account settings until the confirmation page is registered. We
+              Marketing texts are offered to customers only in account settings and on the mobile-number screen until the
+              confirmation page is registered. We
               never send marketing texts on a yes given on a phone call. Written permission you send us yourself (your own email
               or text message, or a signed form) is recorded by our staff with a description of it, and no marketing text is sent
               on it until that method is registered with the carriers. Texting us does not by itself subscribe you to any
@@ -327,7 +340,8 @@ export default function CommunicationConsentPage() {
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>
                 For each choice on an account we keep the consent status, the date and time it was recorded, the place it came from
-                — the booking step, your account settings, a phone call recorded by our staff, or the confirmation page — the
+                — the booking step, your account settings, the mobile-number screen, a phone call recorded by our staff, or the
+                confirmation page — the
                 wording that applied, and, where staff recorded it, the staff member&apos;s name. Service texts and marketing texts
                 are recorded separately. For a Free Visit requested without an account, we keep the exact line shown under the
                 button and the time it was pressed.

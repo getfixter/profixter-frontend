@@ -42,6 +42,7 @@ import {
 
 import { useAuth } from "@/lib/useAuth";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
+import { revealField } from "@/lib/form-guide";
 import {
   GiftError,
   formatMoneyCents,
@@ -309,8 +310,7 @@ export default function GiftPurchaseClient() {
           ? document.querySelector<HTMLInputElement>('input[name="gift-plan"]')
           : document.getElementById(first);
       if (!target) return;
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
-      target.focus({ preventScroll: true });
+      revealField(target);
     });
   }, []);
 

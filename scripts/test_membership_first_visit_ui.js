@@ -316,9 +316,10 @@ const shot = async (page, name) => {
     await sheet.waitFor({ state: "visible", timeout: 15000 });
     const text = await sheet.innerText();
     check("phone required: Add your mobile number, the Fixter line, Text me a code", /Add your mobile number/.test(text) && /reach you on the day of the visit/.test(text) && /Text me a code/.test(text));
-    // The registered phone-step line (terms.continue.v1): a one-time verification text, no text consent, no offers.
-    check("phone required: the line under the button is the registered one, no text consent, no offers", /to receive a one-time verification text/.test(text) && !/texts about your visits|offer|promotion|marketing/i.test(text), text.replace(/\s+/g, " ").slice(0, 300));
-    check("phone required: no checkbox", (await sheet.locator("input[type=checkbox]").count()) === 0);
+    // The registered phone-step line (terms.continue.v1): a one-time verification text, no visit-texts consent.
+    check("phone required: the line under the button is the registered one, no visit-texts consent", /to receive a one-time verification text/.test(text) && !/texts about your visits|promotion|marketing/i.test(text), text.replace(/\s+/g, " ").slice(0, 300));
+    // 2026-11-03 (owner): one optional, unticked offers box on this screen, and nothing else.
+    check("phone required: exactly one checkbox, the optional offers box, unticked", (await sheet.locator("input[type=checkbox]").count()) === 1 && (await sheet.locator("#contact-sms-offers").isChecked()) === false && /Text me ProFixter offers, too\./.test(text));
     await page.keyboard.press("Escape");
     await page.waitForTimeout(400);
     check("phone required: it cannot be dismissed", await sheet.isVisible());
@@ -332,6 +333,7 @@ const shot = async (page, name) => {
     await otp.fill("123456");
     await page.waitForTimeout(1500);
     check("phone required: the code goes to Verify in attach mode", state.otpStarts.length === 1 && state.otpVerifies.length === 1 && state.otpVerifies[0].mode === "attach", JSON.stringify(state.otpVerifies));
+    check("phone required: left unticked, no offers consent is sent", state.otpVerifies[0].smsOptIn?.marketing === false && Object.keys(state.otpStarts[0]).join() === "phone", JSON.stringify(state.otpVerifies[0]));
     check("phone required: verified, the sheet goes away", !(await sheet.isVisible().catch(() => false)));
     check("phone required: no page errors", errors.length === 0, errors.join(" | "));
     await ctx.close();

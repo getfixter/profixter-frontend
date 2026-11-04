@@ -47,7 +47,12 @@ import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
  *      visits ("sms_service.admin_phone.v1", or the guest visit's own record) -
  *      never marketing (BackEnd utils/consent/marketingSmsBasis.js);
  *   5. profixter.com/texts/confirm, for marketing, held until
- *      SMS_ADMIN_ASSISTED_OPTIN_REGISTERED=true.
+ *      SMS_ADMIN_ASSISTED_OPTIN_REGISTERED=true;
+ *   6. (2026-11-03) the mobile-number screen (FrontEnd
+ *      auth/ContactCompletion.tsx): one optional, unticked offers box
+ *      ("sms_marketing.phone_verify.v1"), and when a number is changed a
+ *      second one for visit texts ("sms_service.phone_change.v1"), both
+ *      recorded only after the code verifies the number.
  * The wording quoted below is the wording in BackEnd
  * utils/consent/consentText.js and on those screens, word for word.
  *
@@ -58,7 +63,7 @@ import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 const TITLE = "How ProFixter collects SMS consent";
 const DESCRIPTION =
-  "Evidence for carrier and A2P review: how ProFixter collects SMS consent, with annotated screenshots. Sign-up asks for no SMS consent. Texts about visits are optional: a box at booking, the line at the Free Visit request button, account settings, or a yes recorded by staff on a call. Customers switch on marketing texts themselves, in account settings.";
+  "Evidence for carrier and A2P review: how ProFixter collects SMS consent, with annotated screenshots. The phone sign-up screen asks for no SMS consent. Texts about visits are optional: a box at booking, the line at the Free Visit request button, account settings, or a yes recorded by staff on a call. Customers switch on marketing texts themselves, in account settings or with an optional box on the mobile-number screen.";
 
 export const metadata: Metadata = {
   title: { absolute: `${TITLE} | ProFixter` },
@@ -156,7 +161,7 @@ export default function SmsConsentExamplePage() {
           <Link href="/book/free" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
             profixter.com/book/free
           </Link>
-          , account settings, and what our staff record on a phone call.{" "}
+          , account settings, the mobile-number screen, and what our staff record on a phone call.{" "}
           <span className="font-semibold">It is not itself a way to sign up for text messages.</span> Nothing on this
           page collects information, and there is no checkbox, form or button here that subscribes anyone to anything.
         </div>
@@ -191,8 +196,8 @@ export default function SmsConsentExamplePage() {
           <section>
             <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">2. Where consent is collected</h2>
             <p>
-              Text messages are optional at every point, and the sign-up screen collects none. SMS consent is collected
-              in these five places, and nowhere else:
+              Text messages are optional at every point, and the phone sign-up screen collects none. SMS consent is
+              collected in these six places, and nowhere else:
             </p>
             <ol className="list-decimal list-inside space-y-2 mt-3">
               <li>
@@ -209,7 +214,16 @@ export default function SmsConsentExamplePage() {
               </li>
               <li>
                 <span className="font-semibold">Account settings</span> &mdash; two separate, unchecked boxes, one for
-                service texts and one for marketing texts. This is the only place customers switch on marketing texts.
+                service texts and one for marketing texts.
+              </li>
+              <li>
+                <span className="font-semibold">The mobile-number screen</span> (signed-in customers) &mdash; shown when
+                a customer adds a mobile number to their account (including right after creating an account with email,
+                Google or Apple) or changes it. Under the number field there is one optional, unchecked box,
+                &ldquo;Text me ProFixter offers, too.&rdquo;, for marketing texts only. It is recorded only after the
+                customer enters the code that verifies the number, and the account works the same whether or not it is
+                ticked. When a customer changes their number, consent given for the old number does not move to the new
+                one, so a second optional, unchecked box, &ldquo;Text me about my ProFixter visits&rdquo;, is also shown.
               </li>
               <li>
                 <span className="font-semibold">A phone call with ProFixter staff</span> &mdash; for texts about the
@@ -226,9 +240,10 @@ export default function SmsConsentExamplePage() {
               </li>
             </ol>
             <p className="mt-3">
-              <span className="font-semibold">Sign-up collects no SMS consent.</span> The sign-up screen has no
+              <span className="font-semibold">The phone sign-up screen collects no SMS consent.</span> It has no
               text-message checkboxes. A person who signs up with a phone number receives a one-time verification code
-              that they request themselves, sent through Twilio Verify and not under this messaging campaign.
+              that they request themselves, sent through Twilio Verify and not under this messaging campaign. Verifying
+              a number is never consent; only a box the customer ticks is.
             </p>
             <p className="mt-3">
               <span className="font-semibold">Marketing texts are never sent on what staff record.</span> If a caller
@@ -249,7 +264,7 @@ export default function SmsConsentExamplePage() {
             <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">3. The exact wording on each screen</h2>
             <p>
               Verbatim, followed by what each choice covers. The document links at the booking box, the Free Visit line
-              and account settings (the{" "}
+              , account settings and the mobile-number screen (the{" "}
               <a href="/communication-consent" className="underline underline-offset-4">
                 SMS Terms
               </a>
@@ -307,9 +322,33 @@ export default function SmsConsentExamplePage() {
                 quote="Text me occasional ProFixter offers."
               >
                 &ldquo;Optional, and separate from the service texts above. Message frequency varies. Message and data
-                rates may apply. Reply STOP to opt out or HELP for help.&rdquo; This is the only place customers switch
-                on marketing texts: never at sign-up, never at booking, never at the Free Visit request, and never
-                combined with anything required.
+                rates may apply. Reply STOP to opt out or HELP for help.&rdquo; Customers switch on marketing texts
+                themselves only here or with the optional box on the mobile-number screen: never on the phone sign-up
+                screen, never at booking, never at the Free Visit request, and never combined with anything required.
+              </Wording>
+
+              <Wording
+                label="The mobile-number screen - marketing texts (optional, unchecked by default)"
+                quote="Text me ProFixter offers, too."
+              >
+                Beside a single checkbox under the mobile number field and above the &ldquo;Text me a code&rdquo;
+                button, with this line beneath it: &ldquo;Optional, not required to buy. Msg frequency varies. Msg &amp;
+                data rates may apply. Reply STOP to opt out, HELP for help.&rdquo; followed by the links &ldquo;SMS
+                Terms&rdquo; (the marketing section of the SMS Terms) and &ldquo;Privacy&rdquo;. It is not shown to a
+                customer who already receives offer texts. A tick is recorded, with this wording, the phone number and
+                the time, only after the customer enters the code that verifies the number; the number is saved and the
+                customer continues whether or not it is ticked. A STOP from that phone still stops every text.
+              </Wording>
+
+              <Wording
+                label="The mobile-number screen when changing a number - service texts (optional, unchecked)"
+                quote="Text me about my ProFixter visits"
+              >
+                Shown only when a customer replaces the number on their account, because consent given for the old
+                number does not move to the new one. The line beneath it reads: &ldquo;Booking confirmations, reminders
+                and arrival updates. Msg frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP
+                for help.&rdquo; followed by the SMS Terms and Privacy links. Recorded only after the new number is
+                verified with its code.
               </Wording>
 
               <Wording
@@ -360,8 +399,9 @@ export default function SmsConsentExamplePage() {
               </li>
               <li>
                 <span className="font-semibold">Marketing SMS is separately optional</span>. Customers switch it on
-                themselves in account settings, with its own box and its own record. It is never switched on by
-                booking, by requesting a Free Visit, or by anything said on a phone call.
+                themselves, in account settings or with the optional box on the mobile-number screen, each with its own
+                box and its own record. It is never switched on by verifying a number, by booking, by requesting a Free
+                Visit, or by anything said on a phone call.
               </li>
               <li>
                 Every SMS box is unchecked by default and never pre-ticked: the customer performs the tick themselves.
@@ -446,7 +486,16 @@ export default function SmsConsentExamplePage() {
               alt="ProFixter account settings at phone width, showing two separate unchecked text message boxes, Text me about my ProFixter visits and Text me occasional ProFixter offers, and under them the sending number with links to the SMS Terms, Privacy Policy and Terms of Service."
               width={390}
               height={844}
-              caption="Account settings. Service texts and marketing texts are two independent, unticked boxes; turning one on never turns the other on, and either can be switched off at any time. Under them: the number texts come from, and the SMS Terms, Privacy Policy and Terms of Service. This is the only place customers switch on marketing texts."
+              caption="Account settings. Service texts and marketing texts are two independent, unticked boxes; turning one on never turns the other on, and either can be switched off at any time. Under them: the number texts come from, and the SMS Terms, Privacy Policy and Terms of Service."
+            />
+
+            <Evidence
+              label="E - The mobile-number screen: one optional, unticked offers box"
+              src="/compliance/a2p-v3-phone.png"
+              alt="The ProFixter Add your mobile number screen at phone width: the mobile number field, the unticked checkbox Text me ProFixter offers, too. with its disclosure line and SMS Terms and Privacy links, the Text me a code button and the terms line beneath it."
+              width={390}
+              height={844}
+              caption="Shown when a customer adds or changes the mobile number on their account. &ldquo;Text me ProFixter offers, too.&rdquo; is unticked and optional, states frequency, rates, STOP and HELP, and links to the SMS Terms and Privacy Policy. It is recorded only after the code verifies the number; the customer continues either way."
             />
 
             <p className="mt-6">

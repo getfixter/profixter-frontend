@@ -725,3 +725,50 @@ html[data-pf-start="covering"] .pf-call { display: none; }
 }
 @media print { .pf-call { display: none; } }
 @media (prefers-reduced-motion: reduce) { .pf-call__dot { transition: none; } }
+
+/* ---------------------------------------------------------------- */
+/* The phone keyboard (app/components/KeyboardAware.tsx, 2026-11-03) */
+/* While a text field has focus on a touch screen, the bars fixed to  */
+/* the bottom step aside so they never sit on the keyboard over the   */
+/* field or its error; they come back when focus leaves.              */
+/* ---------------------------------------------------------------- */
+html[data-keyboard="open"] .csn,
+html[data-keyboard="open"] .sticky-cta,
+html[data-keyboard="open"] .pf-call,
+html[data-keyboard="open"] [data-fixed-bottom="hide-on-keyboard"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* A bottom sheet stops above the iPhone keyboard (which lays over the page); Android resizes the page instead, so the inset is 0 there. */
+:root[data-surface="site"] .pf-sheet {
+  max-height: calc(100svh - 24px - var(--kb-inset, 0px));
+}
+:root[data-surface="site"] .pf-sheet-backdrop {
+  padding-bottom: var(--kb-inset, 0px);
+}
+
+/* Fields scrolled to by name (form guidance) keep clear of the screen edges. */
+:root[data-surface="site"] :is(input, select, textarea, [data-field]) {
+  scroll-margin-top: 24px;
+  scroll-margin-bottom: 24px;
+}
+:root[data-surface="site"] .bk-sheet {
+  max-height: calc(92dvh - var(--kb-inset, 0px));
+}
+/* Overlays with text fields: the panel stays above the iPhone keyboard and scrolls inside. */
+:root[data-surface="site"] [data-kb-overlay] {
+  padding-bottom: var(--kb-inset, 0px);
+}
+:root[data-surface="site"] [data-kb-overlay] > * {
+  max-height: calc(100% - 8px);
+  overflow-y: auto;
+}
+/* Overlays with text fields: the panel stays above the iPhone keyboard and scrolls inside. */
+:root[data-surface="site"] [data-kb-overlay] {
+  padding-bottom: var(--kb-inset, 0px);
+}
+:root[data-surface="site"] [data-kb-overlay] > * {
+  max-height: calc(100% - 8px);
+  overflow-y: auto;
+}

@@ -7,6 +7,7 @@ import { addBookingDetails } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
 import { libraryLabel } from "@/lib/booking-library";
 import { LibraryThumb } from "@/app/components/booking/PhotoLibraryPicker";
+import { reviewHref } from "@/lib/google-review";
 
 type Booking = {
   _id: string;
@@ -254,6 +255,7 @@ function CancelModal({
 
   return (
     <div
+      data-kb-overlay
       className="fixed inset-0 z-[9999] bg-black/55 flex items-end sm:items-center justify-center sm:p-4"
       onClick={onClose}
     >
@@ -368,6 +370,7 @@ function AddDetailsModal({
 
   return (
     <div
+      data-kb-overlay
       className="fixed inset-0 z-[9999] bg-black/55 flex items-end sm:items-center justify-center sm:p-4"
       onClick={() => !saving && onClose()}
     >
@@ -681,9 +684,10 @@ function BookingCard({
                 Leave a tip
               </a>
               <a
-                href="https://maps.app.goo.gl/Zgf97uUDCh6HBK5o8"
+                href={reviewHref("account")}
                 target="_blank"
                 rel="noreferrer"
+                data-review-link="account"
                 className="flex-1 py-2.5 rounded-[8px] text-[13px] font-semibold border border-[#E0E6F5] bg-white text-[#6A6D71] hover:bg-[#F8FAFF] transition text-center"
               >
                 Leave a review

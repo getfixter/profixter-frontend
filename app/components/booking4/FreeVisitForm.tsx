@@ -12,6 +12,7 @@ import { BUSINESS_PHONE_DISPLAY } from "@/lib/seo";
 import { saveHandymanDraft, saveHandymanPhotos } from "@/lib/handyman-draft";
 import SlotPicker, { formatWhen } from "./SlotPicker";
 import PhotoPicker from "./PhotoPicker";
+import { afterLayout, revealFirstError, scrollBehavior } from "@/lib/form-guide";
 
 /*
  * The Free Visit (from 2026-10-30): a free visit to go over the customer's
@@ -166,9 +167,8 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
     const found = validate();
     setErrors(found);
     if (Object.keys(found).length) {
-      const first = FIELD_ORDER.find((k) => found[k]);
-      if (first) focusField(rootRef.current, first);
-      rootRef.current?.querySelector("[data-error='1']")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      // The first field that needs them, in view and (if it is a text field) focused - lib/form-guide.
+      afterLayout(() => revealFirstError(rootRef.current));
       return;
     }
     trackEvent("free_visit_review_opened", {});
@@ -218,8 +218,8 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
         writeDraft(null);
         setSheet(false);
         setPhase("done");
-        if (embedded) rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        else window.scrollTo({ top: 0, behavior: "smooth" });
+        if (embedded) rootRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+        else window.scrollTo({ top: 0, behavior: scrollBehavior() });
         return;
       }
       setSheet(false);
