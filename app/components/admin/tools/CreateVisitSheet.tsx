@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import AddressField, { type AddressValue } from '@/app/components/address/AddressField';
+import { type AddressValue } from '@/app/components/address/AddressField';
+import AddressWithUnit from './AddressWithUnit';
 import AdminSheet, { FieldError, Notice, PrimaryButton, Segmented, SmsAgreedChoice, deliveryText, inputClass, labelClass } from './AdminSheet';
 import { openInNewTab } from './BuyMembershipSheet';
 import { compressImage } from '@/lib/compressImage';
@@ -61,6 +62,7 @@ export default function CreateVisitSheet({
   const [guestPhone, setGuestPhone] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestAddress, setGuestAddress] = useState<AddressValue | null>(null);
+  const [guestUnit, setGuestUnit] = useState('');
   // Asked on the call, never pre-selected: null until staff choose Yes or No.
   const [guestSms, setGuestSms] = useState<boolean | null>(null);
 
@@ -173,7 +175,7 @@ export default function CreateVisitSheet({
         addressId: addressId || undefined,
         guest:
           mode === 'guest' && guestAddress
-            ? { name: guestName.trim(), phone: guestPhone.trim(), email: guestEmail.trim(), line1: guestAddress.line1, unit: guestAddress.unit, city: guestAddress.city, state: guestAddress.state || 'NY', zip: guestAddress.zip, smsConsent: guestSms === true }
+            ? { name: guestName.trim(), phone: guestPhone.trim(), email: guestEmail.trim(), line1: guestAddress.line1, unit: guestUnit.trim(), city: guestAddress.city, state: guestAddress.state || 'NY', zip: guestAddress.zip, smsConsent: guestSms === true }
             : undefined,
         type,
         date,
@@ -328,7 +330,7 @@ export default function CreateVisitSheet({
           </div>
           <div>
             <span className={labelClass}>Service address</span>
-            <AddressField value={guestAddress} onChange={setGuestAddress} />
+            <AddressWithUnit value={guestAddress} onChange={setGuestAddress} unit={guestUnit} onUnitChange={setGuestUnit} testId="guest-address" />
             <FieldError message={errors.guest_line1 || errors.guest_city || errors.guest_zip} />
           </div>
           <SmsAgreedChoice value={guestSms} onChange={setGuestSms} testId="guest-sms" question="Did they agree to texts about this visit?" />

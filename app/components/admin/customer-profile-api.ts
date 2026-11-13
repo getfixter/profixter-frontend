@@ -11,6 +11,8 @@ export interface CustomerProfileAddress {
   _id: string;
   label: string;
   line1: string;
+  /* Apartment / unit on its own (BE-CUST); line1 still carries it. "" on older addresses. */
+  unit?: string;
   city: string;
   state: string;
   zip: string;

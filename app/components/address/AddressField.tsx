@@ -25,6 +25,11 @@ type Props = {
   onServiceArea?: (state: ServiceAreaState) => void;
   /** The lookup box's prompt, for forms that use it in place of a label. */
   placeholder?: string;
+  /**
+   * The form shows its own Apt / Unit input (Admin: always visible, manual
+   * entry included), so this field does not add a second one.
+   */
+  hideUnit?: boolean;
 };
 
 export type ServiceAreaState = "unknown" | "checking" | "inside" | "outside";
@@ -36,7 +41,7 @@ export type ServiceAreaState = "unknown" | "checking" | "inside" | "outside";
  */
 const DEBOUNCE_MS = 260;
 
-export default function AddressField({ value, onChange, onServiceArea, placeholder }: Props) {
+export default function AddressField({ value, onChange, onServiceArea, placeholder, hideUnit = false }: Props) {
   const [query, setQuery] = useState(value?.formatted || "");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -360,7 +365,7 @@ export default function AddressField({ value, onChange, onServiceArea, placehold
       )}
 
       {/* Revealed only once there is an address to put a unit on. */}
-      {showUnit && value?.verified ? (
+      {showUnit && value?.verified && !hideUnit ? (
         <input
           aria-label="Apartment or unit, optional"
           value={value.unit}
