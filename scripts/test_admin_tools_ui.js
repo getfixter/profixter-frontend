@@ -9,7 +9,8 @@
  * At a phone (390) and a desktop (1440) width it checks:
  * - Create customer: field errors, the shared-phone confirmation, all four
  *   message switches on and sent, a visible confirmation
- * - customer details: the Messages panel (service/marketing x email/SMS) toggles
+ * - customer profile (/admin/customers/c1?tab=messages): the Messages &
+ *   consent block (service/marketing x email/SMS) toggles; More > Sell a membership
  * - Buy membership: pay by phone opens Stripe's page; send link confirms
  * - Create visit from Jobs: guest + Free Visit — Admin with a photo; existing
  *   customer + One-Time Visit paid by phone
@@ -44,6 +45,16 @@ const ROW = {
   defaultAddressId: "a1",
   addressesDetailed: [{ ...ADDRESS, isDefault: true, plan: "basic", scheduledCancellationDate: null }],
   completedBookings: 4,
+};
+const DTO_ADDRESS = { id: "a1", label: "Primary", line1: "12 Oak Street", unit: "", town: "Massapequa", state: "NY", zip: "11758", formatted: "12 Oak Street, Massapequa, NY 11758", isDefault: true, plan: "basic", billingCycle: "monthly", planStatus: "active", statusDetail: "", renewsAt: "2026-12-01T05:00:00.000Z", endsAt: null, currentPeriodEnd: "2026-12-01T05:00:00.000Z", cancelAt: null, complimentary: false, stripeManaged: true };
+const ROW_DTO = { id: "c1", userId: "20000001", name: "Casey Customer", phone: "(631) 555-0101", email: "casey@example.com", town: "Massapequa", addresses: [DTO_ADDRESS], blocked: false, archived: false, visitsCompleted: 4 };
+const PROFILE_DTO = {
+  customer: { id: "c1", userId: "20000001", name: "Casey Customer", firstName: "Casey", lastName: "Customer", email: "casey@example.com", phone: "+16315550101", phoneFormatted: "(631) 555-0101", signupMethod: "web", customerSince: "2026-01-01T00:00:00Z", updatedAt: "2026-10-01T00:00:00Z", archivedAt: null },
+  addresses: [{ ...DTO_ADDRESS, introVisitStatus: null, loyalty: null }],
+  visits: { completed: 4, next: null, last: null },
+  flags: { blocked: false, phoneVerified: true, emailVerified: true, textsOk: true, offersByTextOk: false, archived: false, hasStripeCustomer: true },
+  notesCount: 0,
+  allowedActions: { editProfile: true, editContact: true, changePlan: true, scheduleCancellation: true, grantComplimentary: true, sellMembership: true, createVisit: true, addNote: true, block: true, unblock: false, archive: true, unarchive: false, viewBilling: true, changeCommunication: true },
 };
 const OPTIONS = {
   plans: [
@@ -100,6 +111,12 @@ async function open(browser, width, me = OWNER) {
     if (p === "/api/admin/users" && m === "GET") return json([ROW]);
     if (p === "/api/admin/members") return json([ROW]);
     if (p === "/api/admin/bookings") return json([]);
+    // The redesigned Customers screens (BE-CUST contract).
+    if (p === "/api/admin/customers" && m === "GET") return json({ filter: u.searchParams.get("filter") || "all", items: [ROW_DTO], nextCursor: null });
+    if (p === "/api/admin/customers/c1" && m === "GET") return json(PROFILE_DTO);
+    if (p === "/api/admin/customers/c1/consent") return json({ switches: state.comm, evidence: { serviceSms: { enabled: true, at: null, source: "" }, marketingSms: { enabled: true, at: null, source: "", method: "", evidence: "" }, serviceEmail: { enabled: true, changedAt: null, source: "" }, marketingEmail: { at: null, source: "" } }, stop: { phoneOptedOut: false, scope: "", at: null, source: "" }, history: [] });
+    if (/^\/api\/admin\/customers\/c1\/(notes|gifts|payment-links)$/.test(p)) return json({ items: [] });
+    if (p === "/api/admin/customers/c1/visits") return json({ items: [], nextCursor: null });
     if (p === "/api/admin/customers" && m === "POST") {
       const body = JSON.parse(req.postData() || "{}");
       state.creates.push(body);
@@ -204,10 +221,10 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     const { ctx, page, state, errors } = await open(browser, width);
 
     /* ---------------- Create customer ---------------- */
-    await page.goto(`${BASE}/admin?tab=users`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE}/admin/customers`, { waitUntil: "networkidle" });
     await visible(page, "text=Casey Customer").first().waitFor({ timeout: 20000 });
     const createBtn = page.locator("[data-action=open-create-customer]");
-    check(`${tag}: Create customer button on All Users`, await createBtn.isVisible());
+    check(`${tag}: Create customer button on Customers`, await createBtn.isVisible());
     await createBtn.click();
     const cc = page.locator("[data-admin-sheet=create-customer]");
     await cc.waitFor();
@@ -241,9 +258,9 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     check(`${tag}: confirmation says the email and text went`, (await page.locator("text=/Email sent · Text sent/").count()) >= 1);
     await shot(page, `${tag}-03-created`);
 
-    /* ---------------- Customer details: messages ---------------- */
-    await visible(page, "button:text-is('History'), button:text-is('View history')").first().click();
-    await page.locator("text=Customer activity").first().waitFor();
+    /* ---------------- Customer profile: messages & consent ---------------- */
+    await page.goto(`${BASE}/admin/customers/c1?tab=messages`, { waitUntil: "networkidle" });
+    await page.locator("[data-customer-profile=c1]").waitFor({ timeout: 15000 });
     const panel = page.locator("[data-communication-panel]");
     await panel.locator("[data-comm-value='marketing.sms']:has-text('On')").waitFor({ timeout: 5000 });
     check(`${tag}: Messages panel shows service and marketing, email and SMS`, (await panel.locator("[data-comm-row]").count()) === 4 && (await panel.locator("text=Service messages").count()) === 1 && (await panel.locator("text=Marketing messages").count()) === 1);
@@ -282,10 +299,14 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     await form.locator("[data-action=save-sms-consent]").click();
     await panel.locator("[data-sms-consent=awaiting_registration]").waitFor({ timeout: 5000 });
     check(`${tag}: written permission is sent with its method and evidence`, state.commPuts[2]?.method === "customer_email" && /casey@example.com/.test(state.commPuts[2]?.evidence || ""));
-    check(`${tag}: details view offers Membership and Visit`, (await page.locator("[data-action=open-buy-membership]").count()) === 1 && (await page.locator("[data-action=open-create-visit]").count()) === 1);
+    const openSell = async () => {
+      await page.locator("[data-profile-actions] [data-action=more]").click();
+      await page.locator("[role=menu] [role=menuitem]", { hasText: "Sell a membership" }).click();
+    };
+    check(`${tag}: profile offers Visit in its action row`, (await page.locator("[data-profile-actions] [data-action=new-visit]").isEnabled()));
 
-    /* ---------------- Buy membership ---------------- */
-    await page.locator("[data-action=open-buy-membership]").click();
+    /* ---------------- Buy membership (More > Sell a membership) ---------------- */
+    await openSell();
     const bm = page.locator("[data-admin-sheet=buy-membership]");
     await bm.locator("[data-home=a1]").waitFor({ timeout: 5000 });
     check(`${tag}: an already-billed home is shown and cannot be chosen`, await bm.locator("[data-home=a2]").isDisabled());
@@ -300,7 +321,7 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     check(`${tag}: phone sale sent plan, cycle, home, method`, JSON.stringify(state.sales[0]) === JSON.stringify({ addressId: "a1", plan: "basic", billingCycle: "monthly", method: "phone", channels: ["email", "sms"] }));
     await shot(page, `${tag}-06-pay-by-phone`);
     await bm.locator("button:has-text('Done')").click();
-    await page.locator("[data-action=open-buy-membership]").click();
+    await openSell();
     await bm.locator("[data-choice=plus]").waitFor();
     await bm.locator("[data-choice=plus]").click();
     await bm.locator("[data-choice=annual]").click();

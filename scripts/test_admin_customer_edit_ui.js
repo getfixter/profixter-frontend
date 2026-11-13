@@ -10,13 +10,13 @@
  * the updated list row.
  *
  * What it pins, at a phone (390) and a desktop (1440) width:
- * - Edit is offered on each customer row/card and inside the customer details
+ * - Edit is offered in the customer profile (More > Edit details), not on rows
  * - the sheet loads the profile; Save stays disabled until something changes
  * - server field errors appear next to the field; warnings ask "Save anyway"
- * - a save shows a visible confirmation and the list updates without a reload
+ * - a save shows a visible confirmation and the profile shows the new name
  * - only changed fields are sent; staff see phone/email read-only and never send them
- * - the details view lists the edit history
- * - Copy Address, Gift and the completed-bookings count are still there
+ * - the profile's Activity tab lists the edit history
+ * - Copy, Gift and the completed-visit count are still there
  * - nothing scrolls sideways
  */
 const { chromium } = require("playwright");
@@ -66,6 +66,24 @@ function profileOf(row) {
   };
 }
 
+function dtoAddress(a) {
+  return { id: a._id, label: a.label, line1: a.line1, unit: "", town: a.city, state: a.state, zip: a.zip, formatted: [a.line1, a.city, `${a.state} ${a.zip}`].join(", "), isDefault: !!a.isDefault, plan: a.plan || null, billingCycle: a.plan ? "monthly" : null, planStatus: a.plan ? "active" : "none", statusDetail: "", renewsAt: a.plan ? "2026-12-01T05:00:00.000Z" : null, endsAt: null, currentPeriodEnd: null, cancelAt: null, complimentary: false, stripeManaged: !!a.plan };
+}
+function rowDto(row) {
+  return { id: row._id, userId: row.userId, name: row.name, phone: "(631) 555-0101", email: row.email, town: row.addressesDetailed[0]?.city || "", addresses: row.addressesDetailed.map(dtoAddress), blocked: false, archived: false, visitsCompleted: row.completedBookings };
+}
+function profileDto(row, who) {
+  const owner = who === "owner";
+  return {
+    customer: { id: row._id, userId: row.userId, name: row.name, firstName: row.name.split(" ")[0], lastName: row.name.split(" ").slice(1).join(" "), email: row.email, phone: row.phone, phoneFormatted: "(631) 555-0101", signupMethod: "web", customerSince: row.createdAt, updatedAt: row.updatedAt, archivedAt: null },
+    addresses: row.addressesDetailed.map((a) => ({ ...dtoAddress(a), introVisitStatus: null, loyalty: null })),
+    visits: { completed: row.completedBookings, next: null, last: null },
+    flags: { blocked: false, phoneVerified: !!row.phoneVerifiedAt, emailVerified: true, textsOk: false, offersByTextOk: false, archived: false, hasStripeCustomer: true },
+    notesCount: 0,
+    allowedActions: { editProfile: true, editContact: owner, changePlan: true, scheduleCancellation: true, grantComplimentary: owner, sellMembership: true, createVisit: false, addNote: true, block: false, unblock: false, archive: owner, unarchive: false, viewBilling: true, changeCommunication: true },
+  };
+}
+
 async function open(browser, who, width) {
   const ctx = await browser.newContext({ viewport: { width, height: width < 700 ? 844 : 900 }, isMobile: width < 700, hasTouch: width < 700 });
   await ctx.addInitScript(() => localStorage.setItem("token", "ui-token"));
@@ -83,6 +101,13 @@ async function open(browser, who, width) {
       return json([state.row]);
     }
     if (p === "/api/admin/members") return json([state.row]);
+    // The redesigned Customers screens (BE-CUST contract), built from the same row.
+    if (p === "/api/admin/customers" && req.method() === "GET") return json({ filter: "all", items: [rowDto(state.row)], nextCursor: null });
+    if (p === "/api/admin/customers/c1" && req.method() === "GET") return json(profileDto(state.row, who));
+    if (/^\/api\/admin\/customers\/c1\/(notes|gifts|payment-links)$/.test(p)) return json({ items: [] });
+    if (p === "/api/admin/customers/c1/visits") return json({ items: [], nextCursor: null });
+    if (p === "/api/admin/customers/c1/consent") return json({ switches: {}, evidence: {}, stop: { phoneOptedOut: false }, history: [] });
+    if (p === "/api/admin/customers/c1/billing") return json({ available: false, reason: "stripe_unavailable" });
     if (p === "/api/admin/users/c1/profile" && req.method() === "GET") {
       return json({ profile: profileOf(state.row), access: { canEditContact: who === "owner", canEditDetails: true } });
     }
@@ -147,17 +172,21 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     const tag = width < 700 ? "mobile" : "desktop";
     console.log(`\n--- owner, ${width}px ---`);
     const { ctx, page, state, errors } = await open(browser, "owner", width);
-    await page.goto(`${BASE}/admin?tab=users`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE}/admin/customers`, { waitUntil: "networkidle" });
     await visible(page, "text=Casey Customer").first().waitFor({ timeout: 20000 });
-
-    const editButtons = visible(page, "button:has-text('Edit')");
-    check(`${tag}: Edit on the customer row`, (await editButtons.count()) >= 1);
-    check(`${tag}: Copy Address, Gift and completed bookings still shown`,
-      (await visible(page, "button[aria-label*='opy']").count()) >= 1 && (await visible(page, "button:has-text('Gift')").count()) >= 1 && (await visible(page, "text=/Completed/i").count()) >= 1);
-    await editButtons.first().scrollIntoViewIfNeeded();
+    check(`${tag}: the customer row has no buttons (actions live in the profile)`, (await page.locator("[data-customers-list] ul[role=list] li button").count()) === 0);
     await shot(page, `${tag}-01-list`);
-
-    await editButtons.first().click();
+    await page.locator('[data-customers-list] a[href="/admin/customers/c1"]').click();
+    await page.locator("[data-customer-profile=c1]").waitFor({ timeout: 15000 });
+    check(`${tag}: profile keeps Copy and the completed-visit count`, (await page.locator("[data-profile-actions] [data-action=copy]").isEnabled()) && /Visits done[\s\S]*4/i.test(await page.locator("[data-profile-facts]").innerText()));
+    const openEdit = async () => {
+      await page.locator("[data-profile-actions] [data-action=more]").click();
+      const items = await page.locator("[role=menu] [role=menuitem]").allInnerTexts();
+      await page.locator("[role=menu] [role=menuitem]", { hasText: "Edit details" }).click();
+      return items;
+    };
+    const menuItems = await openEdit();
+    check(`${tag}: More offers Edit details and, for the owner, Gift`, menuItems.some((t) => /Edit details/.test(t)) && menuItems.some((t) => /Gift a membership/.test(t)), menuItems.join(" / "));
     const sheet = page.locator("[role=dialog][aria-labelledby=customer-edit-title]");
     await sheet.locator("input").first().waitFor();
     const save = sheet.locator("button:has-text('Save changes')");
@@ -191,7 +220,6 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     check(`${tag}: warnings ask for confirmation`, (await sheet.locator("button:has-text('Save anyway')").count()) === 1);
     await shot(page, `${tag}-04-warning`);
 
-    const fetchesBeforeSave = state.usersFetches;
     await sheet.locator("button:has-text('Save anyway')").click();
     await sheet.locator("[role=status]:has-text('Saved')").waitFor({ timeout: 5000 });
     const last = state.patches[state.patches.length - 1];
@@ -201,16 +229,13 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     await shot(page, `${tag}-05-saved`);
     await sheet.locator("button:has-text('Done')").click();
 
-    await visible(page, "text=Cassandra Customer").first().waitFor({ timeout: 5000 });
-    check(`${tag}: list updated in place, no refetch`, state.usersFetches === fetchesBeforeSave, `GET /users ${fetchesBeforeSave} -> ${state.usersFetches}`);
+    await page.locator("[data-profile-name]:has-text('Cassandra Customer')").waitFor({ timeout: 5000 });
+    check(`${tag}: the profile shows the saved name`, true);
 
-    // The details view: Edit and the history.
-    await visible(page, "button:text-is('History'), button:text-is('View history')").first().click();
-    const details = page.locator("text=Customer activity").first();
-    await details.waitFor();
-    await page.locator("text=Profile edits").waitFor();
-    check(`${tag}: details view has Edit`, (await page.locator(".fixed button:has-text('Edit')").count()) >= 1);
-    check(`${tag}: details view lists the edit`, (await page.locator("text=Phone verification cleared").count()) >= 1);
+    // The profile's Activity tab lists the edit history.
+    await page.goto(`${BASE}/admin/customers/c1?tab=activity`, { waitUntil: "networkidle" });
+    await page.locator("text=Profile edits").waitFor({ timeout: 8000 });
+    check(`${tag}: Activity lists the edit`, (await page.locator("text=Phone verification cleared").count()) >= 1);
     await shot(page, `${tag}-06-details-history`);
     check(`${tag}: no sideways scroll`, await noSideScroll(page));
     check(`${tag}: no page errors`, errors.length === 0, errors.join(" | "));
@@ -220,9 +245,10 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
   console.log("\n--- All Users employee ---");
   {
     const { ctx, page, state, errors } = await open(browser, "staff", 390);
-    await page.goto(`${BASE}/admin?tab=users`, { waitUntil: "networkidle" });
-    await visible(page, "text=Casey Customer").first().waitFor({ timeout: 20000 });
-    await visible(page, "button:has-text('Edit')").first().click();
+    await page.goto(`${BASE}/admin/customers/c1`, { waitUntil: "networkidle" });
+    await page.locator("[data-customer-profile=c1]").waitFor({ timeout: 20000 });
+    await page.locator("[data-profile-actions] [data-action=more]").click();
+    await page.locator("[role=menu] [role=menuitem]", { hasText: "Edit details" }).click();
     const sheet = page.locator("[role=dialog][aria-labelledby=customer-edit-title]");
     await sheet.locator("input").first().waitFor();
     check("staff: phone and email are read-only", (await sheet.locator("input[inputmode=tel]").isDisabled()) && (await sheet.locator("input[type=email]").isDisabled()));
