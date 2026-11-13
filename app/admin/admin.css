@@ -514,6 +514,15 @@ html[data-keyboard="open"] .adm-sheet-footer { padding-bottom: 12px; }
     animation: adm-fade var(--ui-dur-2) var(--ui-ease);
   }
   .adm-sheet .adm-sheet-handle { display: none; }
+  /* The header search: a wider dialog near the top, so results grow downwards under the field. */
+  .adm-sheet[data-sheet="global-search"] {
+    top: 72px;
+    width: min(600px, calc(100vw - 32px));
+    height: auto;
+    min-height: 320px;
+    max-height: calc(100dvh - 104px);
+    transform: translate(-50%, 0);
+  }
 }
 .adm-sheet[data-dragging="true"] { animation: none; transition: none; }
 .adm-sheet[data-shake="true"] { animation: adm-nudge 280ms var(--ui-ease); }

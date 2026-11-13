@@ -142,6 +142,7 @@ async function open(browser, user, { width = 390, height = 844, touch, fakeViewp
   }
   const external = [];
   const api = [];
+  const searches = [];
   const local = new URL(BASE);
   await ctx.route("**/*", (route) => {
     const req = route.request();
@@ -150,9 +151,29 @@ async function open(browser, user, { width = 390, height = 844, touch, fakeViewp
       const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "Authorization,Content-Type", "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS" };
       if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
       const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", headers: cors, body: JSON.stringify(body) });
-      api.push(`${req.method()} ${u.pathname}`);
+      api.push(`${req.method()} ${u.pathname}${u.search}`);
       const p = u.pathname.replace(/^.*?(\/api\/)/, "/api/");
       if (p === "/api/auth/me") return user ? json(user) : json({ message: "No token" }, 401);
+      if (p === "/api/admin/search") {
+        let body = {};
+        try {
+          body = req.postDataJSON() || {};
+        } catch {
+          body = {};
+        }
+        searches.push({ method: req.method(), body, url: u.href });
+        const q = String(body.q || "").toLowerCase();
+        const hit = q.includes("oak");
+        const field = user && user.employeePosition === "Fixter" && !(user.permissions || []).includes("bookings.assign");
+        const job = (b) => ({ id: b._id, bookingNumber: b.bookingNumber.replace("#", ""), date: b.date, service: b.service, status: STATUS_WORD[b.status] || b.status, customerName: b.name, address: `${b.address}, ${b.city}`, assignedFixterName: b.assignedFixterName, href: `/admin/jobs/${b._id}`, open: true });
+        const customers = hit ? USERS.slice(0, 2).map((x) => ({ id: x._id, userId: x.userId, name: x.name, phone: "(555) 010-0001", email: x.email, town: "Testville", addresses: [], blocked: false, archived: false, visitsCompleted: 1, href: `/admin/customers/${x._id}` })) : [];
+        const projects = hit ? [{ id: "p1", projectNumber: "PRJ-1001", projectType: "Kitchen", customerName: "Test Customer 1", status: "in_progress", address: "1 Oak Demo St", href: "https://evil.example/steal" }] : [];
+        if (field) {
+          // A server must never send these to a field Fixter; the client hides them even if it did.
+          return json({ query: body.q, customers, jobs: hit ? BOOKINGS.filter((b) => b.assignedFixterId === "fx1").slice(0, 1).map(job) : [], projects, scopes: { customers: false, jobs: "assigned", projects: false } });
+        }
+        return json({ query: body.q, customers, jobs: hit ? BOOKINGS.slice(1, 3).map(job) : [], projects, scopes: { customers: true, jobs: "all", projects: true } });
+      }
       if (p === "/api/auth/logout" || p === "/api/auth/logout-all") return json({ message: "Not found" }, 404);
       if (p.startsWith("/api/admin/jobs") || p === "/api/admin/my-day" || p === "/api/admin/schedule") {
         const [status, body] = jobsApi(p, u, user);
@@ -176,7 +197,7 @@ async function open(browser, user, { width = 390, height = 844, touch, fakeViewp
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  return { ctx, page, external, api, errors };
+  return { ctx, page, external, api, searches, errors };
 }
 
 async function waitPath(page, re, timeout = 15000) {
@@ -357,6 +378,8 @@ async function waitPath(page, re, timeout = 15000) {
       inside = inside && (await page.evaluate(() => Boolean(document.activeElement && document.activeElement.closest("[role=dialog]"))));
     }
     check(`${size.width}: Tab and Shift+Tab stay inside the sheet`, inside);
+    // Measure the settled sheet, not a frame of its rise animation (that read 43.999996px once).
+    await dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((an) => an.finished.catch(() => null))));
     const close = await page.locator("[data-sheet-close]").boundingBox();
     check(`${size.width}: close button visible and 44px`, close && close.width >= 44 && close.height >= 44 && close.y >= 0 && close.x + close.width <= size.width, JSON.stringify(close));
     if (size.width === 390) await page.screenshot({ path: path.join(SHOTS, "sheet-search-390x844.png") });
@@ -413,6 +436,74 @@ async function waitPath(page, re, timeout = 15000) {
     });
     await page.waitForTimeout(300);
     check("keyboard closed: bottom bar back", await page.locator("[data-adm-bottomnav]").isVisible());
+    await ctx.close();
+  }
+
+  /* ---------------- header search (POST /api/admin/search) ---------------- */
+  console.log("\n--- header search ---");
+  {
+    const { ctx, page, api, searches, errors, external } = await open(browser, OWNER, { width: 390, height: 844, fakeViewport: true });
+    await page.goto(`${BASE}/admin/jobs`, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("[data-global-search]", { timeout: 20000 });
+    await page.click("[data-global-search]");
+    const field = page.locator("[data-global-search-field]");
+    await field.waitFor({ timeout: 5000 });
+    check("search: the field has focus when the sheet opens", await page.evaluate(() => document.activeElement && document.activeElement.hasAttribute("data-global-search-field")));
+    await page.evaluate(() => window.__setKeyboard(320));
+    await field.fill("o");
+    await page.waitForTimeout(500);
+    check("search: one character asks for more and sends nothing", searches.length === 0 && /at least 2 characters/.test(await page.locator("[data-global-search-results]").innerText()));
+    await field.fill("oak demo");
+    await page.waitForSelector("[data-global-search-group=customers] li", { timeout: 8000 });
+    const groups = await page.locator("[data-global-search-group]").evaluateAll((els) => els.map((e) => e.getAttribute("data-global-search-group")));
+    check("search: results grouped Customers, Jobs, Projects", JSON.stringify(groups) === JSON.stringify(["customers", "jobs", "projects"]), JSON.stringify(groups));
+    check("search: debounced to one request for the settled text", searches.length === 1 && searches[0].body.q === "oak demo", JSON.stringify(searches.map((s) => s.body)));
+    check("search: the text is only in the POST body", searches.every((s) => s.method === "POST") && !page.url().includes("oak") && api.every((a) => !/oak/i.test(a)), page.url());
+    const geo = await page.evaluate(() => {
+      const f = document.querySelector("[data-global-search-field]").getBoundingClientRect();
+      const first = document.querySelector("[data-global-search-group] li").getBoundingClientRect();
+      return { fieldBottom: f.bottom, firstTop: first.top, firstBottom: first.bottom, limit: window.innerHeight - 320 };
+    });
+    check("search: field and first result sit above the keyboard, directly under the field", geo.fieldBottom <= geo.limit && geo.firstBottom <= geo.limit && geo.firstTop - geo.fieldBottom < 90, JSON.stringify(geo));
+    const hrefs = await page.locator("[data-sheet=global-search] [data-global-search-group] a").evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+    check("search: links go to the customer, job and project pages", hrefs.includes("/admin/customers/u1") && hrefs.includes("/admin/jobs/b2") && hrefs.includes("/admin/projects/p1"), hrefs.join(" "));
+    check("search: a hostile href from the server is not followed", !hrefs.some((h) => /^https?:|^\/\//.test(h)), hrefs.join(" "));
+    await page.screenshot({ path: path.join(SHOTS, "global-search-keyboard-390x844.png") });
+    await field.press("Enter");
+    await page.waitForTimeout(200);
+    check("search: Enter closes the keyboard (field blurred) and keeps the results", !(await page.evaluate(() => document.activeElement && document.activeElement.hasAttribute("data-global-search-field"))) && (await page.locator("[data-global-search-group] li").count()) >= 3);
+    await page.evaluate(() => window.__setKeyboard(0));
+    await page.locator("[data-global-search-group=customers] a").first().click();
+    check("search: a customer result opens /admin/customers/:id", await waitPath(page, /^\/admin\/customers\/u1$/));
+    await page.waitForTimeout(300);
+    check("search: the sheet closes after following a result", (await page.locator("[data-sheet=global-search]").count()) === 0);
+    check("search: the text never reached the URL", !page.url().includes("oak"));
+    // Nothing matches.
+    await page.click("[data-global-search]");
+    await page.locator("[data-global-search-field]").fill("zzz nothing");
+    await page.waitForSelector("text=Nothing matches", { timeout: 8000 }).catch(() => {});
+    check("search: no matches says so", /Nothing matches/.test(await page.locator("[data-global-search-results]").innerText()));
+    // The old hand-off into a section still works.
+    await page.locator("[data-global-search-handoff=leads]").click();
+    check("search: a section can still take the text (Leads)", await waitPath(page, /^\/admin\/leads$/));
+    check("search: no page errors, nothing external", errors.length === 0 && external.length === 0, errors.join(" | ") + external.join(" "));
+    await ctx.close();
+  }
+  {
+    const { ctx, page, searches, errors } = await open(browser, FIELD, { width: 390, height: 844 });
+    await page.goto(`${BASE}/admin/my-day`, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("[data-global-search]", { timeout: 20000 });
+    await page.click("[data-global-search]");
+    await page.locator("[data-global-search-field]").fill("oak demo");
+    await page.waitForSelector("[data-global-search-group=jobs] li", { timeout: 8000 }).catch(() => {});
+    const groups = await page.locator("[data-global-search-group]").evaluateAll((els) => els.map((e) => e.getAttribute("data-global-search-group")));
+    check("field Fixter search: only their jobs, no customers or projects (even if sent)", JSON.stringify(groups) === JSON.stringify(["jobs"]), JSON.stringify(groups));
+    const jobs = await page.locator("[data-global-search-group=jobs] a").evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+    check("field Fixter search: own jobs only, opened in My day", jobs.length === 1 && jobs[0] === "/admin/my-day/b2", jobs.join(" "));
+    check("field Fixter search: heading says Your jobs", /Your jobs/.test(await page.locator("[data-sheet=global-search]").innerText()));
+    check("field Fixter search: no section hand-offs to Customers/Jobs", (await page.locator("[data-global-search-handoff=customers], [data-global-search-handoff=jobs]").count()) === 0);
+    check("field Fixter search: POST body only", searches.length === 1 && searches[0].method === "POST" && !page.url().includes("oak"));
+    check("field Fixter search: no page errors", errors.length === 0, errors.join(" | "));
     await ctx.close();
   }
 
