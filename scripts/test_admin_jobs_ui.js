@@ -248,6 +248,14 @@ function makeServer(user) {
         if (!lanes.has(k)) lanes.set(k, { technician: j.technician, rows: [] });
         lanes.get(k).rows.push(row(j));
       }
+      // The server's own conflict flag (the engine's overlap rule). state.noConflicts makes it say none.
+      const laneRows = [...lanes.values()].flatMap((l) => l.rows);
+      for (const r of laneRows) {
+        const s = new Date(r.date).getTime();
+        const e = new Date(r.endEstimate).getTime();
+        r.conflict = !state.noConflicts && Boolean(r.technician) && laneRows.some((o) => o !== r && o.technician && o.technician.id === r.technician.id && new Date(o.date).getTime() < e && s < new Date(o.endEstimate).getTime());
+        if (r.conflict) r.conflictReason = "Another job of the same Fixter overlaps.";
+      }
       const days = [];
       for (let d = from; d <= to; d = addDays(d, 1)) {
         const closed = d === addDays(TODAY, 5);
@@ -304,7 +312,7 @@ function makeServer(user) {
     if (p.startsWith("/api/admin/calendar/customer-")) return [404, { message: "Not found" }];
 
     /* ---- one job ---- */
-    m = /^\/api\/admin\/jobs\/([^/]+)(?:\/(assignment-options|transition|notes|photos|reschedule))?$/.exec(p);
+    m = /^\/api\/admin\/jobs\/([^/]+)(?:\/(assignment-options|reschedule-options|transition|notes|photos|reschedule))?$/.exec(p);
     if (m) {
       const j = state.jobs.get(m[1]);
       if (!j) return notFound();
@@ -313,6 +321,20 @@ function makeServer(user) {
       if (!sub && method === "GET") {
         state.calls.push({ method, p });
         return [200, { job: detail(user, j) }];
+      }
+      if (sub === "reschedule-options") {
+        state.calls.push({ method, p, date: sp.get("date") });
+        const date = sp.get("date");
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) return [400, { message: "Invalid date", code: "INVALID_DATE" }];
+        const own = ymdNY(new Date(j.date)) === date ? new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(j.date)) : "";
+        const base = [["08:00", true], ["10:30", false, "full"], ["13:00", true], ["15:30", true]];
+        if (own && !base.some(([t]) => t === own)) base.push([own, true]);
+        const slots = base.map(([time, available, reason]) => ({
+          time, endTime: time, slotStart: nyISO(date, time), available: time === own ? true : available, ...(reason && time !== own ? { reason } : {}),
+          current: time === own, remainingCapacity: available ? 1 : 0,
+          technicians: [{ id: "fx2", name: "Gina General", available: Boolean(available) }],
+        }));
+        return [200, { bookingId: j.id, date, fullDay: false, closed: false, note: "", currentStart: j.date, leadTimeApplied: false, slots }];
       }
       if (sub === "assignment-options") {
         return [200, {
@@ -358,6 +380,11 @@ function makeServer(user) {
         const res = { booking: detail(user, j), transition: { action: body.action, from, to: j.status }, ...out };
         state.keys.set(body.idempotencyKey, res);
         return [200, { ...res, replayed: false }];
+      }
+      if (sub === "reschedule" && state.inactiveNext) {
+        state.inactiveNext = false;
+        state.calls.push({ method, p, body });
+        return [409, { message: "This job is no longer active.", code: "BOOKING_INACTIVE" }];
       }
       if (sub === "reschedule") {
         state.calls.push({ method, p, body });
@@ -697,6 +724,8 @@ async function a11y(page, scopeSel, { targets = true } = {}) {
     check("sheet: one primary action (Mark done for Confirmed)", (await jobSheet(page).locator("[data-primary]").count()) === 1 && (await jobSheet(page).locator("[data-primary]").getAttribute("data-primary")) === "done");
     await jobSheet(page).locator("[data-disclosure=history] button").click();
     await page.waitForSelector("[data-booking-history]", { timeout: 5000 });
+    // The box appears with "Loading history..." first; wait for the entry itself (it raced on a busy machine).
+    await page.waitForFunction(() => /Status/.test(document.querySelector("[data-booking-history]")?.innerText || ""), null, { timeout: 5000 }).catch(() => {});
     check("history loads lazily when opened", /Status/.test(await page.locator("[data-booking-history]").innerText()));
     const shotSheet = path.join(SHOTS, "job-sheet-390x844.png");
     await page.screenshot({ path: shotSheet });
@@ -865,6 +894,8 @@ async function a11y(page, scopeSel, { targets = true } = {}) {
     await page.getByRole("menuitem", { name: "Reschedule" }).click();
     await page.waitForSelector("[data-slot-grid]");
     check("slot grid: taken times shown but not selectable", await page.locator("[data-slot='10:30']").isDisabled());
+    check("slot grid: from the Admin reschedule options (no customer slots call)", calls(server, /\/j4\/reschedule-options$/, "GET").length >= 1 && calls(server, /^\/api\/calendar\/slots$/).length === 0);
+    check("slot grid: a full time says why", /Full/.test(await page.locator("[data-slot='10:30']").innerText()));
     await page.locator("[data-slot='13:00']").click();
     check("'Tell the customer' is on by default for a reschedule", await page.locator("[data-step=reschedule] [data-check=notify] input").isChecked());
     await page.screenshot({ path: path.join(SHOTS, "reschedule-390x844.png") });
@@ -874,6 +905,18 @@ async function a11y(page, scopeSel, { targets = true } = {}) {
     check("reschedule sends date, time, expectedUpdatedAt, idempotencyKey, notify", rs.time === "13:00" && /^\d{4}-\d{2}-\d{2}$/.test(rs.date) && Boolean(rs.expectedUpdatedAt) && /^[0-9a-f-]{36}$/.test(rs.idempotencyKey) && rs.notifyCustomer === true, JSON.stringify(rs));
     const rr = await page.locator("[data-result]").innerText();
     check("reschedule result: email sent, text failed (provider)", /Moved to/.test(rr) && /Email sent/.test(rr) && /Text failed: the provider failed/.test(rr), rr.replace(/\s+/g, " "));
+    // Canceled or completed by someone else meanwhile: BOOKING_INACTIVE says so and offers a refresh.
+    server.state.inactiveNext = true;
+    await page.goto(`${BASE}/admin/jobs/j4`, { waitUntil: "domcontentloaded" });
+    await jobSheet(page).locator("[data-job-more]").click();
+    await page.getByRole("menuitem", { name: "Reschedule" }).click();
+    await page.waitForSelector("[data-slot-grid]");
+    await page.locator("[data-slot-grid] button:not([disabled])").first().click();
+    await page.locator("[data-confirm=reschedule]").click();
+    await page.waitForSelector("[data-step-error=BOOKING_INACTIVE]", { timeout: 8000 }).catch(() => {});
+    const inactive = await page.locator("[data-step-error]").innerText().catch(() => "");
+    check("BOOKING_INACTIVE: says the job was canceled or completed and nothing was moved or sent", /canceled or completed/.test(inactive) && /Nothing was moved and nothing was sent/.test(inactive), inactive.replace(/\s+/g, " "));
+    check("...with Refresh the job", (await page.locator("[data-step-error] [data-refresh-job]").count()) === 1);
     // No usable channel.
     await page.goto(`${BASE}/admin/jobs/j1`, { waitUntil: "domcontentloaded" });
     await jobSheet(page).locator("[data-job-body=j1]").waitFor();
@@ -969,12 +1012,19 @@ async function a11y(page, scopeSel, { targets = true } = {}) {
   /* ================= Schedule ================= */
   console.log("\n--- Schedule ---");
   {
-    const { ctx, page, errors } = await open(browser, OWNER);
+    const { ctx, page, errors, server } = await open(browser, OWNER);
     const tomorrow = addDays(TODAY, 1);
     await page.goto(`${BASE}/admin/schedule?date=${tomorrow}`, { waitUntil: "domcontentloaded" });
     await page.waitForSelector("[data-timeline]", { timeout: 20000 });
     check("phone: a vertical timeline for the day", (await page.locator("[data-timeline] [data-sched-job]").count()) >= 4);
     check("conflicts are outlined (two overlapping jobs for one Fixter)", (await page.locator("[data-sched-job][data-conflict=true]").count()) === 2 && (await page.locator("[data-conflicts]").count()) === 1);
+    server.state.noConflicts = true;
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("[data-timeline] [data-sched-job]", { timeout: 20000 });
+    check("conflicts follow the server's flag (none flagged: none outlined)", (await page.locator("[data-sched-job][data-conflict=true]").count()) === 0 && (await page.locator("[data-conflicts]").count()) === 0);
+    server.state.noConflicts = false;
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("[data-timeline] [data-sched-job]", { timeout: 20000 });
     check("full and closed slots are shaded from capacity", (await page.locator("[data-timeline] .adm-sched-band[data-state=full]").count()) >= 1 && (await page.locator("[data-timeline] .adm-sched-band[data-state=closed]").count()) >= 1);
     await page.screenshot({ path: path.join(SHOTS, "schedule-day-390x844.png") });
     await page.locator("[aria-label='Schedule view'] button", { hasText: /^G\. General/ }).click();

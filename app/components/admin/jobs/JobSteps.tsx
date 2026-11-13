@@ -12,6 +12,7 @@ import {
   describeNotifications,
   fetchAssignmentOptions,
   fetchJob,
+  fetchRescheduleOptions,
   jobKeys,
   newIdempotencyKey,
   nyYMD,
@@ -85,9 +86,13 @@ export function StepError({ error, onRefresh }: { error: unknown; onRefresh: () 
   const conflict = conflictOf(error);
   const stale = conflict?.code === "STALE";
   const invalid = conflict?.code === "INVALID_TRANSITION";
+  // Canceled or completed by someone else while this move or reassignment was in flight.
+  const inactive = conflict?.code === "BOOKING_INACTIVE";
   const message = stale
     ? `This job changed since you opened it${conflict?.currentStatus ? ` (it is now ${conflict.currentStatus})` : ""}. Nothing was changed and nothing was sent.`
-    : invalid
+    : inactive
+      ? "This job was canceled or completed while you were changing it. Nothing was moved and nothing was sent to the customer."
+      : invalid
       ? `${conflict?.message || "This change is not allowed in the job's current state."} Nothing was changed.`
       : errorMessage(error, "That did not work. Nothing was changed. Try again.");
   return (
@@ -96,7 +101,7 @@ export function StepError({ error, onRefresh }: { error: unknown; onRefresh: () 
         <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 flex-none" aria-hidden="true" />
         <span>{message}</span>
       </p>
-      {(stale || invalid) && (
+      {(stale || invalid || inactive) && (
         <Button variant="secondary" onClick={onRefresh} className="self-start" data-refresh-job="">
           Refresh the job
         </Button>
@@ -454,7 +459,9 @@ export function CancelStep({ job, footer, onBack, onDone, onRefresh, setBusy, se
 /* Reschedule (J-09)                                                   */
 /* ------------------------------------------------------------------ */
 
-type Slot = { time: string; available: boolean };
+type Slot = { time: string; available: boolean; current?: boolean; reason?: string };
+
+const SLOT_REASON: Record<string, string> = { past: "Past", closed: "Closed", no_fixter: "No Fixter", full: "Full" };
 
 function time12(t: string) {
   const [h, m] = t.split(":").map(Number);
@@ -463,8 +470,11 @@ function time12(t: string) {
 }
 
 /**
- * The slot grid from the same availability the customer sees (the data
- * source Create Visit uses): taken times are shown but not selectable. The
+ * The slot grid from GET /jobs/:id/reschedule-options: the engine with Admin
+ * rules (no customer lead time, so a same-day move can be picked), the job's
+ * own seat excluded so its current time reads "Now". Taken times are shown
+ * with the reason but cannot be chosen. Against an older backend without the
+ * route it falls back to the customer availability Create Visit uses. The
  * engine decides in the end (SLOT_UNAVAILABLE is shown here if it says no).
  */
 export function RescheduleStep({ job, footer, onBack, onDone, onRefresh, setBusy, setDirty }: StepProps) {
@@ -488,18 +498,32 @@ export function RescheduleStep({ job, footer, onBack, onDone, onRefresh, setBusy
         .then((res) => alive && setFullDayOk({ date, ok: Boolean(res.days?.[0]?.available), reason: res.days?.[0]?.reason || "" }))
         .catch(() => alive && setFullDayOk({ date, ok: false, reason: "This day could not be checked." }));
     } else {
-      getTimeSlots(date)
-        .then((res) => {
+      const legacy = () =>
+        getTimeSlots(date).then((res) => {
           if (!alive) return;
           const day = normalizeDayAvailability(res as never);
           setSlots({ date, list: day.slots.map((x) => ({ time: x.time, available: x.available === true })), error: "" });
+        });
+      fetchRescheduleOptions(job.id, date)
+        .then((res) => {
+          if (!alive) return;
+          setSlots({
+            date,
+            list: res.slots.map((x) => ({ time: x.time, available: x.available && !x.current, current: x.current, reason: x.reason })),
+            error: res.closed ? res.note || "Closed this day." : "",
+          });
+        })
+        .catch((error) => {
+          if (!alive) return;
+          if ((error as { response?: { status?: number } })?.response?.status === 404) return legacy();
+          throw error;
         })
         .catch(() => alive && setSlots({ date, list: [], error: "Times could not be loaded for this day." }));
     }
     return () => {
       alive = false;
     };
-  }, [date, fullDay]);
+  }, [date, fullDay, job.id]);
 
   const list = slots.date === date ? slots.list : null;
   const ready = Boolean(date) && (fullDay ? fullDayOk?.date === date && fullDayOk.ok : Boolean(time));
@@ -541,7 +565,7 @@ export function RescheduleStep({ job, footer, onBack, onDone, onRefresh, setBusy
           ) : list.length ? (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4" data-slot-grid="">
               {list.map((slot) => {
-                const isCurrent = date === current && time12(slot.time) === currentTime;
+                const isCurrent = slot.current ?? (date === current && time12(slot.time) === currentTime);
                 return (
                   <button
                     key={slot.time}
@@ -556,7 +580,7 @@ export function RescheduleStep({ job, footer, onBack, onDone, onRefresh, setBusy
                     )}
                   >
                     <span>{time12(slot.time)}</span>
-                    {!slot.available && <span className="text-[12px] font-medium">{isCurrent ? "Now" : "Taken"}</span>}
+                    {!slot.available && <span className="text-[12px] font-medium">{isCurrent ? "Now" : (slot.reason && SLOT_REASON[slot.reason]) || "Taken"}</span>}
                   </button>
                 );
               })}

@@ -40,6 +40,9 @@ export type JobRow = {
   flags: JobFlag[];
   timing: JobTiming;
   updatedAt: string | null;
+  /** Schedule rows only: the engine's own overlap rule (another reservation of the same Fixter overlaps). */
+  conflict?: boolean;
+  conflictReason?: string;
 };
 
 export type JobAction = "addInternalNote" | "addPhotos" | "complete" | "confirm" | "reviewFreeVisit" | "cancel" | "reschedule" | "reassign" | "edit" | "reinstate";
@@ -218,6 +221,45 @@ export async function fetchAssignmentOptions(id: string, signal: AbortSignal): P
     unavailableTechnicians: Array.isArray(d.unavailableTechnicians) ? d.unavailableTechnicians : [],
     recommendedTechnician: d.recommendedTechnician || null,
     currentTechnician: d.currentTechnician || null,
+  };
+}
+
+/** One time on a day, by the engine with Admin rules (no customer lead time); the job's own seat is excluded. */
+export type RescheduleSlot = {
+  time: string;
+  endTime: string;
+  slotStart: string | null;
+  available: boolean;
+  reason?: "past" | "closed" | "no_fixter" | "full" | string;
+  current: boolean;
+  remainingCapacity: number | null;
+  technicians: { id: string; name: string; available: boolean; reason?: string }[];
+};
+export type RescheduleOptions = { bookingId: string; date: string; fullDay: boolean; closed: boolean; note: string; currentStart: string | null; slots: RescheduleSlot[] };
+
+export async function fetchRescheduleOptions(id: string, date: string, signal?: AbortSignal): Promise<RescheduleOptions> {
+  const response = await API.get(`/api/admin/jobs/${encodeURIComponent(id)}/reschedule-options`, { params: { date }, signal });
+  const d = response.data || {};
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  return {
+    bookingId: str(d.bookingId) || id,
+    date: str(d.date) || date,
+    fullDay: Boolean(d.fullDay),
+    closed: Boolean(d.closed),
+    note: str(d.note),
+    currentStart: d.currentStart ? str(d.currentStart) : null,
+    slots: (Array.isArray(d.slots) ? d.slots : [])
+      .filter((x: unknown) => x && typeof x === "object" && typeof (x as { time?: unknown }).time === "string")
+      .map((x: Record<string, unknown>) => ({
+        time: str(x.time),
+        endTime: str(x.endTime),
+        slotStart: x.slotStart ? str(x.slotStart) : null,
+        available: x.available === true,
+        reason: x.reason ? str(x.reason) : undefined,
+        current: x.current === true,
+        remainingCapacity: typeof x.remainingCapacity === "number" ? x.remainingCapacity : null,
+        technicians: Array.isArray(x.technicians) ? (x.technicians as RescheduleSlot["technicians"]) : [],
+      })),
   };
 }
 

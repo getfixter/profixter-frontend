@@ -58,11 +58,14 @@ function laneKeyOf(row: JobRow) {
 }
 
 /**
- * Conflicts: one Fixter with two live jobs whose times overlap on the same
- * day (computed from the server's rows; the engine refuses new ones, so a
- * conflict here means something to fix by hand).
+ * Conflicts: one Fixter with two live jobs whose times overlap. The server
+ * marks each lane row (`conflict`, the engine's own reservation-overlap rule);
+ * when a backend sends no flag at all, they are computed from the rows (two
+ * live jobs of one Fixter overlapping on the same day). The engine refuses
+ * new ones, so a conflict here means something to fix by hand.
  */
 function findConflicts(rows: JobRow[]): Set<string> {
+  if (rows.some((r) => typeof r.conflict === "boolean")) return new Set(rows.filter((r) => r.conflict === true).map((r) => r.id));
   const out = new Set<string>();
   const byTech = new Map<string, { id: string; day: string; s: number; e: number }[]>();
   for (const row of rows) {
