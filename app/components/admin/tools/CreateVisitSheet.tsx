@@ -45,21 +45,30 @@ async function shrink(file: File): Promise<File> {
 export default function CreateVisitSheet({
   customers = [],
   presetCustomer = null,
+  presetTask = '',
+  presetGuest,
   onClose,
   onCreated,
+  onBookingCreated,
 }: {
   customers?: Customer[];
   presetCustomer?: Customer | null;
+  /** Prefill "What needs doing" (a project's site visit). */
+  presetTask?: string;
+  /** Prefill a guest's contact details (a project with no linked account). */
+  presetGuest?: { name?: string; phone?: string; email?: string };
   onClose: () => void;
   onCreated: (note: string) => void;
+  /** Called with the new booking as soon as the server creates it (before payment, if any). */
+  onBookingCreated?: (booking: { _id: string; bookingNumber: string }) => void;
 }) {
   const [mode, setMode] = useState<'existing' | 'guest'>(presetCustomer || customers.length ? 'existing' : 'guest');
   const [customer, setCustomer] = useState<Customer | null>(presetCustomer);
   const [query, setQuery] = useState('');
   const [addressId, setAddressId] = useState<string | null>(presetCustomer?.addresses?.[0]?._id || null);
-  const [guestName, setGuestName] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
+  const [guestName, setGuestName] = useState(presetGuest?.name || '');
+  const [guestPhone, setGuestPhone] = useState(presetGuest?.phone || '');
+  const [guestEmail, setGuestEmail] = useState(presetGuest?.email || '');
   const [guestAddress, setGuestAddress] = useState<AddressValue | null>(null);
   // Asked on the call, never pre-selected: null until staff choose Yes or No.
   const [guestSms, setGuestSms] = useState<boolean | null>(null);
@@ -69,7 +78,7 @@ export default function CreateVisitSheet({
   const [time, setTime] = useState('');
   const [slots, setSlots] = useState<string[] | null>(null);
   const [fullDayOk, setFullDayOk] = useState<null | { ok: boolean; reason: string }>(null);
-  const [task, setTask] = useState('');
+  const [task, setTask] = useState(presetTask);
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [payment, setPayment] = useState<'phone' | 'link'>('phone');
@@ -186,6 +195,7 @@ export default function CreateVisitSheet({
         photos,
       });
       const label = `#${result.booking.bookingNumber}`;
+      onBookingCreated?.(result.booking);
       if (result.payment?.method === 'phone') {
         setPhoneUrl(result.payment.url);
         if (tab) tab.location.href = result.payment.url;

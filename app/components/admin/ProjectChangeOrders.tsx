@@ -1,10 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ESignStatusBadge from "@/app/components/admin/ESignStatusBadge";
 import InPersonSigning from "@/app/components/signing/InPersonSigning";
 import AdminActionBar, { type AdminAction } from "@/app/components/admin/AdminActionBar";
 import SignatureDetails from "@/app/components/admin/SignaturePanel";
+import { Button, ConfirmSheet, Field, Sheet, TextInput, Textarea } from "@/app/components/admin/ui";
+
+/* The server's signable change-order states (utils/esign/documentStates.js). */
+const CO_SIGNABLE = ["Ready to Send", "Sent", "Viewed", "Awaiting Signature", "Partially Signed"];
+
+type CoConfirm = "send" | "resend" | "revoke" | "void" | "delete" | "upload" | null;
 import {
   createChangeOrder,
   deleteChangeOrder,
@@ -178,7 +184,7 @@ function openBlobInNewTab(blob: Blob) {
 
 /* ================================================================== */
 
-export default function ProjectChangeOrders({ project }: { project: Project }) {
+export default function ProjectChangeOrders({ project, onChanged }: { project: Project; onChanged?: () => void }) {
   const [meta, setMeta] = useState<ChangeOrderMeta | null>(null);
   const [signatureMeta, setSignatureMeta] = useState<SignatureMeta | null>(null);
   const [contracts, setContracts] = useState<ProjectContract[]>([]);
@@ -196,10 +202,15 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
 
   const [showEmail, setShowEmail] = useState(false);
   const [emailForm, setEmailForm] = useState({ recipient: "", subject: "", message: "" });
-  const [showSend, setShowSend] = useState(false);
   const [sendMessage, setSendMessage] = useState("");
   /** In-person signing credential. Memory only - never persisted or logged. */
   const [inPersonToken, setInPersonToken] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<CoConfirm>(null);
+  const [voidReason, setVoidReason] = useState("");
+  const [pendingUpload, setPendingUpload] = useState<File | null>(null);
+  const onChangedRef = useRef(onChanged);
+  onChangedRef.current = onChanged;
+  const loads = useRef(0);
 
 
   const selected = useMemo(
@@ -229,6 +240,9 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
       ]);
       setMeta(nextMeta);
       setSignatureMeta(nextSignatureMeta);
+      // Every reload after the first follows a change here: the project overview depends on it.
+      loads.current += 1;
+      if (loads.current > 1) onChangedRef.current?.();
       setContracts(nextContracts);
       setChangeOrders(nextData.changeOrders);
       setSummaries(nextData.contractSummaries);
@@ -440,31 +454,28 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
     return errorMessage(caught);
   };
 
-  const handleSendForSignature = async (event: React.FormEvent) => {
-    event.preventDefault();
+  /* Native signing, confirmed first in a ConfirmSheet naming the recipient (it never depends on Adobe being set up). */
+  const handleSendForSignature = async () => {
     if (!selected) return;
-    setWorking("Sending for signature...");
     setError("");
+    let result;
     try {
-      const result = await sendForNativeSignature({
+      result = await sendForNativeSignature({
         documentType: "CHANGE_ORDER",
         documentId: selected._id,
         mode: "REMOTE",
         message: sendMessage,
       });
-      setShowSend(false);
-      setSendMessage("");
-      setSuccess(
-        result.emailed
-          ? "Change Order sent. The customer has been emailed a secure signing link."
-          : "Change Order is ready to sign, but the email could not be delivered. Use Resend Link."
-      );
-      await load();
     } catch (sendError) {
-      setError(signingError(sendError));
-    } finally {
-      setWorking("");
+      throw new Error(signingError(sendError));
     }
+    setSendMessage("");
+    setSuccess(
+      result.emailed
+        ? "Change Order sent. The customer has been emailed a secure signing link."
+        : "Change Order is ready to sign, but the email could not be delivered. Use Resend Link."
+    );
+    await load();
   };
 
   /** In person: freeze, then hand this device to the customer. No email. */
@@ -488,32 +499,18 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
 
   const handleResend = async () => {
     if (!selected?.signature) return;
-    setWorking("Resending...");
     setError("");
-    try {
-      await resendNativeSignature(selected.signature.id);
-      setSuccess("A new signing link has been emailed. The previous link no longer works.");
-      await load();
-    } catch (caught) {
-      setError(errorMessage(caught));
-    } finally {
-      setWorking("");
-    }
+    await resendNativeSignature(selected.signature.id);
+    setSuccess("A new signing link has been emailed. The previous link no longer works.");
+    await load();
   };
 
+  /* Asked in a ConfirmSheet ("Revoke Request"). */
   const handleRevoke = async () => {
     if (!selected?.signature) return;
-    if (!window.confirm("Revoke this signature request? The link will stop working.")) return;
-    setWorking("Revoking...");
-    try {
-      await revokeNativeSignature(selected.signature.id, "Revoked by admin");
-      setSuccess("Signature request revoked.");
-      await load();
-    } catch (caught) {
-      setError(errorMessage(caught));
-    } finally {
-      setWorking("");
-    }
+    await revokeNativeSignature(selected.signature.id, "Revoked by admin");
+    setSuccess("Signature request revoked.");
+    await load();
   };
 
   const handleNativeDownload = async (kind: "frozen" | "executed" | "certificate") => {
@@ -534,55 +531,41 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
     }
   };
 
-  const handleManualUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  /* Choosing a file only stages it; a ConfirmSheet names the customer and the change order first. */
+  const handleManualUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file || !selected) return;
-    setWorking("Uploading signed Change Order...");
-    setError("");
-    try {
-      await uploadManuallySignedDocument("CHANGE_ORDER", selected._id, file);
-      setSuccess("Signed Change Order recorded as a manual upload.");
-      await load();
-    } catch (caught) {
-      setError(errorMessage(caught));
-    } finally {
-      setWorking("");
-    }
+    if (!file || !selected || !CO_SIGNABLE.includes(selected.status)) return;
+    setPendingUpload(file);
+    setConfirming("upload");
   };
 
+  const confirmManualUpload = async () => {
+    if (!selected || !pendingUpload) return;
+    setError("");
+    await uploadManuallySignedDocument("CHANGE_ORDER", selected._id, pendingUpload);
+    setPendingUpload(null);
+    setSuccess("Signed Change Order recorded as a manual upload.");
+    await load();
+  };
 
+  /* Voids revoke any open signing link first (server). Asked with a reason in a ConfirmSheet. */
   const handleVoid = async () => {
     if (!selected) return;
-    const reason = window.prompt("Reason for voiding this change order?") ?? "";
-    setWorking("Voiding...");
     setError("");
-    try {
-      await voidChangeOrder(selected._id, reason);
-      setSuccess("Change order voided.");
-      await load();
-    } catch (voidError) {
-      setError(errorMessage(voidError));
-    } finally {
-      setWorking("");
-    }
+    await voidChangeOrder(selected._id, voidReason.trim());
+    setVoidReason("");
+    setSuccess("Change order voided.");
+    await load();
   };
 
   const handleDelete = async () => {
     if (!selected) return;
-    if (!window.confirm(`Delete draft ${selected.changeOrderNumber}? This cannot be undone.`)) return;
-    setWorking("Deleting...");
     setError("");
-    try {
-      await deleteChangeOrder(selected._id);
-      setSelectedId("");
-      setSuccess("Draft deleted.");
-      await load();
-    } catch (deleteError) {
-      setError(errorMessage(deleteError));
-    } finally {
-      setWorking("");
-    }
+    await deleteChangeOrder(selected._id);
+    setSelectedId("");
+    setSuccess("Draft deleted.");
+    await load();
   };
 
   /* ------------------------------ line editing ------------------------------ */
@@ -686,7 +669,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
       key: "upload-signed",
       label: "Upload",
       longLabel: "Upload Signed Change Order",
-      disabled: busy || status === "Executed",
+      disabled: busy || !CO_SIGNABLE.includes(status),
       file: { accept: "application/pdf,.pdf", onChange: handleManualUpload },
     };
 
@@ -732,22 +715,22 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
     if (signatureLive) {
       return [
         download,
-        { key: "resend", label: "Resend", longLabel: "Resend Signing Link", tone: "primary", disabled: busy, onClick: () => void handleResend() },
-        { key: "revoke", label: "Revoke", longLabel: "Revoke Signature Request", tone: "danger", disabled: busy, onClick: () => void handleRevoke() },
-        uploadSigned,
+        { key: "resend", label: "Resend", longLabel: "Resend Signing Link", tone: "primary", disabled: busy, onClick: () => setConfirming("resend") },
+        { key: "revoke", label: "Revoke", longLabel: "Revoke Signature Request", tone: "danger", disabled: busy, onClick: () => setConfirming("revoke") },
+        ...(CO_SIGNABLE.includes(status) ? [uploadSigned] : []),
         email,
       ];
     }
 
     if (hasPdf) {
       return [
-        { key: "send-signature", label: "Send", longLabel: "Send for Signature", tone: "primary", disabled: busy, onClick: () => setShowSend(true) },
+        { key: "send-signature", label: "Send", longLabel: "Send for Signature", tone: "primary", disabled: busy || !CO_SIGNABLE.includes(status), onClick: () => setConfirming("send") },
         { key: "in-person", label: "In Person", longLabel: "Sign In Person", tone: "success", disabled: busy, onClick: () => void handleSignInPerson() },
         email,
         download,
-        uploadSigned,
+        ...(CO_SIGNABLE.includes(status) ? [uploadSigned] : []),
         ...(status !== "Voided"
-          ? [{ key: "void", label: "Void", longLabel: "Void Change Order", tone: "danger", disabled: busy, onClick: () => void handleVoid() } as AdminAction]
+          ? [{ key: "void", label: "Void", longLabel: "Void Change Order", tone: "danger", disabled: busy, onClick: () => setConfirming("void") } as AdminAction]
           : []),
       ];
     }
@@ -755,7 +738,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
     return [
       { key: "generate", label: "Generate", longLabel: "Generate PDF", tone: "primary", disabled: busy, onClick: () => void handleGenerate() },
       ...(status === "Draft"
-        ? [{ key: "delete", label: "Delete", longLabel: "Delete Draft", tone: "danger", disabled: busy, onClick: () => void handleDelete() } as AdminAction]
+        ? [{ key: "delete", label: "Delete", longLabel: "Delete Draft", tone: "danger", disabled: busy, onClick: () => setConfirming("delete") } as AdminAction]
         : []),
       { key: "new", label: "New", longLabel: "New Change Order", disabled: !amendable.length, onClick: startNew },
     ];
@@ -1231,7 +1214,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
                           className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-40">
                           Sign In Person
                         </button>
-                        <button type="button" onClick={() => setShowSend(true)} disabled={!!working}
+                        <button type="button" data-action="send-signature" onClick={() => setConfirming("send")} disabled={!!working || !CO_SIGNABLE.includes(selected.status)}
                           className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-40">
                           Send for Signature
                         </button>
@@ -1241,11 +1224,11 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
                   {selected.signature &&
                     !["Completed", "Declined", "Cancelled", "Expired"].includes(selected.signature.status) && (
                       <>
-                        <button type="button" onClick={handleResend} disabled={!!working}
+                        <button type="button" onClick={() => setConfirming("resend")} disabled={!!working}
                           className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">
                           Resend Link
                         </button>
-                        <button type="button" onClick={handleRevoke} disabled={!!working}
+                        <button type="button" onClick={() => setConfirming("revoke")} disabled={!!working}
                           className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-40">
                           Revoke Request
                         </button>
@@ -1269,11 +1252,13 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
                     </>
                   )}
 
-                  <label className={`rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm font-bold text-slate-700 ${selected.status === "Executed" ? "opacity-40" : "cursor-pointer hover:bg-slate-50"}`}>
-                    Upload Signed Change Order
-                    <input type="file" accept="application/pdf,.pdf" onChange={handleManualUpload}
-                      disabled={!!working || selected.status === "Executed"} className="hidden" />
-                  </label>
+                  {CO_SIGNABLE.includes(selected.status) && (
+                    <label data-action="upload-signed" className={`rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm font-bold text-slate-700 ${working ? "opacity-40" : "cursor-pointer hover:bg-slate-50"}`}>
+                      Upload Signed Change Order
+                      <input type="file" accept="application/pdf,.pdf" onChange={handleManualUpload}
+                        disabled={!!working} className="hidden" />
+                    </label>
+                  )}
                 </>
               )}
               {selected.executedPdf?.available && (
@@ -1289,7 +1274,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
               {selected.status !== "Executed" && selected.status !== "Voided" && (
                 <button
                   type="button"
-                  onClick={handleVoid}
+                  onClick={() => setConfirming("void")}
                   disabled={!!working}
                   className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-60"
                 >
@@ -1299,7 +1284,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
               {selected.status === "Draft" && (
                 <button
                   type="button"
-                  onClick={handleDelete}
+                  onClick={() => setConfirming("delete")}
                   disabled={!!working}
                   className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 disabled:opacity-60"
                 >
@@ -1348,133 +1333,138 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
         </section>
       )}
 
-      {/* Email modal */}
-      {showEmail && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
-          <form
-            onSubmit={handleEmail}
-            className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
-          >
-            <h4 className="text-lg font-black text-slate-900">
-              Email {selected.changeOrderNumber}
-            </h4>
-            <label className="mt-4 block">
-              <span className="text-xs font-bold uppercase tracking-wide text-slate-600">To</span>
-              <input
-                value={emailForm.recipient}
-                onChange={(event) =>
-                  setEmailForm((c) => ({ ...c, recipient: event.target.value }))
-                }
-                className={inputClass}
-                required
-              />
-            </label>
-            <label className="mt-3 block">
-              <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                Subject
-              </span>
-              <input
-                value={emailForm.subject}
-                onChange={(event) => setEmailForm((c) => ({ ...c, subject: event.target.value }))}
-                className={inputClass}
-                required
-              />
-            </label>
-            <label className="mt-3 block">
-              <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                Message
-              </span>
-              <textarea
-                value={emailForm.message}
-                onChange={(event) => setEmailForm((c) => ({ ...c, message: event.target.value }))}
-                rows={7}
-                className={inputClass}
-                required
-              />
-            </label>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowEmail(false)}
-                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!!working}
-                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60"
-              >
-                Send Email
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <Sheet
+        open={showEmail && Boolean(selected)}
+        onClose={() => setShowEmail(false)}
+        title={`Email ${selected?.changeOrderNumber || "change order"}`}
+        busy={!!working}
+        data-sheet="change-order-email"
+        footer={
+          <>
+            <Button variant="secondary" large onClick={() => setShowEmail(false)}>
+              Cancel
+            </Button>
+            <Button large type="submit" form="co-email-form" busy={!!working} disabled={!emailForm.recipient.trim()} data-action="send-co-email">
+              {emailForm.recipient.trim() ? `Send to ${emailForm.recipient.trim()}` : "Send"}
+            </Button>
+          </>
+        }
+      >
+        <form id="co-email-form" onSubmit={handleEmail} className="flex flex-col gap-3">
+          <p className="text-sm text-slate-600">Sends the change order PDF by email. To collect a signature, use Send for Signature instead.</p>
+          <Field label="Recipient" required>
+            <TextInput required type="email" inputMode="email" autoCapitalize="none" spellCheck={false} value={emailForm.recipient} onChange={(event) => setEmailForm((c) => ({ ...c, recipient: event.target.value }))} />
+          </Field>
+          <Field label="Subject" required>
+            <TextInput required value={emailForm.subject} onChange={(event) => setEmailForm((c) => ({ ...c, subject: event.target.value }))} />
+          </Field>
+          <Field label="Message" required>
+            <Textarea required rows={6} value={emailForm.message} onChange={(event) => setEmailForm((c) => ({ ...c, message: event.target.value }))} />
+          </Field>
+        </form>
+      </Sheet>
 
-      {/* Send for signature modal */}
-      {showSend && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
-          <form
-            onSubmit={handleSendForSignature}
-            className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
-          >
-            <h4 className="text-lg font-black text-slate-900">
-              Send {selected.changeOrderNumber} for signature
-            </h4>
-            {!signatureMeta?.configured ? (
-              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900">
-                Adobe Acrobat Sign is not configured on the server yet. Add the Adobe credentials
-                before sending documents for signature.
-              </p>
-            ) : (
-              <p className="mt-3 text-sm font-medium text-slate-600">
-                {selected.customerSnapshot?.email
-                  ? `${selected.customerSnapshot.fullName || "The customer"} will receive a signing link at ${selected.customerSnapshot.email}.`
-                  : "This change order has no customer email on file."}
-                {signatureMeta?.companySignerConfigured
-                  ? " Premium Island Homes will countersign after the customer signs."
-                  : ""}
-              </p>
-            )}
-            <label className="mt-4 block">
-              <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                Message to signer (optional)
-              </span>
-              <textarea
-                value={sendMessage}
-                onChange={(event) => setSendMessage(event.target.value)}
-                rows={4}
-                className={inputClass}
-              />
-            </label>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowSend(false)}
-                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={
-                  !!working ||
-                  !signatureMeta?.configured ||
-                  !selected.customerSnapshot?.email
+      {selected &&
+        (() => {
+          const who = selected.customerSnapshot?.fullName || project.customerName || "the customer";
+          const email = selected.customerSnapshot?.email || "";
+          const close = () => {
+            setConfirming(null);
+            setPendingUpload(null);
+          };
+          if (confirming === "send" || confirming === "resend") {
+            return (
+              <ConfirmSheet
+                open
+                onClose={close}
+                title={confirming === "send" ? `Send ${selected.changeOrderNumber} for signature?` : "Resend the signing link?"}
+                consequence={
+                  email ? (
+                    <>
+                      Emails {confirming === "resend" ? "a new" : "a"} secure signing link for <strong>{selected.changeOrderNumber}</strong> to <strong>{who}</strong> at <strong data-recipient="">{email}</strong>.
+                      {confirming === "resend" ? " The previous link stops working." : ""}
+                      {signatureMeta?.companySignerConfigured ? " Premium Island Homes countersigns after the customer signs." : ""}
+                    </>
+                  ) : (
+                    "This change order has no customer email, so a link cannot be emailed. Use Sign In Person instead."
+                  )
                 }
-                className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-40"
+                confirmLabel={email ? `Send to ${email}` : "Close"}
+                onConfirm={email ? (confirming === "send" ? handleSendForSignature : handleResend) : close}
               >
-                Send for Signature
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+                {confirming === "send" && email ? (
+                  <Field label="Message to the signer (optional)">
+                    <Textarea rows={3} value={sendMessage} onChange={(event) => setSendMessage(event.target.value)} />
+                  </Field>
+                ) : null}
+              </ConfirmSheet>
+            );
+          }
+          if (confirming === "revoke") {
+            return (
+              <ConfirmSheet
+                open
+                onClose={close}
+                title="Revoke the signature request?"
+                consequence={`The signing link for ${selected.changeOrderNumber} stops working. ${who} can no longer sign it until a new request is sent.`}
+                confirmLabel="Revoke Request"
+                tone="danger"
+                onConfirm={handleRevoke}
+              />
+            );
+          }
+          if (confirming === "void") {
+            return (
+              <ConfirmSheet
+                open
+                onClose={close}
+                title={`Void ${selected.changeOrderNumber}?`}
+                consequence={`${selected.changeOrderNumber} for ${who} is withdrawn: any open signing link stops working and it never changes the agreement amount.`}
+                confirmLabel="Void change order"
+                tone="danger"
+                onConfirm={handleVoid}
+              >
+                <Field label="Reason (optional)">
+                  <Textarea rows={2} value={voidReason} onChange={(event) => setVoidReason(event.target.value)} />
+                </Field>
+              </ConfirmSheet>
+            );
+          }
+          if (confirming === "delete") {
+            return (
+              <ConfirmSheet
+                open
+                onClose={close}
+                title={`Delete draft ${selected.changeOrderNumber}?`}
+                consequence="The draft is deleted. This cannot be undone."
+                confirmLabel="Delete draft"
+                tone="danger"
+                onConfirm={handleDelete}
+              />
+            );
+          }
+          if (confirming === "upload" && pendingUpload) {
+            return (
+              <ConfirmSheet
+                open
+                onClose={close}
+                title="Record a signed copy?"
+                consequence={
+                  <>
+                    <strong>{selected.changeOrderNumber}</strong> for <strong>{who}</strong> becomes <strong>Executed</strong> using the file &quot;{pendingUpload.name}&quot;, and its amount is added to the agreement. Only do this if {who} signed this exact change order.
+                  </>
+                }
+                confirmLabel="Record as signed"
+                onConfirm={confirmManualUpload}
+              />
+            );
+          }
+          return null;
+        })()}
 
       <AdminActionBar
         actions={barActions}
-        hidden={showEmail || showSend}
+        hidden={showEmail || Boolean(confirming)}
         label="Change Order actions"
       />
     </div>

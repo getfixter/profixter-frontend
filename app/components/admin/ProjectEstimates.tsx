@@ -13,6 +13,7 @@ import {
   type Project,
 } from "@/lib/admin-service";
 import AdminActionBar, { type AdminAction } from "@/app/components/admin/AdminActionBar";
+import { ConfirmSheet } from "@/app/components/admin/ui";
 
 type EstimateView = "list" | "create" | "details" | "edit";
 
@@ -159,7 +160,7 @@ function EstimateEditor({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="flex flex-col gap-4 rounded-2xl bg-slate-950 p-5 text-white sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <button type="button" onClick={onCancel} className="text-sm font-semibold text-blue-300">
+          <button type="button" onClick={onCancel} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-blue-300">
             ← Back to estimates
           </button>
           <h3 className="mt-3 text-2xl font-bold">
@@ -361,6 +362,7 @@ export default function ProjectEstimates({ project }: { project: Project }) {
   const [view, setView] = useState<EstimateView>("list");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -414,16 +416,13 @@ export default function ProjectEstimates({ project }: { project: Project }) {
   }
 
   if (view === "details" && selected) {
-    const removeEstimate = async () => {
-      if (!window.confirm(`Delete ${selected.estimateNumber}? This cannot be undone.`)) return;
-      try {
-        await deleteEstimate(selected._id);
-        setEstimates((current) => current.filter((item) => item._id !== selected._id));
-        setSelected(null);
-        setView("list");
-      } catch (deleteError) {
-        setError(errorMessage(deleteError));
-      }
+    /* Asked in a ConfirmSheet; the server refuses an accepted or referenced estimate (409 ESTIMATE_IN_USE) and the sheet says why. */
+    const removeEstimate = () => setConfirmDelete(true);
+    const deleteNow = async () => {
+      await deleteEstimate(selected._id);
+      setEstimates((current) => current.filter((item) => item._id !== selected._id));
+      setSelected(null);
+      setView("list");
     };
 
     /* Estimates are short documents: edit it, write another, or bin it. */
@@ -446,7 +445,7 @@ export default function ProjectEstimates({ project }: { project: Project }) {
         <section className="rounded-2xl bg-slate-950 p-5 text-white shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <button type="button" onClick={() => setView("list")} className="text-sm font-semibold text-blue-300">← Back to estimates</button>
+              <button type="button" onClick={() => setView("list")} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-blue-300">← Back to estimates</button>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <h3 className="text-2xl font-bold">{selected.estimateNumber}</h3>
                 <span className={`rounded-full border px-3 py-1 text-xs font-bold ${ESTIMATE_STATUS_STYLES[selected.status]}`}>{selected.status}</span>
@@ -508,7 +507,16 @@ export default function ProjectEstimates({ project }: { project: Project }) {
           </section>
         </div>
 
-        <AdminActionBar actions={barActions} label="Estimate actions" />
+        <AdminActionBar actions={barActions} hidden={confirmDelete} label="Estimate actions" />
+        <ConfirmSheet
+          open={confirmDelete}
+          onClose={() => setConfirmDelete(false)}
+          title={`Delete ${selected.estimateNumber}?`}
+          consequence={`${selected.estimateNumber} (${money(selected.total)}) is deleted. This cannot be undone. An estimate that is accepted or used by an agreement cannot be deleted.`}
+          confirmLabel="Delete estimate"
+          tone="danger"
+          onConfirm={deleteNow}
+        />
       </div>
     );
   }

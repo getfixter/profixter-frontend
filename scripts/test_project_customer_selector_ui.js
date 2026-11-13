@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const source = fs.readFileSync(
-  path.join(__dirname, "..", "app", "components", "admin", "ProjectsModule.tsx"),
+  path.join(__dirname, "..", "app", "components", "admin", "projects", "ProjectFormSheet.tsx"),
   "utf8"
 );
 

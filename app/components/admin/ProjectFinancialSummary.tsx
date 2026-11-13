@@ -65,7 +65,7 @@ function Row({
         <span className={`text-sm ${tone === "muted" ? "text-slate-500" : "text-slate-600"}`}>
           {label}
         </span>
-        {hint ? <p className="text-[11px] leading-4 text-slate-400">{hint}</p> : null}
+        {hint ? <p className="text-xs leading-4 text-slate-400">{hint}</p> : null}
       </div>
       <span className={`shrink-0 tabular-nums ${valueTone}`}>{value}</span>
     </div>
@@ -75,7 +75,7 @@ function Row({
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">{title}</p>
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">{title}</p>
       <div className="mt-2 divide-y divide-slate-100">{children}</div>
     </section>
   );
@@ -91,23 +91,36 @@ export function ProjectFinancialSummaryView({
   const { totals, agreement, changeOrders } = financials;
   const hasPending = totals.pendingChangeOrderCents !== 0;
   const overInvoiced = totals.overInvoicedCents > 0;
+  /*
+   * Signed vs proposed (BE-DOCS valuation). Only a signed agreement plus
+   * executed change orders is agreed money; an issued agreement the customer
+   * has not signed is "awaiting signature". Older backends lack valuation and
+   * keep the previous wording.
+   */
+  const v = financials.valuation;
+  const signedLabel = v ? "Signed value" : "Current Agreement Value";
+  const signedCents = v ? v.executedValueCents : totals.approvedAgreementCents;
+  const uninvoicedLabel = v ? "Signed, not yet invoiced" : "Approved, not yet invoiced";
+  const uninvoicedCents = v ? v.uninvoicedExecutedCents : totals.uninvoicedApprovedCents;
+  const awaiting = v && !v.agreementSigned && v.proposedValueCents > 0 ? v.proposedValueCents : 0;
 
   if (compact) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <div className="grid gap-x-6 gap-y-0 sm:grid-cols-2">
-          <Row label="Current Agreement Value" value={money(totals.approvedAgreementCents)} tone="strong" />
+          {v && !v.agreementSigned ? (
+            <Row label={signedLabel} value="Not signed yet" tone="muted" />
+          ) : (
+            <Row label={signedLabel} value={money(signedCents)} tone="strong" />
+          )}
+          {awaiting ? <Row label="Proposed, awaiting signature" value={money(awaiting)} tone="muted" hint="Not agreed. Not billable." /> : null}
           <Row label="Previously invoiced" value={money(totals.invoicedCents)} />
           <Row label="Paid" value={money(totals.paidCents)} tone="positive" />
           <Row label="Outstanding" value={money(totals.outstandingInvoicedCents)} />
-          <Row
-            label="Approved, not yet invoiced"
-            value={money(totals.uninvoicedApprovedCents)}
-            tone={totals.uninvoicedApprovedCents > 0 ? "normal" : "muted"}
-          />
+          <Row label={uninvoicedLabel} value={money(uninvoicedCents)} tone={uninvoicedCents > 0 ? "normal" : "muted"} />
           {hasPending ? (
             <Row
-              label="Pending change orders"
+              label="Change orders awaiting signature"
               value={`${signedMoney(totals.pendingChangeOrderCents)} projected`}
               tone="muted"
               hint="Not approved. Not billable."
@@ -125,7 +138,12 @@ export function ProjectFinancialSummaryView({
 
   return (
     <div className="space-y-3">
-      {agreement && !agreement.isBinding ? (
+      {v && !v.agreementSigned && v.proposedValueCents > 0 ? (
+        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800" data-awaiting-signature="">
+          {agreement ? `Agreement #${agreement.contractNumber} is issued but not signed. ` : ""}
+          {money(v.proposedValueCents)} is awaiting the customer&apos;s signature: it is not agreed value yet.
+        </p>
+      ) : agreement && !agreement.isBinding ? (
         <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
           Agreement #{agreement.contractNumber} is still a {agreement.status.toLowerCase()}. Its price is
           not approved value until the Agreement is issued.
@@ -155,7 +173,11 @@ export function ProjectFinancialSummaryView({
             value={signedMoney(totals.executedChangeOrderCents)}
             tone={totals.executedChangeOrderCents < 0 ? "negative" : "normal"}
           />
-          <Row label="Current Agreement Value" value={money(totals.approvedAgreementCents)} tone="strong" />
+          {v && !v.agreementSigned ? (
+            <Row label={signedLabel} value="Not signed yet" tone="muted" />
+          ) : (
+            <Row label={signedLabel} value={money(signedCents)} tone="strong" />
+          )}
         </Panel>
 
         <Panel title="Billing">
@@ -169,16 +191,12 @@ export function ProjectFinancialSummaryView({
         </Panel>
 
         <Panel title="Still to bill">
-          <Row
-            label="Approved, not yet invoiced"
-            value={money(totals.uninvoicedApprovedCents)}
-            tone={totals.uninvoicedApprovedCents > 0 ? "strong" : "muted"}
-          />
+          <Row label={uninvoicedLabel} value={money(uninvoicedCents)} tone={uninvoicedCents > 0 ? "strong" : "muted"} />
           {hasPending ? (
             <div className="mt-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Projected only</p>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Projected only</p>
               <Row
-                label={`Pending change orders (${totals.pendingChangeOrderCount})`}
+                label={`Change orders awaiting signature (${totals.pendingChangeOrderCount})`}
                 value={signedMoney(totals.pendingChangeOrderCents)}
                 tone="muted"
               />
@@ -197,7 +215,7 @@ export function ProjectFinancialSummaryView({
 
       {(agreement || changeOrders.executed.length > 0) && (
         <details className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-          <summary className="cursor-pointer text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+          <summary className="cursor-pointer text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
             Where these numbers come from
           </summary>
           <div className="mt-3 space-y-2 text-sm">
