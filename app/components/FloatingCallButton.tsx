@@ -26,6 +26,12 @@ const TYPING = "input:not([type=button]):not([type=submit]):not([type=checkbox])
 
 export default function FloatingCallButton() {
   const pathname = usePathname() || "/";
+  // Staff pages (/admin, /event) mount nothing: no listeners, no 700ms timer.
+  if (surfaceFor(pathname) !== "site") return null;
+  return <CallButton pathname={pathname} />;
+}
+
+function CallButton({ pathname }: { pathname: string }) {
   const [typing, setTyping] = useState(false);
   const [covering, setCovering] = useState(false);
   const ref = useRef<HTMLAnchorElement>(null);
@@ -79,8 +85,6 @@ export default function FloatingCallButton() {
       window.clearInterval(timer);
     };
   }, [pathname]);
-
-  if (surfaceFor(pathname) !== "site") return null;
 
   return (
     <a ref={ref} href={HREF} className="pf-call" data-call-button data-typing={typing ? "1" : undefined} data-covering={covering ? "1" : undefined}>

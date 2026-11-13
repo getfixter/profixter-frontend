@@ -522,8 +522,8 @@ export default function GrowthModule() {
 
   return (
     <div className="space-y-4 pb-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[26px] font-bold tracking-[-0.03em] text-adm-ink">Growth</h1>
+      {/* The shell's page header already names this section ("Assistant"): no second heading here. */}
+      <div className="flex flex-wrap items-center gap-3" data-growth-status="">
         {data ? (
           data.engineEnabled ? (
             <Pill tone="green">Automations live</Pill>

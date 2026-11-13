@@ -333,7 +333,8 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
 
     /* ---------------- Create visit from Jobs ---------------- */
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
-    const jobsVisit = page.locator("[data-action=open-create-visit-jobs]");
+    // Jobs (FE-JOBS): "New visit" in the toolbar on desktop, the "+" button above the bottom bar on phones.
+    const jobsVisit = page.locator("[data-action=open-create-visit-jobs]:visible, [data-fab]:visible").first();
     await jobsVisit.waitFor({ timeout: 15000 });
     check(`${tag}: + Visit on Jobs`, await jobsVisit.isVisible());
     await jobsVisit.click();
