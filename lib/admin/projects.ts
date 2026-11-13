@@ -312,9 +312,8 @@ export async function removePunchItem(id: string, itemId: string): Promise<Punch
 export type BillResult = { replayed?: boolean; invoiceId?: string; invoiceNumber?: string; invoice?: { _id?: string; id?: string; invoiceNumber?: string }; kind: string; scheduleIndex: number | null };
 
 export async function billFromSchedule(id: string, body: { kind: "deposit" | "milestone"; scheduleIndex?: number; idempotencyKey: string }): Promise<BillResult> {
-  const response = await API.post(`/api/admin/projects/${encodeURIComponent(id)}/invoices/from-schedule`, body, {
-    headers: { "Idempotency-Key": body.idempotencyKey },
-  });
+  // The key goes in the body only: the API's CORS allow-list has no Idempotency-Key header.
+  const response = await API.post(`/api/admin/projects/${encodeURIComponent(id)}/invoices/from-schedule`, body);
   return response.data;
 }
 
@@ -440,12 +439,16 @@ export async function fetchProjectAttention(signal: AbortSignal): Promise<Record
   }
 }
 
-/* Customer-visible sends from a next step. The key rides along so a retry is recognisable server-side once supported. */
+/*
+ * Customer-visible sends from a next step. The key rides in the body (never a
+ * custom header, which the API's CORS allow-list would refuse) so a retry is
+ * recognisable server-side once these routes support it.
+ */
 export async function sendSignatureRequest(documentType: "CONTRACT" | "CHANGE_ORDER", documentId: string, idempotencyKey: string) {
   const response = await API.post(
     "/api/admin/signatures/native/send",
     { documentType, documentId, mode: "REMOTE", idempotencyKey },
-    { timeout: 300000, headers: { "Idempotency-Key": idempotencyKey } }
+    { timeout: 300000 }
   );
   return response.data as { emailed?: boolean; signature?: { id?: string } };
 }
@@ -454,7 +457,7 @@ export async function resendSignatureRequest(signatureId: string, idempotencyKey
   const response = await API.post(
     `/api/admin/signatures/native/${encodeURIComponent(signatureId)}/resend`,
     { idempotencyKey },
-    { timeout: 120000, headers: { "Idempotency-Key": idempotencyKey } }
+    { timeout: 120000 }
   );
   return response.data as { emailed?: boolean };
 }

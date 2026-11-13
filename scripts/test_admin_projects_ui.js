@@ -391,7 +391,7 @@ async function open(browser, { width = 390, height = 844, touch, state = freshSt
       external.push(u.href);
       return route.abort();
     }
-    const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "Authorization,Content-Type,Idempotency-Key", "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS" };
+    const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "Authorization,Content-Type,x-ghl-secret", "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS" };
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", headers: cors, body: JSON.stringify(body) });
     const p = u.pathname.replace(/^.*?(\/api\/)/, "/api/");
@@ -730,7 +730,7 @@ const confirmButton = (page) => page.locator('[role="dialog"] [data-confirm]').l
     await until(() => pathOf(page).includes("tab=invoices"));
     const attempts = state.calls.filter((c) => c.path.endsWith("/invoices/from-schedule"));
     const key = attempts[0]?.body?.idempotencyKey || "";
-    check("the billing call carries an idempotency key (UUID)", /^[0-9a-f-]{36}$/.test(key) && attempts[0].headers["idempotency-key"] === key, key);
+    check("the billing call carries an idempotency key (UUID) in the body, no custom header (CORS)", /^[0-9a-f-]{36}$/.test(key) && !attempts[0].headers["idempotency-key"], key);
     check("the retry reuses the same key", attempts.length === 2 && attempts[1].body.idempotencyKey === key);
     check("the deposit is billed once", state.depositBilled && attempts.filter((c) => c.body.kind === "deposit").length === 2);
     check("it opens the new invoice on the Invoices tab", pathOf(page).includes(`tab=invoices&invoice=${hex(0xf9)}`), pathOf(page));
@@ -744,7 +744,7 @@ const confirmButton = (page) => page.locator('[role="dialog"] [data-confirm]').l
     await confirmButton(page).click();
     await until(() => state.calls.some((c) => c.path === `/api/admin/signatures/native/${SIG_CO1}/resend`));
     const resend = state.calls.find((c) => c.path === `/api/admin/signatures/native/${SIG_CO1}/resend`);
-    check("resend carries an idempotency key", resend && /^[0-9a-f-]{36}$/.test(resend.headers["idempotency-key"] || ""));
+    check("resend carries an idempotency key", resend && /^[0-9a-f-]{36}$/.test(resend.body?.idempotencyKey || ""));
 
     // Overdue invoice navigates within the project.
     await page.locator('[data-step-action="invoice_overdue"]').click();
