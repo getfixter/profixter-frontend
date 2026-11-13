@@ -12,137 +12,99 @@
  * Every amount is a net figure in integer cents from the server: the tip less
  * anything refunded. Nothing is summed in the browser, so what a payout
  * conversation is based on is the same number on every screen.
+ *
+ * Layout: rows on phones and tablets (each Fixter opens to show their pay
+ * periods), the period table only on wide screens (J.5: tables are desktop only).
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  assignTip,
-  getTips,
-  type PayPeriod,
-  type TipTransaction,
-  type TipsResponse,
-} from "@/lib/admin-service";
+import { assignTip, getTips, type PayPeriod, type TipFixterRow, type TipTransaction, type TipsResponse } from "@/lib/admin-service";
+import { arr, num, obj } from "@/lib/admin/sections-api";
+import { Button, EmptyState, ErrorState, Field, Select, SkeletonRows, StatusBadge, cx } from "@/app/components/admin/ui";
 
-const PERIOD_OPTIONS = [4, 8, 12, 26];
+const PERIOD_OPTIONS = [4, 8, 12, 26].map((n) => ({ value: String(n), label: `Last ${n} pay periods` }));
 
-function money(cents: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format((Number(cents) || 0) / 100);
-}
+const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(num(cents) / 100);
 
-/** Dates are plain YYYY-MM-DD business days, so they are read at midday UTC to
- *  keep the calendar day intact rather than shifting a period by one. */
-function dayLabel(day: string) {
-  return new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function periodRange(period: PayPeriod | null) {
-  if (!period) return "";
-  return `${dayLabel(period.start)} - ${dayLabel(period.end)}`;
-}
-
-function todayNY() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
-}
+/** Dates are plain YYYY-MM-DD business days, read at midday UTC so the day never shifts. */
+const dayLabel = (day: string) => (day ? new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "");
+const periodRange = (p: PayPeriod | null) => (p ? `${dayLabel(p.start)} - ${dayLabel(p.end)}` : "");
+const todayNY = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 
 function receivedLabel(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("en-US", {
-    timeZone: "America/New_York",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return date.toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-function StatCard({
-  label,
-  value,
-  hint,
-  emphasis = false,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  emphasis?: boolean;
-}) {
+function Stat({ label, value, hint, lead = false }: { label: string; value: string; hint?: string; lead?: boolean }) {
   return (
-    <div
-      className={`rounded-2xl border p-4 ${
-        emphasis ? "border-[#0B1628] bg-[#0B1628] text-white" : "border-slate-200 bg-white"
-      }`}
-    >
-      <div
-        className={`text-[11px] font-bold uppercase tracking-[0.16em] ${
-          emphasis ? "text-white/60" : "text-slate-400"
-        }`}
-      >
-        {label}
-      </div>
-      <div className={`mt-1 text-2xl font-black ${emphasis ? "text-white" : "text-[#0B1628]"}`}>
-        {value}
-      </div>
-      {hint ? (
-        <div className={`mt-1 text-xs ${emphasis ? "text-white/70" : "text-slate-500"}`}>{hint}</div>
-      ) : null}
+    <div className={cx("min-w-0 rounded-adm-md border bg-adm-surface px-4 py-3", lead ? "border-adm-accent" : "border-adm-line")}>
+      <div className="text-[13px] font-medium text-adm-text-2">{label}</div>
+      <div className="adm-num mt-0.5 text-[22px] font-semibold text-adm-ink">{value}</div>
+      {hint ? <div className="mt-0.5 text-[12px] text-adm-text-3">{hint}</div> : null}
     </div>
   );
 }
 
-function StatusPill({ tip }: { tip: TipTransaction }) {
-  if (tip.status === "refunded") {
-    return (
-      <span className="rounded-full bg-rose-50 px-2 py-1 text-[11px] font-bold text-rose-700">
-        Refunded
-      </span>
-    );
-  }
-  if (tip.status === "partially_refunded") {
-    return (
-      <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-bold text-amber-700">
-        Partly refunded
-      </span>
-    );
-  }
-  if (tip.status === "pending") {
-    return (
-      <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600">
-        Pending
-      </span>
-    );
-  }
-  return (
-    <span className="rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700">
-      Received
-    </span>
-  );
+function TipStatus({ tip }: { tip: TipTransaction }) {
+  if (tip.status === "refunded") return <StatusBadge tone="problem">Refunded</StatusBadge>;
+  if (tip.status === "partially_refunded") return <StatusBadge tone="attention">Partly refunded</StatusBadge>;
+  if (tip.status === "pending") return <StatusBadge tone="neutral">Pending</StatusBadge>;
+  return <StatusBadge tone="success">Received</StatusBadge>;
 }
 
 function TransactionRow({ tip, showFixter }: { tip: TipTransaction; showFixter: boolean }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 px-4 py-3 text-sm">
-      <div className="w-32 shrink-0 text-slate-500">{receivedLabel(tip.receivedAt)}</div>
-      <div className="w-24 shrink-0 font-bold text-[#0B1628]">{money(tip.netCents)}</div>
-      {showFixter ? (
-        <div className="w-40 shrink-0 text-slate-700">
-          {tip.fixterName || <span className="text-amber-700">Unassigned</span>}
-        </div>
-      ) : null}
-      <div className="min-w-[10rem] flex-1 text-slate-600">
-        {tip.tipperName || tip.tipperEmail || "Not provided"}
-        {tip.bookingNumber ? (
-          <span className="ml-2 text-slate-400">#{tip.bookingNumber}</span>
-        ) : null}
+    <li className="flex min-w-0 items-start justify-between gap-3 border-b border-adm-line px-4 py-3 last:border-b-0" data-tip-row>
+      <div className="min-w-0">
+        <p className="adm-num text-[15px] font-semibold text-adm-ink">{money(tip.netCents)}</p>
+        <p className="truncate text-[13px] text-adm-text-2">
+          {tip.tipperName || tip.tipperEmail || "Not provided"}
+          {tip.bookingNumber ? <span className="text-adm-text-3"> · #{tip.bookingNumber}</span> : null}
+        </p>
+        <p className="text-[12px] text-adm-text-3">
+          {receivedLabel(tip.receivedAt)}
+          {showFixter ? <> · {tip.fixterName || <span className="text-adm-attn">Unassigned</span>}</> : null}
+        </p>
       </div>
-      <StatusPill tip={tip} />
-    </div>
+      <TipStatus tip={tip} />
+    </li>
+  );
+}
+
+/** Phone and tablet: one row per Fixter that opens to their pay periods. */
+function FixterRow({ row, periods }: { row: TipFixterRow; periods: PayPeriod[] }) {
+  return (
+    <li className="border-b border-adm-line last:border-b-0" data-fixter-tips>
+      <details className="group">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0">
+            <span className="block truncate text-[15px] font-semibold text-adm-ink">{row.name}</span>
+            <span className="block text-[12px] text-adm-text-3">
+              {row.position || "Fixter"}
+              {row.isActive ? "" : " · inactive"} · next cheque {money(row.closingPeriodCents)}
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="adm-num text-[15px] font-semibold text-adm-ink">{money(row.allTimeCents)}</span>
+            <svg viewBox="0 0 20 20" aria-hidden className="h-4 w-4 text-adm-text-3 transition-transform group-open:rotate-90 motion-reduce:transition-none">
+              <path d="M7 5l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+        </summary>
+        <ul className="border-t border-adm-line bg-adm-sunk px-4 py-1">
+          {periods.map((p) => (
+            <li key={p.start} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
+              <span className="text-adm-text-2">
+                {periodRange(p)} <span className="text-adm-text-3">· pays {dayLabel(p.payday)}</span>
+              </span>
+              <span className={cx("adm-num", num(row.byPeriod?.[p.start]) ? "font-semibold text-adm-ink" : "text-adm-text-3")}>{money(num(row.byPeriod?.[p.start]))}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
+    </li>
   );
 }
 
@@ -151,6 +113,7 @@ export default function TipsModule() {
   const [periods, setPeriods] = useState(8);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [assignError, setAssignError] = useState("");
   const [assigning, setAssigning] = useState("");
   const [choice, setChoice] = useState<Record<string, string>>({});
 
@@ -167,266 +130,188 @@ export default function TipsModule() {
   }, [periods]);
 
   useEffect(() => {
+     
     void load();
   }, [load]);
 
   const isAdmin = data?.scope === "admin";
-  // True on the Friday the closing period is actually paid.
+  const payPeriods = arr<PayPeriod>(data?.payPeriods);
   const payingToday = !!data?.closingPeriod && data.closingPeriod.payday === todayNY();
+  const ranked = useMemo(() => arr<TipFixterRow>(data?.fixters).filter((row) => row.count > 0 || row.isActive), [data]);
+  const totals = obj(data?.totals);
+  const unassignedTotals = obj(data?.unassignedTotals);
+  const unassigned = arr<TipTransaction>(data?.unassigned);
+  const transactions = arr<TipTransaction>(data?.transactions);
 
   const handleAssign = async (tipId: string) => {
     const fixterId = choice[tipId] || "";
     if (!fixterId) return;
     setAssigning(tipId);
-    setError("");
+    setAssignError("");
     try {
       await assignTip(tipId, fixterId);
       await load();
     } catch (caught) {
-      const response = caught as { response?: { data?: { message?: string } } };
-      setError(response.response?.data?.message || "Failed to assign this tip");
+      setAssignError((caught as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to assign this tip");
     } finally {
       setAssigning("");
     }
   };
 
-  const ranked = useMemo(
-    () => (data?.fixters || []).filter((row) => row.count > 0 || row.isActive),
-    [data]
-  );
-
-  if (loading && !data) {
-    return (
-      <div className="rounded-2xl bg-white p-12 text-center shadow-sm">
-        <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
-        <p className="mt-4 font-medium text-gray-600">Loading tips...</p>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm font-semibold text-rose-700">
-        {error || "Failed to load tips"}
-      </div>
-    );
-  }
+  if (loading && !data) return <SkeletonRows count={5} leading={false} label="Loading tips" />;
+  if (!data) return <ErrorState message={error || "Failed to load tips"} onRetry={load} />;
 
   return (
-    <div className="space-y-5">
-      {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-          {error}
-        </div>
-      ) : null}
+    <div className="space-y-4" data-tips data-scope={data.scope}>
+      {error ? <ErrorState message={error} onRetry={load} /> : null}
+      {data.truncated ? <p className="rounded-adm-sm bg-adm-attn-bg px-4 py-2 text-[14px] font-medium text-adm-attn">More tips exist than one view sums. These totals are not complete.</p> : null}
 
-      {data.truncated ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-          More tips exist than one view sums. These totals are not complete.
-        </div>
-      ) : null}
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-black text-[#0B1628]">
-          {isAdmin ? "Tips" : "Your tips"}
-        </h2>
-        <div className="flex items-center gap-2">
-          <select
-            value={periods}
-            onChange={(event) => setPeriods(Number(event.target.value))}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
-          >
-            {PERIOD_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                Last {option} pay periods
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600"
-          >
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 className="text-[17px] font-semibold text-adm-ink">{isAdmin ? "All Fixters" : "Your tips"}</h2>
+        <div className="flex items-end gap-2">
+          <Field label="Range" className="min-w-[200px]">
+            <Select value={String(periods)} options={PERIOD_OPTIONS} onChange={(e) => setPeriods(Number(e.target.value))} />
+          </Field>
+          <Button variant="secondary" onClick={load} busy={loading}>
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         {/* On Friday morning this is the cheque in your hand, so it leads. */}
-        <StatCard
+        <Stat
+          lead
           label={payingToday ? "Paying today" : "Next cheque"}
-          value={money(data.totals.closingPeriodCents)}
-          hint={
-            data.closingPeriod
-              ? `${periodRange(data.closingPeriod)} · pays ${dayLabel(data.closingPeriod.payday)}`
-              : undefined
-          }
-          emphasis
+          value={money(num(totals.closingPeriodCents))}
+          hint={data.closingPeriod ? `${periodRange(data.closingPeriod)} · pays ${dayLabel(data.closingPeriod.payday)}` : undefined}
         />
-        <StatCard
+        <Stat
           label="Current pay period"
-          value={money(data.totals.currentPeriodCents)}
-          hint={
-            data.currentPeriod
-              ? `${periodRange(data.currentPeriod)} · pays ${dayLabel(data.currentPeriod.payday)}`
-              : undefined
-          }
+          value={money(num(totals.currentPeriodCents))}
+          hint={data.currentPeriod ? `${periodRange(data.currentPeriod)} · pays ${dayLabel(data.currentPeriod.payday)}` : undefined}
         />
-        <StatCard
-          label="All time"
-          value={money(data.totals.allTimeCents)}
-          hint={`${data.totals.count} tip${data.totals.count === 1 ? "" : "s"}`}
-        />
+        <Stat label="All time" value={money(num(totals.allTimeCents))} hint={`${num(totals.count)} tip${num(totals.count) === 1 ? "" : "s"}`} />
         {isAdmin ? (
-          <StatCard
+          <Stat
             label="Unassigned"
-            value={money(data.unassignedTotals.allTimeCents)}
-            hint={
-              data.unassignedTotals.count
-                ? `${data.unassignedTotals.count} waiting to be placed`
-                : "Nothing waiting"
-            }
+            value={money(num(unassignedTotals.allTimeCents))}
+            hint={num(unassignedTotals.count) ? `${num(unassignedTotals.count)} waiting to be placed` : "Nothing waiting"}
           />
         ) : null}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-100 px-4 py-3 text-sm font-black text-[#0B1628]">
+      <section className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface" aria-labelledby="tips-periods">
+        <h3 id="tips-periods" className="border-b border-adm-line px-4 py-3 text-[15px] font-semibold text-adm-ink">
           {isAdmin ? "By Fixter" : "Your pay periods"}
-          <span className="ml-2 font-semibold text-slate-400">
-            Friday to Thursday, paid the following Friday
-          </span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-max text-sm">
-            <thead>
-              <tr className="text-left text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                <th className="px-4 py-2">Fixter</th>
-                {data.payPeriods.map((period) => (
-                  <th key={period.start} className="px-4 py-2 text-right">
-                    <div>{periodRange(period)}</div>
-                    <div className="font-semibold normal-case tracking-normal text-slate-300">
-                      pays {dayLabel(period.payday)}
-                    </div>
-                  </th>
-                ))}
-                <th className="px-4 py-2 text-right">All time</th>
-              </tr>
-            </thead>
-            <tbody>
+          <span className="block text-[12px] font-normal text-adm-text-3">Friday to Thursday, paid the following Friday</span>
+        </h3>
+        {!ranked.length ? (
+          <EmptyState message="No tips yet." />
+        ) : (
+          <>
+            <ul role="list" className="lg:hidden" aria-label="Tips by Fixter">
               {ranked.map((row) => (
-                <tr key={row.fixterId} className="border-t border-slate-100">
-                  <td className="px-4 py-3">
-                    <div className="font-semibold text-[#0B1628]">{row.name}</div>
-                    <div className="text-xs text-slate-400">
-                      {row.position || "Fixter"}
-                      {row.isActive ? "" : " · inactive"}
-                    </div>
-                  </td>
-                  {data.payPeriods.map((period) => (
-                    <td
-                      key={period.start}
-                      className={`px-4 py-3 text-right ${
-                        row.byPeriod[period.start] ? "text-slate-700" : "text-slate-300"
-                      }`}
-                    >
-                      {money(row.byPeriod[period.start] || 0)}
-                    </td>
-                  ))}
-                  <td className="px-4 py-3 text-right font-black text-[#0B1628]">
-                    {money(row.allTimeCents)}
-                  </td>
-                </tr>
+                <FixterRow key={row.fixterId} row={row} periods={payPeriods} />
               ))}
-              {!ranked.length ? (
-                <tr>
-                  <td
-                    colSpan={data.payPeriods.length + 2}
-                    className="px-4 py-8 text-center text-slate-400"
-                  >
-                    No tips yet.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {isAdmin && data.unassigned.length ? (
-        <div className="overflow-hidden rounded-2xl border border-amber-200 bg-white">
-          <div className="border-b border-amber-100 bg-amber-50 px-4 py-3">
-            <div className="text-sm font-black text-amber-900">Unassigned tips</div>
-            <p className="mt-1 text-xs text-amber-800">
-              These arrived without Fixter context. They are never guessed at:
-              place each one on the Fixter who earned it.
-            </p>
-          </div>
-          {data.unassigned.map((tip) => (
-            <div
-              key={tip.id}
-              className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-amber-100 px-4 py-3 text-sm"
-            >
-              <div className="w-32 shrink-0 text-slate-500">
-                {receivedLabel(tip.receivedAt)}
-              </div>
-              <div className="w-24 shrink-0 font-bold text-[#0B1628]">
-                {money(tip.netCents)}
-              </div>
-              <div className="min-w-[10rem] flex-1">
-                <div className="text-slate-700">
-                  {tip.tipperName || tip.tipperEmail || "Not provided"}
-                  {tip.bookingNumber ? (
-                    <span className="ml-2 text-slate-400">#{tip.bookingNumber}</span>
-                  ) : null}
-                </div>
-                {tip.unassignedReason ? (
-                  <div className="text-xs text-amber-700">{tip.unassignedReason}</div>
-                ) : null}
-              </div>
-              <select
-                value={choice[tip.id] || ""}
-                onChange={(event) =>
-                  setChoice((current) => ({ ...current, [tip.id]: event.target.value }))
-                }
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
-              >
-                <option value="">Assign to...</option>
-                {data.assignableFixters.map((fixter) => (
-                  <option key={fixter.id} value={fixter.id}>
-                    {fixter.name}
-                    {fixter.isActive ? "" : " (inactive)"}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                disabled={!choice[tip.id] || assigning === tip.id}
-                onClick={() => void handleAssign(tip.id)}
-                className="rounded-xl bg-[#0B1628] px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
-              >
-                {assigning === tip.id ? "Saving..." : "Assign"}
-              </button>
+            </ul>
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full text-[14px]" data-tips-table>
+                <thead>
+                  <tr className="text-left text-[12px] font-semibold text-adm-text-2">
+                    <th className="px-4 py-2">Fixter</th>
+                    {payPeriods.map((p) => (
+                      <th key={p.start} className="px-3 py-2 text-right">
+                        <div>{periodRange(p)}</div>
+                        <div className="font-normal text-adm-text-3">pays {dayLabel(p.payday)}</div>
+                      </th>
+                    ))}
+                    <th className="px-4 py-2 text-right">All time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ranked.map((row) => (
+                    <tr key={row.fixterId} className="border-t border-adm-line">
+                      <td className="px-4 py-2.5">
+                        <div className="font-semibold text-adm-ink">{row.name}</div>
+                        <div className="text-[12px] text-adm-text-3">
+                          {row.position || "Fixter"}
+                          {row.isActive ? "" : " · inactive"}
+                        </div>
+                      </td>
+                      {payPeriods.map((p) => (
+                        <td key={p.start} className={cx("adm-num px-3 py-2.5 text-right", num(row.byPeriod?.[p.start]) ? "text-adm-ink" : "text-adm-text-3")}>
+                          {money(num(row.byPeriod?.[p.start]))}
+                        </td>
+                      ))}
+                      <td className="adm-num px-4 py-2.5 text-right font-semibold text-adm-ink">{money(row.allTimeCents)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
-        </div>
+          </>
+        )}
+      </section>
+
+      {isAdmin && unassigned.length ? (
+        <section className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface" aria-labelledby="tips-unassigned" data-unassigned-tips>
+          <div className="border-b border-adm-line bg-adm-attn-bg px-4 py-3">
+            <h3 id="tips-unassigned" className="text-[15px] font-semibold text-adm-attn">
+              Unassigned tips · {unassigned.length}
+            </h3>
+            <p className="mt-0.5 text-[13px] text-adm-attn">These arrived without Fixter context. They are never guessed at: place each one on the Fixter who earned it.</p>
+          </div>
+          {assignError ? (
+            <p role="alert" className="bg-adm-problem-bg px-4 py-2 text-[14px] text-adm-problem">
+              {assignError}
+            </p>
+          ) : null}
+          <ul role="list">
+            {unassigned.map((tip) => (
+              <li key={tip.id} className="grid gap-2 border-b border-adm-line px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(180px,240px)_auto] sm:items-end">
+                <div className="min-w-0">
+                  <p className="adm-num text-[15px] font-semibold text-adm-ink">{money(tip.netCents)}</p>
+                  <p className="truncate text-[13px] text-adm-text-2">
+                    {tip.tipperName || tip.tipperEmail || "Not provided"}
+                    {tip.bookingNumber ? <span className="text-adm-text-3"> · #{tip.bookingNumber}</span> : null}
+                  </p>
+                  <p className="text-[12px] text-adm-text-3">{receivedLabel(tip.receivedAt)}</p>
+                  {tip.unassignedReason ? <p className="text-[12px] text-adm-attn">{tip.unassignedReason}</p> : null}
+                </div>
+                <Field label="Assign to">
+                  <Select
+                    value={choice[tip.id] || ""}
+                    onChange={(e) => setChoice((current) => ({ ...current, [tip.id]: e.target.value }))}
+                    options={[
+                      { value: "", label: "Choose a Fixter" },
+                      ...arr<{ id: string; name: string; isActive: boolean }>(data.assignableFixters).map((f) => ({ value: f.id, label: `${f.name}${f.isActive ? "" : " (inactive)"}` })),
+                    ]}
+                  />
+                </Field>
+                <Button disabled={!choice[tip.id]} busy={assigning === tip.id} onClick={() => handleAssign(tip.id)}>
+                  Assign
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-100 px-4 py-3 text-sm font-black text-[#0B1628]">
+      <section className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface" aria-labelledby="tips-tx">
+        <h3 id="tips-tx" className="border-b border-adm-line px-4 py-3 text-[15px] font-semibold text-adm-ink">
           Transactions
-        </div>
-        {data.transactions.length ? (
-          data.transactions.map((tip) => (
-            <TransactionRow key={tip.id} tip={tip} showFixter={isAdmin} />
-          ))
+        </h3>
+        {transactions.length ? (
+          <ul role="list">
+            {transactions.map((tip) => (
+              <TransactionRow key={tip.id} tip={tip} showFixter={isAdmin} />
+            ))}
+          </ul>
         ) : (
-          <div className="px-4 py-8 text-center text-sm text-slate-400">
-            No tips yet.
-          </div>
+          <EmptyState message="No tips yet." />
         )}
-      </div>
+      </section>
     </div>
   );
 }

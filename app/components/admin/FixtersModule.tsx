@@ -1,14 +1,20 @@
 "use client";
 
 /**
- * Employees: every staff account and what each one can open in Admin.
+ * Team: every staff account and what each one can open in Admin.
  *
- * Owner only (the tab and every API behind it). An employee has a title the
+ * Owner only (the section and every API behind it). An employee has a title the
  * owner types (display only), optional field work - Fixter or General Fixter,
  * the job access those always had - and Admin sections switched on one by
  * one. Nothing here is a role: two people titled "Marketing Manager" can have
  * completely different access. The server (BackEnd utils/adminAccess.js)
  * holds the list of sections and enforces every one of them.
+ *
+ * DISABLING (audit J-21). Disabling never touches anyone's jobs, but the
+ * owner is told how many upcoming jobs still name the person and can move
+ * them in one step through POST /fixters/:id/reassign-future-jobs, which goes
+ * through the reservation engine (availability and double-booking rules as
+ * usual). One sheet walks through the steps, so no dialog opens over another.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -19,7 +25,6 @@ import {
   getAdminActivitySummary,
   getFixters,
   setDefaultFixter,
-  setFixterActive,
   setFixterAvailabilityStatus,
   updateFixter,
   type AccessRegistry,
@@ -28,6 +33,26 @@ import {
   type FieldWork,
   type FixterAccount,
 } from "@/lib/admin-service";
+import {
+  getFixterFutureJobs,
+  reassignFixterFutureJobs,
+  setFixterActiveWithJobs,
+  type FutureJob,
+  type ReassignResult,
+} from "@/lib/admin/sections-api";
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  Field,
+  Select,
+  Sheet,
+  SkeletonRows,
+  StatusBadge,
+  TextInput,
+  cx,
+  useToast,
+} from "@/app/components/admin/ui";
 
 type Form = {
   firstName: string;
@@ -39,15 +64,7 @@ type Form = {
   adminSections: string[];
 };
 
-const EMPTY: Form = {
-  firstName: "",
-  lastName: "",
-  email: "",
-  phone: "",
-  employeeTitle: "",
-  employeePosition: null,
-  adminSections: [],
-};
+const EMPTY: Form = { firstName: "", lastName: "", email: "", phone: "", employeeTitle: "", employeePosition: null, adminSections: [] };
 
 const AVAILABILITY_STATUSES: EmployeeAvailabilityStatus[] = ["Available", "Busy", "Vacation", "Sick", "Training", "Inactive"];
 
@@ -59,11 +76,16 @@ const FIELD_WORK: Array<{ value: FieldWork; label: string; hint: string }> = [
 
 /* Older accounts may have only a full name, or only an email. */
 const displayName = (row: FixterAccount) => `${row.firstName || ""} ${row.lastName || ""}`.trim() || row.name || row.email;
-
 const firstWord = (value: string) => value.trim().split(" ")[0] || "";
+const errorMessage = (caught: unknown, fallback: string) => (caught as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
 
-const errorMessage = (caught: unknown, fallback: string) =>
-  (caught as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
+const jobDate = (iso: string) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+};
+const formatOffDay = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 function Switch({ on, disabled, onChange, label }: { on: boolean; disabled?: boolean; onChange: (next: boolean) => void; label: string }) {
   return (
@@ -74,64 +96,320 @@ function Switch({ on, disabled, onChange, label }: { on: boolean; disabled?: boo
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!on)}
-      className={`relative h-[26px] w-[44px] flex-none rounded-full p-0 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
-        on ? "bg-blue-600" : "bg-slate-300"
-      } ${disabled ? "opacity-50" : ""}`}
+      className={cx("relative flex h-11 w-[52px] flex-none items-center justify-center disabled:cursor-not-allowed", disabled && "opacity-50")}
     >
-      <span className={`absolute left-0 top-[3px] h-5 w-5 rounded-full bg-white shadow transition-transform ${on ? "translate-x-[21px]" : "translate-x-[3px]"}`} />
+      <span className={cx("relative block h-[26px] w-[44px] rounded-full transition-colors motion-reduce:transition-none", on ? "bg-adm-accent" : "bg-adm-line-2")}>
+        <span className={cx("absolute left-0 top-[3px] h-5 w-5 rounded-full bg-adm-surface transition-transform motion-reduce:transition-none", on ? "translate-x-[21px]" : "translate-x-[3px]")} />
+      </span>
     </button>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* disable + reassign, one sheet with steps                            */
+/* ------------------------------------------------------------------ */
+
+type Flow =
+  | { step: "disable"; row: FixterAccount; jobs: FutureJob[] | null; loadError: string }
+  | { step: "reassign"; row: FixterAccount; jobs: FutureJob[] | null; loadError: string; justDisabled: boolean }
+  | { step: "confirm-move"; row: FixterAccount; jobs: FutureJob[]; target: string }
+  | { step: "result"; row: FixterAccount; result: ReassignResult };
+
+function JobList({ jobs }: { jobs: FutureJob[] }) {
+  const shown = jobs.slice(0, 6);
+  return (
+    <ul className="mt-3 divide-y divide-adm-line rounded-adm-sm border border-adm-line" data-future-jobs>
+      {shown.map((j) => (
+        <li key={j.id} className="px-3 py-2 text-[14px]">
+          <span className="font-semibold text-adm-ink">{jobDate(j.date)}</span>
+          <span className="block text-[13px] text-adm-text-2">
+            {j.customerName || "Customer"}
+            {j.bookingNumber ? ` · #${String(j.bookingNumber).replace(/^#/, "")}` : ""}
+            {j.status ? ` · ${j.status}` : ""}
+          </span>
+        </li>
+      ))}
+      {jobs.length > shown.length ? <li className="px-3 py-2 text-[13px] text-adm-text-2">and {jobs.length - shown.length} more</li> : null}
+    </ul>
+  );
+}
+
+function DisableFlow({
+  flow,
+  setFlow,
+  targets,
+  onChanged,
+}: {
+  flow: Flow;
+  setFlow: (next: Flow | null) => void;
+  targets: FixterAccount[];
+  onChanged: () => Promise<void>;
+}) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [target, setTarget] = useState("auto");
+  const name = displayName(flow.row);
+  const first = flow.row.firstName || firstWord(name);
+  const others = targets.filter((t) => t.id !== flow.row.id && t.isActive && t.employeePosition);
+  const targetName = (id: string) => (id === "auto" ? "the best free Fixter for each job" : displayName(others.find((o) => o.id === id) || flow.row));
+
+  const close = () => {
+    if (busy) return;
+    setError("");
+    setFlow(null);
+  };
+
+  const run = async (fn: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await fn();
+    } catch (caught) {
+      setError(errorMessage(caught, "That did not work. Nothing was changed. Try again."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disable = () =>
+    run(async () => {
+      const { futureAssignedJobs } = await setFixterActiveWithJobs(flow.row.id, false);
+      await onChanged();
+      const jobs = flow.step === "disable" ? flow.jobs : null;
+      const count = futureAssignedJobs ?? jobs?.length ?? 0;
+      if (count > 0) {
+        let fresh: FutureJob[] | null = jobs;
+        try {
+          fresh = (await getFixterFutureJobs(flow.row.id)).jobs;
+        } catch {
+          /* keep what we had */
+        }
+        setFlow({ step: "reassign", row: { ...flow.row, isActive: false }, jobs: fresh, loadError: "", justDisabled: true });
+      } else {
+        toast.show(`${first} is disabled and can no longer open Admin.`);
+        setFlow(null);
+      }
+    });
+
+  const move = () =>
+    run(async () => {
+      if (flow.step !== "confirm-move") return;
+      const result = await reassignFixterFutureJobs(flow.row.id, flow.target);
+      await onChanged();
+      setFlow({ step: "result", row: flow.row, result });
+    });
+
+  let title = "";
+  let body: React.ReactNode = null;
+  let footer: React.ReactNode = null;
+
+  if (flow.step === "disable") {
+    const count = flow.jobs?.length ?? 0;
+    title = `Disable ${name}?`;
+    body = (
+      <>
+        <p className="text-[15px] leading-relaxed text-adm-ink">
+          {first} can no longer open Admin and stops being offered for new jobs. Their history is kept.
+        </p>
+        {flow.jobs === null && !flow.loadError ? (
+          <p className="mt-3 text-[14px] text-adm-text-2">Checking their upcoming jobs…</p>
+        ) : flow.loadError ? (
+          <p className="mt-3 rounded-adm-sm bg-adm-attn-bg px-3 py-2 text-[14px] text-adm-attn">Could not check their upcoming jobs ({flow.loadError}). You can still disable; you will see the count afterwards.</p>
+        ) : count ? (
+          <>
+            <p className="mt-3 text-[15px] font-semibold text-adm-attn" data-future-count>
+              {count} upcoming {count === 1 ? "job is" : "jobs are"} assigned to {first}.
+            </p>
+            <p className="text-[14px] text-adm-text-2">They stay assigned until you move them. You can move them in the next step.</p>
+            <JobList jobs={flow.jobs || []} />
+          </>
+        ) : (
+          <p className="mt-3 text-[14px] text-adm-text-2" data-future-count>
+            No upcoming jobs are assigned to {first}.
+          </p>
+        )}
+      </>
+    );
+    footer = (
+      <>
+        <Button variant="secondary" large onClick={close} disabled={busy}>
+          Cancel
+        </Button>
+        <Button variant="danger" large busy={busy} onClick={disable} disabled={flow.jobs === null && !flow.loadError} data-confirm-disable>
+          {`Disable ${first}`}
+        </Button>
+      </>
+    );
+  } else if (flow.step === "reassign") {
+    const jobs = flow.jobs || [];
+    title = `Move ${first}'s upcoming jobs`;
+    body = (
+      <>
+        {flow.justDisabled ? <p className="mb-3 rounded-adm-sm bg-adm-ok-bg px-3 py-2 text-[14px] text-adm-ok">{first} is disabled.</p> : null}
+        {flow.jobs === null && !flow.loadError ? (
+          <p className="text-[14px] text-adm-text-2">Loading their upcoming jobs…</p>
+        ) : flow.loadError ? (
+          <ErrorState message={flow.loadError} />
+        ) : !jobs.length ? (
+          <p className="text-[15px] text-adm-ink">No upcoming jobs are assigned to {first}.</p>
+        ) : (
+          <>
+            <p className="text-[15px] text-adm-ink" data-future-count>
+              {jobs.length} upcoming {jobs.length === 1 ? "job still names" : "jobs still name"} {first}.
+            </p>
+            <JobList jobs={jobs} />
+            <Field label="Who takes them" className="mt-4">
+              <Select
+                value={target}
+                onChange={(e) => setTarget(e.target.value)}
+                options={[{ value: "auto", label: "Best free Fixter for each job" }, ...others.map((o) => ({ value: o.id, label: displayName(o) }))]}
+                data-reassign-target
+              />
+            </Field>
+          </>
+        )}
+      </>
+    );
+    footer = (
+      <>
+        <Button variant="secondary" large onClick={close} disabled={busy}>
+          {jobs.length ? "Not now" : "Done"}
+        </Button>
+        {jobs.length ? (
+          <Button large onClick={() => setFlow({ step: "confirm-move", row: flow.row, jobs, target })} data-reassign>
+            {`Move ${jobs.length} ${jobs.length === 1 ? "job" : "jobs"}`}
+          </Button>
+        ) : null}
+      </>
+    );
+  } else if (flow.step === "confirm-move") {
+    const n = flow.jobs.length;
+    title = `Move ${n} ${n === 1 ? "job" : "jobs"}?`;
+    body = (
+      <>
+        <p className="text-[15px] leading-relaxed text-adm-ink" data-move-consequence>
+          {n} upcoming {n === 1 ? "job moves" : "jobs move"} from {first} to {targetName(flow.target)}, checked against availability like any assignment. Confirmed customers get the usual text naming their new Fixter where texting is allowed. A job that cannot move stays with {first} and is listed.
+        </p>
+      </>
+    );
+    footer = (
+      <>
+        <Button variant="secondary" large onClick={() => setFlow({ step: "reassign", row: flow.row, jobs: flow.jobs, loadError: "", justDisabled: false })} disabled={busy}>
+          Back
+        </Button>
+        <Button large busy={busy} onClick={move} data-confirm-move>
+          {`Move ${n} ${n === 1 ? "job" : "jobs"}`}
+        </Button>
+      </>
+    );
+  } else {
+    const { moved, failed, total } = flow.result;
+    title = failed.length ? "Some jobs did not move" : "Jobs moved";
+    body = (
+      <div data-reassign-result>
+        <p className="text-[15px] text-adm-ink">
+          {moved.length} of {total} {total === 1 ? "job" : "jobs"} moved.
+        </p>
+        {moved.length ? (
+          <ul className="mt-3 divide-y divide-adm-line rounded-adm-sm border border-adm-line">
+            {moved.map((m) => (
+              <li key={m.id} className="px-3 py-2 text-[14px]">
+                <span className="text-adm-ink">{jobDate(m.date)}</span>
+                <span className="block text-[13px] text-adm-ok">Now with {m.toFixterName || "another Fixter"}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {failed.length ? (
+          <ul className="mt-3 divide-y divide-adm-line rounded-adm-sm border border-adm-line" data-reassign-failed>
+            {failed.map((m) => (
+              <li key={m.id} className="px-3 py-2 text-[14px]">
+                <span className="text-adm-ink">{jobDate(m.date)}</span>
+                {m.bookingNumber ? <span className="text-adm-text-2"> · #{String(m.bookingNumber).replace(/^#/, "")}</span> : null}
+                <span className="block text-[13px] text-adm-problem">{m.message || "Could not move this job"}. It stays with {first}; open the job to assign it.</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    );
+    footer = (
+      <Button large block onClick={close}>
+        Done
+      </Button>
+    );
+  }
+
+  return (
+    <Sheet open onClose={close} title={title} busy={busy} variant="dialog" footer={footer}>
+      {body}
+      {error ? (
+        <p role="alert" className="mt-4 rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] font-medium text-adm-problem">
+          {error}
+        </p>
+      ) : null}
+    </Sheet>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* the module                                                          */
+/* ------------------------------------------------------------------ */
+
 export default function FixtersModule() {
-  const [rows, setRows] = useState<FixterAccount[]>([]);
+  const toast = useToast();
+  const [rows, setRows] = useState<FixterAccount[] | null>(null);
   const [registry, setRegistry] = useState<AccessRegistry | null>(null);
   const [activitySummary, setActivitySummary] = useState<AdminActivitySummary | null>(null);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [rowError, setRowError] = useState("");
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<FixterAccount | null>(null);
   const [form, setForm] = useState<Form>(EMPTY);
+  const [initialForm, setInitialForm] = useState<Form>(EMPTY);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
 
   const [deleting, setDeleting] = useState<FixterAccount | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteSaving, setDeleteSaving] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [historyFixter, setHistoryFixter] = useState<FixterAccount | null>(null);
+  const [flow, setFlow] = useState<Flow | null>(null);
 
   const load = useCallback(async () => {
     try {
       const [fixters, summary, reg] = await Promise.all([getFixters(), getAdminActivitySummary(), getAccessRegistry()]);
-      setRows(fixters);
+      setRows(Array.isArray(fixters) ? fixters : []);
       setActivitySummary(summary);
       setRegistry(reg);
+      setError("");
     } catch (caught) {
       setError(errorMessage(caught, "Employees couldn't load. Try again."));
     }
   }, []);
 
   useEffect(() => {
+     
     void load();
   }, [load]);
 
   const sectionLabel = useMemo(() => new Map((registry?.sections || []).map((s) => [s.id, s.label])), [registry]);
-  const included = useMemo(
-    () => new Set(form.employeePosition ? registry?.includedByPosition[form.employeePosition] || [] : []),
-    [registry, form.employeePosition]
-  );
+  const included = useMemo(() => new Set(form.employeePosition ? registry?.includedByPosition?.[form.employeePosition] || [] : []), [registry, form.employeePosition]);
 
   /* ------------------------------ editor ------------------------------ */
   const openNew = () => {
     setEditing(null);
     setForm(EMPTY);
+    setInitialForm(EMPTY);
     setFormError("");
     setEditorOpen(true);
   };
   const openEdit = (row: FixterAccount) => {
-    setEditing(row);
-    setForm({
+    const next: Form = {
       firstName: row.firstName,
       lastName: row.lastName,
       email: row.email,
@@ -139,7 +417,10 @@ export default function FixtersModule() {
       employeeTitle: row.employeeTitle || "",
       employeePosition: row.employeePosition || null,
       adminSections: row.adminSections || [],
-    });
+    };
+    setEditing(row);
+    setForm(next);
+    setInitialForm(next);
     setFormError("");
     setEditorOpen(true);
   };
@@ -148,14 +429,7 @@ export default function FixtersModule() {
     setEditorOpen(false);
     setEditing(null);
   };
-
-  useEffect(() => {
-    if (!editorOpen) return;
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && closeEditor();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editorOpen, saving]);
+  const dirty = JSON.stringify(form) !== JSON.stringify(initialForm);
 
   const toggleSection = (id: string, on: boolean) =>
     setForm((current) => {
@@ -168,11 +442,14 @@ export default function FixtersModule() {
       }
       return { ...current, adminSections: (registry?.sections || []).map((s) => s.id).filter((sid) => next.has(sid)) };
     });
-  const selectAll = () => setForm((current) => ({ ...current, adminSections: (registry?.sections || []).map((s) => s.id) }));
-  const clearAll = () => setForm((current) => ({ ...current, adminSections: [] }));
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const submit = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+    if (saving) return;
+    if (!form.firstName.trim() || !form.lastName.trim() || (!editing && !form.email.trim()) || (form.employeePosition && !form.phone.trim())) {
+      setFormError(form.employeePosition && !form.phone.trim() ? "Field staff need a phone number." : "First name, last name and email are required.");
+      return;
+    }
     setSaving(true);
     setFormError("");
     try {
@@ -186,10 +463,10 @@ export default function FixtersModule() {
       };
       if (editing) {
         await updateFixter(editing.id, payload);
-        setNotice(`${form.firstName}'s access is saved. It applies from their next action.`);
+        toast.show(`${form.firstName}'s access is saved. It applies from their next action.`);
       } else {
         await createFixter({ ...payload, email: form.email });
-        setNotice(`${form.firstName} can sign in with the temporary password 11111111 and will be asked to change it.`);
+        toast.show(`${form.firstName} can sign in with the temporary password 11111111 and will be asked to change it.`, { duration: 8000 });
       }
       setEditorOpen(false);
       setEditing(null);
@@ -202,18 +479,48 @@ export default function FixtersModule() {
   };
 
   /* ------------------------------ row actions ------------------------------ */
-  const toggleActive = async (row: FixterAccount) => {
-    setError("");
+  const startDisable = (row: FixterAccount) => {
+    setRowError("");
+    setFlow({ step: "disable", row, jobs: null, loadError: "" });
+    getFixterFutureJobs(row.id)
+      .then(({ jobs }) => setFlow((f) => (f && f.step === "disable" && f.row.id === row.id ? { ...f, jobs } : f)))
+      .catch((caught) => setFlow((f) => (f && f.step === "disable" && f.row.id === row.id ? { ...f, jobs: [], loadError: errorMessage(caught, "the check failed") } : f)));
+  };
+  const startReassign = (row: FixterAccount) => {
+    setFlow({ step: "reassign", row, jobs: null, loadError: "", justDisabled: false });
+    getFixterFutureJobs(row.id)
+      .then(({ jobs }) => setFlow((f) => (f && f.step === "reassign" && f.row.id === row.id ? { ...f, jobs } : f)))
+      .catch((caught) => setFlow((f) => (f && f.step === "reassign" && f.row.id === row.id ? { ...f, loadError: errorMessage(caught, "Could not load their upcoming jobs.") } : f)));
+  };
+  const enable = async (row: FixterAccount) => {
+    setRowError("");
     try {
-      await setFixterActive(row.id, !row.isActive);
-      setNotice(row.isActive ? `${row.firstName} is disabled and can no longer open Admin.` : `${row.firstName} is active again.`);
+      await setFixterActiveWithJobs(row.id, true);
+      toast.show(`${row.firstName || displayName(row)} is active again.`);
       await load();
     } catch (caught) {
-      setError(errorMessage(caught, "Couldn't change the status."));
+      setRowError(errorMessage(caught, "Couldn't change the status."));
+    }
+  };
+  const changeAvailability = async (row: FixterAccount, status: EmployeeAvailabilityStatus) => {
+    setRowError("");
+    try {
+      await setFixterAvailabilityStatus(row.id, status);
+      await load();
+    } catch (caught) {
+      setRowError(errorMessage(caught, "Couldn't change the availability."));
+    }
+  };
+  const toggleDefault = async (row: FixterAccount) => {
+    setRowError("");
+    try {
+      setRows(await setDefaultFixter(row.id, !row.isDefaultFixter));
+    } catch (caught) {
+      setRowError(errorMessage(caught, "Couldn't change the default Fixter."));
     }
   };
 
-  /* Type the first name or the full name. Never satisfied by an empty box, even for an account with no first name. */
+  /* Type the first name or the full name. Never satisfied by an empty box. */
   const deleteConfirmationMatches = deleting
     ? !!deleteConfirmation.trim() &&
       [firstWord(displayName(deleting)), displayName(deleting)]
@@ -223,23 +530,21 @@ export default function FixtersModule() {
     : false;
 
   const confirmDelete = async () => {
-    if (!deleting || !deleteConfirmationMatches) return;
+    if (!deleting || !deleteConfirmationMatches || deleteSaving) return;
     setDeleteSaving(true);
-    setError("");
+    setDeleteError("");
     try {
       await deleteFixter(deleting.id);
+      toast.show(`${displayName(deleting)} was deleted.`);
       setDeleting(null);
       setDeleteConfirmation("");
       await load();
     } catch (caught) {
-      setError(errorMessage(caught, "Failed to delete the employee"));
+      setDeleteError(errorMessage(caught, "Failed to delete the employee"));
     } finally {
       setDeleteSaving(false);
     }
   };
-
-  const formatOffDay = (value: string) =>
-    new Date(`${value}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   const accessSummary = (row: FixterAccount) => {
     const names = (row.adminSections || []).map((id) => sectionLabel.get(id) || id);
@@ -250,341 +555,305 @@ export default function FixtersModule() {
   };
 
   return (
-    <div className="space-y-4">
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] bg-slate-950 px-5 py-5 text-white sm:px-6">
-        <div className="min-w-0">
-          <h2 className="text-[22px] font-bold leading-tight">Employees</h2>
-          <p className="mt-1 text-[13px] text-slate-300">Each person sees only the sections you switch on. Titles are just labels.</p>
-        </div>
-        <button type="button" onClick={openNew} className="h-11 rounded-xl bg-white px-4 text-[14px] font-bold text-slate-950 hover:bg-slate-100">
-          + Add Employee
-        </button>
-      </section>
+    <div className="space-y-4" data-team>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="min-w-0 flex-1 text-[14px] text-adm-text-2">Each person sees only the sections you switch on. Titles are just labels.</p>
+        <Button onClick={openNew}>Add employee</Button>
+      </div>
 
-      <section className="grid grid-cols-3 gap-2 sm:gap-3">
-        {[
-          ["Users deleted", activitySummary?.usersDeleted ?? 0],
-          ["Leads deleted", activitySummary?.leadsDeleted ?? 0],
-          ["Projects deleted", activitySummary?.projectsDeleted ?? 0],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-2xl border border-slate-200 bg-white px-3 py-3 sm:px-4">
-            <div className="text-[20px] font-black text-slate-950">{value}</div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:text-[11px]">Last 24h · {label}</div>
+      <dl className="grid grid-cols-3 gap-2" aria-label="Deletions in the last 24 hours">
+        {(
+          [
+            ["Users deleted", activitySummary?.usersDeleted ?? 0],
+            ["Leads deleted", activitySummary?.leadsDeleted ?? 0],
+            ["Projects deleted", activitySummary?.projectsDeleted ?? 0],
+          ] as Array<[string, number]>
+        ).map(([label, value]) => (
+          <div key={label} className="min-w-0 rounded-adm-md border border-adm-line bg-adm-surface px-3 py-2">
+            <dd className="adm-num text-[18px] font-semibold text-adm-ink">{value}</dd>
+            <dt className="text-[12px] text-adm-text-2">{label} · 24h</dt>
           </div>
         ))}
-      </section>
+      </dl>
 
-      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[14px] text-rose-700">{error}</div>}
-      {notice && (
-        <div className="flex items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-[14px] text-emerald-800">
-          <span>{notice}</span>
-          <button type="button" onClick={() => setNotice("")} className="font-bold" aria-label="Dismiss">
-            ×
-          </button>
-        </div>
-      )}
+      {rowError ? (
+        <p role="alert" className="rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] text-adm-problem">
+          {rowError}
+        </p>
+      ) : null}
 
-      <ul className="grid grid-cols-[minmax(0,1fr)] gap-2.5" aria-label="Employees">
-        {rows.map((row) => (
-          <li key={row.id} className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <button type="button" onClick={() => openEdit(row)} className="min-w-0 flex-1 text-left" aria-label={`Edit ${displayName(row)}`}>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="break-words text-[16px] font-bold text-slate-950">{displayName(row)}</h3>
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${row.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                    {row.isActive ? "Active" : "Disabled"}
+      {error && !rows ? (
+        <ErrorState message={error} onRetry={load} />
+      ) : !rows ? (
+        <SkeletonRows count={4} />
+      ) : !rows.length ? (
+        <EmptyState message="No employees yet." action={<Button onClick={openNew}>Add employee</Button>} />
+      ) : (
+        <ul role="list" className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface" aria-label="Employees">
+          {rows.map((row) => (
+            <li key={row.id} className="min-w-0 border-b border-adm-line last:border-b-0" data-employee={row.id}>
+              <div className="flex items-start gap-3 px-4 py-3">
+                <button type="button" onClick={() => openEdit(row)} className="min-h-11 min-w-0 flex-1 text-left" aria-label={`Edit ${displayName(row)}`}>
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <span className="break-words text-[15px] font-semibold text-adm-ink">{displayName(row)}</span>
+                    {row.isActive ? <StatusBadge tone="success">Active</StatusBadge> : <StatusBadge tone="neutral">Disabled</StatusBadge>}
+                    {row.isDefaultFixter ? <StatusBadge tone="info">Default</StatusBadge> : null}
+                    {row.mustChangePassword ? <StatusBadge tone="attention">Temporary password</StatusBadge> : null}
                   </span>
-                  {row.isDefaultFixter && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">Default</span>}
-                  {row.mustChangePassword && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">Temporary password</span>}
+                  <span className="mt-0.5 block break-words text-[14px] text-adm-text-2">{row.employeeTitle || row.employeePosition || "No title"}</span>
+                  <span className="mt-0.5 block truncate text-[13px] text-adm-text-2">{accessSummary(row)}</span>
+                  <span className="mt-0.5 block truncate text-[12px] text-adm-text-3">
+                    {row.email}
+                    {row.phone ? ` · ${row.phone}` : ""}
+                  </span>
+                </button>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {row.isActive ? (
+                    <Button variant="secondary" onClick={() => startDisable(row)} data-disable={row.id}>
+                      Disable
+                    </Button>
+                  ) : (
+                    <Button variant="secondary" onClick={() => enable(row)}>
+                      Enable
+                    </Button>
+                  )}
                 </div>
-                <p className="mt-0.5 break-words text-[14px] font-semibold text-slate-700">{row.employeeTitle || row.employeePosition || "No title"}</p>
-                <p className="mt-0.5 truncate text-[13px] text-slate-500">{accessSummary(row)}</p>
-                <p className="mt-0.5 truncate text-[12px] text-slate-400">
-                  {row.email}
-                  {row.phone ? ` · ${row.phone}` : ""}
-                </p>
-              </button>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => openEdit(row)} className="h-9 rounded-xl border border-slate-300 px-3 text-[13px] font-bold">
-                  Edit
-                </button>
-                <button type="button" onClick={() => toggleActive(row)} className="h-9 rounded-xl bg-slate-900 px-3 text-[13px] font-bold text-white">
-                  {row.isActive ? "Disable" : "Enable"}
-                </button>
               </div>
-            </div>
 
-            {/* Field work only: the job calendar, default assignee and off days, as before. */}
-            {row.employeePosition ? (
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-[12px] text-slate-600">
-                <label className="flex items-center gap-2 font-semibold text-slate-500">
-                  Status
-                  <select
-                    value={row.employeeAvailabilityStatus || "Available"}
-                    onChange={async (event) => {
-                      await setFixterAvailabilityStatus(row.id, event.target.value as EmployeeAvailabilityStatus);
-                      await load();
-                    }}
-                    className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-[13px] text-slate-900"
-                  >
-                    {AVAILABILITY_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <span>Completed jobs: {row.completedBookingsCount}</span>
-                <span>
-                  Off days: {row.offDaysSummary.upcomingCount} upcoming
-                  {row.offDaysSummary.recent.length ? (
-                    <>
-                      {" · "}
-                      <button type="button" onClick={() => setHistoryFixter(row)} className="font-bold text-blue-700">
-                        History
-                      </button>
-                    </>
+              {/* Field work only: availability, default assignee and off days, as before. */}
+              {row.employeePosition ? (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-adm-line bg-adm-sunk px-4 py-2 text-[13px] text-adm-text-2">
+                  <label className="flex items-center gap-2">
+                    <span className="font-semibold">Status</span>
+                    <select
+                      value={row.employeeAvailabilityStatus || "Available"}
+                      onChange={(event) => changeAvailability(row, event.target.value as EmployeeAvailabilityStatus)}
+                      className="h-11 rounded-adm-sm border border-adm-line-2 bg-adm-surface px-2 text-[14px] text-adm-ink sm:h-9"
+                      aria-label={`Availability of ${displayName(row)}`}
+                    >
+                      {AVAILABILITY_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <span className="adm-num">Completed jobs: {row.completedBookingsCount}</span>
+                  <span className="adm-num">Off days: {row.offDaysSummary?.upcomingCount ?? 0} upcoming</span>
+                  {row.offDaysSummary?.recent?.length ? (
+                    <Button variant="tertiary" onClick={() => setHistoryFixter(row)}>
+                      Off-day history
+                    </Button>
                   ) : null}
-                </span>
-                {row.isActive && (
-                  <button
-                    type="button"
-                    onClick={async () => setRows(await setDefaultFixter(row.id, !row.isDefaultFixter))}
-                    className="font-bold text-blue-700"
-                  >
-                    {row.isDefaultFixter ? "Remove default" : "Make default for new jobs"}
-                  </button>
-                )}
-              </div>
-            ) : null}
-          </li>
-        ))}
-        {!rows.length && !error ? <li className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-[14px] text-slate-500">No employees yet.</li> : null}
-      </ul>
-
-      {/* ------------------------------ editor ------------------------------ */}
-      {editorOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 sm:items-center sm:p-4" onClick={closeEditor}>
-          <form
-            onSubmit={submit}
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label={editing ? `Edit ${editing.firstName}` : "Add Employee"}
-            className="flex max-h-[92dvh] w-full max-w-[640px] flex-col rounded-t-[22px] bg-white shadow-2xl sm:rounded-[22px]"
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-              <h3 className="text-[18px] font-bold text-slate-950">{editing ? displayName(editing) : "Add Employee"}</h3>
-              <button type="button" onClick={closeEditor} className="h-9 w-9 rounded-full text-[20px] text-slate-500 hover:bg-slate-100" aria-label="Close">
-                ×
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4">
-              <fieldset>
-                <legend className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">Employee</legend>
-                <div className="mt-2 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  <input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="First name" aria-label="First name" className="h-11 rounded-xl border border-slate-300 px-3.5 text-[15px]" />
-                  <input required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} placeholder="Last name" aria-label="Last name" className="h-11 rounded-xl border border-slate-300 px-3.5 text-[15px]" />
-                  <input
-                    required
-                    type="email"
-                    disabled={!!editing}
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="Email (their login)"
-                    aria-label="Email"
-                    className="h-11 rounded-xl border border-slate-300 px-3.5 text-[15px] disabled:bg-slate-100 disabled:text-slate-500"
-                  />
-                  <input
-                    type="tel"
-                    required={!!form.employeePosition}
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder={form.employeePosition ? "Phone" : "Phone (optional)"}
-                    aria-label="Phone"
-                    className="h-11 rounded-xl border border-slate-300 px-3.5 text-[15px]"
-                  />
-                  <input
-                    value={form.employeeTitle}
-                    maxLength={80}
-                    onChange={(e) => setForm({ ...form, employeeTitle: e.target.value })}
-                    placeholder="Title, e.g. Marketing Manager"
-                    aria-label="Title"
-                    className="h-11 rounded-xl border border-slate-300 px-3.5 text-[15px] sm:col-span-2"
-                  />
-                </div>
-                <p className="mt-1.5 text-[12px] text-slate-500">The title is only a label. Access is set below.</p>
-              </fieldset>
-
-              <fieldset>
-                <legend className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">Field work</legend>
-                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  {FIELD_WORK.map((option) => {
-                    const selected = (form.employeePosition || null) === option.value;
-                    return (
-                      <button
-                        key={option.label}
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => setForm({ ...form, employeePosition: option.value })}
-                        className={`rounded-xl border px-3 py-2.5 text-left transition ${selected ? "border-blue-600 bg-blue-50" : "border-slate-200 hover:border-slate-300"}`}
-                      >
-                        <span className={`block text-[14px] font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>{option.label}</span>
-                        <span className="block text-[12px] leading-4 text-slate-500">{option.hint}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </fieldset>
-
-              <fieldset>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <legend className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">Admin access</legend>
-                  <div className="flex gap-1.5">
-                    <button type="button" onClick={selectAll} className="h-8 rounded-lg border border-slate-300 px-2.5 text-[12px] font-bold text-slate-700">
-                      Select all
-                    </button>
-                    <button type="button" onClick={clearAll} className="h-8 rounded-lg border border-slate-300 px-2.5 text-[12px] font-bold text-slate-700">
-                      Clear all
-                    </button>
-                  </div>
-                </div>
-                {!registry ? (
-                  <p className="mt-3 text-[13px] text-slate-500">Loading sections…</p>
-                ) : (
-                  <div className="mt-2 space-y-3">
-                    {registry.groups.map((group) => {
-                      const sections = registry.sections.filter((s) => s.group === group.id);
-                      if (!sections.length) return null;
-                      return (
-                        <div key={group.id} className="rounded-2xl border border-slate-200">
-                          <div className="border-b border-slate-100 px-3.5 py-2 text-[12px] font-bold text-slate-700">{group.label}</div>
-                          <ul className="divide-y divide-slate-100">
-                            {sections.map((s) => {
-                              const viaFieldWork = included.has(s.id);
-                              const needs = s.requires && !form.adminSections.includes(s.requires) && !included.has(s.requires);
-                              const on = viaFieldWork || form.adminSections.includes(s.id);
-                              return (
-                                <li key={s.id} className="flex items-center gap-3 px-3.5 py-2.5">
-                                  <div className="min-w-0 flex-1">
-                                    <div className="text-[14px] font-semibold text-slate-900">{s.label}</div>
-                                    <div className="text-[12px] leading-4 text-slate-500">
-                                      {viaFieldWork
-                                        ? `Included with ${form.employeePosition}`
-                                        : needs
-                                          ? `Needs ${sectionLabel.get(s.requires as string)} on`
-                                          : s.description}
-                                    </div>
-                                  </div>
-                                  <Switch on={on} disabled={viaFieldWork || !!needs} onChange={(next) => toggleSection(s.id, next)} label={s.label} />
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                    <p className="text-[12px] leading-5 text-slate-500">
-                      Managing employees and system settings stay with the owner account.
-                    </p>
-                  </div>
-                )}
-              </fieldset>
-
-              {editing ? (
-                <div className="rounded-2xl border border-rose-100 bg-rose-50/40 px-3.5 py-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditorOpen(false);
-                      setDeleteConfirmation("");
-                      setDeleting(editing);
-                    }}
-                    className="text-[13px] font-bold text-rose-700"
-                  >
-                    Delete this employee…
-                  </button>
-                  <p className="text-[12px] text-slate-500">To pause access instead, use Disable. Their history is kept either way.</p>
+                  {row.isActive ? (
+                    <Button variant="tertiary" onClick={() => toggleDefault(row)}>
+                      {row.isDefaultFixter ? "Remove default" : "Make default for new jobs"}
+                    </Button>
+                  ) : (
+                    <Button variant="tertiary" onClick={() => startReassign(row)} data-move-jobs={row.id}>
+                      Move upcoming jobs
+                    </Button>
+                  )}
                 </div>
               ) : null}
-
-              {formError && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[14px] text-rose-700">{formError}</div>}
-            </div>
-
-            <div className="flex gap-2 border-t border-slate-100 px-5 py-3.5">
-              <button type="button" onClick={closeEditor} className="h-11 flex-1 rounded-xl border border-slate-300 text-[14px] font-bold sm:flex-none sm:px-5">
-                Cancel
-              </button>
-              <button disabled={saving} className="h-11 flex-[2] rounded-xl bg-blue-600 text-[14px] font-bold text-white disabled:opacity-60 sm:flex-none sm:px-6">
-                {saving ? "Saving…" : editing ? "Save" : "Save Employee"}
-              </button>
-            </div>
-          </form>
-        </div>
+            </li>
+          ))}
+        </ul>
       )}
 
-      {deleting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
-            <h3 className="text-[20px] font-bold text-slate-950">
-              Delete {displayName(deleting)}?
-            </h3>
-            <p className="mt-2 text-[14px] text-slate-600">
-              This permanently deletes the employee account. Completed jobs stay in reporting. To pause access instead, use Disable.
-            </p>
-            <label className="mt-4 block text-[14px] font-semibold text-slate-700">
-              Type <strong>{firstWord(displayName(deleting))}</strong> or the full name to confirm
-              <input autoFocus value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-3" />
-            </label>
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" disabled={deleteSaving} onClick={() => setDeleting(null)} className="rounded-xl border border-slate-300 px-4 py-2.5 text-[14px] font-bold">
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!deleteConfirmationMatches || deleteSaving}
-                onClick={confirmDelete}
-                className="rounded-xl bg-rose-600 px-4 py-2.5 text-[14px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {deleteSaving ? "Deleting..." : "Permanently Delete"}
-              </button>
+      {/* ------------------------------ editor ------------------------------ */}
+      <Sheet
+        open={editorOpen}
+        onClose={closeEditor}
+        title={editing ? displayName(editing) : "Add employee"}
+        dirty={dirty}
+        busy={saving}
+        width="wide"
+        footer={
+          <>
+            <Button variant="secondary" large onClick={closeEditor} disabled={saving}>
+              Cancel
+            </Button>
+            <Button large busy={saving} onClick={() => submit()}>
+              {editing ? "Save" : "Save employee"}
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={submit} className="space-y-5" aria-label={editing ? `Edit ${editing.firstName}` : "Add employee"}>
+          <fieldset>
+            <legend className="text-[13px] font-semibold text-adm-text-2">Employee</legend>
+            <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="First name" required>
+                <TextInput required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} autoComplete="off" />
+              </Field>
+              <Field label="Last name" required>
+                <TextInput required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} autoComplete="off" />
+              </Field>
+              <Field label="Email (their login)" required={!editing}>
+                <TextInput required type="email" inputMode="email" autoCapitalize="none" disabled={!!editing} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="off" />
+              </Field>
+              <Field label={form.employeePosition ? "Phone" : "Phone (optional)"} required={!!form.employeePosition}>
+                <TextInput type="tel" inputMode="tel" required={!!form.employeePosition} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} autoComplete="off" />
+              </Field>
+              <Field label="Title" help="Only a label, e.g. Marketing Manager. Access is set below." className="sm:col-span-2">
+                <TextInput value={form.employeeTitle} maxLength={80} onChange={(e) => setForm({ ...form, employeeTitle: e.target.value })} />
+              </Field>
             </div>
-          </div>
-        </div>
-      )}
+          </fieldset>
 
-      {historyFixter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
-          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-[20px] font-bold text-slate-950">
-                  {displayName(historyFixter)}
-                </h3>
-                <p className="text-[14px] text-slate-600">Completed jobs: {historyFixter.completedBookingsCount}</p>
+          <fieldset>
+            <legend className="text-[13px] font-semibold text-adm-text-2">Field work</legend>
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {FIELD_WORK.map((option) => {
+                const selected = (form.employeePosition || null) === option.value;
+                return (
+                  <button
+                    key={option.label}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setForm({ ...form, employeePosition: option.value })}
+                    className={cx("min-h-11 rounded-adm-sm border px-3 py-2.5 text-left", selected ? "border-adm-accent bg-adm-accent-soft" : "border-adm-line hover:border-adm-line-2")}
+                  >
+                    <span className={cx("block text-[14px] font-semibold", selected ? "text-adm-accent-ink" : "text-adm-ink")}>{option.label}</span>
+                    <span className="block text-[12px] leading-4 text-adm-text-2">{option.hint}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <legend className="text-[13px] font-semibold text-adm-text-2">Admin access</legend>
+              <div className="flex gap-1.5">
+                <Button variant="secondary" onClick={() => setForm((c) => ({ ...c, adminSections: (registry?.sections || []).map((s) => s.id) }))}>
+                  Select all
+                </Button>
+                <Button variant="secondary" onClick={() => setForm((c) => ({ ...c, adminSections: [] }))}>
+                  Clear all
+                </Button>
               </div>
-              <button type="button" onClick={() => setHistoryFixter(null)} className="rounded-xl border border-slate-300 px-3 py-2 text-[14px] font-bold">
-                Close
-              </button>
             </div>
-            <div className="mt-4 space-y-2">
+            {!registry ? (
+              <p className="mt-3 text-[14px] text-adm-text-2">Loading sections…</p>
+            ) : (
+              <div className="mt-2 space-y-3">
+                {(registry.groups || []).map((group) => {
+                  const sections = (registry.sections || []).filter((s) => s.group === group.id);
+                  if (!sections.length) return null;
+                  return (
+                    <div key={group.id} className="rounded-adm-md border border-adm-line">
+                      <div className="border-b border-adm-line px-3 py-2 text-[13px] font-semibold text-adm-ink">{group.label}</div>
+                      <ul className="divide-y divide-adm-line">
+                        {sections.map((s) => {
+                          const viaFieldWork = included.has(s.id);
+                          const needs = s.requires && !form.adminSections.includes(s.requires) && !included.has(s.requires);
+                          const on = viaFieldWork || form.adminSections.includes(s.id);
+                          return (
+                            <li key={s.id} className="flex items-center gap-3 pl-3 pr-1">
+                              <div className="min-w-0 flex-1 py-2">
+                                <div className="text-[14px] font-semibold text-adm-ink">{s.label}</div>
+                                <div className="text-[12px] leading-4 text-adm-text-2">
+                                  {viaFieldWork ? `Included with ${form.employeePosition}` : needs ? `Needs ${sectionLabel.get(s.requires as string)} on` : s.description}
+                                </div>
+                              </div>
+                              <Switch on={on} disabled={viaFieldWork || !!needs} onChange={(next) => toggleSection(s.id, next)} label={s.label} />
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })}
+                <p className="text-[12px] text-adm-text-2">Managing employees and system settings stay with the owner account.</p>
+              </div>
+            )}
+          </fieldset>
+
+          {editing ? (
+            <div className="rounded-adm-md border border-adm-line px-3 py-3">
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setEditorOpen(false);
+                  setDeleteConfirmation("");
+                  setDeleteError("");
+                  setDeleting(editing);
+                }}
+              >
+                Delete this employee…
+              </Button>
+              <p className="mt-1 text-[13px] text-adm-text-2">To pause access instead, use Disable. Their history is kept either way.</p>
+            </div>
+          ) : null}
+
+          {formError ? (
+            <p role="alert" className="rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] text-adm-problem">
+              {formError}
+            </p>
+          ) : null}
+          <button type="submit" hidden aria-hidden tabIndex={-1} />
+        </form>
+      </Sheet>
+
+      {/* ------------------------------ delete (typed name) ------------------------------ */}
+      <Sheet
+        open={!!deleting}
+        onClose={() => !deleteSaving && setDeleting(null)}
+        title={deleting ? `Delete ${displayName(deleting)}?` : "Delete"}
+        variant="dialog"
+        busy={deleteSaving}
+        footer={
+          <>
+            <Button variant="secondary" large disabled={deleteSaving} onClick={() => setDeleting(null)}>
+              Cancel
+            </Button>
+            <Button variant="danger" large busy={deleteSaving} disabled={!deleteConfirmationMatches} onClick={confirmDelete} data-confirm-delete>
+              Permanently delete
+            </Button>
+          </>
+        }
+      >
+        {deleting ? (
+          <>
+            <p className="text-[15px] leading-relaxed text-adm-ink">This permanently deletes the employee account. Completed jobs stay in reporting. To pause access instead, use Disable.</p>
+            <Field label={<>Type <strong>{firstWord(displayName(deleting))}</strong> or the full name to confirm</>} className="mt-4">
+              <TextInput value={deleteConfirmation} onChange={(e) => setDeleteConfirmation(e.target.value)} autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+            </Field>
+            {deleteError ? (
+              <p role="alert" className="mt-4 rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] text-adm-problem">
+                {deleteError}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+      </Sheet>
+
+      {/* ------------------------------ off-day history ------------------------------ */}
+      <Sheet open={!!historyFixter} onClose={() => setHistoryFixter(null)} title={historyFixter ? displayName(historyFixter) : "Off days"} description={historyFixter ? `Completed jobs: ${historyFixter.completedBookingsCount}` : undefined}>
+        {historyFixter ? (
+          historyFixter.offDaysSummary?.recent?.length ? (
+            <ul className="divide-y divide-adm-line rounded-adm-sm border border-adm-line">
               {historyFixter.offDaysSummary.recent.map((entry, index) => (
-                <div key={`${entry.date}-${entry.status}-${index}`} className="rounded-xl border border-slate-200 p-3 text-[14px]">
-                  <p className="font-bold text-slate-900">
+                <li key={`${entry.date}-${entry.status}-${index}`} className="px-3 py-2 text-[14px]">
+                  <p className="font-semibold text-adm-ink">
                     {formatOffDay(entry.date)}
                     {entry.endDate && entry.endDate !== entry.date ? ` – ${formatOffDay(entry.endDate)}` : ""}
                   </p>
-                  <p className="text-slate-600">
+                  <p className="text-adm-text-2">
                     {entry.reason || entry.type || "No reason"} · {entry.status}
                   </p>
-                </div>
+                </li>
               ))}
-              {!historyFixter.offDaysSummary.recent.length && <p className="rounded-xl bg-slate-50 p-4 text-[14px] text-slate-500">No off-days recorded.</p>}
-            </div>
-          </div>
-        </div>
-      )}
+            </ul>
+          ) : (
+            <EmptyState message="No off-days recorded." />
+          )
+        ) : null}
+      </Sheet>
+
+      {flow ? <DisableFlow key={flow.row.id} flow={flow} setFlow={setFlow} targets={rows || []} onChanged={load} /> : null}
     </div>
   );
 }
