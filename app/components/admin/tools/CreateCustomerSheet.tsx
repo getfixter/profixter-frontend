@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import AddressField, { type AddressValue } from '@/app/components/address/AddressField';
+import { type AddressValue } from '@/app/components/address/AddressField';
+import AddressWithUnit from './AddressWithUnit';
 import AdminSheet, { FieldError, Notice, PrimaryButton, SmsAgreedChoice, Switch, deliveryText, inputClass, labelClass } from './AdminSheet';
 import { createCustomer, readFailure, type CommunicationKey, type CreatedCustomer } from '@/lib/admin-tools-service';
 
@@ -37,6 +38,7 @@ export default function CreateCustomerSheet({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState<AddressValue | null>(null);
+  const [unit, setUnit] = useState('');
   const [communication, setCommunication] = useState<Record<CommunicationKey, boolean>>({
     'service.email': true,
     'service.sms': false,
@@ -66,7 +68,7 @@ export default function CreateCustomerSheet({
         phone: phone.trim(),
         email: email.trim(),
         addresses: address?.line1
-          ? [{ line1: address.line1, unit: address.unit, city: address.city, state: address.state || 'NY', zip: address.zip, placeId: address.placeId, lat: address.lat, lng: address.lng }]
+          ? [{ line1: address.line1, unit: unit.trim(), city: address.city, state: address.state || 'NY', zip: address.zip, placeId: address.placeId, lat: address.lat, lng: address.lng }]
           : [],
         communication: { ...communication, 'service.sms': serviceSms === true },
         allowSharedPhone,
@@ -147,7 +149,7 @@ export default function CreateCustomerSheet({
 
       <div>
         <span className={labelClass}>Home address (optional)</span>
-        <AddressField value={address} onChange={setAddress} />
+        <AddressWithUnit value={address} onChange={setAddress} unit={unit} onUnitChange={setUnit} testId="new-address" />
         <FieldError message={fieldError('addresses.0.line1') || fieldError('addresses.0.city') || fieldError('addresses.0.zip') || errors.addresses} />
       </div>
 

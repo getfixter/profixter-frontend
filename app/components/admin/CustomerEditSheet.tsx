@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import AddressField, { type AddressValue } from '@/app/components/address/AddressField';
+import { splitUnit } from '@/lib/admin/address';
 import type { User } from '@/lib/admin-service';
 import {
   getCustomerProfile,
@@ -54,12 +55,19 @@ let draftSeq = 0;
 const newKey = () => `new-${++draftSeq}`;
 
 function draftsFrom(profile: CustomerProfile): AddressDraft[] {
-  return profile.addresses.map((a) => ({
+  /*
+   * line1 is stored with the unit folded in (the address key); the unit is
+   * also kept on its own. Edit them as two fields: the street without the
+   * unit, and the unit. The server folds it back exactly once.
+   */
+  return profile.addresses.map((a) => {
+    const { street, unit } = splitUnit({ line1: a.line1, unit: a.unit });
+    return {
     key: a._id,
     _id: a._id,
     label: a.label,
-    line1: a.line1,
-    unit: '',
+    line1: street,
+    unit,
     city: a.city,
     state: a.state || 'NY',
     zip: a.zip,
@@ -70,7 +78,8 @@ function draftsFrom(profile: CustomerProfile): AddressDraft[] {
     hasHistory: a.hasHistory,
     hasActivePlan: a.hasActivePlan,
     introVisitStatus: a.introVisitStatus,
-  }));
+    };
+  });
 }
 
 function toInput(draft: AddressDraft, isDefault: boolean): ProfileAddressInput {
@@ -230,7 +239,7 @@ export default function CustomerEditSheet({ userId, onClose, onSaved }: Props) {
     if (!value?.verified) return;
     updateAddress(key, {
       line1: value.line1,
-      unit: value.unit || '',
+      unit: value.unit || addresses.find((a) => a.key === key)?.unit || '',
       city: value.city,
       state: value.state || 'NY',
       zip: value.zip,
@@ -480,7 +489,7 @@ export default function CustomerEditSheet({ userId, onClose, onSaved }: Props) {
                       {lookupKey === draft.key && (
                         <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-3">
                           <div className="mb-2 text-xs font-semibold text-sky-900">Search, pick the address, then check the fields below.</div>
-                          <AddressField value={lookupValue} onChange={(value) => applyLookup(draft.key, value)} />
+                          <AddressField value={lookupValue} hideUnit onChange={(value) => applyLookup(draft.key, value)} />
                         </div>
                       )}
 
