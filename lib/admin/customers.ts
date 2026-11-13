@@ -216,7 +216,7 @@ export type BillingAvailable = {
     description: string;
     status: string;
     totalCents: number;
-    taxCents: number;
+    taxStatus: string;
     refundedCents: number;
     paidAt: string | null;
     createdAt: string;

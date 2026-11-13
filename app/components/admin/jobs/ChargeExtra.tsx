@@ -6,30 +6,28 @@ import { createPortal } from "react-dom";
 import { errorCode, errorMessage, invalidateQueries, useAdminQuery } from "@/lib/admin/query";
 import { jobKeys, newIdempotencyKey, type JobDetail } from "@/lib/admin/jobs";
 import {
-  BASIS_DOCUMENTS,
-  TAX_OPTIONS,
   STATUS_TONE,
   amountToCents,
   cardText,
+  chargeCustomer,
   closeExtraCharge,
-  createExtraCharge,
   deliveryText,
   extraKeys,
   extraPaymentLink,
+  fetchChargeTarget,
   fetchExtraCharges,
   loadDraft,
   money2,
-  previewExtraCharge,
   refreshExtraCharge,
   retryExtraCard,
   saveDraft,
+  type ChargeTarget,
   type Delivery,
+  type Draft,
   type ExtraCharge,
-  type ExtraInput,
-  type ExtraPreview,
 } from "@/lib/admin/extraCharges";
 import { writeToClipboard } from "@/lib/utils/clipboard";
-import { Button, Field, StatusBadge, TextInput, Textarea, cx, useToast } from "@/app/components/admin/ui";
+import { Button, Field, SkeletonRows, StatusBadge, TextInput, cx, useToast } from "@/app/components/admin/ui";
 
 /* ------------------------------------------------------------------ */
 /* Small pieces                                                        */
@@ -48,25 +46,32 @@ function Problem({ children, code }: { children: ReactNode; code?: string }) {
   );
 }
 
-function Row({ label, value, strong, muted }: { label: string; value: ReactNode; strong?: boolean; muted?: boolean }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3 py-1">
-      <dt className={cx("text-[14px]", muted ? "text-adm-text-2" : "text-adm-ink")}>{label}</dt>
-      <dd className={cx("adm-num text-right", strong ? "text-[17px] font-semibold text-adm-ink" : "text-[15px] text-adm-ink")}>{value}</dd>
-    </div>
-  );
-}
-
 function sinceText(iso: string | null | undefined) {
   if (!iso) return "";
   return new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-/* ------------------------------------------------------------------ */
-/* The step: enter -> review -> (send link) -> result                  */
-/* ------------------------------------------------------------------ */
+function Channels({ value, onChange, email = true, sms = true }: { value: ("email" | "sms")[]; onChange: (v: ("email" | "sms")[]) => void; email?: boolean; sms?: boolean }) {
+  const items: { key: "email" | "sms"; label: string; ok: boolean }[] = [
+    { key: "email", label: "Email", ok: email },
+    { key: "sms", label: "Text", ok: sms },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-2" data-extra-channels="">
+      {items.map((c) => (
+        <label key={c.key} className={cx("flex min-h-[44px] items-center gap-2 rounded-adm-sm border px-3 text-[15px]", !c.ok ? "border-adm-line text-adm-text-3" : value.includes(c.key) ? "border-adm-accent bg-adm-accent-soft text-adm-ink" : "border-adm-line text-adm-ink")}>
+          <input type="checkbox" disabled={!c.ok} checked={value.includes(c.key)} onChange={(e) => onChange(e.target.checked ? [...value, c.key] : value.filter((x) => x !== c.key))} className="h-5 w-5 accent-[var(--adm-accent)]" />
+          {c.label}
+          {!c.ok && <span className="text-[12px]">(none)</span>}
+        </label>
+      ))}
+    </div>
+  );
+}
 
-type Stage = "enter" | "review" | "send" | "result";
+/* ------------------------------------------------------------------ */
+/* Charge customer: one screen, "Charge $X" is the confirmation         */
+/* ------------------------------------------------------------------ */
 
 export type ChargeExtraStepProps = {
   job: JobDetail;
@@ -77,54 +82,85 @@ export type ChargeExtraStepProps = {
 };
 
 /**
- * Charge extra (owner only). Fast path: description + amount + tax -> Review
- * (server preview: customer, address, card, tax, total) -> tick the
- * confirmation -> "Charge $123.45". Everything entered survives a failure,
- * and a draft is kept for this job until it is charged.
+ * Who pays (the booking's own customer and saved card, from the server), the
+ * amount to collect, an optional note, and one button: "Charge $X". Pressing
+ * it charges. Success shows only when Stripe says paid; a decline or a bank
+ * check shows what happened and offers a payment link for the same charge.
  */
 export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: ChargeExtraStepProps) {
   const toast = useToast();
-  const [input, setInput] = useState<ExtraInput>(() => loadDraft(job.id) || { description: "", amount: "", taxTreatment: "", writtenApprovalRef: "" });
-  const [stage, setStage] = useState<Stage>("enter");
-  const [preview, setPreview] = useState<ExtraPreview | null>(null);
-  const [agreed, setAgreed] = useState(false);
-  const [channels, setChannels] = useState<("email" | "sms")[]>([]);
-  const [busy, setLocalBusy] = useState<string>("");
+  const t = useAdminQuery(extraKeys.target(job.id), (signal) => fetchChargeTarget(job.id, signal), { staleTime: 0 });
+  const [target, setTarget] = useState<ChargeTarget | null>(null);
+  const [draft, setDraft] = useState<Draft>(() => loadDraft(job.id) || { amount: "", note: "" });
+  const [showNote, setShowNote] = useState(() => Boolean(loadDraft(job.id)?.note));
+  const [busy, setLocalBusy] = useState("");
   const [error, setError] = useState<{ code?: string; message: string } | null>(null);
+  const [repeat, setRepeat] = useState<string>("");
+  const [sending, setSending] = useState(false);
+  const [channels, setChannels] = useState<("email" | "sms")[]>([]);
   const [result, setResult] = useState<{ charge: ExtraCharge; payUrl?: string; delivery?: Delivery } | null>(null);
-  // One key per intent: the confirm and every retry of it (double tap, timeout) send the same one.
+  // One key per press of "Charge": a double tap or a retry after a timeout sends the same one.
   const keyRef = useRef(newIdempotencyKey());
   const running = useRef(false);
-  const descRef = useRef<HTMLTextAreaElement>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
 
-  const cents = amountToCents(input.amount);
-  const dirty = Boolean(input.description.trim() || input.amount.trim()) && stage !== "result";
+  useEffect(() => {
+    if (t.data) setTarget(t.data);
+  }, [t.data]);
+  const cents = amountToCents(draft.amount);
+  const min = target?.limits.minCents ?? 50;
+  const max = target?.limits.maxCents ?? 500000;
+  const amountOk = cents !== null && cents >= min && cents <= max;
+  const amountError = draft.amount.trim() && !amountOk ? (cents !== null && cents > max ? `At most ${money2(max)} at once.` : `Enter dollars and cents, at least ${money2(min)}.`) : "";
+  const dirty = Boolean(draft.amount.trim() || draft.note.trim()) && !result;
   useEffect(() => setDirty?.(dirty), [dirty, setDirty]);
   useEffect(() => {
-    if (stage !== "result") saveDraft(job.id, input);
-  }, [input, job.id, stage]);
+    if (!result) saveDraft(job.id, draft);
+  }, [draft, job.id, result]);
+  const hasTarget = Boolean(target);
   useEffect(() => {
-    if (stage === "enter" && !input.description) descRef.current?.focus();
-    // Focus only on first open.
+    if (hasTarget && !draft.amount) amountRef.current?.focus();
+    // Focus the amount once, when the customer is shown.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasTarget]);
 
-  const run = async (label: string, fn: () => Promise<void>) => {
-    if (running.current) return;
+  const finish = (r: { charge: ExtraCharge; payUrl?: string; delivery?: Delivery }) => {
+    setResult(r);
+    saveDraft(job.id, null);
+    setDirty?.(false);
+    invalidateQueries(extraKeys.list(job.id));
+    invalidateQueries(jobKeys.detail(job.id));
+  };
+
+  const go = (method: "card" | "link", opts: { send?: boolean; allowRepeat?: boolean } = {}) => async () => {
+    if (running.current || !target || !amountOk) return;
     running.current = true;
-    setLocalBusy(label);
+    setLocalBusy(method === "card" ? "charge" : opts.send ? "send" : "copy");
     setBusy(true);
     setError(null);
     try {
-      await fn();
+      const r = await chargeCustomer(job.id, draft, {
+        idempotencyKey: keyRef.current,
+        targetFingerprint: target.fingerprint,
+        method,
+        allowRepeat: Boolean(opts.allowRepeat),
+        send: Boolean(opts.send),
+        channels: opts.send ? channels : [],
+      });
+      if (r.payUrl && !opts.send) {
+        const ok = await writeToClipboard(r.payUrl);
+        toast.show(ok ? "Payment link copied" : "Copy the link below");
+      }
+      setRepeat("");
+      finish(r);
     } catch (err) {
-      setError({ code: errorCode(err), message: errorMessage(err, "That did not go through. What you entered is kept. Try again.") });
-      const data = (err as { response?: { data?: { preview?: ExtraPreview } } })?.response?.data;
-      if (data?.preview) {
-        // Something changed (card, customer, tax): show the new details, ask again.
-        setPreview(data.preview);
-        setAgreed(false);
-        setStage("review");
+      const code = errorCode(err);
+      const data = (err as { response?: { data?: { target?: ChargeTarget } } })?.response?.data;
+      if (code === "POSSIBLE_DUPLICATE") {
+        setRepeat(errorMessage(err));
+      } else {
+        if (data?.target) setTarget(data.target); // the customer or card changed: show the new one, press again
+        setError({ code, message: errorMessage(err, "That did not go through. What you entered is kept. Try again.") });
       }
     } finally {
       running.current = false;
@@ -133,269 +169,127 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
     }
   };
 
-  const enterErrors = {
-    description: input.description.trim().length > 0 && input.description.trim().length < 3 ? "Describe the work in a few words." : "",
-    amount: input.amount.trim() && (cents === null || cents < 50) ? "Enter dollars and cents, at least $0.50." : cents !== null && cents > 500000 ? "One extra can be at most $5,000." : "",
-  };
-  const basisDocs = input.taxTreatment ? BASIS_DOCUMENTS[input.taxTreatment] : undefined;
-  const basis = input.taxBasis || { document: "", reference: "", onFile: false };
-  const basisOk = !basisDocs || (basisDocs.some((d) => d.value === basis.document) && basis.reference.trim().length >= 4 && basis.onFile);
-  const canReview = input.description.trim().length >= 3 && cents !== null && cents >= 50 && cents <= 500000 && Boolean(input.taxTreatment) && basisOk;
+  if (result) return <ResultView job={job} result={result} footer={footer} onDone={onBack} onChange={setResult} />;
 
-  const review = () =>
-    run("review", async () => {
-      const p = await previewExtraCharge(job.id, input);
-      setPreview(p);
-      setAgreed(false);
-      setStage("review");
-    });
+  if (t.isLoading && !target) return <SkeletonRows count={2} label="Loading the customer and card" />;
+  if (!target) return <Problem>{errorMessage(t.error, "The customer and card could not be loaded.")}</Problem>;
 
-  const finish = (r: { charge: ExtraCharge; payUrl?: string; delivery?: Delivery }) => {
-    setResult(r);
-    setStage("result");
-    saveDraft(job.id, null);
-    setDirty?.(false);
-    invalidateQueries(extraKeys.list(job.id));
-    invalidateQueries(jobKeys.detail(job.id));
-  };
-
-  const confirm = (method: "card" | "link", opts: { send?: boolean } = {}) =>
-    run(method === "card" ? "charge" : opts.send ? "send" : "copy", async () => {
-      if (!preview || preview.totalCents === null) return;
-      const r = await createExtraCharge(job.id, input, {
-        idempotencyKey: keyRef.current,
-        previewFingerprint: preview.fingerprint,
-        expectedTotalCents: preview.totalCents,
-        customerAgreed: agreed,
-        method,
-        send: Boolean(opts.send),
-        channels: opts.send ? channels : [],
-      });
-      if (r.payUrl && !opts.send) {
-        const ok = await writeToClipboard(r.payUrl);
-        toast.show(ok ? "Payment link copied" : "Copy the link below");
-      }
-      finish(r);
-    });
-
-  /* ------------------------------ enter ------------------------------ */
-  if (stage === "enter") {
-    return (
-      <div className="flex flex-col gap-4" data-step="charge-extra" data-stage="enter">
-        <div className="rounded-adm-sm bg-adm-surface-2 px-3 py-2.5 text-[14px] text-adm-ink" data-extra-who="">
-          <p className="font-semibold">{job.customer.name || "Customer"}</p>
-          <p className="text-adm-text-2">
-            Job #{String(job.bookingNumber || "").replace(/^#/, "")} · {job.address.full || "No address on the job"}
-          </p>
-        </div>
-        <Field label="Additional work" required help="What was added, as agreed with the customer." error={enterErrors.description || undefined}>
-          <Textarea ref={descRef} value={input.description} onChange={(e) => setInput({ ...input, description: e.target.value })} rows={2} maxLength={500} enterKeyHint="next" name="extra-description" />
-        </Field>
-        <Field label="Amount before tax" required error={enterErrors.amount || undefined}>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-adm-text-2" aria-hidden="true">
-              $
-            </span>
-            <TextInput
-              value={input.amount}
-              onChange={(e) => setInput({ ...input, amount: e.target.value.replace(/[^\d.,]/g, "") })}
-              inputMode="decimal"
-              autoComplete="off"
-              placeholder="0.00"
-              enterKeyHint="done"
-              style={{ paddingLeft: "1.75rem" }}
-              name="extra-amount"
-              aria-label="Amount in dollars before tax"
-            />
-          </div>
-        </Field>
-        <fieldset className="flex flex-col gap-2" data-extra-tax="">
-          <legend className="mb-1.5 text-[13px] font-semibold text-adm-ink">Sales tax</legend>
-          {TAX_OPTIONS.map((o) => (
-            <label key={o.value} className={cx("flex min-h-[44px] cursor-pointer items-start gap-3 rounded-adm-sm border px-3 py-2.5", input.taxTreatment === o.value ? "border-adm-accent bg-adm-accent-soft" : "border-adm-line")}>
-              <input
-                type="radio"
-                name="extra-tax"
-                checked={input.taxTreatment === o.value}
-                onChange={() => setInput({ ...input, taxTreatment: o.value, taxBasis: BASIS_DOCUMENTS[o.value] ? { document: BASIS_DOCUMENTS[o.value].length === 1 ? BASIS_DOCUMENTS[o.value][0].value : "", reference: "", onFile: false } : undefined })}
-                className="mt-0.5 h-5 w-5 flex-none accent-[var(--adm-accent)]"
-              />
-              <span className="flex flex-col">
-                <span className="text-[15px] font-semibold text-adm-ink">{o.label}</span>
-                <span className="text-[13px] text-adm-text-2">{o.help}</span>
-              </span>
-            </label>
-          ))}
-          {!input.taxTreatment && <p className="text-[13px] text-adm-text-2">Choose one. Nothing is assumed about tax.</p>}
-        </fieldset>
-        {basisDocs && (
-          <fieldset className="flex flex-col gap-3 rounded-adm-md border border-adm-line px-3 py-3" data-extra-basis="">
-            <legend className="px-1 text-[13px] font-semibold text-adm-ink">Document that makes it tax free</legend>
-            {basisDocs.length > 1 ? (
-              <Field label="Document" required>
-                <select
-                  className="adm-input"
-                  name="extra-basis-document"
-                  value={basis.document}
-                  onChange={(e) => setInput({ ...input, taxBasis: { ...basis, document: e.target.value } })}
-                >
-                  <option value="">Choose…</option>
-                  {basisDocs.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            ) : (
-              <p className="text-[14px] text-adm-ink">{basisDocs[0].label}</p>
-            )}
-            <Field label="Reference" required help="Certificate number, date signed, or where it is filed.">
-              <TextInput value={basis.reference} onChange={(e) => setInput({ ...input, taxBasis: { ...basis, reference: e.target.value } })} maxLength={200} enterKeyHint="done" name="extra-basis-reference" />
-            </Field>
-            <label className="flex min-h-[44px] cursor-pointer items-start gap-3" data-extra-basis-onfile="">
-              <input type="checkbox" checked={basis.onFile} onChange={(e) => setInput({ ...input, taxBasis: { ...basis, onFile: e.target.checked } })} className="mt-0.5 h-5 w-5 flex-none accent-[var(--adm-accent)]" name="extra-basis-onfile" />
-              <span className="text-[14px] text-adm-ink">I have this document on file for this job.</span>
-            </label>
-          </fieldset>
-        )}
-        <Field label="Written approval (optional)" help="Where the customer's written OK is, e.g. “text 2:14 pm” or “signed change order”.">
-          <TextInput value={input.writtenApprovalRef || ""} onChange={(e) => setInput({ ...input, writtenApprovalRef: e.target.value })} maxLength={300} enterKeyHint="done" name="extra-approval" />
-        </Field>
-        {error && <Problem code={error.code}>{error.message}</Problem>}
-        <Footer el={footer}>
-          <Button variant="secondary" large onClick={onBack} disabled={Boolean(busy)}>
-            Cancel
-          </Button>
-          <Button large busy={busy === "review"} disabled={!canReview} onClick={review} data-extra-review="">
-            Review
-          </Button>
-        </Footer>
+  const direct = target.direct;
+  const link = target.link;
+  const canCharge = direct.allowed && amountOk;
+  return (
+    <div className="flex flex-col gap-4" data-step="charge-extra" data-stage="charge">
+      <div className="rounded-adm-md border border-adm-line px-3 py-2.5" data-extra-identity="">
+        <p className="text-[17px] font-semibold text-adm-ink">
+          {target.customer.name || "Customer"}
+          {target.customer.guest ? <span className="font-normal text-adm-text-2"> (guest)</span> : null}
+        </p>
+        <p className="text-[13px] text-adm-text-2">Job #{target.booking.number}</p>
+        <p className="mt-1.5 flex items-center gap-2 text-[15px] text-adm-ink" data-extra-card="">
+          <CreditCardIcon className="h-5 w-5 flex-none text-adm-text-2" aria-hidden="true" />
+          {target.card && direct.allowed ? cardText(target.card) : <span className="text-adm-text-2">No card to charge</span>}
+        </p>
       </div>
-    );
-  }
 
-  /* ------------------------------ review ----------------------------- */
-  if ((stage === "review" || stage === "send") && preview) {
-    const total = preview.totalCents;
-    const direct = preview.direct;
-    const link = preview.link;
-    const canCharge = direct.allowed && total !== null;
-    const channelChoices: { key: "email" | "sms"; label: string; ok: boolean }[] = [
-      { key: "email", label: "Email", ok: preview.customer.hasEmail },
-      { key: "sms", label: "Text", ok: preview.customer.hasPhone },
-    ];
-    return (
-      <div className="flex flex-col gap-4" data-step="charge-extra" data-stage={stage}>
-        <dl className="rounded-adm-md border border-adm-line px-3 py-2.5" data-extra-identity="">
-          <Row label="Customer" value={<span className="font-semibold">{preview.customer.name || "Customer"}{preview.customer.guest ? " (guest)" : ""}</span>} />
-          <Row label="Job" value={`#${preview.booking.number}`} />
-          <div className="py-1">
-            <dt className="text-[14px] text-adm-text-2">Service address</dt>
-            <dd className="text-[15px] text-adm-ink" data-extra-address="">
-              {preview.serviceAddress.full || "No service address"}
-            </dd>
+      {!direct.allowed && (
+        <div className="rounded-adm-sm bg-adm-attn-bg px-3 py-2.5 text-[14px] text-adm-attn" data-extra-direct-blocked={direct.code}>
+          {direct.message}
+        </div>
+      )}
+
+      <Field label="Amount to charge" error={amountError || undefined}>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[22px] font-semibold text-adm-text-2" aria-hidden="true">
+            $
+          </span>
+          <TextInput
+            ref={amountRef}
+            value={draft.amount}
+            onChange={(e) => {
+              setDraft({ ...draft, amount: e.target.value.replace(/[^\d.,]/g, "") });
+              setRepeat("");
+            }}
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="0.00"
+            enterKeyHint="done"
+            style={{ paddingLeft: "2rem", fontSize: "24px", fontWeight: 600, height: "56px" }}
+            name="extra-amount"
+            aria-label="Amount to charge, in dollars"
+          />
+        </div>
+      </Field>
+      <p className="-mt-2 text-[13px] text-adm-text-2">This is the total the customer pays. Nothing is added to it.</p>
+
+      {showNote ? (
+        <Field label="Note (optional)" help="For your records and the customer's receipt.">
+          <TextInput value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} maxLength={500} enterKeyHint="done" name="extra-note" />
+        </Field>
+      ) : (
+        <Button variant="tertiary" icon={<PlusIcon className="h-4 w-4" aria-hidden="true" />} onClick={() => setShowNote(true)} className="self-start" data-extra-add-note="">
+          Add a note
+        </Button>
+      )}
+
+      {repeat && (
+        <div className="flex flex-col gap-2 rounded-adm-sm bg-adm-attn-bg px-3 py-2.5 text-[14px] text-adm-attn" data-extra-repeat="">
+          <p>{repeat}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setRepeat("")}>
+              Don’t charge
+            </Button>
+            <Button busy={busy === "charge"} onClick={go("card", { allowRepeat: true })} data-extra-repeat-confirm="">
+              Charge {money2(cents)} again
+            </Button>
           </div>
-          <Row label="Card" value={preview.card ? <span data-extra-card="">{cardText(preview.card)}</span> : <span className="text-adm-text-2">No card to charge</span>} />
-        </dl>
+        </div>
+      )}
+      {error && <Problem code={error.code}>{error.message}</Problem>}
 
-        <div className="rounded-adm-md border border-adm-line px-3 py-2.5" data-extra-totals="">
-          <p className="pb-1 text-[15px] text-adm-ink">{preview.description}</p>
-          <dl>
-            <Row label="Subtotal" value={money2(preview.subtotalCents)} muted />
-            <Row
-              label={preview.tax.ok ? (preview.taxCents ? `Sales tax${preview.tax.ratePercent ? ` (${Number(preview.tax.ratePercent)}%)` : ""}` : "Sales tax (none: " + (preview.tax.treatment === "Tax Exempt" ? "tax exempt" : "capital improvement") + ")") : "Sales tax"}
-              value={preview.tax.ok ? money2(preview.taxCents) : "—"}
-              muted
-            />
-            <div className="mt-1 border-t border-adm-line pt-1">
-              <Row label="Total" value={<span data-extra-total="">{money2(total)}</span>} strong />
-            </div>
-          </dl>
-          {preview.tax.ok && preview.tax.source === "stripe_tax" && <p className="pt-1 text-[12px] text-adm-text-2">Tax by Stripe Tax for the service address{preview.tax.taxCode ? ` · code ${preview.tax.taxCode}` : ""}.</p>}
-          {preview.tax.ok && preview.tax.basis && (
-            <p className="pt-1 text-[12px] text-adm-text-2" data-extra-basis-review="">
-              No tax on the basis of: {preview.tax.basis.label} · {preview.tax.basis.reference}
-            </p>
+      {!direct.allowed && link.allowed && amountOk && !sending && (
+        <div className="flex flex-wrap gap-2" data-extra-link-actions="">
+          <Button variant="secondary" icon={<ClipboardDocumentIcon className="h-4 w-4" aria-hidden="true" />} busy={busy === "copy"} disabled={Boolean(busy)} onClick={go("link")} data-extra-copy-link="">
+            Copy payment link
+          </Button>
+          {link.canSend && (
+            <Button variant="secondary" icon={<PaperAirplaneIcon className="h-4 w-4" aria-hidden="true" />} disabled={Boolean(busy)} onClick={() => setSending(true)} data-extra-send-link="">
+              Send payment link
+            </Button>
           )}
         </div>
-
-        {!preview.tax.ok && <Problem code={preview.tax.code}>{preview.tax.message}</Problem>}
-        {preview.tax.ok && !direct.allowed && (
-          <div className="rounded-adm-sm bg-adm-attn-bg px-3 py-2.5 text-[14px] text-adm-attn" data-extra-direct-blocked={direct.code}>
-            <p className="font-semibold">The card can’t be charged here</p>
-            <p>{direct.message}</p>
-          </div>
-        )}
-
-        {total !== null && (direct.allowed || link.allowed) && (
-          <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-adm-sm border border-adm-line px-3 py-2.5" data-extra-consent="">
-            <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 h-5 w-5 flex-none accent-[var(--adm-accent)]" name="extra-agreed" />
-            <span className="flex flex-col gap-0.5">
-              <span className="text-[15px] font-semibold text-adm-ink">{preview.consentStatement}</span>
-              <span className="text-[13px] text-adm-text-2">Saved with your name and the time. It records your confirmation; on its own it does not prove the customer’s consent{input.writtenApprovalRef ? "" : ", so note any written approval"}.</span>
-            </span>
-          </label>
-        )}
-
-        {stage === "send" && (
-          <fieldset className="flex flex-col gap-2" data-extra-channels="">
-            <legend className="mb-1 text-[13px] font-semibold text-adm-ink">Send the link by</legend>
-            <div className="grid grid-cols-2 gap-2">
-              {channelChoices.map((c) => (
-                <label key={c.key} className={cx("flex min-h-[44px] items-center gap-2 rounded-adm-sm border px-3 text-[15px]", !c.ok ? "border-adm-line text-adm-text-3" : channels.includes(c.key) ? "border-adm-accent bg-adm-accent-soft text-adm-ink" : "border-adm-line text-adm-ink")}>
-                  <input type="checkbox" disabled={!c.ok} checked={channels.includes(c.key)} onChange={(e) => setChannels(e.target.checked ? [...channels, c.key] : channels.filter((x) => x !== c.key))} className="h-5 w-5 accent-[var(--adm-accent)]" />
-                  {c.label}
-                  {!c.ok && <span className="text-[12px]">(none)</span>}
-                </label>
-              ))}
-            </div>
-            <p className="text-[13px] text-adm-text-2">Texts go only if this customer may be texted about this visit. Stripe emails the receipt after payment.</p>
-          </fieldset>
-        )}
-
-        {error && <Problem code={error.code}>{error.message}</Problem>}
-
-        {stage === "review" && link.allowed && total !== null && (
-          <div className="flex flex-wrap gap-2" data-extra-link-actions="">
-            <Button variant="secondary" icon={<ClipboardDocumentIcon className="h-4 w-4" aria-hidden="true" />} disabled={!agreed || Boolean(busy)} busy={busy === "copy"} onClick={() => confirm("link")} data-extra-copy-link="">
-              Copy payment link
+      )}
+      {sending && (
+        <div className="flex flex-col gap-2 rounded-adm-sm bg-adm-surface-2 px-3 py-2.5" data-extra-send="">
+          <p className="text-[14px] font-semibold text-adm-ink">Send a link for {money2(cents)} by</p>
+          <Channels value={channels} onChange={setChannels} email={target.customer.hasEmail} sms={target.customer.hasPhone} />
+          <p className="text-[13px] text-adm-text-2">Texts go only if this customer may be texted about this visit.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setSending(false)} disabled={Boolean(busy)}>
+              Back
             </Button>
-            {link.canSend && (
-              <Button variant="secondary" icon={<PaperAirplaneIcon className="h-4 w-4" aria-hidden="true" />} disabled={!agreed || Boolean(busy)} onClick={() => setStage("send")} data-extra-send-link="">
-                Send payment link
-              </Button>
-            )}
+            <Button busy={busy === "send"} disabled={!channels.length} onClick={go("link", { send: true })} data-extra-send-confirm="">
+              Send link
+            </Button>
           </div>
-        )}
+        </div>
+      )}
 
-        <Footer el={footer}>
-          <Button variant="secondary" large onClick={() => (stage === "send" ? setStage("review") : setStage("enter"))} disabled={Boolean(busy)}>
-            {stage === "send" ? "Back" : "Edit"}
+      <Footer el={footer}>
+        <Button variant="secondary" large onClick={onBack} disabled={Boolean(busy)}>
+          Cancel
+        </Button>
+        {direct.allowed && (
+          <Button large busy={busy === "charge" && !repeat} disabled={!canCharge || Boolean(repeat)} onClick={go("card")} data-extra-charge="">
+            {amountOk ? `Charge ${money2(cents)}` : "Charge"}
           </Button>
-          {stage === "send" ? (
-            <Button large busy={busy === "send"} disabled={!agreed || channels.length === 0} onClick={() => confirm("link", { send: true })} data-extra-send-confirm="">
-              Send link for {money2(total)}
-            </Button>
-          ) : canCharge ? (
-            <Button large busy={busy === "charge"} disabled={!agreed} onClick={() => confirm("card")} data-extra-charge="">
-              Charge {money2(total)}
-            </Button>
-          ) : null}
-        </Footer>
-      </div>
-    );
-  }
-
-  /* ------------------------------ result ----------------------------- */
-  if (stage === "result" && result) {
-    return <ResultView job={job} result={result} footer={footer} onDone={onBack} onChange={(r) => setResult(r)} />;
-  }
-  return null;
+        )}
+      </Footer>
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------------ */
-/* Result, and the follow-ups a failure offers                         */
+/* The result, and what a failure offers                                */
 /* ------------------------------------------------------------------ */
 
 function ResultView({
@@ -414,6 +308,8 @@ function ResultView({
   const c = result.charge;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
+  const [channels, setChannels] = useState<("email" | "sms")[]>([]);
   const keyRef = useRef(newIdempotencyKey());
   const refresh = async () => {
     setBusy(true);
@@ -427,9 +323,7 @@ function ResultView({
       setBusy(false);
     }
   };
-  const [sending, setSending] = useState(false);
-  const [channels, setChannels] = useState<("email" | "sms")[]>([]);
-  const copyLink = async (send = false) => {
+  const linkFor = async (send: boolean) => {
     setBusy(true);
     setError("");
     try {
@@ -445,22 +339,21 @@ function ResultView({
       setBusy(false);
     }
   };
-  // Processing: look again by itself a few times, then leave it to the Refresh button.
+  // Processing: look again by itself a few times, then leave it to Check now.
   const polls = useRef(0);
   useEffect(() => {
     if (c.status !== "processing" && c.status !== "charging") return;
     if (polls.current >= 4) return;
-    const t = window.setTimeout(() => {
+    const tm = window.setTimeout(() => {
       polls.current += 1;
       void refresh();
     }, 4000);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(tm);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [c.status, c.id]);
 
   const paid = c.status === "paid";
-  const head =
-    paid ? `Paid ${money2(c.totalCents)}` : c.status === "awaiting_payment" ? `Payment link ready for ${money2(c.totalCents)}` : c.status === "failed" ? "Not charged" : c.status === "processing" || c.status === "charging" ? "Processing…" : c.statusLabel;
+  const head = paid ? `Paid ${money2(c.totalCents)}` : c.status === "awaiting_payment" ? `Payment link ready for ${money2(c.totalCents)}` : c.status === "failed" ? "Not charged" : c.status === "processing" || c.status === "charging" ? "Processing…" : c.statusLabel;
   return (
     <div className="flex flex-col gap-4" data-step="charge-extra" data-stage="result" data-extra-status={c.status}>
       <div className={cx("flex items-start gap-3 rounded-adm-md px-3 py-3", paid ? "bg-adm-ok-bg" : c.status === "failed" ? "bg-adm-problem-bg" : "bg-adm-info-bg")} role="status">
@@ -479,15 +372,15 @@ function ResultView({
           <p className="break-all text-[14px] text-adm-ink">{result.payUrl}</p>
         </div>
       )}
-      {deliveryText(result.delivery || null).map((t) => (
-        <p key={t} className="text-[14px] text-adm-text-2">
-          {t}
+      {deliveryText(result.delivery || null).map((x) => (
+        <p key={x} className="text-[14px] text-adm-text-2">
+          {x}
         </p>
       ))}
       {error && <Problem>{error}</Problem>}
       {c.status === "failed" && c.actions.includes("copyLink") && !sending && (
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" icon={<ClipboardDocumentIcon className="h-4 w-4" aria-hidden="true" />} busy={busy} onClick={() => copyLink(false)} data-extra-result-copy="">
+          <Button variant="secondary" icon={<ClipboardDocumentIcon className="h-4 w-4" aria-hidden="true" />} busy={busy} onClick={() => linkFor(false)} data-extra-result-copy="">
             Copy payment link
           </Button>
           <Button variant="secondary" icon={<PaperAirplaneIcon className="h-4 w-4" aria-hidden="true" />} disabled={busy} onClick={() => setSending(true)} data-extra-result-send="">
@@ -498,19 +391,12 @@ function ResultView({
       {sending && (
         <div className="flex flex-col gap-2 rounded-adm-sm bg-adm-surface-2 px-3 py-2.5" data-extra-result-channels="">
           <p className="text-[14px] font-semibold text-adm-ink">Send the link for {money2(c.totalCents)} by</p>
-          <div className="grid grid-cols-2 gap-2">
-            {(["email", "sms"] as const).map((k) => (
-              <label key={k} className={cx("flex min-h-[44px] items-center gap-2 rounded-adm-sm border px-3 text-[15px]", channels.includes(k) ? "border-adm-accent bg-adm-accent-soft" : "border-adm-line")}>
-                <input type="checkbox" checked={channels.includes(k)} onChange={(e) => setChannels(e.target.checked ? [...channels, k] : channels.filter((x) => x !== k))} className="h-5 w-5 accent-[var(--adm-accent)]" />
-                {k === "email" ? "Email" : "Text"}
-              </label>
-            ))}
-          </div>
+          <Channels value={channels} onChange={setChannels} />
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => setSending(false)} disabled={busy}>
               Back
             </Button>
-            <Button busy={busy} disabled={!channels.length} onClick={() => copyLink(true)} data-extra-result-send-confirm="">
+            <Button busy={busy} disabled={!channels.length} onClick={() => linkFor(true)} data-extra-result-send-confirm="">
               Send link
             </Button>
           </div>
@@ -531,7 +417,7 @@ function ResultView({
 }
 
 /* ------------------------------------------------------------------ */
-/* Additional charges on the job                                       */
+/* Charges on the job                                                  */
 /* ------------------------------------------------------------------ */
 
 export function ExtraChargesBlock({ job, canCharge, onCharge }: { job: JobDetail; canCharge: boolean; onCharge: () => void }) {
@@ -540,19 +426,19 @@ export function ExtraChargesBlock({ job, canCharge, onCharge }: { job: JobDetail
   return (
     <section className="flex flex-col gap-2" data-extra-block="">
       <div className="flex min-h-[44px] items-center justify-between gap-3">
-        <h3 className="text-[15px] font-semibold text-adm-ink">Additional charges{charges.length ? ` · ${charges.length}` : ""}</h3>
+        <h3 className="text-[15px] font-semibold text-adm-ink">Charges{charges.length ? ` · ${charges.length}` : ""}</h3>
         {canCharge && (
-          <Button variant="secondary" icon={<PlusIcon className="h-4 w-4" aria-hidden="true" />} onClick={onCharge} data-extra-open="">
-            Charge extra
+          <Button variant="secondary" icon={<CreditCardIcon className="h-4 w-4" aria-hidden="true" />} onClick={onCharge} data-extra-open="">
+            Charge customer
           </Button>
         )}
       </div>
       {q.isLoading ? (
         <p className="text-[14px] text-adm-text-2">Loading…</p>
       ) : q.error && !q.data ? (
-        <Problem>{errorMessage(q.error, "The additional charges could not be loaded.")}</Problem>
+        <Problem>{errorMessage(q.error, "The charges could not be loaded.")}</Problem>
       ) : charges.length === 0 ? (
-        <p className="text-[14px] text-adm-text-2">None on this job.</p>
+        <p className="text-[14px] text-adm-text-2">No charges on this job.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {charges.map((c) => (
@@ -591,34 +477,20 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
     }
   };
   const card = newCard || c.card;
-  const refunded = c.refundedCents > 0;
   return (
     <li className="rounded-adm-md border border-adm-line px-3 py-2.5" data-extra-row={c.status} data-extra-id={c.id}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[15px] font-semibold text-adm-ink">{c.description}</p>
+          <p className="adm-num text-[17px] font-semibold text-adm-ink">{money2(c.totalCents)}</p>
+          {c.note && <p className="text-[14px] text-adm-ink">{c.note}</p>}
           <p className="text-[13px] text-adm-text-2">
-            {c.number} · {sinceText(c.createdAt)} · by {c.createdByName || "owner"}
+            {sinceText(c.confirmedAt || c.createdAt)} · by {c.confirmedByName || c.createdByName || "owner"}
             {c.card ? ` · ${cardText(c.card)}` : c.method === "link" ? " · payment link" : ""}
           </p>
         </div>
         <StatusBadge tone={STATUS_TONE[c.status]}>{c.statusLabel}</StatusBadge>
       </div>
-      <dl className="mt-1.5 grid grid-cols-3 gap-2 text-[13px]">
-        <div>
-          <dt className="text-adm-text-2">Subtotal</dt>
-          <dd className="adm-num text-adm-ink">{money2(c.subtotalCents)}</dd>
-        </div>
-        <div>
-          <dt className="text-adm-text-2">Tax</dt>
-          <dd className="adm-num text-adm-ink">{money2(c.taxCents)}</dd>
-        </div>
-        <div>
-          <dt className="text-adm-text-2">Total</dt>
-          <dd className="adm-num font-semibold text-adm-ink">{money2(c.totalCents)}</dd>
-        </div>
-      </dl>
-      {refunded && <p className="mt-1 text-[13px] text-adm-text-2">Refunded {money2(c.refundedCents)} in Stripe.</p>}
+      {c.refundedCents > 0 && <p className="mt-1 text-[13px] text-adm-text-2">Refunded {money2(c.refundedCents)} in Stripe.</p>}
       {c.failure && c.status === "failed" && <p className="mt-1 text-[13px] text-adm-problem">{c.failure.message}</p>}
       {c.status === "processing" || c.status === "charging" ? <p className="mt-1 text-[13px] text-adm-text-2">Waiting for Stripe. Do not charge again.</p> : null}
       {c.status === "awaiting_payment" && c.link && <p className="mt-1 text-[13px] text-adm-text-2">Link {c.link.sentVia.length ? `sent by ${c.link.sentVia.join(" and ")}` : "copied"} · works until {sinceText(c.link.expiresAt)}</p>}
@@ -630,9 +502,6 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
           </a>
         </p>
       )}
-      {c.tax.recordError && <p className="mt-1 text-[12px] text-adm-attn">Stripe Tax did not record this sale yet ({c.tax.recordError}). It is retried when the job is opened.</p>}
-      {c.consent.writtenApprovalRef && <p className="mt-1 text-[12px] text-adm-text-2">Written approval: {c.consent.writtenApprovalRef}</p>}
-      {c.tax.basis && <p className="mt-1 text-[12px] text-adm-text-2">No tax: {c.tax.basis.document} · {c.tax.basis.reference}</p>}
 
       <div className="mt-1 flex flex-wrap gap-x-4">
         {c.stripeUrl && (
@@ -691,7 +560,16 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
             <Button variant="secondary" onClick={() => setMode("")} disabled={busy}>
               Back
             </Button>
-            <Button busy={busy} onClick={() => act(async () => { await retryExtraCard(job.id, c.id, { idempotencyKey: keyRef.current, expectedCardLast4: card.last4 }); setMode(""); setNewCard(null); })}>
+            <Button
+              busy={busy}
+              onClick={() =>
+                act(async () => {
+                  await retryExtraCard(job.id, c.id, { idempotencyKey: keyRef.current, expectedCardLast4: card.last4 });
+                  setMode("");
+                  setNewCard(null);
+                })
+              }
+            >
               Charge {money2(c.totalCents)}
             </Button>
           </div>
@@ -699,19 +577,22 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
       )}
       {mode === "send" && (
         <div className="mt-2 flex flex-col gap-2 rounded-adm-sm bg-adm-surface-2 px-3 py-2.5" data-extra-send="">
-          <div className="grid grid-cols-2 gap-2">
-            {(["email", "sms"] as const).map((k) => (
-              <label key={k} className={cx("flex min-h-[44px] items-center gap-2 rounded-adm-sm border px-3 text-[15px]", channels.includes(k) ? "border-adm-accent bg-adm-accent-soft" : "border-adm-line")}>
-                <input type="checkbox" checked={channels.includes(k)} onChange={(e) => setChannels(e.target.checked ? [...channels, k] : channels.filter((x) => x !== k))} className="h-5 w-5 accent-[var(--adm-accent)]" />
-                {k === "email" ? "Email" : "Text"}
-              </label>
-            ))}
-          </div>
+          <Channels value={channels} onChange={setChannels} />
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => setMode("")} disabled={busy}>
               Back
             </Button>
-            <Button busy={busy} disabled={!channels.length} onClick={() => act(async () => { const r = await extraPaymentLink(job.id, c.id, { idempotencyKey: keyRef.current, send: true, channels }); toast.show(deliveryText(r.delivery || null).join(" · ") || "Link made"); setMode(""); })}>
+            <Button
+              busy={busy}
+              disabled={!channels.length}
+              onClick={() =>
+                act(async () => {
+                  const r = await extraPaymentLink(job.id, c.id, { idempotencyKey: keyRef.current, send: true, channels });
+                  toast.show(deliveryText(r.delivery || null).join(" · ") || "Link made");
+                  setMode("");
+                })
+              }
+            >
               Send link
             </Button>
           </div>
@@ -724,13 +605,26 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
             <Button variant="secondary" onClick={() => setMode("")} disabled={busy}>
               Keep it
             </Button>
-            <Button variant="danger" busy={busy} onClick={() => act(async () => { await closeExtraCharge(job.id, c.id); setMode(""); })}>
+            <Button
+              variant="danger"
+              busy={busy}
+              onClick={() =>
+                act(async () => {
+                  await closeExtraCharge(job.id, c.id);
+                  setMode("");
+                })
+              }
+            >
               Close unpaid
             </Button>
           </div>
         </div>
       )}
-      {payUrl && <p className="mt-1 break-all text-[13px] text-adm-text-2" data-extra-row-url="">{payUrl}</p>}
+      {payUrl && (
+        <p className="mt-1 break-all text-[13px] text-adm-text-2" data-extra-row-url="">
+          {payUrl}
+        </p>
+      )}
       {error && (
         <div className="mt-2">
           <Problem>{error}</Problem>

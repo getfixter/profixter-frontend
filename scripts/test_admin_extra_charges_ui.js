@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- a plain Node script, like the other scripts/ */
 /*
- * Charge extra in a real browser: the owner's fast path, failures, links,
- * keyboard safety and the history on the job.
+ * Charge customer in a real browser: open a job, type the total, press
+ * "Charge $X". Failures, payment links, repeats, keyboard and sizes.
  *
  *   npx next start -p 3130          (after npm run build)
  *   node scripts/test_admin_extra_charges_ui.js http://localhost:3130
  *
  * FULL NETWORK JAIL: the local server passes; every /api/ URL on any host is
- * answered here by a small stateful fake shaped like the real routes
- * (BackEnd routes/adminExtraCharges.js); everything else is aborted and must
- * stay empty. Fake people only (@example.test). Nothing is charged anywhere.
+ * answered by a small stateful fake shaped like BackEnd routes/adminExtraCharges.js;
+ * everything else is aborted and must stay empty. Fake people only. Nothing is charged.
  */
 const { chromium } = require("playwright");
 const fs = require("fs");
@@ -21,132 +20,40 @@ fs.mkdirSync(SHOTS, { recursive: true });
 
 const OWNER = { _id: "owner1", userId: "PF-OWNER", name: "Owner Test", email: "owner@example.test", phone: "5550100", role: "admin", addresses: [] };
 const GENERAL = { _id: "gf1", userId: "PF-GF", name: "Gina General", email: "gina@example.test", phone: "5550102", role: "employee", employeePosition: "General Fixter", isActive: true, permissions: ["bookings.read", "bookings.write", "bookings.assign"], addresses: [] };
-
-const TZ = "America/New_York";
 const iso = (h) => new Date(Date.now() + h * 3600_000).toISOString();
+const money2 = (c) => `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 function baseJob(id, o = {}) {
   return {
-    id,
-    bookingNumber: o.number || "55501234",
-    date: iso(-3),
-    endEstimate: iso(-1.5),
-    status: o.status || "Completed",
-    type: "member",
-    typeLabel: "Membership visit",
-    customer: { id: o.guest ? null : `u-${id}`, name: o.name || "Maria Rivera-Montgomery", phone: "(631) 555-0142", phoneE164: "+16315550142", email: o.email === undefined ? "maria@example.test" : o.email, guest: Boolean(o.guest), visitsCompleted: 4 },
+    id, bookingNumber: "55501234", date: iso(-3), endEstimate: iso(-1.5), status: "Completed", type: "member", typeLabel: "Membership visit",
+    customer: { id: o.guest ? null : `u-${id}`, name: o.name || "Maria Rivera-Montgomery", phone: "(631) 555-0142", phoneE164: "+16315550142", email: "maria@example.test", guest: Boolean(o.guest), visitsCompleted: 4 },
     address: { line1: "1287 Old Country Road, Apt 12B", city: "Huntington Station", state: "NY", zip: "11746", full: "1287 Old Country Road, Apt 12B, Huntington Station, NY 11746" },
-    addressShort: "1287 Old Country Road, Apt 12B",
-    town: "Huntington Station",
-    technician: { id: "fx2", name: "Gina General" },
-    flags: [],
-    timing: null,
-    service: "Handyman visit",
-    selectedTask: "Fix a leaking faucet",
-    description: "The kitchen faucet drips.",
-    adminNote: "",
-    photos: [],
-    libraryReference: "",
-    money: { kind: "membership_included", label: "Included in the membership" },
-    staffNotes: [],
-    freeVisit: null,
-    reservationIssue: null,
-    cancellationReason: "",
-    completedAt: iso(-1),
-    createdAt: iso(-240),
-    updatedAt: iso(-1),
+    addressShort: "1287 Old Country Road, Apt 12B", town: "Huntington Station", technician: { id: "fx2", name: "Gina General" }, flags: [], timing: null,
+    service: "Handyman visit", selectedTask: "Fix a leaking faucet", description: "The kitchen faucet drips.", adminNote: "", photos: [], libraryReference: "",
+    money: { kind: "membership_included", label: "Included in the membership" }, staffNotes: [], freeVisit: null, reservationIssue: null, cancellationReason: "",
+    completedAt: iso(-1), createdAt: iso(-240), updatedAt: iso(-1),
   };
 }
 
-const money2 = (c) => `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-/* ---------------- the fake API (mirrors the server's rules) ---------------- */
 function makeServer(user, scenario = {}) {
   const owner = user.role === "admin";
-  const card = scenario.card === undefined ? { brand: "visa", last4: "4242", expMonth: 12, expYear: 2030 } : scenario.card;
-  const state = { charges: [], calls: [], keys: new Map(), behavior: scenario.behavior || "ok", failOnceNetwork: Boolean(scenario.failOnceNetwork) };
-  const jobs = { j1: baseJob("j1", scenario.job || {}) };
-  const detail = (j) => ({
-    ...j,
-    allowedActions: ["addInternalNote", "addPhotos", ...(owner ? ["chargeExtra"] : [])],
-    ...(owner ? { extraCharges: { count: state.charges.length, paidCents: 0, open: 0 } } : {}),
-    history: { href: `/api/admin/bookings/${j.id}/history` },
-  });
-  const tax = (cents, t) => (t === "Taxable Repair / Maintenance" ? Math.round((cents * 8.625) / 100) : 0);
+  const state = { charges: [], calls: [], keys: new Map(), behavior: scenario.behavior || "ok", failOnceNetwork: Boolean(scenario.failOnceNetwork), card: scenario.card === undefined ? { brand: "visa", last4: "4242", expMonth: 12, expYear: 2030 } : scenario.card, fp: "fp-1" };
+  const j = baseJob("j1", scenario.job || {});
+  const detail = () => ({ ...j, allowedActions: ["addInternalNote", "addPhotos", ...(owner ? ["chargeExtra"] : [])], ...(owner ? { extraCharges: { count: state.charges.length, paidCents: 0, open: 0 } } : {}), history: { href: `/api/admin/bookings/${j.id}/history` } });
   const toCents = (a) => {
     const m = String(a || "").replace(/[$,\s]/g, "").match(/^(\d{1,6})(?:\.(\d{1,2}))?$/);
     return m ? Number(m[1]) * 100 + Number((m[2] || "").padEnd(2, "0")) : null;
   };
-  function preview(j, b) {
-    const sub = toCents(b.amount);
-    const t = b.taxTreatment;
-    const tc = tax(sub, t);
-    const noTax = !t || t === "Not Determined";
-    const needsBasis = t === "Capital Improvement - No Sales Tax" || t === "Tax Exempt";
-    const basisOk = !needsBasis || (b.taxBasis && b.taxBasis.document && String(b.taxBasis.reference || "").length >= 4 && b.taxBasis.onFile === true);
-    if (t === "Taxable Repair / Maintenance" && scenario.taxCodeMissing) {
-      const msg = "Taxable extras need the Stripe tax code your accountant confirms for this work, and it is not set yet. Nothing was charged.";
-      return {
-        booking: { id: j.id, number: j.bookingNumber, date: j.date, service: j.service, status: j.status },
-        customer: { name: j.customer.name, guest: false, accountLinked: true, hasEmail: true, hasPhone: true },
-        serviceAddress: { line1: j.address.line1, unit: "", city: j.address.city, state: "NY", zip: j.address.zip, full: j.address.full },
-        card, description: b.description, subtotalCents: sub, taxCents: null, totalCents: null,
-        tax: { ok: false, treatment: t, code: "TAX_CODE_NOT_CONFIGURED", message: msg },
-        direct: { allowed: false, code: "TAX_CODE_NOT_CONFIGURED", message: msg }, link: { allowed: false, canSend: false, code: "TAX_CODE_NOT_CONFIGURED", message: msg },
-        consentStatement: "", fingerprint: "fp-blocked",
-      };
-    }
-    state.lastBasis = b.taxBasis || null;
-    if (!basisOk) state.badBasis = true; // the UI must never ask without a complete basis
-    const direct = scenario.guest ? { allowed: false, code: "GUEST_BOOKING", message: "This is a guest visit with no account, so there is no saved card to charge. Use a payment link." } : card ? { allowed: true } : { allowed: false, code: "NO_SAVED_CARD", message: "There is no saved card on this customer. Use a payment link." };
-    const total = noTax ? null : sub + tc;
-    return {
-      booking: { id: j.id, number: j.bookingNumber, date: j.date, service: j.service, status: j.status },
-      customer: { name: j.customer.name, guest: Boolean(scenario.guest), accountLinked: !scenario.guest, hasEmail: true, hasPhone: true },
-      serviceAddress: { line1: j.address.line1, unit: "", city: j.address.city, state: "NY", zip: j.address.zip, full: j.address.full },
-      card: scenario.guest ? null : card,
-      description: b.description,
-      subtotalCents: sub,
-      taxCents: noTax ? null : tc,
-      totalCents: total,
-      tax: noTax ? { ok: false, treatment: "Not Determined", code: "TAX_TREATMENT_REQUIRED", message: "Choose how sales tax applies to this work before charging." } : { ok: true, treatment: t, source: tc ? "stripe_tax" : "documented_exemption", ratePercent: tc ? "8.625" : "0", taxCode: tc ? "txcd_20080007" : "", basis: needsBasis ? { document: b.taxBasis.document, label: b.taxBasis.document === "ST-124" ? "NY Form ST-124, Certificate of Capital Improvement (signed by the customer)" : "NY Form ST-119.1, Exempt Organization Certificate", reference: b.taxBasis.reference } : null },
-      direct: noTax ? { allowed: false, code: "TAX_TREATMENT_REQUIRED" } : direct,
-      link: noTax ? { allowed: false } : { allowed: true, canSend: true },
-      consentStatement: total ? `I confirm the customer agreed to this additional work and to the total of ${money2(total)}.` : "",
-      fingerprint: `fp-${sub}-${tc}-${b.description.length}-${b.taxBasis ? b.taxBasis.reference.length : 0}`,
-    };
-  }
-  function record(j, b, p, method) {
-    const n = state.charges.length + 1;
-    const c = {
-      id: `x${n}`,
-      number: `${j.bookingNumber}-E${n}`,
-      description: b.description,
-      subtotalCents: p.subtotalCents,
-      taxCents: p.taxCents,
-      totalCents: p.totalCents,
-      tax: { treatment: p.tax.treatment, source: p.tax.source, ratePercent: p.tax.ratePercent, taxCode: p.tax.taxCode, recorded: true, recordError: "", basis: p.tax.basis ? { document: p.tax.basis.document, label: p.tax.basis.label, reference: p.tax.basis.reference } : null },
-      status: "awaiting_payment",
-      statusLabel: "Awaiting payment",
-      method,
-      createdAt: new Date().toISOString(),
-      createdByName: user.name,
-      consent: { statement: p.consentStatement, confirmedByName: user.name, confirmedAt: new Date().toISOString(), writtenApprovalRef: b.writtenApprovalRef || "" },
-      customerName: j.customer.name,
-      guest: Boolean(scenario.guest),
-      card: method === "card" ? { brand: card.brand, last4: card.last4 } : null,
-      paidAt: null,
-      failure: null,
-      refundedCents: 0,
-      stripeUrl: "",
-      receiptUrl: "",
-      extraPayments: [],
-      link: null,
-      actions: [],
-    };
-    state.charges.push(c);
-    return c;
-  }
+  const target = () => ({
+    booking: { id: j.id, number: j.bookingNumber, date: j.date, service: j.service, status: j.status },
+    customer: { name: j.customer.name, guest: Boolean(scenario.guest), accountLinked: !scenario.guest, hasEmail: true, hasPhone: true },
+    serviceAddress: { line1: j.address.line1, unit: "", city: j.address.city, state: "NY", zip: j.address.zip, full: j.address.full },
+    card: scenario.guest ? null : state.card,
+    direct: scenario.guest ? { allowed: false, code: "GUEST_BOOKING", message: "This is a guest visit with no account, so there is no saved card to charge. Use a payment link." } : { allowed: true },
+    link: { allowed: true, canSend: true },
+    fingerprint: state.fp,
+    limits: { minCents: 50, maxCents: 500000 },
+  });
   const setStatus = (c, status) => {
     c.status = status;
     c.statusLabel = { paid: "Paid", failed: "Failed", processing: "Processing", awaiting_payment: "Awaiting payment", canceled: "Closed, not paid" }[status] || status;
@@ -159,9 +66,8 @@ function makeServer(user, scenario = {}) {
     } else if (state.behavior === "auth") {
       setStatus(c, "failed");
       c.failure = { code: "authentication_required", declineCode: "", message: "The customer's bank wants them to approve this payment themselves. Send them a payment link." };
-    } else if (state.behavior === "processing") {
-      setStatus(c, "processing");
-    } else {
+    } else if (state.behavior === "processing") setStatus(c, "processing");
+    else {
       setStatus(c, "paid");
       c.paidAt = new Date().toISOString();
       c.stripeUrl = "https://dashboard.stripe.com/test/payments/pi_fake1";
@@ -171,71 +77,63 @@ function makeServer(user, scenario = {}) {
   function handle(method, p, sp, body) {
     if (p === "/api/auth/me") return [200, user];
     if (p === "/api/admin/needs-action") return [200, { generatedAt: new Date().toISOString(), total: 0, sections: [], items: [] }];
-    if (p === "/api/admin/jobs" && method === "GET") return [200, { view: "today", from: null, to: null, total: 1, rows: [detail(jobs.j1)], nextCursor: null, counts: { today: 1, tomorrow: 0, week: 1, needsAction: 0 } }];
+    if (p === "/api/admin/jobs" && method === "GET") return [200, { view: "today", from: null, to: null, total: 1, rows: [detail()], nextCursor: null, counts: { today: 1, tomorrow: 0, week: 1, needsAction: 0 } }];
     if (/\/history$/.test(p)) return [200, { history: [], records: [] }];
-    let m = /^\/api\/admin\/jobs\/([^/]+)$/.exec(p);
-    if (m && method === "GET") return jobs[m[1]] ? [200, { job: detail(jobs[m[1]]) }] : [404, { message: "Job not found", code: "BOOKING_NOT_FOUND" }];
-    m = /^\/api\/admin\/jobs\/([^/]+)\/extra-charges(?:\/(preview))?$/.exec(p);
-    if (m) {
-      if (!owner) return [403, { code: "OWNER_ONLY", message: "Only the owner can charge extras." }];
-      const j = jobs[m[1]];
-      state.calls.push({ method, p, body });
-      if (method === "GET") return [200, { charges: state.charges }];
-      if (m[2] === "preview") return [200, { preview: preview(j, body) }];
-      if (state.failOnceNetwork) {
-        state.failOnceNetwork = false;
-        state.lostKey = body.idempotencyKey;
-        return [502, { message: "Bad gateway" }];
-      }
-      if (state.keys.has(body.idempotencyKey)) return [200, { charge: state.keys.get(body.idempotencyKey), replayed: true }];
-      if (body.customerAgreed !== true) return [428, { code: "CONFIRMATION_REQUIRED", message: "Confirm that the customer agreed to this work and this total." }];
-      const pv = preview(j, body);
-      if (body.previewFingerprint !== pv.fingerprint || body.expectedTotalCents !== pv.totalCents) return [409, { code: "PREVIEW_CHANGED", message: "Something changed since you reviewed this.", preview: pv }];
-      const c = record(j, body, pv, body.method);
-      if (body.method === "card") chargeCard(c);
-      else {
-        setStatus(c, "awaiting_payment");
-        c.link = { status: "open", expiresAt: iso(24 * 7), sentVia: body.send ? body.channels : [], delivery: null };
-      }
-      state.keys.set(body.idempotencyKey, c);
-      const delivery = body.send ? { email: body.channels.includes("email") ? "sent" : "not_requested", sms: body.channels.includes("sms") ? "skipped:transactional_not_opted_in" : "not_requested" } : undefined;
-      return [201, { charge: c, replayed: false, ...(body.method === "link" ? { payUrl: "https://www.profixter.com/pay/TESTTOKENabcdefghij12" } : {}), ...(delivery ? { delivery } : {}) }];
-    }
-    m = /^\/api\/admin\/jobs\/([^/]+)\/extra-charges\/([^/]+)\/(refresh|retry-card|payment-link|close)$/.exec(p);
-    if (m) {
+    if (p === "/api/admin/jobs/j1" && method === "GET") return [200, { job: detail() }];
+    if (p.startsWith("/api/admin/jobs/j1/extra-charges")) {
       if (!owner) return [403, { code: "OWNER_ONLY", message: "Only the owner can charge extras." }];
       state.calls.push({ method, p, body });
-      const c = state.charges.find((x) => x.id === m[2]);
+      if (p.endsWith("/target")) return [200, { target: target() }];
+      if (p === "/api/admin/jobs/j1/extra-charges" && method === "GET") return [200, { charges: state.charges }];
+      if (p === "/api/admin/jobs/j1/extra-charges" && method === "POST") {
+        if (state.failOnceNetwork) {
+          state.failOnceNetwork = false;
+          return [502, { message: "Bad gateway" }];
+        }
+        if (state.keys.has(body.idempotencyKey)) return [200, { charge: state.keys.get(body.idempotencyKey), replayed: true }];
+        if (body.targetFingerprint !== state.fp) return [409, { code: "TARGET_CHANGED", message: "The customer or saved card for this visit changed since the screen opened. Check it and press Charge again.", target: target() }];
+        const cents = toCents(body.amount);
+        if (!body.allowRepeat && state.charges.some((c) => c.totalCents === cents && ["paid", "processing", "charging", "awaiting_payment"].includes(c.status))) {
+          return [409, { code: "POSSIBLE_DUPLICATE", message: `${money2(cents)} was already charged on this visit at 2:14 PM. Charge it again?` }];
+        }
+        const n = state.charges.length + 1;
+        const c = { id: `x${n}`, number: `${j.bookingNumber}-E${n}`, note: body.note || "", totalCents: cents, taxStatus: "not_calculated", status: "charging", statusLabel: "", method: body.method, createdAt: new Date().toISOString(), createdByName: user.name, confirmedByName: user.name, confirmedAt: new Date().toISOString(), customerName: j.customer.name, guest: Boolean(scenario.guest), card: body.method === "card" ? { brand: state.card.brand, last4: state.card.last4 } : null, paidAt: null, failure: null, refundedCents: 0, stripeUrl: "", receiptUrl: "", extraPayments: [], link: null, actions: [] };
+        state.charges.push(c);
+        if (body.method === "card") chargeCard(c);
+        else {
+          setStatus(c, "awaiting_payment");
+          c.link = { status: "open", expiresAt: iso(24 * 7), sentVia: body.send ? body.channels : [], delivery: null };
+        }
+        state.keys.set(body.idempotencyKey, c);
+        const delivery = body.send ? { email: body.channels.includes("email") ? "sent" : "not_requested", sms: body.channels.includes("sms") ? "skipped:transactional_not_opted_in" : "not_requested" } : undefined;
+        return [201, { charge: c, replayed: false, ...(body.method === "link" ? { payUrl: "https://www.profixter.com/pay/TESTTOKENabcdefghij12" } : {}), ...(delivery ? { delivery } : {}) }];
+      }
+      const m = /^\/api\/admin\/jobs\/j1\/extra-charges\/([^/]+)\/(refresh|retry-card|payment-link|close)$/.exec(p);
+      const c = m && state.charges.find((x) => x.id === m[1]);
       if (!c) return [404, { code: "NOT_FOUND", message: "Charge not found" }];
-      if (m[3] === "refresh") {
+      if (m[2] === "refresh") {
         if (c.status === "processing" && state.settleOnRefresh) {
           setStatus(c, "paid");
           c.paidAt = new Date().toISOString();
-          c.stripeUrl = "https://dashboard.stripe.com/test/payments/pi_fake2";
         }
         return [200, { charge: c }];
       }
-      if (m[3] === "payment-link") {
+      if (m[2] === "payment-link") {
         setStatus(c, "awaiting_payment");
         c.link = { status: "open", expiresAt: iso(24 * 7), sentVia: body.send ? body.channels : [], delivery: null };
         return [200, { charge: c, payUrl: "https://www.profixter.com/pay/TESTTOKENzyxwvutsrq98", delivery: body.send ? { email: "sent", sms: "not_requested" } : null }];
       }
-      if (m[3] === "retry-card") {
-        state.behavior = "ok";
-        chargeCard(c);
-        return [200, { charge: c }];
-      }
-      if (m[3] === "close") {
+      if (m[2] === "close") {
         setStatus(c, "canceled");
         return [200, { charge: c }];
       }
+      return [200, { charge: c }];
     }
     return [200, p.includes("summary") || p.includes("settings") ? {} : []];
   }
   return { state, handle };
 }
 
-/* ---------------- harness ---------------- */
 const results = [];
 function check(name, pass, detailText = "") {
   results.push({ name, pass: !!pass });
@@ -281,19 +179,12 @@ async function openJob(page) {
   await page.goto(`${BASE}/admin/jobs/j1`, { waitUntil: "domcontentloaded" });
   await sheet(page).locator("[data-job-body=j1]").waitFor({ timeout: 20000 });
 }
-async function fill(page, { description = "Replace two GFCI outlets in the kitchen", amount = "123.45", tax = "Taxable Repair / Maintenance", approval = "", basis = true } = {}) {
+async function startCharge(page, amount = "134.10") {
   await page.locator("[data-extra-open]").click();
-  await page.locator("[data-stage=enter]").waitFor();
-  await page.locator("textarea[name=extra-description]").fill(description);
-  await page.locator("input[name=extra-amount]").fill(amount);
-  if (tax) await page.locator(`[data-extra-tax] label:has-text("${{ "Taxable Repair / Maintenance": "Taxable repair", "Capital Improvement - No Sales Tax": "Capital improvement", "Tax Exempt": "Tax exempt" }[tax]}")`).click();
-  if (approval) await page.locator("input[name=extra-approval]").fill(approval);
-  if (basis && (tax === "Capital Improvement - No Sales Tax" || tax === "Tax Exempt")) {
-    if (tax === "Tax Exempt") await page.locator("select[name=extra-basis-document]").selectOption("ST-119.1");
-    await page.locator("input[name=extra-basis-reference]").fill(tax === "Tax Exempt" ? "Exempt org cert #EX-12345" : "ST-124 signed 11/13, job folder");
-    await page.locator("[data-extra-basis-onfile]").click();
-  }
+  await page.locator("[data-stage=charge]").waitFor();
+  if (amount !== null) await page.locator("input[name=extra-amount]").fill(amount);
 }
+const posts = (server) => server.state.calls.filter((c) => c.method === "POST" && /extra-charges$/.test(c.p));
 async function overflow(page) {
   return page.evaluate(() => {
     const d = document.querySelector("[role=dialog][data-sheet=job]");
@@ -303,250 +194,199 @@ async function overflow(page) {
       const r = el.getBoundingClientRect();
       if (r.width && r.right > vw + 1) bad.push(`${el.tagName}.${String(el.className).slice(0, 30)} ${Math.round(r.right)}`);
     }
-    return { vw, scroll: document.documentElement.scrollWidth > vw + 1, bad: bad.slice(0, 5) };
+    return { scroll: document.documentElement.scrollWidth > vw + 1, bad: bad.slice(0, 5) };
   });
 }
 
 (async () => {
   const browser = await chromium.launch();
   try {
-    /* 1. fast path: enter -> review -> confirm -> paid */
+    /* 1. the whole workflow: open, type, Charge $X, paid */
     {
       const { ctx, page, server, external, errors } = await open(browser, OWNER);
       await openJob(page);
-      check("owner: Additional charges section and Charge extra button on the job", (await page.locator("[data-extra-block] [data-extra-open]").count()) === 1);
-      await fill(page);
-      const pad = await page.locator("input[name=extra-amount]").evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft));
-      check("the $ sign never covers the amount (input padded past it)", pad >= 24, String(pad));
-      const reviewBtn = page.locator("[data-extra-review]");
-      check("Review is enabled once description, amount and tax are given", await reviewBtn.isEnabled());
-      await page.screenshot({ path: path.join(SHOTS, "1-enter-390x844.png") });
-      await reviewBtn.click();
-      await page.locator("[data-stage=review]").waitFor();
-      const total = 12345 + Math.round((12345 * 8.625) / 100);
-      const txt = await page.locator("[data-stage=review]").innerText();
-      check("review shows the customer, job number, service address and card", /Maria Rivera-Montgomery/.test(txt) && /#55501234/.test(txt) && /1287 Old Country Road, Apt 12B, Huntington Station, NY 11746/.test(txt) && /Visa •••• 4242/.test(txt), txt.slice(0, 200));
-      check("review shows subtotal, tax and total", /\$123\.45/.test(txt) && /Sales tax \(8\.625%\)/.test(txt) && txt.includes(money2(total)));
-      const chargeBtn = page.locator("[data-extra-charge]");
-      check("the confirmation is NOT preselected and the charge button waits for it", !(await page.locator("input[name=extra-agreed]").isChecked()) && (await chargeBtn.isDisabled()));
-      check(`the final button states the exact total: Charge ${money2(total)}`, (await chargeBtn.innerText()).trim() === `Charge ${money2(total)}`, await chargeBtn.innerText());
-      check("the confirmation does not claim to prove the customer's consent", /does not prove the customer/.test(txt));
-      await page.screenshot({ path: path.join(SHOTS, "2-review-390x844.png") });
-      await page.locator("[data-extra-consent]").click();
-      await page.screenshot({ path: path.join(SHOTS, "3-confirm-ticked-390x844.png") });
-      await chargeBtn.click();
+      check("owner: Charges section with a Charge customer button", (await page.locator("[data-extra-block] [data-extra-open]").innerText()).includes("Charge customer"));
+      await startCharge(page, null);
+      const focused = await page.evaluate(() => document.activeElement?.getAttribute("name"));
+      check("the amount field is focused straight away", focused === "extra-amount", String(focused));
+      const who = await page.locator("[data-extra-identity]").innerText();
+      check("shows the booking's customer, job number and the saved card's last four", /Maria Rivera-Montgomery/.test(who) && /#55501234/.test(who) && /Visa •••• 4242/.test(who), who);
+      check("no tax questions, no required description, no document fields", (await page.locator("[data-extra-tax], [data-extra-basis], textarea[name=extra-description]").count()) === 0 && (await page.locator("input[name=extra-note]").count()) === 0);
+      check("Charge waits for a valid amount", await page.locator("[data-extra-charge]").isDisabled());
+      await page.locator("input[name=extra-amount]").fill("134.1");
+      check("the button states the exact amount: Charge $134.10", (await page.locator("[data-extra-charge]").innerText()).trim() === "Charge $134.10", await page.locator("[data-extra-charge]").innerText());
+      check("the amount is the total: nothing is added to it", /Nothing is added to it/.test(await page.locator("[data-stage=charge]").innerText()));
+      await page.locator("[data-extra-add-note]").click();
+      await page.locator("input[name=extra-note]").fill("Extra outlet in the garage");
+      await page.screenshot({ path: path.join(SHOTS, "1-charge-390x844.png") });
+      await page.locator("[data-extra-charge]").click();
       await page.locator("[data-stage=result][data-extra-status=paid]").waitFor();
-      check("result: Paid with the amount and the card, only after the server said paid", /Paid \$134\.10/.test(await page.locator("[data-stage=result]").innerText()) && /Visa •••• 4242/.test(await page.locator("[data-stage=result]").innerText()));
-      const sent = server.state.calls.find((c) => c.method === "POST" && /extra-charges$/.test(c.p));
-      check("the confirm sends no customer, Stripe customer or card id, and the key in the body", sent && !/customerId|stripeCustomer|paymentMethod|cus_|pm_/.test(JSON.stringify(sent.body)) && /^[A-Za-z0-9_.:-]{8,120}$/.test(sent.body.idempotencyKey) && sent.body.customerAgreed === true && sent.body.method === "card", JSON.stringify(sent?.body || {}));
-      await page.screenshot({ path: path.join(SHOTS, "4-paid-390x844.png") });
+      const res = await page.locator("[data-stage=result]").innerText();
+      check("one press charges; Paid shows only once the server says paid", /Paid \$134\.10/.test(res) && /Visa •••• 4242/.test(res));
+      const sent = posts(server)[0];
+      check("the request carries the amount, the note, the target fingerprint and the key, and no customer/card ids", sent && sent.body.amount === "134.1" && sent.body.note === "Extra outlet in the garage" && sent.body.targetFingerprint === "fp-1" && /^[A-Za-z0-9_.:-]{8,120}$/.test(sent.body.idempotencyKey) && sent.body.method === "card" && !/customerId|stripeCustomer|paymentMethod|cus_|pm_|tax/.test(JSON.stringify(sent.body)), JSON.stringify(sent?.body || {}));
+      await page.screenshot({ path: path.join(SHOTS, "2-paid-390x844.png") });
       await page.locator("[data-extra-done]").click();
       await page.locator("[data-extra-row=paid]").waitFor();
       const row = await page.locator("[data-extra-row=paid]").innerText();
-      check("history row: description, totals, status, owner, card, Stripe and receipt links", /Replace two GFCI outlets/.test(row) && /\$123\.45/.test(row) && /\$10\.65/.test(row) && /\$134\.10/.test(row) && /Paid/.test(row) && /by Owner Test/.test(row) && /Visa •••• 4242/.test(row) && (await page.locator("[data-extra-row=paid] [data-extra-stripe]").count()) === 1 && (await page.locator("[data-extra-row=paid] [data-extra-receipt]").count()) === 1, row);
-      check("'Refund in Stripe' link for a paid extra", /Refund in Stripe/.test(row));
-      await page.screenshot({ path: path.join(SHOTS, "5-history-390x844.png"), fullPage: false });
+      check("recorded under the booking: amount, note, owner, time, status, card, receipt", /\$134\.10/.test(row) && /Extra outlet in the garage/.test(row) && /by Owner Test/.test(row) && /Paid/.test(row) && /Visa •••• 4242/.test(row) && (await page.locator("[data-extra-row=paid] [data-extra-receipt]").count()) === 1 && /Refund in Stripe/.test(row), row);
       await page.locator("[data-extra-block]").scrollIntoViewIfNeeded();
-      await page.screenshot({ path: path.join(SHOTS, "5b-history-section-390x844.png") });
-      check("no outside requests, no page errors (owner path)", external.length === 0 && errors.length === 0, [...external, ...errors].join(" | "));
+      await page.screenshot({ path: path.join(SHOTS, "3-recorded-390x844.png") });
+      check("no outside requests, no page errors", external.length === 0 && errors.length === 0, [...external, ...errors].join(" | "));
       await ctx.close();
     }
 
-    /* 1b. no tax needs a documented basis; taxable work waits for the configured tax code */
+    /* 2. double tap, repeat guard, network failure, stale card */
     {
       const { ctx, page, server } = await open(browser, OWNER);
       await openJob(page);
-      await fill(page, { tax: "Capital Improvement - No Sales Tax", amount: "250", basis: false });
-      check("capital improvement asks for the signed ST-124 and Review waits for it", (await page.locator("[data-extra-basis]").count()) === 1 && /ST-124/.test(await page.locator("[data-extra-basis]").innerText()) && (await page.locator("[data-extra-review]").isDisabled()));
-      await page.locator("input[name=extra-basis-reference]").fill("ST-124 signed 11/13, job folder");
-      check("a reference alone is not enough: the on-file confirmation is required too", await page.locator("[data-extra-review]").isDisabled());
-      await page.locator("[data-extra-basis-onfile]").click();
-      await page.screenshot({ path: path.join(SHOTS, "12-capital-basis-390x844.png") });
-      await page.locator("[data-extra-review]").click();
-      await page.locator("[data-stage=review]").waitFor();
-      check("the UI never asked for a no-tax preview without a complete basis", !server.state.badBasis);
-      check("the review states the basis for no tax", /ST-124/.test(await page.locator("[data-extra-basis-review]").innerText()) && server.state.lastBasis && server.state.lastBasis.onFile === true);
-      await page.locator("[data-extra-review], button:has-text('Edit')").first().click();
-      await page.locator("[data-stage=enter]").waitFor();
-      await page.locator(`[data-extra-tax] label:has-text("Tax exempt")`).click();
-      check("tax exempt asks to choose the exemption document", (await page.locator("select[name=extra-basis-document]").count()) === 1 && (await page.locator("[data-extra-review]").isDisabled()));
-      await ctx.close();
-    }
-    {
-      const { ctx, page } = await open(browser, OWNER, { taxCodeMissing: true });
-      await openJob(page);
-      await fill(page);
-      await page.locator("[data-extra-review]").click();
-      await page.locator("[data-stage=review]").waitFor();
-      check("tax code not configured: the reason is shown, and there is no Charge or link action", /tax code your accountant confirms/.test(await page.locator("[data-stage=review]").innerText()) && (await page.locator("[data-extra-charge]").count()) === 0 && (await page.locator("[data-extra-copy-link]").count()) === 0);
-      await page.screenshot({ path: path.join(SHOTS, "13-taxable-blocked-390x844.png") });
-      await ctx.close();
-    }
-
-    /* 2. double tap: one request carries one key; a second press does nothing */
-    {
-      const { ctx, page, server } = await open(browser, OWNER);
-      await openJob(page);
-      await fill(page, { tax: "Capital Improvement - No Sales Tax", amount: "250" });
-      await page.locator("[data-extra-review]").click();
-      await page.locator("[data-stage=review]").waitFor();
-      check("capital improvement: tax shown as none, button Charge $250.00", (await page.locator("[data-extra-charge]").innerText()).trim() === "Charge $250.00" && /none: capital improvement/.test(await page.locator("[data-extra-totals]").innerText()));
-      await page.locator("[data-extra-consent]").click();
+      await startCharge(page, "250");
       await page.locator("[data-extra-charge]").dblclick();
       await page.locator("[data-stage=result]").waitFor();
-      const posts = server.state.calls.filter((c) => c.method === "POST" && /extra-charges$/.test(c.p));
-      check("double tap: one charge request", posts.length === 1, String(posts.length));
+      check("double tap: one charge request", posts(server).length === 1, String(posts(server).length));
+      await page.locator("[data-extra-done]").click();
+      await startCharge(page, "250");
+      await page.locator("[data-extra-charge]").click();
+      await page.locator("[data-extra-repeat]").waitFor();
+      check("the same amount again soon asks first, and nothing is charged meanwhile", /already charged/.test(await page.locator("[data-extra-repeat]").innerText()) && server.state.charges.length === 1);
+      await page.screenshot({ path: path.join(SHOTS, "4-repeat-guard-390x844.png") });
+      await page.locator("[data-extra-repeat-confirm]").click();
+      await page.locator("[data-stage=result][data-extra-status=paid]").waitFor();
+      check("a deliberate second charge goes through only after Charge again", server.state.charges.length === 2 && posts(server).at(-1).body.allowRepeat === true);
       await ctx.close();
     }
-
-    /* 3. network failure: details kept, the retry carries the SAME key */
     {
       const { ctx, page, server } = await open(browser, OWNER, { failOnceNetwork: true });
       await openJob(page);
-      await fill(page, { approval: "Text from Maria 2:14 pm" });
-      await page.locator("[data-extra-review]").click();
-      await page.locator("[data-stage=review]").waitFor();
-      await page.locator("[data-extra-consent]").click();
+      await startCharge(page, "99.95");
       await page.locator("[data-extra-charge]").click();
       await page.locator("[data-extra-error]").waitFor();
-      check("a failed request keeps everything on screen, with a clear error", (await page.locator("[data-stage=review]").count()) === 1 && (await page.locator("input[name=extra-agreed]").isChecked()));
-      await page.screenshot({ path: path.join(SHOTS, "6-network-error-390x844.png") });
+      check("a failed request keeps the amount and says so", (await page.locator("input[name=extra-amount]").inputValue()) === "99.95");
+      await page.screenshot({ path: path.join(SHOTS, "5-network-error-390x844.png") });
       await page.locator("[data-extra-charge]").click();
       await page.locator("[data-stage=result][data-extra-status=paid]").waitFor();
-      const posts = server.state.calls.filter((c) => c.method === "POST" && /extra-charges$/.test(c.p));
-      check("the retry sends the same idempotency key (resolves the first attempt, never a second charge)", posts.length === 2 && posts[0].body.idempotencyKey === posts[1].body.idempotencyKey && posts[1].body.writtenApprovalRef === "Text from Maria 2:14 pm");
+      const p = posts(server);
+      check("the retry sends the same idempotency key (resolves the first attempt, never a second charge)", p.length === 2 && p[0].body.idempotencyKey === p[1].body.idempotencyKey);
+      await ctx.close();
+    }
+    {
+      const { ctx, page, server } = await open(browser, OWNER);
+      await openJob(page);
+      await startCharge(page, "60");
+      server.state.fp = "fp-2"; // the customer's card changed while the screen was open
+      server.state.card = { brand: "mastercard", last4: "5555", expMonth: 1, expYear: 2031 };
+      await page.locator("[data-extra-charge]").click();
+      await page.locator("[data-extra-error=TARGET_CHANGED]").waitFor();
+      check("a card that changed since the screen opened is not charged; the new card is shown", server.state.charges.length === 0 && /Mastercard •••• 5555/.test(await page.locator("[data-extra-identity]").innerText()));
+      await page.locator("[data-extra-charge]").click();
+      await page.locator("[data-stage=result][data-extra-status=paid]").waitFor();
+      check("pressing again charges the card now shown", server.state.charges.length === 1 && server.state.charges[0].card.last4 === "5555");
       await ctx.close();
     }
 
-    /* 4. decline -> payment link from the same charge */
+    /* 3. decline and bank check: the real result, then a payment link */
     {
       const { ctx, page, server } = await open(browser, OWNER, { behavior: "decline" });
       await openJob(page);
-      await fill(page);
-      await page.locator("[data-extra-review]").click();
-      await page.locator("[data-stage=review]").waitFor();
-      await page.locator("[data-extra-consent]").click();
+      await startCharge(page, "75");
       await page.locator("[data-extra-charge]").click();
       await page.locator("[data-stage=result][data-extra-status=failed]").waitFor();
       const t = await page.locator("[data-stage=result]").innerText();
-      check("decline: Not charged, with the reason, never 'paid'", /Not charged/.test(t) && /insufficient funds/.test(t) && !/Paid/.test(t));
-      await page.screenshot({ path: path.join(SHOTS, "7-declined-390x844.png") });
+      check("decline: Not charged, with the bank's reason, never Paid", /Not charged/.test(t) && /insufficient funds/.test(t) && !/Paid/.test(t));
+      await page.screenshot({ path: path.join(SHOTS, "6-declined-390x844.png") });
       await page.locator("[data-extra-result-copy]").click();
       await page.locator("[data-extra-pay-url]").waitFor();
-      check("Copy payment link on the same charge shows the link and Awaiting payment", /pay\/TESTTOKEN/.test(await page.locator("[data-extra-pay-url]").innerText()) && (await page.locator("[data-extra-status=awaiting_payment]").count()) === 1);
-      check("no automatic retry: one card attempt only", server.state.calls.filter((c) => /retry-card/.test(c.p)).length === 0);
-      await page.screenshot({ path: path.join(SHOTS, "8-link-after-decline-390x844.png") });
+      check("Copy payment link for the same charge", /pay\/TESTTOKEN/.test(await page.locator("[data-extra-pay-url]").innerText()) && (await page.locator("[data-extra-status=awaiting_payment]").count()) === 1);
+      check("no automatic retry", server.state.calls.filter((c) => /retry-card/.test(c.p)).length === 0);
       await ctx.close();
     }
-
-    /* 5. authentication required, processing then settled */
     {
       const { ctx, page } = await open(browser, OWNER, { behavior: "auth" });
       await openJob(page);
-      await fill(page);
-      await page.locator("[data-extra-review]").click();
-      await page.locator("[data-stage=review]").waitFor();
-      await page.locator("[data-extra-consent]").click();
+      await startCharge(page, "90");
       await page.locator("[data-extra-charge]").click();
       await page.locator("[data-stage=result][data-extra-status=failed]").waitFor();
-      check("authentication required: tells the owner to send a payment link", /approve this payment themselves/.test(await page.locator("[data-stage=result]").innerText()));
+      check("bank check required: says so and offers the link", /approve this payment themselves/.test(await page.locator("[data-stage=result]").innerText()));
       await page.locator("[data-extra-result-send]").click();
-      check("after a failure, Send waits for an explicit channel", await page.locator("[data-extra-result-send-confirm]").isDisabled());
+      check("Send waits for an explicit channel", await page.locator("[data-extra-result-send-confirm]").isDisabled());
       await page.locator("[data-extra-result-channels] label:has-text('Email')").click();
+      await page.screenshot({ path: path.join(SHOTS, "7-auth-send-link-390x844.png") });
       await page.locator("[data-extra-result-send-confirm]").click();
       await page.locator("[data-stage=result][data-extra-status=awaiting_payment]").waitFor();
-      check("after a failure, Send payment link reports what was sent", /Email sent/.test(await page.locator("[data-stage=result]").innerText()));
-      await page.screenshot({ path: path.join(SHOTS, "7b-sent-after-auth-required-390x844.png") });
+      check("Send payment link reports what was sent", /Email sent/.test(await page.locator("[data-stage=result]").innerText()));
       await ctx.close();
     }
     {
       const { ctx, page, server } = await open(browser, OWNER, { behavior: "processing" });
-      server.state.settleOnRefresh = false;
       await openJob(page);
-      await fill(page);
-      await page.locator("[data-extra-review]").click();
-      await page.locator("[data-stage=review]").waitFor();
-      await page.locator("[data-extra-consent]").click();
+      await startCharge(page, "40");
       await page.locator("[data-extra-charge]").click();
       await page.locator("[data-stage=result][data-extra-status=processing]").waitFor();
-      check("processing: shown as Processing with 'do not charge again', not as success", /Processing/.test(await page.locator("[data-stage=result]").innerText()) && /Do not charge again/.test(await page.locator("[data-stage=result]").innerText()));
-      await page.screenshot({ path: path.join(SHOTS, "9-processing-390x844.png") });
+      check("processing: Processing with 'do not charge again', not success", /Do not charge again/.test(await page.locator("[data-stage=result]").innerText()));
       server.state.settleOnRefresh = true;
       await page.locator("[data-extra-refresh]").click();
       await page.locator("[data-stage=result][data-extra-status=paid]").waitFor({ timeout: 15000 });
-      check("Check now turns it into Paid once the server says so", true);
+      check("Check now turns it Paid once the server says so", true);
       await ctx.close();
     }
 
-    /* 6. guest visit: no card; link sent by explicit choice */
+    /* 4. guest visit: no card; payment link by explicit choice */
     {
       const { ctx, page, server } = await open(browser, OWNER, { guest: true, job: { guest: true, name: "Gail Guest" } });
       await openJob(page);
-      await fill(page, { tax: "Tax Exempt", amount: "40" });
-      await page.locator("[data-extra-review]").click();
-      await page.locator("[data-stage=review]").waitFor();
+      await startCharge(page, "40");
       check("guest: no Charge button, the reason shown, link actions offered", (await page.locator("[data-extra-charge]").count()) === 0 && /guest visit/.test(await page.locator("[data-extra-direct-blocked]").innerText()) && (await page.locator("[data-extra-send-link]").count()) === 1);
-      await page.screenshot({ path: path.join(SHOTS, "10-guest-review-390x844.png") });
-      check("link buttons wait for the confirmation too", await page.locator("[data-extra-send-link]").isDisabled());
-      await page.locator("[data-extra-consent]").click();
       await page.locator("[data-extra-send-link]").click();
-      await page.locator("[data-extra-channels]").waitFor();
-      check("nothing is sent until a channel is chosen and Send is pressed", (await page.locator("[data-extra-send-confirm]").isDisabled()) && server.state.calls.filter((c) => c.method === "POST" && /extra-charges$/.test(c.p)).length === 0);
-      await page.locator("[data-extra-channels] label:has-text('Email')").click();
-      await page.screenshot({ path: path.join(SHOTS, "11-send-link-390x844.png") });
+      check("nothing is sent until a channel is chosen and Send is pressed", (await page.locator("[data-extra-send-confirm]").isDisabled()) && posts(server).length === 0);
+      await page.locator("[data-extra-send] label:has-text('Email')").click();
+      await page.screenshot({ path: path.join(SHOTS, "8-guest-link-390x844.png") });
       await page.locator("[data-extra-send-confirm]").click();
       await page.locator("[data-stage=result][data-extra-status=awaiting_payment]").waitFor();
-      check("sent link: what was sent is reported", /Email sent/.test(await page.locator("[data-stage=result]").innerText()));
-      const post = server.state.calls.find((c) => c.method === "POST" && /extra-charges$/.test(c.p));
-      check("the send request names its channels and method link", post.body.method === "link" && post.body.send === true && JSON.stringify(post.body.channels) === '["email"]');
+      check("sent link: what was sent is reported", /Email sent/.test(await page.locator("[data-stage=result]").innerText()) && posts(server)[0].body.method === "link");
       await ctx.close();
     }
 
-    /* 7. not determined tax blocks; draft survives closing the sheet */
+    /* 5. draft and discard protection */
     {
       const { ctx, page } = await open(browser, OWNER);
       await openJob(page);
-      await fill(page, { tax: "" });
-      check("Review stays disabled until the tax treatment is chosen (nothing assumed)", await page.locator("[data-extra-review]").isDisabled());
+      await startCharge(page, "123.45");
       await page.reload({ waitUntil: "domcontentloaded" });
       await sheet(page).locator("[data-job-body=j1]").waitFor({ timeout: 20000 });
-      await page.locator("[data-extra-open]").click();
-      check("a reload keeps the draft (description and amount)", (await page.locator("textarea[name=extra-description]").inputValue()).startsWith("Replace two GFCI") && (await page.locator("input[name=extra-amount]").inputValue()) === "123.45");
+      await startCharge(page, null);
+      check("a reload keeps the typed amount", (await page.locator("input[name=extra-amount]").inputValue()) === "123.45");
       await page.keyboard.press("Escape");
-      const prompt = await page.locator("text=Leave without saving?").count();
-      check("closing with typed details asks before discarding", prompt >= 1);
+      check("closing with an amount typed asks before discarding", (await page.locator("text=Leave without saving?").count()) >= 1);
       await ctx.close();
     }
 
-    /* 8. a General Fixter has no Charge extra anywhere */
+    /* 6. a General Fixter has no Charge customer anywhere */
     {
       const { ctx, page, server } = await open(browser, GENERAL);
       await openJob(page);
-      check("General Fixter: no Additional charges section, no Charge extra", (await page.locator("[data-extra-block]").count()) === 0 && (await page.locator("[data-extra-open]").count()) === 0);
+      check("General Fixter: no Charges section, no Charge customer", (await page.locator("[data-extra-block]").count()) === 0 && (await page.locator("[data-extra-open]").count()) === 0);
       await page.locator("[data-job-more]").click().catch(() => {});
-      check("General Fixter: Charge extra not in the More menu", (await page.locator("[role=menuitem]:has-text('Charge extra')").count()) === 0);
-      check("General Fixter: no extra-charge request made", server.state.calls.length === 0);
+      check("General Fixter: not in the More menu either", (await page.locator("[role=menuitem]:has-text('Charge customer')").count()) === 0);
+      check("General Fixter: no charge request made", server.state.calls.length === 0);
       await ctx.close();
     }
 
-    /* 9. sizes: no overflow, keyboard-safe footer, readable */
+    /* 7. sizes and the keyboard */
     for (const size of [{ w: 320, h: 568 }, { w: 390, h: 844 }, { w: 430, h: 932 }, { w: 844, h: 390 }, { w: 1440, h: 900 }]) {
       const { ctx, page } = await open(browser, OWNER, {}, { width: size.w, height: size.h });
       await openJob(page);
-      await fill(page);
-      const o1 = await overflow(page);
-      const fs16 = await page.evaluate(() => [...document.querySelectorAll("[data-step=charge-extra] input:not([type=checkbox]):not([type=radio]), [data-step=charge-extra] textarea")].every((el) => parseFloat(getComputedStyle(el).fontSize) >= 16));
-      // A phone keyboard takes ~45% of the height: the footer button must stay on screen.
-      await page.locator("input[name=extra-amount]").focus();
-      const footerBox = await page.locator("[data-extra-review]").boundingBox();
-      await page.locator("[data-extra-review]").click();
-      await page.locator("[data-stage=review]").waitFor();
-      const o2 = await overflow(page);
+      await startCharge(page, "134.10");
+      const o = await overflow(page);
       const btn = await page.locator("[data-extra-charge]").boundingBox();
-      check(`${size.w}x${size.h}: no horizontal overflow on enter and review`, !o1.scroll && !o2.scroll && !o1.bad.length && !o2.bad.length, JSON.stringify([o1.bad, o2.bad]));
-      check(`${size.w}x${size.h}: the footer action is visible and at least 44px tall`, footerBox && footerBox.y + footerBox.height <= size.h + 1 && btn && btn.height >= 43.5, JSON.stringify([footerBox, btn]));
-      if (size.w < 1024) check(`${size.w}x${size.h}: inputs are 16px+ (no zoom on focus on touch)`, fs16);
-      await page.screenshot({ path: path.join(SHOTS, `review-${size.w}x${size.h}.png`) });
+      const input = await page.locator("input[name=extra-amount]").boundingBox();
+      check(`${size.w}x${size.h}: no horizontal overflow`, !o.scroll && !o.bad.length, JSON.stringify(o.bad));
+      check(`${size.w}x${size.h}: Charge button on screen and at least 44px tall`, btn && btn.y + btn.height <= size.h + 1 && btn.height >= 43.5, JSON.stringify(btn));
+      check(`${size.w}x${size.h}: amount field and Charge visible together (no scrolling needed)`, input && input.y >= 0 && input.y + input.height <= btn.y, JSON.stringify([input, btn]));
+      if (size.w < 1024) {
+        const fs16 = await page.evaluate(() => [...document.querySelectorAll("[data-step=charge-extra] input:not([type=checkbox])")].every((el) => parseFloat(getComputedStyle(el).fontSize) >= 16));
+        check(`${size.w}x${size.h}: inputs 16px+ (no zoom on focus)`, fs16);
+      }
+      await page.screenshot({ path: path.join(SHOTS, `charge-${size.w}x${size.h}.png`) });
       await ctx.close();
     }
   } finally {

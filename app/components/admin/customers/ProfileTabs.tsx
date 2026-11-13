@@ -423,7 +423,7 @@ function BillingBlock({ billing }: { billing: BillingAvailable }) {
                       <a href={`/admin/jobs/${encodeURIComponent(p.extraCharge.bookingId)}`} className="font-semibold text-adm-accent-ink underline-offset-4 hover:underline">
                         Extra on job #{p.extraCharge.bookingNumber}
                       </a>
-                      {[": " + p.extraCharge.description, p.card ? ` · ${p.card.brand} ${p.card.last4}` : "", p.amountRefundedCents > 0 ? ` · ${formatCents(p.amountRefundedCents)} refunded` : ""].join("")}
+                      {[p.extraCharge.description ? ": " + p.extraCharge.description : "", p.card ? ` · ${p.card.brand} ${p.card.last4}` : "", p.amountRefundedCents > 0 ? ` · ${formatCents(p.amountRefundedCents)} refunded` : ""].join("")}
                     </p>
                   ) : (
                     <p className="text-[13px] text-adm-text-2">
@@ -459,7 +459,7 @@ function BillingBlock({ billing }: { billing: BillingAvailable }) {
                       <a href={`/admin/jobs/${encodeURIComponent(a.bookingId)}`} className="font-semibold text-adm-accent-ink">
                         Extra on job #{a.bookingNumber}
                       </a>
-                      : {a.description}
+                      {a.description ? `: ${a.description}` : ""}
                       {a.refundedCents > 0 ? ` · ${formatCents(a.refundedCents)} refunded` : ""}
                     </p>
                   </div>
