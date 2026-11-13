@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { isTrackerFree } from "@/lib/tracking-scope";
 
 /**
  * A Meta PageView for every client-side route change.
@@ -28,6 +29,8 @@ export default function MetaPageView() {
     }
     if (lastPath.current === pathname) return;
     lastPath.current = pathname;
+    // Admin and the token pages are never reported (lib/tracking-scope.ts).
+    if (isTrackerFree(pathname)) return;
 
     try {
       if (typeof window.fbq === "function") window.fbq("track", "PageView");

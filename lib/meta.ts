@@ -44,6 +44,7 @@
  */
 export { META_PIXEL_ID } from "./meta-config";
 import { META_PIXEL_ID } from "./meta-config";
+import { isTrackerFree } from "./tracking-scope";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -444,6 +445,8 @@ function getMetaClick(): Pick<Attribution, "fbclid" | "fbclidAt"> {
 export function identify(user: { email?: string | null; phone?: string | null } | null): void {
   try {
     if (typeof window === "undefined" || typeof window.fbq !== "function") return;
+    // Never on staff tools or token pages: staff are not customers to match (Q-5).
+    if (isTrackerFree(window.location.pathname)) return;
     const em = String(user?.email || "").trim().toLowerCase();
     const ph = String(user?.phone || "").replace(/\D/g, "");
     if (!em && !ph) return;

@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import Script from "next/script";
 import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
 import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
@@ -28,6 +27,8 @@ import AttributionCapture from "./components/AttributionCapture";
 import PhoneClickTracker from "./components/PhoneClickTracker";
 import MetaPageView from "./components/MetaPageView";
 import SurfaceMarker from "./components/SurfaceMarker";
+import TrackerBoundary from "./components/TrackerBoundary";
+import { TRACKER_GUARD } from "@/lib/tracking-scope";
 import { AUTH_PENDING_SCRIPT, IOS_VIEWPORT_SCRIPT, SURFACE_SCRIPT } from "@/lib/surface";
 
 /*
@@ -204,13 +205,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(PROFIXTER_STRUCTURED_DATA) }}
         />
-        <Script id="gtm-head" strategy="afterInteractive">
-          {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        {/*
+          Google Tag Manager, a plain head script like the pixel below, so the
+          tracker-free guard (lib/tracking-scope.ts) runs before anything loads:
+          /admin and the token pages (/sign, /pay, /tip) never fetch it.
+        */}
+        <script
+          id="gtm-head"
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){${TRACKER_GUARD}w.__pfTrackers=1;w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-KFPSD2P6');`}
-        </Script>
+})(window,document,'script','dataLayer','GTM-KFPSD2P6');`,
+          }}
+        />
 
         {/*
           Exactly one fbq('init') exists in this codebase, and it is here.
@@ -234,9 +243,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <script
           id="meta-pixel"
           dangerouslySetInnerHTML={{
-            __html: `
+            __html: `(function(){${TRACKER_GUARD}
               !function(f,b,e,v,n,t,s)
-              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+              {if(f.fbq)return;f.__pfTrackers=1;n=f.fbq=function(){n.callMethod?
               n.callMethod.apply(n,arguments):n.queue.push(arguments)};
               if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
               n.queue=[];t=b.createElement(e);t.async=!0;
@@ -247,7 +256,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               fbq.allowDuplicatePageViews = true;
               fbq('init', '${FB_PIXEL_ID}');
               fbq('track', 'PageView');
-            `,
+            })();`,
           }}
         />
         <noscript>
@@ -274,6 +283,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
         <ScrollToTop />
         <SurfaceMarker />
+        {/* /admin and the token pages never run trackers, even after a client-side navigation. */}
+        <TrackerBoundary />
 
         {/*
           Suspense because useSearchParams opts a subtree into client rendering,

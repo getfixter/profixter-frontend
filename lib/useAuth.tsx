@@ -90,6 +90,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [persist, refreshUser]);
 
   const logout = useCallback(() => {
+    /*
+     * End the session on the server too (Q-5): POST /api/auth/logout revokes
+     * this token, so a copy of it stops working. Fire-and-forget with the
+     * token captured before it is cleared; an older backend without the route
+     * answers 404, which changes nothing here. fetch, not the axios instance,
+     * so a 401 can never trigger the sign-in redirect from inside sign-out.
+     */
+    const current = localStorage.getItem('token');
+    if (current) {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${current}`, 'Content-Type': 'application/json' },
+        body: '{}',
+        keepalive: true,
+      }).catch(() => {});
+    }
     setToken(null);
     setUser(null);
     persist(null, null);
