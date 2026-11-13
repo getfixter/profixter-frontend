@@ -281,7 +281,7 @@ async function selectedTab(page) {
     const { ctx, page, state, errors } = await open(browser, "owner", { width, height });
     await page.goto(`${BASE}/admin?tab=fixters`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
-    await page.getByRole("button", { name: "+ Add Employee" }).click();
+    await page.getByRole("button", { name: "Add employee" }).first().click();
     const dialog = page.getByRole("dialog", { name: "Add Employee" });
     await dialog.waitFor();
     await dialog.getByLabel("First name").fill("John");
@@ -341,7 +341,7 @@ async function selectedTab(page) {
     await page.goto(`${BASE}/admin?tab=fixters`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
     check("list shows title, status and access", (await page.getByText("Senior Fixter").count()) >= 1 && (await page.getByText(/General Fixter jobs · Recent Work \/ Photos/).count()) === 1);
-    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    await page.getByRole("button", { name: /^Edit / }).click();
     const dialog = page.getByRole("dialog");
     await dialog.waitFor();
     const jobs = dialog.getByRole("switch", { name: "Jobs" });
@@ -357,12 +357,12 @@ async function selectedTab(page) {
     });
     await page.goto(`${BASE}/admin?tab=fixters`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
-    check("an account with only a full name is listed by it", (await page.getByRole("heading", { name: "Legacy Larry" }).count()) === 1);
-    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    check("an account with only a full name is listed by it", (await page.locator("[data-employee]").getByText("Legacy Larry", { exact: true }).count()) === 1);
+    await page.getByRole("button", { name: /^Edit / }).click();
     await page.getByRole("button", { name: "Delete this employee…" }).click();
     const del = page.getByRole("button", { name: "Permanently Delete" });
     check("delete stays locked with an empty confirmation", await del.isDisabled());
-    await page.keyboard.type("Legacy"); // the confirmation box has focus
+    await page.getByRole("dialog").locator("input").fill("Legacy"); // the typed-name box (Team redesign, FE-SECTIONS)
     check("delete unlocks once the name is typed", !(await del.isDisabled()));
     await ctx.close();
   }
