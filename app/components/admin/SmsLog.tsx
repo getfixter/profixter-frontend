@@ -10,10 +10,20 @@
  * numbers are never put in a URL (only the status filter and page are).
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAdminQuery, errorMessage, errorStatus } from "@/lib/admin/query";
 import { getSmsConfig, getSmsFailures, getSmsMessages, getSmsOptOuts, type SmsMessageRow } from "@/lib/admin/sections-api";
-import { Button, Chip, EmptyState, ErrorState, FilterBar, PermissionState, SkeletonRows, StatusBadge, type StatusTone } from "@/app/components/admin/ui";
+import { Button, Chip, EmptyState, ErrorState, FilterBar, PermissionState, SearchField, SkeletonRows, StatusBadge, type StatusTone } from "@/app/components/admin/ui";
+
+/* Settled text only reaches the server (and it travels in a POST body, never the URL). */
+function useSettled(value: string, ms = 300) {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSettled(value.trim()), ms);
+    return () => window.clearTimeout(t);
+  }, [value, ms]);
+  return settled;
+}
 
 type View = "messages" | "failures" | "opt-outs";
 
@@ -77,9 +87,21 @@ function MessageRows({ items }: { items: SmsMessageRow[] }) {
 function Messages() {
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
-  const q = useAdminQuery(["sms", "messages", status, page], (signal) => getSmsMessages({ page, status }, signal));
+  const [text, setText] = useState("");
+  const search = useSettled(text);
+  const q = useAdminQuery(["sms", "messages", status, page, search], (signal) => getSmsMessages({ page, status, search }, signal));
   return (
     <div className="space-y-3">
+      <SearchField
+        label="Search texts"
+        placeholder="Phone number, words or booking #"
+        value={text}
+        onChange={(v) => {
+          setText(v);
+          setPage(1);
+        }}
+        data-sms-search=""
+      />
       <FilterBar label="Message status" sticky={false}>
         {STATUS_FILTERS.map((f) => (
           <Chip
@@ -156,14 +178,30 @@ function Failures() {
 
 function OptOuts() {
   const [page, setPage] = useState(1);
-  const q = useAdminQuery(["sms", "opt-outs", page], (signal) => getSmsOptOuts(page, signal));
-  if (q.error && !q.data) return <ErrorState message={errorMessage(q.error, "Could not load opt-outs.")} onRetry={q.refetch} />;
-  if (q.isLoading) return <SkeletonRows count={4} leading={false} />;
+  const [text, setText] = useState("");
+  const phone = useSettled(text);
+  const q = useAdminQuery(["sms", "opt-outs", page, phone], (signal) => getSmsOptOuts(page, signal, phone));
   const items = q.data?.items || [];
+  const totalPages = q.data?.totalPages ?? 1;
   return (
     <div className="space-y-3">
-      {!items.length ? (
-        <EmptyState message="Nobody has opted out." />
+      <SearchField
+        label="Find a phone number"
+        placeholder="Phone number"
+        inputMode="tel"
+        value={text}
+        onChange={(v) => {
+          setText(v);
+          setPage(1);
+        }}
+        data-optout-search=""
+      />
+      {q.error && !q.data ? (
+        <ErrorState message={errorMessage(q.error, "Could not load opt-outs.")} onRetry={q.refetch} />
+      ) : q.isLoading ? (
+        <SkeletonRows count={4} leading={false} />
+      ) : !items.length ? (
+        <EmptyState message={phone ? "That number has not opted out." : "Nobody has opted out."} />
       ) : (
         <ul role="list" className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface">
           {items.map((o) => (
@@ -182,13 +220,18 @@ function OptOuts() {
           ))}
         </ul>
       )}
-      <div className="flex justify-end gap-2">
-        <Button variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
-          Previous
-        </Button>
-        <Button variant="secondary" onClick={() => setPage((p) => p + 1)} disabled={items.length < 25}>
-          Next
-        </Button>
+      <div className="flex items-center justify-between gap-2 text-[14px] text-adm-text-2">
+        <span className="adm-num">
+          {q.data?.total ?? 0} opt-outs · page {q.data?.page ?? page} of {totalPages}
+        </span>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+            Previous
+          </Button>
+          <Button variant="secondary" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages}>
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );

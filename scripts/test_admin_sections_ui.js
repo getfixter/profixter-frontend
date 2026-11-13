@@ -142,6 +142,12 @@ function answer(p, method, url, body, opts) {
     return ok({ segment: url.searchParams.get("segment") || "not_subscribed", includedCount: rec.length, excludedCount: 0, eligibleBeforeExclusions: rec.length, recipients: rec, excludedRecipients: [] });
   }
   if (p === "/api/admin/campaigns/preview") return ok({ segment: "not_subscribed", recipientCount: 4, subject: "S", html: "<p>x</p>", text: "x", sampleValues: { firstName: "Ann" } });
+  if (p === "/api/admin/campaigns" && method === "GET") return ok({ items: [{ id: "c77", campaignNumber: "EML-2026-00077", subject: "Spring tune-up", segment: "not_subscribed", status: "completed_with_errors", totals: { queued: 0, sent: 9, failed: 1, skipped: 2, total: 12 }, createdAt: iso(-2), completedAt: iso(-2), createdBy: { id: "o1", name: "Owner Test" } }], total: 1, page: 1, limit: 10, totalPages: 1 });
+  if (p === "/api/admin/campaigns/c77" && method === "GET") return ok({ campaign: { _id: "c77", campaignNumber: "EML-2026-00077", status: "completed_with_errors", subject: "Spring tune-up", segment: "not_subscribed", total: 12, sent: 9, failed: 1, skipped: 2, excluded: 0, pending: 0, adminCopySent: true, actorName: "Owner Test", finished: true }, recentFailures: [{ email: "x@example.test", error: "Mailbox full", at: iso(-2) }], allowedActions: { resume: false } });
+  if (p === "/api/admin/email-logs/search" && method === "POST") return error ? fail() : ok(empty ? { items: [], total: 0, page: 1, limit: 25, totalPages: 1 } : EMAIL_LOGS);
+  if (p === "/api/admin/sms/messages/search" && method === "POST") return error ? fail() : ok(empty ? { items: [], total: 0, page: 1, limit: 25, totalPages: 1 } : SMS_MESSAGES);
+  if (p === "/api/admin/sms/opt-outs/search" && method === "POST") return ok({ items: [{ _id: "o1", phone: "+15550109999", scope: "marketing", source: "inbound_stop", keyword: "STOP", optedOutAt: iso(-4) }], total: 1, page: 1, limit: 25, totalPages: 1 });
+  if (p === "/api/admin/activity-log/search" && method === "POST") return error ? fail() : ok(empty ? { items: [], total: 0, page: 1, limit: 25, totalPages: 1 } : ACTIVITY);
   if (p === "/api/admin/email-logs") return error ? fail() : ok(empty ? { items: [], total: 0, page: 1, limit: 25, totalPages: 1 } : EMAIL_LOGS);
   if (p === "/api/admin/sms/config") return ok({ config: { smsEnabled: true, smsMarketingEnabled: false, twilioConfigured: true }, pendingRetries: 0, optOuts: 1, phones: { undeliverable: 0, valid: 3 } });
   if (p === "/api/admin/sms/messages") return error ? fail() : ok(empty ? { items: [], total: 0, page: 1, limit: 25, totalPages: 1 } : SMS_MESSAGES);
@@ -201,7 +207,7 @@ async function open(browser, opts = {}) {
     const req = route.request();
     const u = new URL(req.url());
     if (u.pathname.includes("/api/")) {
-      const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "Authorization,Content-Type,Idempotency-Key", "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS" };
+      const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "Authorization,Content-Type,x-ghl-secret", "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS" };
       if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
       const p = u.pathname.replace(/^.*?(\/api\/)/, "/api/");
       let body = null;
@@ -358,7 +364,20 @@ const VIEWPORTS = [
     await page.locator("[data-sms-log] button", { hasText: "Opt-outs" }).click();
     await page.waitForSelector("[data-optout-row]", { timeout: 5000 }).catch(() => {});
     check("opt-outs view lists opt-outs", (await page.locator("[data-optout-row]").count()) === 1);
-    check("SMS log never puts names or numbers in the URL", api.filter((a) => a.path.startsWith("/api/admin/sms/")).every((a) => !/phone=|search=|user=/.test(a.search)));
+    await page.locator("[data-sms-log] button", { hasText: "Messages" }).first().click();
+    await page.locator("[data-sms-search]").fill("(555) 010-1234");
+    await page.waitForTimeout(700);
+    const smsSearch = api.filter((a) => a.path === "/api/admin/sms/messages/search");
+    check("SMS log search: a phone number goes in the POST body as phone", smsSearch.some((a) => a.method === "POST" && a.body && a.body.phone === "(555) 010-1234"), JSON.stringify(smsSearch.map((a) => a.body)));
+    await page.locator("[data-sms-search]").fill("dentist reminder");
+    await page.waitForTimeout(700);
+    check("SMS log search: words go in the POST body as search", api.some((a) => a.path === "/api/admin/sms/messages/search" && a.body && a.body.search === "dentist reminder"));
+    await page.locator("[data-sms-log] button", { hasText: "Opt-outs" }).click();
+    await page.locator("[data-optout-search]").fill("5550109999");
+    await page.waitForTimeout(700);
+    check("opt-outs: phone lookup in the POST body", api.some((a) => a.path === "/api/admin/sms/opt-outs/search" && a.body && a.body.phone === "5550109999"));
+    check("opt-outs page with the server's totalPages", /page 1 of 1/.test(await page.locator("[data-sms-log]").innerText()));
+    check("SMS log never puts names or numbers in the URL", api.filter((a) => a.path.startsWith("/api/admin/sms/")).every((a) => !/phone=|search=|user=|555|dentist/.test(a.search)));
     check("settings/SMS log: no page errors", errors.length === 0, errors.join(" | "));
     await page.screenshot({ path: path.join(SHOTS, "communications-smslog-1440x900.png") });
     await ctx.close();
@@ -367,6 +386,36 @@ const VIEWPORTS = [
     await go(field.page, "/admin/communications", "[data-template]");
     check("a non-owner with Communications does not get the SMS log tab", (await field.page.getByRole("tab", { name: "SMS log" }).count()) === 0);
     await field.ctx.close();
+  }
+
+  /* ---------------- searches in POST bodies; recent campaigns ---------------- */
+  {
+    console.log("\n--- log searches and recent campaigns ---");
+    const { ctx, page, errors, api } = await open(browser, { user: OWNER, width: 390, height: 844 });
+    await go(page, "/admin/activity", "[data-activity-log]");
+    await page.getByLabel("Search activity").fill("ann@example.test");
+    await page.waitForTimeout(900);
+    const act = api.filter((a) => a.path === "/api/admin/activity-log/search");
+    check("activity search: POST with the text in the body", act.some((a) => a.method === "POST" && a.body && a.body.search === "ann@example.test"), JSON.stringify(act.map((a) => a.body)).slice(0, 200));
+    check("activity search: the text is never in a URL", api.every((a) => !/ann(%40|@)example/.test(a.search)) && !page.url().includes("ann"));
+    await go(page, "/admin/communications", "[data-template]");
+    await page.getByRole("tab", { name: "Send history" }).click();
+    await page.getByLabel("Search emails").fill("#1001 Ann");
+    await page.waitForTimeout(900);
+    const logs = api.filter((a) => a.path === "/api/admin/email-logs/search");
+    check("send history search: POST with the text in the body", logs.some((a) => a.method === "POST" && a.body && a.body.search === "#1001 Ann"), JSON.stringify(logs.map((a) => a.body)).slice(0, 200));
+    check("send history search: the text is never in a URL", api.every((a) => !/1001|Ann/.test(decodeURIComponent(a.search))));
+    await page.getByRole("tab", { name: "Campaign" }).click();
+    await page.waitForSelector("[data-recent-campaigns]", { timeout: 8000 });
+    await page.locator("[data-recent-campaigns] summary").click();
+    await page.waitForSelector("[data-campaign-row]", { timeout: 6000 }).catch(() => {});
+    const row = await page.locator("[data-campaign-row]").first().innerText().catch(() => "");
+    check("recent campaigns lists a campaign started elsewhere, with its totals", /Spring tune-up/.test(row) && /9\/12 sent/.test(row) && /1 failed/.test(row), row.replace(/\s+/g, " "));
+    await page.locator("[data-campaign-row]").first().click();
+    await page.waitForSelector("[data-campaign-progress]", { timeout: 6000 }).catch(() => {});
+    check("opening it shows that campaign's progress", (await page.locator('[data-campaign-progress][data-status="completed_with_errors"]').count()) === 1 && api.some((a) => a.path === "/api/admin/campaigns/c77"));
+    check("log searches / campaigns: no page errors", errors.length === 0, errors.join(" | "));
+    await ctx.close();
   }
 
   /* ---------------- campaign: confirm -> queued -> progress ---------------- */
@@ -409,7 +458,7 @@ const VIEWPORTS = [
     check("double tap sends exactly one request", sends === 1, `sends=${sends}`);
     const sendCall = api.find((a) => a.path === "/api/admin/campaigns/send");
     const key = sendCall && sendCall.body && sendCall.body.idempotencyKey;
-    check("send carries an idempotency key in body and header", !!key && sendCall.headers["idempotency-key"] === key, key);
+    check("send carries an idempotency key in the body and no Idempotency-Key header (not in the API's CORS list)", !!key && /^[A-Za-z0-9_.:-]{8,120}$/.test(key) && !sendCall.headers["idempotency-key"], key);
     check("queued campaign shows the progress view", (await page.locator("[data-campaign-progress]").count()) === 1);
     await page.waitForFunction(() => document.querySelector("[data-campaign-progress]")?.getAttribute("data-status") === "completed_with_errors", null, { timeout: 15000 }).catch(() => {});
     check("progress polls GET /api/admin/campaigns/:id", polls >= 2, `polls=${polls}`);
@@ -531,6 +580,7 @@ const VIEWPORTS = [
     await page.waitForSelector("[data-reassign-result]", { timeout: 6000 }).catch(() => {});
     const posts = api.filter((a) => /\/fixters\/fx1\/reassign-future-jobs$/.test(a.path));
     check("reassign posts once to the owner endpoint with the chosen Fixter", posts.length === 1 && posts[0].body.toFixterId === "fx2", JSON.stringify(posts.map((x) => x.body)));
+    check("reassign carries an idempotency key in the body", posts.length === 1 && /^[A-Za-z0-9_.:-]{8,120}$/.test(posts[0].body.idempotencyKey || ""), JSON.stringify(posts.map((x) => x.body)));
     const r = await page.locator("[data-reassign-result]").innerText();
     check("result lists moved and failed jobs", /1 of 2 jobs moved/.test(r) && /No other Fixter is free/.test(r));
     await page.getByRole("button", { name: "Done" }).click();

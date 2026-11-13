@@ -36,12 +36,15 @@ import {
 import {
   arr,
   getCampaignProgress,
+  listCampaigns,
   newIdempotencyKey,
   resumeCampaign,
   sendQueuedCampaign,
   str,
+  type CampaignListItem,
   type CampaignProgress,
 } from "@/lib/admin/sections-api";
+import { errorMessage as queryError, useAdminQuery } from "@/lib/admin/query";
 import { writeToClipboard } from "@/lib/utils/clipboard";
 import { Button, Chip, ConfirmSheet, EmptyState, Field, SearchField, Section, TextInput, Textarea, cx, useToast } from "@/app/components/admin/ui";
 
@@ -82,6 +85,86 @@ function writeActive(id: string) {
   } catch {
     /* storage blocked */
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* recent campaigns (GET /api/admin/campaigns)                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Campaigns started anywhere (another device, another admin), newest first,
+ * so their progress can be opened from here and not only from the tab that
+ * sent them.
+ */
+function RecentCampaigns({ onOpen }: { onOpen: (c: CampaignListItem) => Promise<void> }) {
+  const q = useAdminQuery(["campaigns", "list"], (signal) => listCampaigns(1, signal), { staleTime: 30_000 });
+  const [opening, setOpening] = useState("");
+  const [openError, setOpenError] = useState("");
+  const items = q.data?.items || [];
+  return (
+    <details className="rounded-adm-md border border-adm-line bg-adm-surface" data-recent-campaigns="">
+      <summary className="flex min-h-11 cursor-pointer flex-col justify-center px-4 py-2">
+        <span className="text-[14px] font-semibold text-adm-ink">Recent campaigns{q.data ? ` · ${q.data.total}` : ""}</span>
+        <span className="text-[13px] text-adm-text-2">Open one to see how its sending went, from any device.</span>
+      </summary>
+      <div className="border-t border-adm-line">
+        {q.error && !q.data ? (
+          <p className="px-4 py-3 text-[14px] text-adm-problem" role="alert">
+            {queryError(q.error, "Recent campaigns could not be loaded.")}{" "}
+            <button type="button" className="font-semibold underline" onClick={() => void q.refetch()}>
+              Retry
+            </button>
+          </p>
+        ) : q.isLoading ? (
+          <p className="px-4 py-3 text-[14px] text-adm-text-2">Loading…</p>
+        ) : !items.length ? (
+          <p className="px-4 py-3 text-[14px] text-adm-text-2">No campaigns yet.</p>
+        ) : (
+          <ul role="list">
+            {items.map((c) => (
+              <li key={c.id} className="border-b border-adm-line last:border-b-0">
+                <button
+                  type="button"
+                  className="flex min-h-[56px] w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-adm-bg disabled:opacity-60"
+                  disabled={Boolean(opening)}
+                  onClick={async () => {
+                    setOpening(c.id);
+                    setOpenError("");
+                    try {
+                      await onOpen(c);
+                    } catch (error) {
+                      setOpenError(queryError(error, "This campaign could not be opened."));
+                    } finally {
+                      setOpening("");
+                    }
+                  }}
+                  data-campaign-row={c.campaignNumber || c.id}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-[14px] font-semibold text-adm-ink">{c.subject || "(no subject)"}</span>
+                    <span className="block truncate text-[13px] text-adm-text-2">
+                      {[c.campaignNumber, segmentLabel(c.segment), c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" }) : "", c.createdBy].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                  <span className="flex-none text-right text-[13px]">
+                    <span className="block font-semibold text-adm-ink">{opening === c.id ? "Opening…" : STATUS_TEXT[c.status] || c.status}</span>
+                    <span className="adm-num block text-adm-text-2">
+                      {c.totals.sent}/{c.totals.total} sent{c.totals.failed ? ` · ${c.totals.failed} failed` : ""}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {openError && (
+          <p className="px-4 py-2 text-[13px] text-adm-problem" role="alert">
+            {openError}
+          </p>
+        )}
+      </div>
+    </details>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -426,6 +509,13 @@ export default function EmailComposer() {
 
   return (
     <div className="space-y-4" data-campaign-composer>
+      <RecentCampaigns
+        onOpen={async (c) => {
+          const progress = await getCampaignProgress(c.id);
+          writeActive(progress.id || progress.campaignNumber || c.id);
+          setActive(progress);
+        }}
+      />
       <p className="text-[14px] text-adm-text-2">Audiences use current subscription access, account status, blacklist and email suppression records.</p>
 
       <details className="rounded-adm-md border border-adm-line bg-adm-surface">

@@ -18,6 +18,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useIntentKeys } from "@/lib/admin/intent-keys";
 import {
   createFixter,
   deleteFixter,
@@ -146,6 +147,7 @@ function DisableFlow({
   onChanged: () => Promise<void>;
 }) {
   const toast = useToast();
+  const moveKeys = useIntentKeys();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [target, setTarget] = useState("auto");
@@ -196,7 +198,10 @@ function DisableFlow({
   const move = () =>
     run(async () => {
       if (flow.step !== "confirm-move") return;
-      const result = await reassignFixterFutureJobs(flow.row.id, flow.target);
+      // One key per move: a retry after a timeout is answered once, nothing moved or texted twice.
+      const intent = `reassign:${flow.row.id}:${flow.target}`;
+      const result = await reassignFixterFutureJobs(flow.row.id, flow.target, moveKeys.key(intent));
+      moveKeys.done(intent);
       await onChanged();
       setFlow({ step: "result", row: flow.row, result });
     });

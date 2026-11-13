@@ -101,14 +101,53 @@ export function readCampaign(raw: unknown): CampaignProgress {
   };
 }
 
-/** POST /api/admin/campaigns/send with an idempotency key (body and header). */
+/**
+ * POST /api/admin/campaigns/send with an idempotency key in the body. Never as
+ * a header: the API's CORS allow-list is Authorization, Content-Type and
+ * x-ghl-secret, so a browser preflight would refuse an Idempotency-Key header
+ * and the send would never reach the server.
+ */
 export async function sendQueuedCampaign(payload: CampaignRequest, idempotencyKey: string): Promise<CampaignProgress> {
-  const response = await API.post(
-    "/api/admin/campaigns/send",
-    { ...payload, idempotencyKey },
-    { headers: { "Idempotency-Key": idempotencyKey }, timeout: 120000 }
-  );
+  const response = await API.post("/api/admin/campaigns/send", { ...payload, idempotencyKey }, { timeout: 120000 });
   return readCampaign(response.data);
+}
+
+export type CampaignListItem = {
+  id: string;
+  campaignNumber: string;
+  subject: string;
+  segment: string;
+  status: string;
+  totals: { queued: number; sent: number; failed: number; skipped: number; total: number };
+  createdAt: string;
+  completedAt: string;
+  createdBy: string;
+};
+
+/** Recent campaigns, newest first (no bodies, no addresses). */
+export async function listCampaigns(page = 1, signal?: AbortSignal): Promise<{ items: CampaignListItem[]; total: number; page: number; totalPages: number }> {
+  const response = await API.get("/api/admin/campaigns", { params: { page, limit: 10 }, signal });
+  const data = obj(response.data);
+  return {
+    items: arr(data.items).map((raw) => {
+      const o = obj(raw);
+      const t = obj(o.totals);
+      return {
+        id: str(o.id),
+        campaignNumber: str(o.campaignNumber),
+        subject: str(o.subject),
+        segment: str(o.segment),
+        status: str(o.status),
+        totals: { queued: num(t.queued), sent: num(t.sent), failed: num(t.failed), skipped: num(t.skipped), total: num(t.total) },
+        createdAt: str(o.createdAt),
+        completedAt: str(o.completedAt),
+        createdBy: str(obj(o.createdBy).name),
+      };
+    }).filter((c) => c.id),
+    total: num(data.total),
+    page: num(data.page) || page,
+    totalPages: Math.max(1, num(data.totalPages)),
+  };
 }
 
 export async function getCampaignProgress(idOrNumber: string, signal?: AbortSignal): Promise<CampaignProgress> {
@@ -143,8 +182,9 @@ export type ReassignResult = {
   failed: Array<{ id: string; bookingNumber: string; date: string; code: string; message: string }>;
 };
 
-export async function reassignFixterFutureJobs(fixterId: string, toFixterId: string): Promise<ReassignResult> {
-  const response = await API.post(`/api/admin/fixters/${encodeURIComponent(fixterId)}/reassign-future-jobs`, { toFixterId });
+/** A replay of the same key returns the first answer and moves, texts and logs nothing again. */
+export async function reassignFixterFutureJobs(fixterId: string, toFixterId: string, idempotencyKey?: string): Promise<ReassignResult> {
+  const response = await API.post(`/api/admin/fixters/${encodeURIComponent(fixterId)}/reassign-future-jobs`, { toFixterId, ...(idempotencyKey ? { idempotencyKey } : {}) });
   const data = obj(response.data);
   return {
     total: num(data.total),
@@ -224,12 +264,16 @@ export async function getSmsConfig(signal?: AbortSignal): Promise<SmsConfigView>
   };
 }
 
-/** The log, newest first. Only a status filter and the page go in the URL; never names or numbers. */
-export async function getSmsMessages(params: { page: number; status?: string }, signal?: AbortSignal) {
-  const response = await API.get("/api/admin/sms/messages", {
-    params: { page: params.page, limit: 25, ...(params.status ? { status: params.status } : {}) },
-    signal,
-  });
+/** The log, newest first. Every filter (a phone number or words among them) goes in the POST body, never the URL. */
+export async function getSmsMessages(params: { page: number; status?: string; search?: string }, signal?: AbortSignal) {
+  const search = (params.search || "").trim();
+  const digits = search.replace(/\D/g, "");
+  const phoneLike = digits.length >= 4 && /^[\d\s()+.-]+$/.test(search);
+  const response = await API.post(
+    "/api/admin/sms/messages/search",
+    { page: params.page, limit: 25, ...(params.status ? { status: params.status } : {}), ...(search ? (phoneLike ? { phone: search } : { search }) : {}) },
+    { signal }
+  );
   const data = obj(response.data);
   return { items: arr(data.items).map(readSms), total: num(data.total), page: num(data.page) || 1, totalPages: Math.max(1, num(data.totalPages)) };
 }
@@ -249,8 +293,8 @@ export async function getSmsFailures(hours: number, signal?: AbortSignal) {
 
 export type SmsOptOutRow = { id: string; phone: string; scope: string; source: string; keyword: string; optedOutAt: string; optedInAt: string };
 
-export async function getSmsOptOuts(page: number, signal?: AbortSignal) {
-  const response = await API.get("/api/admin/sms/opt-outs", { params: { page, limit: 25 }, signal });
+export async function getSmsOptOuts(page: number, signal?: AbortSignal, phone = "") {
+  const response = await API.post("/api/admin/sms/opt-outs/search", { page, limit: 25, ...(phone.trim() ? { phone: phone.trim() } : {}) }, { signal });
   const data = obj(response.data);
   return {
     items: arr(data.items).map((r): SmsOptOutRow => {
@@ -259,5 +303,6 @@ export async function getSmsOptOuts(page: number, signal?: AbortSignal) {
     }),
     total: num(data.total),
     page: num(data.page) || 1,
+    totalPages: Math.max(1, num(data.totalPages)),
   };
 }
