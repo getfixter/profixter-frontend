@@ -28,7 +28,8 @@ import {
   type CustomerProfileSummary,
   type Note,
   type ProfileAddress,
-  type ProjectHit,
+  type CustomerProject,
+  type CustomerProjects,
   type Visit,
 } from "@/lib/admin/customers";
 import {
@@ -140,7 +141,7 @@ export function OverviewTab({
   profile: CustomerProfileSummary;
   canMembers: boolean;
   canProjects: boolean;
-  projects: ProjectHit[] | undefined;
+  projects: CustomerProjects | undefined;
   onOpenTab: (tab: string) => void;
   onEdit?: () => void;
 }) {
@@ -148,7 +149,7 @@ export function OverviewTab({
   const loyaltyQ = useAdminQuery<CustomerLoyaltyResponse>(customerKeys.loyalty(id), () => getCustomerLoyalty(id), { enabled: canMembers });
   const notesQ = useAdminQuery<Note[]>(customerKeys.notes(id), (signal) => fetchNotes(id, signal));
   const byAddress = new Map((loyaltyQ.data?.addresses || []).map((row) => [String(row.addressId), row]));
-  const openProject = (projects || []).find((p) => !/complete|cancel|closed|lost|declin/i.test(p.status || ""));
+  const openProject = (projects?.items || []).find((p) => !/complete|cancel|closed|lost|declin/i.test(`${p.status} ${p.derivedStage?.key || ""}`));
   const latest = (notesQ.data || []).slice(0, 3);
 
   return (
@@ -198,7 +199,7 @@ export function OverviewTab({
       {canProjects && openProject && (
         <Section title="Open project" flush>
           <ul role="list" className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface">
-            <ListRow href={openProject.href} title={openProject.projectNumber ? `#${openProject.projectNumber} · ${openProject.projectType || "Project"}` : openProject.projectType || "Project"} subtitle={openProject.address} trailing={<StatusBadge tone="info">{openProject.status}</StatusBadge>} />
+            <ProjectRow project={openProject} money={Boolean(projects?.moneyVisible)} />
           </ul>
         </Section>
       )}
@@ -626,24 +627,44 @@ export function MessagesTab({ profile, showReviewed }: { profile: CustomerProfil
 
 /* ================================================================ Projects */
 
-export function ProjectsTab({ projects, loading, error, term }: { projects: ProjectHit[] | undefined; loading: boolean; error: unknown; term: string }) {
+function ProjectRow({ project: p, money }: { project: CustomerProject; money: boolean }) {
+  const title = [p.projectNumber ? `#${p.projectNumber}` : "", p.title || p.projectType || "Project"].filter(Boolean).join(" · ");
+  const amounts = money
+    ? [
+        p.executedValueCents ? `Signed ${formatCents(p.executedValueCents)}` : "",
+        p.paidCents ? `paid ${formatCents(p.paidCents)}` : "",
+        p.outstandingCents ? `${formatCents(p.outstandingCents)} outstanding` : "",
+      ].filter(Boolean)
+    : [];
+  return (
+    <ListRow
+      href={p.href}
+      title={title}
+      subtitle={[p.projectType && p.title ? p.projectType : "", ...amounts, p.createdAt ? `since ${shortDate(p.createdAt)}` : ""].filter(Boolean).join(" · ")}
+      trailing={<StatusBadge tone="info">{p.derivedStage?.label || words(p.status)}</StatusBadge>}
+    />
+  );
+}
+
+export function ProjectsTab({ projects, loading, error }: { projects: CustomerProjects | undefined; loading: boolean; error: unknown }) {
+  const items = projects?.items || [];
   return (
     <div className="flex flex-col gap-3" data-tab-panel="projects">
       {loading ? (
         <SkeletonRows count={2} label="Loading projects" />
       ) : error && !projects ? (
         <ErrorState title="Projects could not be loaded" message={errorMessage(error)} />
-      ) : (projects || []).length ? (
+      ) : items.length ? (
         <>
-          <ul role="list" className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface">
-            {(projects || []).map((p) => (
-              <ListRow key={p.id} href={p.href} title={p.projectNumber ? `#${p.projectNumber} · ${p.projectType || "Project"}` : p.projectType || "Project"} subtitle={[p.customerName, p.address].filter(Boolean).join(" · ")} trailing={<StatusBadge tone="info">{words(p.status)}</StatusBadge>} />
+          <ul role="list" className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface" data-customer-projects="">
+            {items.map((p) => (
+              <ProjectRow key={p.id} project={p} money={projects?.moneyVisible === true} />
             ))}
           </ul>
-          <p className="px-1 text-[13px] text-adm-text-3">Projects matched by this customer&apos;s {term}.</p>
+          <p className="px-1 text-[13px] text-adm-text-3">Projects linked to this customer&apos;s account (deleted projects are not listed).</p>
         </>
       ) : (
-        <EmptyState message="No projects" detail={`No project matches this customer's ${term}.`} action={<ButtonLink href="/admin/projects" variant="secondary">Open Projects</ButtonLink>} />
+        <EmptyState message="No projects" detail="No project is linked to this customer's account." action={<ButtonLink href="/admin/projects" variant="secondary">Open Projects</ButtonLink>} />
       )}
     </div>
   );

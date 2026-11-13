@@ -8,7 +8,7 @@ import { removeFromBlacklist, type BlacklistEntry } from "@/lib/admin-service";
 import { can, PERM } from "@/lib/admin-access";
 import { isAdminUser } from "@/lib/auth-routing";
 import { fetchBlacklist, keys } from "@/lib/admin/fetchers";
-import { errorMessage, invalidateQueries, setQueryData, useAdminQuery } from "@/lib/admin/query";
+import { errorMessage, getQueryData, invalidateQueries, setQueryData, useAdminQuery } from "@/lib/admin/query";
 import { useHandoffQuery } from "@/lib/admin/useHandoffQuery";
 import { rememberListHref } from "@/lib/admin/customer-nav";
 import { formatAddressLine } from "@/lib/admin/address";
@@ -16,9 +16,14 @@ import {
   customerKeys,
   fetchCustomerPage,
   headlineAddress,
+  isPlanKey,
+  PLAN_KEYS,
   planChip,
+  planLabel,
   searchCustomers,
+  type CustomerCounts,
   type CustomerFilter,
+  type PlanKey,
   type CustomerPage,
   type CustomerRow,
 } from "@/lib/admin/customers";
@@ -46,6 +51,9 @@ const FILTER_LABEL: Record<CustomerFilter, string> = {
   blocked: "Blocked",
   archived: "Archived",
 };
+
+/* Filters a plan can narrow (the server also accepts it on the others, but there it reads oddly). */
+const PLAN_FILTERS: CustomerFilter[] = ["all", "members", "payment_issue", "ending"];
 
 const EMPTY_MESSAGE: Record<CustomerFilter, string> = {
   all: "No customers yet",
@@ -166,16 +174,25 @@ export function CustomersBoard({ hidden = false }: { hidden?: boolean }) {
   );
   const requested = (params.get("filter") || "").replace("-", "_") as CustomerFilter;
   const urlFilter: CustomerFilter = allowed.includes(requested) ? requested : allowed[0] || "members";
+  const rawPlan = params.get("plan");
+  const urlPlan: PlanKey | null = PLAN_FILTERS.includes(urlFilter) && isPlanKey(rawPlan) ? rawPlan : null;
   // While a profile is open the URL is /admin/customers/:id (no filter): keep the list's own.
-  const [kept, setKept] = useState(urlFilter);
-  if (!hidden && kept !== urlFilter) setKept(urlFilter);
-  const filter = hidden ? kept : urlFilter;
-  const filterHref = (f: CustomerFilter) => `/admin/customers${f === allowed[0] ? "" : `?filter=${f}`}`;
+  const [kept, setKept] = useState<{ filter: CustomerFilter; plan: PlanKey | null }>({ filter: urlFilter, plan: urlPlan });
+  if (!hidden && (kept.filter !== urlFilter || kept.plan !== urlPlan)) setKept({ filter: urlFilter, plan: urlPlan });
+  const filter = hidden ? kept.filter : urlFilter;
+  const plan = hidden ? kept.plan : urlPlan;
+  const filterHref = (f: CustomerFilter, p: PlanKey | null = PLAN_FILTERS.includes(f) ? plan : null) => {
+    const qs = new URLSearchParams();
+    if (f !== allowed[0]) qs.set("filter", f);
+    if (p && PLAN_FILTERS.includes(f)) qs.set("plan", p);
+    const s = qs.toString();
+    return `/admin/customers${s ? `?${s}` : ""}`;
+  };
 
   useEffect(() => {
     if (!hidden && pathname === "/admin/customers") rememberListHref(filterHref(filter));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- filterHref derives from allowed, already a dependency through filter
-  }, [hidden, pathname, filter]);
+  }, [hidden, pathname, filter, plan]);
 
   /*
    * The list scrolls back to where it was when the profile closes. The
@@ -207,8 +224,8 @@ export function CustomersBoard({ hidden = false }: { hidden?: boolean }) {
   }, [hidden]);
 
   /* ------------------------------ list pages ------------------------------ */
-  const listKey = customerKeys.list(filter);
-  const listQ = useAdminQuery<CustomerPage>(listKey, (signal) => fetchCustomerPage(filter, null, signal), {
+  const listKey = customerKeys.list(filter, plan);
+  const listQ = useAdminQuery<CustomerPage>(listKey, (signal) => fetchCustomerPage(filter, null, signal, plan), {
     enabled: canList,
     // Extra pages live in the same entry: a background refresh would drop them under the reader.
     refetchOnFocus: false,
@@ -222,10 +239,11 @@ export function CustomersBoard({ hidden = false }: { hidden?: boolean }) {
     setLoadingMore(true);
     setMoreError("");
     try {
-      const next = await fetchCustomerPage(filter, cursor);
+      const next = await fetchCustomerPage(filter, cursor, undefined, plan);
       setQueryData<CustomerPage>(listKey, (current) => {
         const seen = new Set((current?.items || []).map((r) => r.id));
-        return { filter, items: [...(current?.items || []), ...next.items.filter((r) => !seen.has(r.id))], nextCursor: next.nextCursor };
+        // Totals come with the first page only: keep them.
+        return { filter, plan, items: [...(current?.items || []), ...next.items.filter((r) => !seen.has(r.id))], nextCursor: next.nextCursor, counts: current?.counts ?? null };
       });
     } catch (error) {
       setMoreError(errorMessage(error, "More customers could not be loaded."));
@@ -252,6 +270,15 @@ export function CustomersBoard({ hidden = false }: { hidden?: boolean }) {
   if (!canList) return <LegacyBlockedList canBlacklist={canBlacklist} />;
 
   const rows = listQ.data?.items || [];
+  /* Per-filter totals from the server (first page). While another filter loads, the last known totals for this plan stay. */
+  const counts: CustomerCounts | null =
+    listQ.data?.counts ||
+    allowed
+      .filter((f) => !plan || PLAN_FILTERS.includes(f))
+      .map((f) => getQueryData<CustomerPage>(customerKeys.list(f, PLAN_FILTERS.includes(f) ? plan : null))?.counts)
+      .find(Boolean) ||
+    null;
+  const total = counts && typeof counts[filter] === "number" ? (counts[filter] as number) : null;
   const showingSearch = q.trim().length > 0;
   const results = searchQ.data?.items || [];
 
@@ -286,17 +313,42 @@ export function CustomersBoard({ hidden = false }: { hidden?: boolean }) {
           {!searching && allowed.length > 1 && (
             <FilterBar label="Customer filters">
               {allowed.map((f) => (
-                <Chip key={f} href={filterHref(f)} selected={filter === f} tone={f === "payment_issue" ? "attention" : "default"}>
+                <Chip
+                  key={f}
+                  href={filterHref(f)}
+                  selected={filter === f}
+                  tone={f === "payment_issue" ? "attention" : "default"}
+                  count={counts && (!plan || PLAN_FILTERS.includes(f)) ? counts[f] : undefined}
+                >
                   {FILTER_LABEL[f]}
                 </Chip>
               ))}
             </FilterBar>
           )}
 
+          {!searching && PLAN_FILTERS.includes(filter) && (
+            <div className="mt-1">
+              <FilterBar label="Plan filter" sticky={false}>
+                <Chip href={filterHref(filter, null)} selected={!plan}>
+                  Any plan
+                </Chip>
+                {PLAN_KEYS.map((k) => (
+                  <Chip key={k} href={filterHref(filter, k)} selected={plan === k}>
+                    {planLabel(k)}
+                  </Chip>
+                ))}
+              </FilterBar>
+            </div>
+          )}
+
           {!searching && (
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1">
               <p className="adm-num text-[13px] text-adm-text-2" data-list-count="">
-                {listQ.data ? `${rows.length}${listQ.data.nextCursor ? "+" : ""} ${rows.length === 1 ? "customer" : "customers"}` : ""}
+                {listQ.data
+                  ? total !== null
+                    ? `${total} ${total === 1 ? "customer" : "customers"}${plan ? ` on ${planLabel(plan)}` : ""}${rows.length < total ? ` · showing ${rows.length}` : ""}`
+                    : `${rows.length}${listQ.data.nextCursor ? "+" : ""} ${rows.length === 1 ? "customer" : "customers"}`
+                  : ""}
               </p>
               <div className="flex gap-2">
                 {rows.length > 0 && (

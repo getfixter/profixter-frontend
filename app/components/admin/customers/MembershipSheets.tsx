@@ -205,6 +205,10 @@ export function ChangePlanSheet({
       } else if (code === "IN_PROGRESS") {
         setError("This change is already being processed. Wait a moment, then check the membership before trying again.");
         setNeedsRepreview(true);
+      } else if (code === "KEY_REUSED") {
+        // The key belongs to another customer or home: nothing was done. A fresh preview gets a fresh key.
+        setError("Nothing was changed: that request was tied to a different customer or home. Preview again to continue.");
+        setNeedsRepreview(true);
       } else {
         setError(errorMessage(err, "The change did not go through. Nothing was changed."));
         // The answer is stored against this key; a fresh preview gets a fresh key.
@@ -392,6 +396,8 @@ export function CancellationSheet({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+  /* A plan change already scheduled on this subscription: setting a date or clearing drops it, so it is asked first. */
+  const [pendingPlan, setPendingPlan] = useState<{ plan: string; billingCycle: string; effectiveDate: string } | null>(null);
 
   if (!home) {
     return (
@@ -414,17 +420,31 @@ export function CancellationSheet({
         ? `The ${plan} membership ends at the end of the period already paid${periodEnd ? `, on ${shortDate(periodEnd)}` : ""}. Benefits continue until then and it does not renew.`
         : `The ${plan} membership ends on ${ymdLabel(date)}. Benefits continue until then and it is not billed again after that day.`;
 
-  const submit = async () => {
+  const submit = async (releasePendingPlanChange = false) => {
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setError("");
     try {
-      const result = await scheduleCancellation(customerId, home.id, { mode, ...(mode === "date" ? { date } : {}), idempotencyKey: key });
+      const result = await scheduleCancellation(customerId, home.id, {
+        mode,
+        ...(mode === "date" ? { date } : {}),
+        idempotencyKey: key,
+        ...(releasePendingPlanChange ? { releasePendingPlanChange: true } : {}),
+      });
       onChanged(result?.message || (mode === "clear" ? "Cancellation cleared" : "Cancellation scheduled"));
       onClose();
     } catch (err) {
-      setError(errorMessage(err, "The cancellation was not saved. Nothing was changed."));
+      const code = errorCode(err);
+      const data = (err as { response?: { data?: { pendingPlanChange?: { plan?: string; billingCycle?: string; effectiveDate?: string } } } })?.response?.data;
+      if (code === "PENDING_PLAN_CHANGE") {
+        const p = data?.pendingPlanChange || {};
+        setPendingPlan({ plan: String(p.plan || ""), billingCycle: String(p.billingCycle || ""), effectiveDate: String(p.effectiveDate || "") });
+      } else if (code === "KEY_REUSED") {
+        setError("Nothing was changed: that request was tied to a different customer or home. Review it again to continue.");
+      } else {
+        setError(errorMessage(err, "The cancellation was not saved. Nothing was changed."));
+      }
       // A retry is a new attempt with its own key (the stored answer belongs to this one).
       setKey(newIdempotencyKey());
     } finally {
@@ -450,8 +470,10 @@ export function CancellationSheet({
             block
             disabled={!canReview}
             onClick={() => {
+              // One key per customer + home + action: made when this home's step opens.
               setKey(newIdempotencyKey());
               setError("");
+              setPendingPlan(null);
               setStep("confirm");
             }}
             data-action="review-cancellation"
@@ -463,9 +485,15 @@ export function CancellationSheet({
             <Button key="back" variant="secondary" large disabled={busy} onClick={() => setStep("choose")}>
               Back
             </Button>
-            <Button large variant={mode === "clear" ? "primary" : "danger"} busy={busy} onClick={submit} data-action="confirm-cancellation">
-              {mode === "clear" ? "Clear the cancellation" : "Schedule cancellation"}
-            </Button>
+            {pendingPlan ? (
+              <Button large variant="danger" busy={busy} onClick={() => submit(true)} data-action="confirm-release-plan-change">
+                {mode === "clear" ? "Drop the plan change and clear" : "Drop the plan change and schedule"}
+              </Button>
+            ) : (
+              <Button large variant={mode === "clear" ? "primary" : "danger"} busy={busy} onClick={() => submit()} data-action="confirm-cancellation">
+                {mode === "clear" ? "Clear the cancellation" : "Schedule cancellation"}
+              </Button>
+            )}
           </>
         )
       }
@@ -502,6 +530,16 @@ export function CancellationSheet({
         <div className="flex flex-col gap-3" data-cancel-confirm="">
           <p className="text-[15px] leading-relaxed text-adm-ink">{consequence}</p>
           <p className="text-[13px] text-adm-text-2">The customer is not emailed by this step. Cancelling does not refund; refunds are made in Stripe.</p>
+          {pendingPlan && (
+            <div data-pending-plan-change="">
+              <Notice tone="attention" role="alert">
+                A change to <strong>{planLabel(pendingPlan.plan)}</strong>
+                {pendingPlan.billingCycle ? ` (${pendingPlan.billingCycle})` : ""} is already scheduled
+                {pendingPlan.effectiveDate ? ` for ${shortDate(pendingPlan.effectiveDate)}` : ""}. To {mode === "clear" ? "clear the cancellation" : "set this date"}, that scheduled plan change will be
+                dropped: the membership stays on {plan} and is not switched. Nothing was changed yet.
+              </Notice>
+            </div>
+          )}
           {error && <Notice tone="problem" role="alert">{error}</Notice>}
         </div>
       )}

@@ -170,6 +170,8 @@ function allowedFor(who, row) {
     unarchive: owner && row.archived,
     viewBilling: true,
     changeCommunication: true,
+    // Only an account still waiting for its first password (BE gap fix).
+    resendAccess: row.id === "c1",
   };
 }
 
@@ -284,10 +286,16 @@ async function open(browser, who, { width = 390, height = 844, touch, state = ma
         archived: (r) => r.archived,
       }[filter];
       if (!pick) return json({ message: "Invalid filter", code: "INVALID_FILTER" }, 400);
-      const list = state.rows.filter(pick);
+      const plan = u.searchParams.get("plan");
+      if (plan && !["basic", "plus", "premium", "elite"].includes(plan)) return json({ message: "Unknown plan", code: "INVALID_PLAN" }, 400);
+      const onPlan = (r) => !plan || r.addresses.some((a) => a.plan === plan && ["active", "trialing", "payment_issue", "ending"].includes(a.planStatus));
+      const pickers = { all: (r) => !r.archived, members: (r) => !r.archived && live(r), payment_issue: (r) => !r.archived && r.addresses.some((a) => a.planStatus === "payment_issue"), ending: (r) => !r.archived && r.addresses.some((a) => a.planStatus === "ending"), blocked: (r) => !r.archived && r.blocked, archived: (r) => r.archived };
+      const list = state.rows.filter((r) => pick(r) && onPlan(r));
+      const first = !u.searchParams.get("cursor");
+      const counts = first ? Object.fromEntries(Object.entries(pickers).filter(([k]) => k !== "archived" || who === "owner").map(([k, fn]) => [k, state.rows.filter((r) => fn(r) && onPlan(r)).length])) : null;
       const start = u.searchParams.get("cursor") === "p2" ? 50 : 0;
       const items = list.slice(start, start + 50);
-      return json({ filter, items, nextCursor: start === 0 && list.length > 50 ? "p2" : null });
+      return json({ filter, plan: plan || null, items, nextCursor: start === 0 && list.length > 50 ? "p2" : null, counts });
     }
     if (p === "/api/admin/customers" && m === "POST") {
       state.created.push(body);
@@ -304,6 +312,10 @@ async function open(browser, who, { width = 390, height = 844, touch, state = ma
         return wordsQ.every((w) => hay.includes(w));
       });
       return json({ filter: body.filter || null, query: body.q, items: items.slice(0, 25) });
+    }
+    if (/^\/api\/admin\/customers\/[^/]+\/projects$/.test(p)) {
+      const cid = p.split("/")[4];
+      return json({ moneyVisible: who === "owner" || STAFF.permissions.includes("projects.manage"), items: cid === "c1" ? [{ id: "p1", projectNumber: "P-104", title: "Kitchen remodel", projectType: "Kitchen", status: "in_progress", derivedStage: { key: "in_progress", label: "In progress" }, executedValueCents: 1250000, paidCents: 400000, outstandingCents: 850000, createdAt: inDays(-30), href: "/admin/projects/p1" }] : [] });
     }
     if (p === "/api/admin/search") return json({ query: body.q, customers: [], jobs: [], projects: body.q === "casey@example.test" ? [{ id: "p1", projectNumber: "P-104", projectType: "Kitchen", customerName: "Casey Customer", status: "in_progress", address: "12 Oak St", href: "/admin/projects/p1" }] : [], scopes: { customers: true, jobs: "all", projects: true } });
 
@@ -403,6 +415,21 @@ async function open(browser, who, { width = 390, height = 844, touch, state = ma
           return json({ message: "Upgraded to Premium. Stripe charged $18.32.", changeType: "upgrade", effective: "now", addressPlan: { plan: "premium", planStatus: "active" } });
         }
         if (action === "cancellation") {
+          // Membership receipts: a key belongs to one customer + home (409 KEY_REUSED otherwise).
+          state.keyTargets = state.keyTargets || new Map();
+          const target = `${p.split("/")[4]}:${addressId}`;
+          if (body.idempotencyKey && state.keyTargets.has(body.idempotencyKey) && state.keyTargets.get(body.idempotencyKey) !== target) {
+            return json({ code: "KEY_REUSED", message: "This idempotency key was already used for a different customer or home. Nothing was changed." }, 409);
+          }
+          if (state.keyReusedNext) {
+            state.keyReusedNext = false;
+            return json({ code: "KEY_REUSED", message: "This idempotency key was already used for a different customer or home. Nothing was changed." }, 409);
+          }
+          if (state.pendingPlanChange && (body.mode === "date" || body.mode === "clear") && body.releasePendingPlanChange !== true) {
+            state.cancellationRefusals = (state.cancellationRefusals || 0) + 1;
+            return json({ code: "PENDING_PLAN_CHANGE", message: "A plan change is scheduled. Release it first.", pendingPlanChange: { plan: "basic", billingCycle: "monthly", effectiveDate: "2026-12-01T05:00:00.000Z" } }, 409);
+          }
+          if (body.idempotencyKey) state.keyTargets.set(body.idempotencyKey, target);
           state.cancellations.push({ addressId, ...body });
           return json({ message: "Cancellation scheduled for Dec 1.", before: { cancelAt: null, cancelAtPeriodEnd: false }, after: { cancelAt: "2026-12-01T05:00:00.000Z", cancelAtPeriodEnd: true }, addressPlan: { planStatus: "ending" } });
         }
@@ -535,6 +562,38 @@ async function minFontPx(page, rootSel) {
     check("filters: no page errors, nothing left the machine", !errors.length && !external.length, errors.concat(external).join("; "));
     await ctx.close();
   }
+  /* per-filter counts and the plan filter (backend gap fix) */
+  {
+    const { ctx, page, state, errors } = await open(browser, "staff");
+    await gotoList(page, "?filter=members");
+    await page.waitForSelector("[data-customers-list] ul[role=list] > li", { timeout: 15000 });
+    const chipText = async (label) => (await page.locator(".adm-filterbar a", { hasText: label }).first().innerText()).replace(/\s+/g, " ");
+    const live = (r) => !r.archived && r.addresses.some((a) => ["active", "trialing", "payment_issue", "ending"].includes(a.planStatus));
+    const expected = { All: state.rows.filter((r) => !r.archived).length, Members: state.rows.filter(live).length, "Payment issue": 1, Ending: 1, Blocked: 1 };
+    const shown = {};
+    for (const label of Object.keys(expected)) shown[label] = await chipText(label);
+    check("chips show the server's per-filter totals", Object.entries(expected).every(([label, n]) => shown[label].includes(String(n))), JSON.stringify(shown));
+    const line = await page.locator("[data-list-count]").innerText();
+    check("the count line shows the exact total, not the loaded rows", line.includes(`${expected.Members} customers`), line);
+    await page.locator('[aria-label="Plan filter"] a', { hasText: "Basic" }).click();
+    await page.waitForURL((u) => u.search.includes("plan=basic"), { timeout: 8000 }).catch(() => {});
+    await waitFor(async () => callsTo(state, /^\/api\/admin\/customers$/, "GET").some((c) => c.url.includes("plan=basic")));
+    await page.waitForTimeout(300);
+    const basicRows = state.rows.filter((r) => live(r) && r.addresses.some((a) => a.plan === "basic"));
+    const listText = await page.locator("[data-customers-list] ul[role=list]").first().innerText();
+    const call = callsTo(state, /^\/api\/admin\/customers$/, "GET").filter((c) => c.url.includes("plan=basic")).pop();
+    check("plan filter: ?plan=basic in the URL and sent to the server with the filter", page.url().includes("plan=basic") && page.url().includes("filter=members") && call && call.url.includes("filter=members"), page.url());
+    check("plan filter: only Basic members listed", /Pat Pastdue/.test(listText) && !/Casey Customer/.test(listText) && (await page.locator("[data-customers-list] ul[role=list] > li").count()) === basicRows.length, `${basicRows.length} expected`);
+    check("plan filter: the count line names the plan", /on Basic/.test(await page.locator("[data-list-count]").innerText()));
+    await page.locator(".adm-filterbar a", { hasText: "Payment issue" }).first().click();
+    await page.waitForURL((u) => u.search.includes("filter=payment_issue"), { timeout: 8000 }).catch(() => {});
+    check("plan filter carries over to Payment issue", page.url().includes("plan=basic"), page.url());
+    await page.locator('[aria-label="Plan filter"] a', { hasText: "Any plan" }).click();
+    await page.waitForURL((u) => !u.search.includes("plan="), { timeout: 8000 }).catch(() => {});
+    check("Any plan clears it", !page.url().includes("plan="), page.url());
+    check("counts/plan: no page errors", !errors.length, errors.join("; "));
+    await ctx.close();
+  }
   {
     const { ctx, page, state } = await open(browser, "owner");
     await gotoList(page, "?filter=archived");
@@ -621,6 +680,13 @@ async function minFontPx(page, rootSel) {
       const text = await page.locator(`[data-tab-panel="${tab}"]`).innerText().catch(() => "");
       check(`tab ${tab}: shown, in the URL`, re.test(text) && (tab === "overview" ? !page.url().includes("tab=") : page.url().includes(`tab=${tab}`)), text.slice(0, 120).replace(/\n/g, " | "));
     }
+    check("projects tab reads GET /customers/:id/projects (by customerId), not a text search", callsTo(state, /^\/api\/admin\/customers\/c1\/projects$/, "GET").length >= 1 && callsTo(state, /^\/api\/admin\/search$/).length === 0);
+    await page.goto(`${BASE}/admin/customers/c1?tab=projects`, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("[data-customer-projects] li", { timeout: 8000 }).catch(() => {});
+    const projText = await page.locator("[data-tab-panel=projects]").innerText().catch(() => "");
+    check("projects tab: stage label and money (projects.manage)", /In progress/.test(projText) && /\$12,500/.test(projText) && /\$8,500 outstanding/.test(projText) && (await page.locator('[data-customer-projects] a[href="/admin/projects/p1"]').count()) === 1, projText.replace(/\n/g, " | ").slice(0, 160));
+    await page.goto(`${BASE}/admin/customers/c1`, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector('[data-tab-panel="overview"] [data-copy="address"]', { timeout: 10000 });
     await page.click('[data-tab-panel="overview"] [data-copy="address"]');
     const copied = await page.evaluate(() => window.__copied.slice(-1)[0]);
     check("Copy address prints the unit once (formatter)", copied === "12 Oak St, Apt 2, Massapequa, NY 11758", copied);
@@ -735,7 +801,57 @@ async function minFontPx(page, rootSel) {
     await openMore(page);
     const items = await page.locator('[role="menu"] [role="menuitem"]').allInnerTexts();
     check("staff: no Complimentary or Archive in More (allowedActions)", !items.some((t) => /Complimentary|Archive/.test(t)) && items.some((t) => /Block/.test(t)), items.join(" / "));
+    check("Resend sign-in details shows when allowedActions.resendAccess is true", items.some((t) => /Resend sign-in details/.test(t)), items.join(" / "));
     await page.keyboard.press("Escape");
+    await openProfile(page, "c2");
+    await openMore(page);
+    const items2 = await page.locator('[role="menu"] [role="menuitem"]').allInnerTexts();
+    check("...and is hidden when it is false (the customer has a password)", !items2.some((t) => /Resend sign-in details/.test(t)) && items2.some((t) => /Block/.test(t)), items2.join(" / "));
+    await page.keyboard.press("Escape");
+    await ctx.close();
+  }
+  /* review fixes: a pending plan change blocks a dated cancellation until it is dropped; KEY_REUSED */
+  {
+    const state = makeState();
+    state.pendingPlanChange = true;
+    const { ctx, page } = await open(browser, "staff", { state });
+    await openProfile(page, "c1", "billing");
+    await page.click('[data-tab-panel="billing"] [data-action="cancellation"]');
+    await page.waitForSelector('[data-sheet="cancellation"]');
+    await page.locator('[data-sheet="cancellation"] input[name=cancel-mode][value=date]').check({ force: true });
+    const day = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
+    await page.locator('[data-sheet="cancellation"] input[type=date]').fill(day);
+    await page.click('[data-action="review-cancellation"]');
+    await page.waitForSelector("[data-cancel-confirm]");
+    await page.click('[data-action="confirm-cancellation"]');
+    await page.waitForSelector("[data-pending-plan-change]", { timeout: 6000 }).catch(() => {});
+    const note = await page.locator("[data-pending-plan-change]").innerText().catch(() => "");
+    check("PENDING_PLAN_CHANGE: the sheet says a plan change is scheduled and will be dropped", /Basic/.test(note) && /scheduled/.test(note) && /dropped/.test(note) && state.cancellations.length === 0, note.replace(/\s+/g, " "));
+    check("...and offers a confirmed retry, not the plain button", (await page.locator('[data-action="confirm-release-plan-change"]').count()) === 1 && (await page.locator('[data-action="confirm-cancellation"]').count()) === 0);
+    await page.click('[data-action="confirm-release-plan-change"]');
+    await waitFor(async () => state.cancellations.length === 1);
+    const c = state.cancellations[0] || {};
+    check("the retry sends releasePendingPlanChange:true with a fresh key", c.releasePendingPlanChange === true && c.mode === "date" && c.date === day && /^[0-9a-f-]{36}$/.test(c.idempotencyKey || ""), JSON.stringify(c));
+    await ctx.close();
+  }
+  {
+    const state = makeState();
+    const { ctx, page } = await open(browser, "staff", { state });
+    await openProfile(page, "c1", "billing");
+    await page.click('[data-tab-panel="billing"] [data-action="cancellation"]');
+    await page.waitForSelector('[data-sheet="cancellation"]');
+    await page.locator('[data-sheet="cancellation"] input[name=cancel-mode][value=period_end]').check({ force: true });
+    await page.click('[data-action="review-cancellation"]');
+    await page.waitForSelector("[data-cancel-confirm]");
+    state.keyReusedNext = true;
+    await page.click('[data-action="confirm-cancellation"]');
+    await page.waitForSelector('[data-cancel-confirm] [role="alert"]', { timeout: 6000 }).catch(() => {});
+    const msg = await page.locator('[data-cancel-confirm] [role="alert"]').innerText().catch(() => "");
+    check("KEY_REUSED: says nothing was changed", /Nothing was changed/.test(msg) && state.cancellations.length === 0, msg);
+    const firstKey = (state.calls.filter((x) => /\/cancellation$/.test(x.p)).pop() || {}).body?.idempotencyKey;
+    await page.click('[data-action="confirm-cancellation"]');
+    await waitFor(async () => state.cancellations.length === 1);
+    check("the next attempt uses a fresh key and goes through", state.cancellations.length === 1 && state.cancellations[0].idempotencyKey !== firstKey, `${firstKey} -> ${state.cancellations[0]?.idempotencyKey}`);
     await ctx.close();
   }
   {

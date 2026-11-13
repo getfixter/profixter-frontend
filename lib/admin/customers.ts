@@ -55,7 +55,12 @@ export type CustomerRow = {
   visitsCompleted: number;
 };
 
-export type CustomerPage = { filter: CustomerFilter; items: CustomerRow[]; nextCursor: string | null };
+/** Per-filter totals (first page only; `archived` for the owner only). */
+export type CustomerCounts = Partial<Record<CustomerFilter, number>>;
+
+export type CustomerPage = { filter: CustomerFilter; plan: PlanKey | null; items: CustomerRow[]; nextCursor: string | null; counts: CustomerCounts | null };
+
+export const isPlanKey = (v: unknown): v is PlanKey => typeof v === "string" && ["basic", "plus", "premium", "elite"].includes(v);
 export type CustomerSearchResult = { filter: CustomerFilter | null; query: string; items: CustomerRow[] };
 
 export type Visit = {
@@ -112,6 +117,8 @@ export type AllowedActions = {
   unarchive: boolean;
   viewBilling: boolean;
   changeCommunication: boolean;
+  /** Resend sign-in details: only while the account still waits for its first password. */
+  resendAccess: boolean;
 };
 
 export type CustomerProfileSummary = {
@@ -290,7 +297,21 @@ export type AddressPlanSummary = {
   pendingChangeEffectiveDate: string | null;
 };
 
-export type ProjectHit = { id: string; projectNumber: string; projectType: string; customerName: string; status: string; address: string; href: string };
+/** A project of this customer (GET /customers/:id/projects, matched by customerId). Money is null without projects.manage. */
+export type CustomerProject = {
+  id: string;
+  projectNumber: string;
+  title: string;
+  projectType: string;
+  status: string;
+  derivedStage: { key: string; label: string } | null;
+  executedValueCents: number | null;
+  paidCents: number | null;
+  outstandingCents: number | null;
+  createdAt: string | null;
+  href: string;
+};
+export type CustomerProjects = { items: CustomerProject[]; moneyVisible: boolean };
 
 /* ------------------------------------------------------------- read safely */
 
@@ -341,7 +362,7 @@ export function readRow(r: Partial<CustomerRow> | null | undefined): CustomerRow
 /* ------------------------------------------------------------------ keys */
 
 export const customerKeys = {
-  list: (filter: CustomerFilter) => ["customer-list", filter] as const,
+  list: (filter: CustomerFilter, plan: PlanKey | null = null) => ["customer-list", filter, plan || "any"] as const,
   search: (filter: CustomerFilter, q: string) => ["customer-search", filter, q] as const,
   profile: (id: string) => ["customer", id, "profile"] as const,
   visits: (id: string) => ["customer", id, "visits"] as const,
@@ -359,11 +380,21 @@ const enc = encodeURIComponent;
 
 /* ------------------------------------------------------------------ reads */
 
-export async function fetchCustomerPage(filter: CustomerFilter, cursor: string | null, signal?: AbortSignal): Promise<CustomerPage> {
+export async function fetchCustomerPage(filter: CustomerFilter, cursor: string | null, signal?: AbortSignal, plan: PlanKey | null = null): Promise<CustomerPage> {
   const params: Record<string, string> = { filter, limit: "50" };
   if (cursor) params.cursor = cursor;
+  if (plan) params.plan = plan;
   const { data } = await API.get("/api/admin/customers", { params, signal });
-  return { filter, items: arr<Partial<CustomerRow>>(data?.items).map(readRow), nextCursor: data?.nextCursor || null };
+  return { filter, plan, items: arr<Partial<CustomerRow>>(data?.items).map(readRow), nextCursor: data?.nextCursor || null, counts: readCounts(data?.counts) };
+}
+
+function readCounts(raw: unknown): CustomerCounts | null {
+  if (!raw || typeof raw !== "object") return null;
+  const out: CustomerCounts = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (["all", "members", "payment_issue", "ending", "blocked", "archived"].includes(k) && typeof v === "number" && Number.isFinite(v) && v >= 0) out[k as CustomerFilter] = v;
+  }
+  return out;
 }
 
 /** Search in the body, never the URL (audit X-11). */
@@ -413,6 +444,7 @@ export async function fetchProfile(id: string, signal?: AbortSignal): Promise<Cu
       unarchive: !!allowed.unarchive,
       viewBilling: !!allowed.viewBilling,
       changeCommunication: !!allowed.changeCommunication,
+      resendAccess: !!allowed.resendAccess,
     },
   };
 }
@@ -467,15 +499,31 @@ export async function fetchConsent(id: string, signal?: AbortSignal): Promise<Co
   };
 }
 
-/**
- * Projects for this customer. There is no by-customer project endpoint yet
- * (reported as a backend gap), so this uses the global search, with the
- * customer's email (or phone, or name) in the POST body.
- */
-export async function fetchCustomerProjects(term: string, signal?: AbortSignal): Promise<ProjectHit[]> {
-  if (term.trim().length < 2) return [];
-  const { data } = await API.post("/api/admin/search", { q: term }, { signal });
-  return arr<ProjectHit>(data?.projects);
+/** This customer's projects, by customerId (not by matching text). */
+export async function fetchCustomerProjects(id: string, signal?: AbortSignal): Promise<CustomerProjects> {
+  const { data } = await API.get(`/api/admin/customers/${enc(id)}/projects`, { signal });
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  return {
+    moneyVisible: Boolean(data?.moneyVisible),
+    items: arr<Record<string, unknown>>(data?.items).map((p) => {
+      const stage = p.derivedStage && typeof p.derivedStage === "object" ? (p.derivedStage as Record<string, unknown>) : null;
+      const id = str(p.id);
+      const href = str(p.href);
+      return {
+        id,
+        projectNumber: str(p.projectNumber),
+        title: str(p.title),
+        projectType: str(p.projectType),
+        status: str(p.status),
+        derivedStage: stage ? { key: str(stage.key), label: str(stage.label) } : null,
+        executedValueCents: num(p.executedValueCents),
+        paidCents: num(p.paidCents),
+        outstandingCents: num(p.outstandingCents),
+        createdAt: p.createdAt ? str(p.createdAt) : null,
+        href: /^\/admin\/projects\/[A-Za-z0-9_-]+$/.test(href) ? href : `/admin/projects/${enc(id)}`,
+      };
+    }),
+  };
 }
 
 /* ----------------------------------------------------------------- writes */
@@ -511,7 +559,17 @@ export async function confirmPlanChange(id: string, addressId: string, body: { p
   return data as { message: string; changeType: string; effective: string; addressPlan: AddressPlanSummary; replayed?: boolean };
 }
 
-export async function scheduleCancellation(id: string, addressId: string, body: { mode: "period_end" | "date" | "clear"; date?: string; idempotencyKey: string }) {
+/**
+ * Set, move or clear a cancellation. With a plan change already scheduled on
+ * the subscription, "date" and "clear" answer 409 PENDING_PLAN_CHANGE
+ * ({pendingPlanChange: {plan, billingCycle, effectiveDate}}) until the admin
+ * confirms dropping it: `releasePendingPlanChange: true`.
+ */
+export async function scheduleCancellation(
+  id: string,
+  addressId: string,
+  body: { mode: "period_end" | "date" | "clear"; date?: string; idempotencyKey: string; releasePendingPlanChange?: boolean }
+) {
   const { data } = await API.post(`${home(id, addressId)}/cancellation`, { ...body, confirm: true });
   return data as { message: string; addressPlan: AddressPlanSummary };
 }

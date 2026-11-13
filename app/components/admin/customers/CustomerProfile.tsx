@@ -156,9 +156,8 @@ export function CustomerProfile({ id }: { id: string }) {
     enabled: Boolean(profile?.allowedActions.viewBilling) && (moreOpen || tab === "billing"),
     staleTime: 60_000,
   });
-  const projectTerm = profile ? profile.customer.email || extractUSNationalPhoneDigits(profile.customer.phone) || profile.customer.name : "";
-  const projectsQ = useAdminQuery(customerKeys.projects(id), (signal) => fetchCustomerProjects(projectTerm, signal), {
-    enabled: canProjects && Boolean(projectTerm) && (tab === "projects" || tab === "overview"),
+  const projectsQ = useAdminQuery(customerKeys.projects(id), (signal) => fetchCustomerProjects(id, signal), {
+    enabled: canProjects && Boolean(profile) && (tab === "projects" || tab === "overview"),
     staleTime: 60_000,
   });
 
@@ -253,7 +252,7 @@ export function CustomerProfile({ id }: { id: string }) {
         ? { label: "Open in Stripe", icon: <ArrowTopRightOnSquareIcon />, href: stripeUrl, external: true }
         : { label: "Open in Stripe", icon: <ArrowTopRightOnSquareIcon />, disabled: true, hint: billingQ.isFetching || !billing ? "Loading…" : "Stripe is not reachable right now" }
       : null,
-    canCustomers && c.email ? { label: "Resend sign-in details", hint: "Only before they set a password", icon: <KeyIcon />, onSelect: () => setSheet({ kind: "resend" }) } : null,
+    a.resendAccess ? { label: "Resend sign-in details", hint: "They have not set a password yet", icon: <KeyIcon />, onSelect: () => setSheet({ kind: "resend" }) } : null,
     a.unblock ? { label: "Unblock", icon: <ArrowUturnLeftIcon />, onSelect: () => setSheet({ kind: "unblock" }) } : null,
     a.unarchive ? { label: "Restore from archive", icon: <ArrowUturnLeftIcon />, onSelect: () => setSheet({ kind: "unarchive" }) } : null,
     a.block ? { label: "Block", hint: "Needs a reason", icon: <NoSymbolIcon />, tone: "destructive" as const, onSelect: () => setSheet({ kind: "block" }) } : null,
@@ -330,7 +329,7 @@ export function CustomerProfile({ id }: { id: string }) {
         {tab === "visits" && <VisitsTab profile={profile} />}
         {tab === "billing" && <BillingTab profile={profile} onAction={onMembershipAction} />}
         {tab === "messages" && <MessagesTab profile={profile} showReviewed={canCustomers} />}
-        {tab === "projects" && <ProjectsTab projects={projectsQ.data} loading={projectsQ.isLoading} error={projectsQ.error} term={c.email ? "email" : phone ? "phone" : "name"} />}
+        {tab === "projects" && <ProjectsTab projects={projectsQ.data} loading={projectsQ.isLoading} error={projectsQ.error} />}
         {tab === "activity" && <ActivityTab profile={profile} showProfileHistory={canCustomers || canMembers} />}
         {tab === "notes" && <NotesTab profile={profile} />}
       </ErrorBoundary>
