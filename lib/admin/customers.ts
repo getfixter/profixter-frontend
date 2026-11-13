@@ -119,6 +119,8 @@ export type AllowedActions = {
   changeCommunication: boolean;
   /** Resend sign-in details: only while the account still waits for its first password. */
   resendAccess: boolean;
+  /** Charge customer from the profile, no booking needed (owner only; the server enforces it again). */
+  chargeCustomer: boolean;
 };
 
 export type CustomerProfileSummary = {
@@ -204,14 +206,15 @@ export type BillingAvailable = {
     createdAt: string | null;
     card: { brand: string; last4: string } | null;
     dashboardUrl: string;
-    /** A Charge extra payment: labelled here, never listed twice. */
-    extraCharge?: { id: string; number: string; bookingId: string; bookingNumber: string; description: string };
+    /** A Charge customer payment (on a job, or direct with no booking): labelled here, never listed twice. */
+    extraCharge?: { id: string; number: string; direct?: boolean; bookingId: string | null; bookingNumber: string; description: string };
   }[];
   /** Charge extra records of this account; inPayments = already one of the payments above. */
   additionalCharges?: {
     id: string;
     number: string;
-    bookingId: string;
+    direct?: boolean;
+    bookingId: string | null;
     bookingNumber: string;
     description: string;
     status: string;
@@ -463,6 +466,7 @@ export async function fetchProfile(id: string, signal?: AbortSignal): Promise<Cu
       viewBilling: !!allowed.viewBilling,
       changeCommunication: !!allowed.changeCommunication,
       resendAccess: !!allowed.resendAccess,
+      chargeCustomer: !!allowed.chargeCustomer,
     },
   };
 }

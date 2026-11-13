@@ -4,7 +4,7 @@ import { ArrowPathIcon, ArrowTopRightOnSquareIcon, CheckCircleIcon, ClipboardDoc
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { errorCode, errorMessage, invalidateQueries, useAdminQuery } from "@/lib/admin/query";
-import { jobKeys, newIdempotencyKey, type JobDetail } from "@/lib/admin/jobs";
+import { jobKeys, newIdempotencyKey } from "@/lib/admin/jobs";
 import {
   STATUS_TONE,
   amountToCents,
@@ -21,6 +21,7 @@ import {
   refreshExtraCharge,
   retryExtraCard,
   saveDraft,
+  type ChargeScope,
   type ChargeTarget,
   type Delivery,
   type Draft,
@@ -32,6 +33,14 @@ import { Button, Field, SkeletonRows, StatusBadge, TextInput, cx, useToast } fro
 /* ------------------------------------------------------------------ */
 /* Small pieces                                                        */
 /* ------------------------------------------------------------------ */
+
+/** After any change: every charge list (job and customer), and the job summary or customer billing it shows in. */
+function refreshAfterCharge(scope: ChargeScope, bookingId?: string | null) {
+  invalidateQueries(extraKeys.all);
+  if (scope.kind === "job") invalidateQueries(jobKeys.detail(scope.id));
+  else invalidateQueries(["customer", scope.id, "billing"]);
+  if (bookingId && !(scope.kind === "job" && scope.id === bookingId)) invalidateQueries(jobKeys.detail(bookingId));
+}
 
 function Footer({ el, children }: { el: HTMLElement | null; children: ReactNode }) {
   return el ? createPortal(children, el) : null;
@@ -74,7 +83,8 @@ function Channels({ value, onChange, email = true, sms = true }: { value: ("emai
 /* ------------------------------------------------------------------ */
 
 export type ChargeExtraStepProps = {
-  job: JobDetail;
+  /** A job (who pays = its stored owner) or a customer profile (a direct charge, no booking). */
+  scope: ChargeScope;
   footer: HTMLElement | null;
   onBack: () => void;
   setBusy: (busy: boolean) => void;
@@ -82,17 +92,18 @@ export type ChargeExtraStepProps = {
 };
 
 /**
- * Who pays (the booking's own customer and saved card, from the server), the
+ * Who pays (the booking's own customer, or the profile's own account, and its
+ * saved card, from the server), the
  * amount to collect, an optional note, and one button: "Charge $X". Pressing
  * it charges. Success shows only when Stripe says paid; a decline or a bank
  * check shows what happened and offers a payment link for the same charge.
  */
-export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: ChargeExtraStepProps) {
+export function ChargeExtraStep({ scope, footer, onBack, setBusy, setDirty }: ChargeExtraStepProps) {
   const toast = useToast();
-  const t = useAdminQuery(extraKeys.target(job.id), (signal) => fetchChargeTarget(job.id, signal), { staleTime: 0 });
+  const t = useAdminQuery(extraKeys.target(scope), (signal) => fetchChargeTarget(scope, signal), { staleTime: 0 });
   const [target, setTarget] = useState<ChargeTarget | null>(null);
-  const [draft, setDraft] = useState<Draft>(() => loadDraft(job.id) || { amount: "", note: "" });
-  const [showNote, setShowNote] = useState(() => Boolean(loadDraft(job.id)?.note));
+  const [draft, setDraft] = useState<Draft>(() => loadDraft(scope) || { amount: "", note: "" });
+  const [showNote, setShowNote] = useState(() => Boolean(loadDraft(scope)?.note));
   const [busy, setLocalBusy] = useState("");
   const [error, setError] = useState<{ code?: string; message: string } | null>(null);
   const [repeat, setRepeat] = useState<string>("");
@@ -115,8 +126,9 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
   const dirty = Boolean(draft.amount.trim() || draft.note.trim()) && !result;
   useEffect(() => setDirty?.(dirty), [dirty, setDirty]);
   useEffect(() => {
-    if (!result) saveDraft(job.id, draft);
-  }, [draft, job.id, result]);
+    if (!result) saveDraft(scope, draft);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, scope.kind, scope.id, result]);
   const hasTarget = Boolean(target);
   useEffect(() => {
     if (hasTarget && !draft.amount) amountRef.current?.focus();
@@ -126,10 +138,9 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
 
   const finish = (r: { charge: ExtraCharge; payUrl?: string; delivery?: Delivery }) => {
     setResult(r);
-    saveDraft(job.id, null);
+    saveDraft(scope, null);
     setDirty?.(false);
-    invalidateQueries(extraKeys.list(job.id));
-    invalidateQueries(jobKeys.detail(job.id));
+    refreshAfterCharge(scope);
   };
 
   const go = (method: "card" | "link", opts: { send?: boolean; allowRepeat?: boolean } = {}) => async () => {
@@ -139,7 +150,7 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
     setBusy(true);
     setError(null);
     try {
-      const r = await chargeCustomer(job.id, draft, {
+      const r = await chargeCustomer(scope, draft, {
         idempotencyKey: keyRef.current,
         targetFingerprint: target.fingerprint,
         method,
@@ -169,7 +180,7 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
     }
   };
 
-  if (result) return <ResultView job={job} result={result} footer={footer} onDone={onBack} onChange={setResult} />;
+  if (result) return <ResultView scope={scope} result={result} footer={footer} onDone={onBack} onChange={setResult} />;
 
   if (t.isLoading && !target) return <SkeletonRows count={2} label="Loading the customer and card" />;
   if (!target) return <Problem>{errorMessage(t.error, "The customer and card could not be loaded.")}</Problem>;
@@ -184,7 +195,9 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
           {target.customer.name || "Customer"}
           {target.customer.guest ? <span className="font-normal text-adm-text-2"> (guest)</span> : null}
         </p>
-        <p className="text-[13px] text-adm-text-2">Job #{target.booking.number}</p>
+        <p className="text-[13px] text-adm-text-2" data-extra-where={target.booking ? "job" : "direct"}>
+          {target.booking ? `Job #${target.booking.number}` : "Direct charge · no booking"}
+        </p>
         <p className="mt-1.5 flex items-center gap-2 text-[15px] text-adm-ink" data-extra-card="">
           <CreditCardIcon className="h-5 w-5 flex-none text-adm-text-2" aria-hidden="true" />
           {target.card && direct.allowed ? cardText(target.card) : <span className="text-adm-text-2">No card to charge</span>}
@@ -262,7 +275,7 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
         <div className="flex flex-col gap-2 rounded-adm-sm bg-adm-surface-2 px-3 py-2.5" data-extra-send="">
           <p className="text-[14px] font-semibold text-adm-ink">Send a link for {money2(cents)} by</p>
           <Channels value={channels} onChange={setChannels} email={target.customer.hasEmail} sms={target.customer.hasPhone} />
-          <p className="text-[13px] text-adm-text-2">Texts go only if this customer may be texted about this visit.</p>
+          <p className="text-[13px] text-adm-text-2">{target.booking ? "Texts go only if this customer may be texted about this visit." : "Texts go only if this customer may be texted."}</p>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => setSending(false)} disabled={Boolean(busy)}>
               Back
@@ -293,13 +306,13 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
 /* ------------------------------------------------------------------ */
 
 function ResultView({
-  job,
+  scope,
   result,
   footer,
   onDone,
   onChange,
 }: {
-  job: JobDetail;
+  scope: ChargeScope;
   result: { charge: ExtraCharge; payUrl?: string; delivery?: Delivery };
   footer: HTMLElement | null;
   onDone: () => void;
@@ -315,8 +328,8 @@ function ResultView({
     setBusy(true);
     setError("");
     try {
-      onChange({ ...result, charge: await refreshExtraCharge(job.id, c.id) });
-      invalidateQueries(extraKeys.list(job.id));
+      onChange({ ...result, charge: await refreshExtraCharge(scope, c.id) });
+      refreshAfterCharge(scope);
     } catch (e) {
       setError(errorMessage(e, "Stripe could not be reached. Try again."));
     } finally {
@@ -327,12 +340,12 @@ function ResultView({
     setBusy(true);
     setError("");
     try {
-      const r = await extraPaymentLink(job.id, c.id, { idempotencyKey: keyRef.current, send, channels: send ? channels : [] });
+      const r = await extraPaymentLink(scope, c.id, { idempotencyKey: keyRef.current, send, channels: send ? channels : [] });
       keyRef.current = newIdempotencyKey();
       if (r.payUrl && !send) await writeToClipboard(r.payUrl);
       setSending(false);
       onChange({ charge: r.charge, payUrl: send ? undefined : r.payUrl, delivery: r.delivery || null });
-      invalidateQueries(extraKeys.list(job.id));
+      refreshAfterCharge(scope);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -417,14 +430,14 @@ function ResultView({
 }
 
 /* ------------------------------------------------------------------ */
-/* Charges on the job                                                  */
+/* Charges on the job, or all of a customer's (job and direct)          */
 /* ------------------------------------------------------------------ */
 
-export function ExtraChargesBlock({ job, canCharge, onCharge }: { job: JobDetail; canCharge: boolean; onCharge: () => void }) {
-  const q = useAdminQuery(extraKeys.list(job.id), (signal) => fetchExtraCharges(job.id, signal), { staleTime: 5_000 });
+export function ExtraChargesBlock({ scope, canCharge, onCharge }: { scope: ChargeScope; canCharge: boolean; onCharge: () => void }) {
+  const q = useAdminQuery(extraKeys.list(scope), (signal) => fetchExtraCharges(scope, signal), { staleTime: 5_000 });
   const charges = q.data || [];
   return (
-    <section className="flex flex-col gap-2" data-extra-block="">
+    <section className="flex flex-col gap-2" data-extra-block={scope.kind}>
       <div className="flex min-h-[44px] items-center justify-between gap-3">
         <h3 className="text-[15px] font-semibold text-adm-ink">Charges{charges.length ? ` · ${charges.length}` : ""}</h3>
         {canCharge && (
@@ -438,11 +451,11 @@ export function ExtraChargesBlock({ job, canCharge, onCharge }: { job: JobDetail
       ) : q.error && !q.data ? (
         <Problem>{errorMessage(q.error, "The charges could not be loaded.")}</Problem>
       ) : charges.length === 0 ? (
-        <p className="text-[14px] text-adm-text-2">No charges on this job.</p>
+        <p className="text-[14px] text-adm-text-2">{scope.kind === "job" ? "No charges on this job." : "No charges for this customer yet."}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {charges.map((c) => (
-            <ExtraRow key={c.id} job={job} charge={c} />
+            <ExtraRow key={c.id} scope={scope} charge={c} />
           ))}
         </ul>
       )}
@@ -450,7 +463,7 @@ export function ExtraChargesBlock({ job, canCharge, onCharge }: { job: JobDetail
   );
 }
 
-function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
+function ExtraRow({ scope, charge: c }: { scope: ChargeScope; charge: ExtraCharge }) {
   const toast = useToast();
   const [mode, setMode] = useState<"" | "retry" | "send" | "close">("");
   const [busy, setBusy] = useState(false);
@@ -466,8 +479,7 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
     try {
       await fn();
       keyRef.current = newIdempotencyKey();
-      invalidateQueries(extraKeys.list(job.id));
-      invalidateQueries(jobKeys.detail(job.id));
+      refreshAfterCharge(scope, c.bookingId);
     } catch (e) {
       const data = (e as { response?: { data?: { card?: { brand: string; last4: string } } } })?.response?.data;
       if (errorCode(e) === "PREVIEW_CHANGED" && data?.card) setNewCard(data.card);
@@ -482,6 +494,17 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="adm-num text-[17px] font-semibold text-adm-ink">{money2(c.totalCents)}</p>
+          {scope.kind === "customer" && (
+            <p className="text-[13px] font-semibold text-adm-text-2" data-extra-row-where={c.bookingId ? "job" : "direct"}>
+              {c.bookingId ? (
+                <a href={`/admin/jobs/${encodeURIComponent(c.bookingId)}`} className="text-adm-accent-ink underline-offset-4 hover:underline">
+                  {c.where || `Job #${c.bookingNumber}`}
+                </a>
+              ) : (
+                "Direct charge"
+              )}
+            </p>
+          )}
           {c.note && <p className="text-[14px] text-adm-ink">{c.note}</p>}
           <p className="text-[13px] text-adm-text-2">
             {sinceText(c.confirmedAt || c.createdAt)} · by {c.confirmedByName || c.createdByName || "owner"}
@@ -531,7 +554,7 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
             busy={busy && !mode}
             onClick={() =>
               act(async () => {
-                const r = await extraPaymentLink(job.id, c.id, { idempotencyKey: keyRef.current, send: false });
+                const r = await extraPaymentLink(scope, c.id, { idempotencyKey: keyRef.current, send: false });
                 if (r.payUrl) {
                   setPayUrl(r.payUrl);
                   const ok = await writeToClipboard(r.payUrl);
@@ -564,7 +587,7 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
               busy={busy}
               onClick={() =>
                 act(async () => {
-                  await retryExtraCard(job.id, c.id, { idempotencyKey: keyRef.current, expectedCardLast4: card.last4 });
+                  await retryExtraCard(scope, c.id, { idempotencyKey: keyRef.current, expectedCardLast4: card.last4 });
                   setMode("");
                   setNewCard(null);
                 })
@@ -587,7 +610,7 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
               disabled={!channels.length}
               onClick={() =>
                 act(async () => {
-                  const r = await extraPaymentLink(job.id, c.id, { idempotencyKey: keyRef.current, send: true, channels });
+                  const r = await extraPaymentLink(scope, c.id, { idempotencyKey: keyRef.current, send: true, channels });
                   toast.show(deliveryText(r.delivery || null).join(" · ") || "Link made");
                   setMode("");
                 })
@@ -610,7 +633,7 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
               busy={busy}
               onClick={() =>
                 act(async () => {
-                  await closeExtraCharge(job.id, c.id);
+                  await closeExtraCharge(scope, c.id);
                   setMode("");
                 })
               }

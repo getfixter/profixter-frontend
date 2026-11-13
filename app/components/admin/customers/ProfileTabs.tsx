@@ -37,6 +37,7 @@ import {
   ButtonLink,
   Card,
   EmptyState,
+  ErrorBoundary,
   ErrorState,
   Field,
   IconButton,
@@ -55,6 +56,8 @@ import {
 import { ConsentBlock, ConsentHistory } from "./ConsentBlock";
 import { BlockHistory } from "./AccountSheets";
 import { Notice } from "./MembershipSheets";
+import { ExtraChargesBlock } from "@/app/components/admin/jobs/ChargeExtra";
+import { customerScope } from "@/lib/admin/extraCharges";
 
 export type MembershipAction = "change" | "cancel" | "complimentary" | "sell";
 
@@ -330,7 +333,7 @@ function StripeLink({ href, label = "Open in Stripe" }: { href?: string; label?:
   );
 }
 
-function BillingBlock({ billing }: { billing: BillingAvailable }) {
+function BillingBlock({ billing, chargesShown = false }: { billing: BillingAvailable; chargesShown?: boolean }) {
   return (
     <div className="flex flex-col gap-4" data-billing="">
       {billing.customers.map((c) => (
@@ -419,10 +422,14 @@ function BillingBlock({ billing }: { billing: BillingAvailable }) {
                     {formatCents(p.amountCents)} <span className="font-normal text-adm-text-2">· {shortDate(p.createdAt)}</span>
                   </p>
                   {p.extraCharge ? (
-                    <p className="text-[13px] text-adm-text-2" data-payment-extra="">
-                      <a href={`/admin/jobs/${encodeURIComponent(p.extraCharge.bookingId)}`} className="font-semibold text-adm-accent-ink underline-offset-4 hover:underline">
-                        Extra on job #{p.extraCharge.bookingNumber}
-                      </a>
+                    <p className="text-[13px] text-adm-text-2" data-payment-extra={p.extraCharge.bookingId ? "job" : "direct"}>
+                      {p.extraCharge.bookingId ? (
+                        <a href={`/admin/jobs/${encodeURIComponent(p.extraCharge.bookingId)}`} className="font-semibold text-adm-accent-ink underline-offset-4 hover:underline">
+                          Extra on job #{p.extraCharge.bookingNumber}
+                        </a>
+                      ) : (
+                        <span className="font-semibold text-adm-ink">Direct charge</span>
+                      )}
                       {[p.extraCharge.description ? ": " + p.extraCharge.description : "", p.card ? ` · ${p.card.brand} ${p.card.last4}` : "", p.amountRefundedCents > 0 ? ` · ${formatCents(p.amountRefundedCents)} refunded` : ""].join("")}
                     </p>
                   ) : (
@@ -443,11 +450,12 @@ function BillingBlock({ billing }: { billing: BillingAvailable }) {
         )}
       </Section>
       {(() => {
-        // Paid extras that Stripe does not list under this customer (a link paid without the account): shown once, here.
-        const elsewhere = (billing.additionalCharges || []).filter((a) => !a.inPayments && ["paid", "partially_refunded", "refunded"].includes(a.status));
+        // Paid charges that Stripe does not list under this customer (a link paid without the account): shown once.
+        // The owner already sees every charge in Charges above, so the list is not repeated for them.
+        const elsewhere = chargesShown ? [] : (billing.additionalCharges || []).filter((a) => !a.inPayments && ["paid", "partially_refunded", "refunded"].includes(a.status));
         if (!elsewhere.length) return null;
         return (
-          <Section title="Extras paid by link" count={elsewhere.length}>
+          <Section title="Charges paid by link" count={elsewhere.length}>
             <ul role="list">
               {elsewhere.map((a) => (
                 <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-adm-line px-4 py-3 last:border-b-0" data-extra-elsewhere="">
@@ -456,9 +464,13 @@ function BillingBlock({ billing }: { billing: BillingAvailable }) {
                       {formatCents(a.totalCents)} <span className="font-normal text-adm-text-2">· {shortDate(a.paidAt || a.createdAt)}</span>
                     </p>
                     <p className="text-[13px] text-adm-text-2">
-                      <a href={`/admin/jobs/${encodeURIComponent(a.bookingId)}`} className="font-semibold text-adm-accent-ink">
-                        Extra on job #{a.bookingNumber}
-                      </a>
+                      {a.bookingId ? (
+                        <a href={`/admin/jobs/${encodeURIComponent(a.bookingId)}`} className="font-semibold text-adm-accent-ink">
+                          Extra on job #{a.bookingNumber}
+                        </a>
+                      ) : (
+                        <span className="font-semibold text-adm-ink">Direct charge</span>
+                      )}
                       {a.description ? `: ${a.description}` : ""}
                       {a.refundedCents > 0 ? ` · ${formatCents(a.refundedCents)} refunded` : ""}
                     </p>
@@ -482,9 +494,12 @@ const LINK_TONE: Record<string, StatusTone> = { sent: "attention", paid: "succes
 export function BillingTab({
   profile,
   onAction,
+  onCharge,
 }: {
   profile: CustomerProfileSummary;
   onAction: (action: MembershipAction, addressId?: string) => void;
+  /** Open Charge customer (no booking). Offered to the owner only. */
+  onCharge?: () => void;
 }) {
   const id = profile.customer.id;
   const a = profile.allowedActions;
@@ -496,6 +511,12 @@ export function BillingTab({
 
   return (
     <div className="flex flex-col gap-5" data-tab-panel="billing">
+      {a.chargeCustomer && (
+        <ErrorBoundary label="Charges" resetKey={id}>
+          {/* Every charge of this customer, once: made on their jobs and made directly (no booking). */}
+          <ExtraChargesBlock scope={customerScope(id)} canCharge onCharge={() => onCharge?.()} />
+        </ErrorBoundary>
+      )}
       <Section title="Memberships" flush>
         {profile.addresses.length ? (
           <ul className="flex flex-col gap-3">
@@ -576,7 +597,7 @@ export function BillingTab({
             </span>
           </Notice>
         ) : billing && billing.available ? (
-          <BillingBlock billing={billing} />
+          <BillingBlock billing={billing} chargesShown={a.chargeCustomer} />
         ) : null}
       </Section>
 

@@ -53,6 +53,7 @@ import {
 import { ConfirmSheet, EmptyState, ErrorBoundary, ErrorState, Field, Menu, PermissionState, Skeleton, StatusBadge, Tabs, Textarea, formatPhone, useToast, type MenuItem } from "@/app/components/admin/ui";
 import { useAdmin } from "@/app/components/admin/shell/AdminContext";
 import { BlockSheet } from "./AccountSheets";
+import { ChargeCustomerSheet } from "./ChargeCustomerSheet";
 import { CancellationSheet, ChangePlanSheet, ComplimentarySheet } from "./MembershipSheets";
 import { ActivityTab, BillingTab, MessagesTab, NotesTab, OverviewTab, ProjectsTab, VisitsTab, type MembershipAction } from "./ProfileTabs";
 
@@ -69,6 +70,7 @@ type SheetState =
   | { kind: "archive" }
   | { kind: "unarchive" }
   | { kind: "resend" }
+  | { kind: "charge" }
   | null;
 
 /** The account as the older sheets (sell, visit, gift) expect it; the unit stays folded into line1 there, as stored. */
@@ -242,6 +244,7 @@ export function CustomerProfile({ id }: { id: string }) {
 
   const moreItems: MenuItem[] = [
     a.editProfile ? { label: "Edit details", hint: "Names, phone, email, addresses", icon: <PencilSquareIcon />, onSelect: () => setSheet({ kind: "edit" }) } : null,
+    a.chargeCustomer ? { label: "Charge customer", hint: "Saved card · no booking needed", icon: <CreditCardIcon />, onSelect: () => setSheet({ kind: "charge" }) } : null,
     a.sellMembership ? { label: "Sell a membership", hint: "Pay by phone or send a link", icon: <CreditCardIcon />, onSelect: () => setSheet({ kind: "sell" }) } : null,
     a.changePlan && changeHomes.length ? { label: "Change plan", hint: "Preview, then confirm", icon: <SparklesIcon />, onSelect: () => setSheet({ kind: "change" }) } : null,
     a.scheduleCancellation && cancelHomes.length ? { label: "Cancellation", hint: "Schedule or clear", icon: <XCircleIcon />, onSelect: () => setSheet({ kind: "cancel" }) } : null,
@@ -327,7 +330,7 @@ export function CustomerProfile({ id }: { id: string }) {
       <ErrorBoundary label={`Customer ${TAB_LABEL[tab]}`} resetKey={`${id}:${tab}`}>
         {tab === "overview" && <OverviewTab profile={profile} canMembers={canMembers} canProjects={canProjects} projects={projectsQ.data} onOpenTab={(t) => router.replace(tabHref(t as TabId), { scroll: false })} onEdit={a.editProfile ? () => setSheet({ kind: "edit" }) : undefined} />}
         {tab === "visits" && <VisitsTab profile={profile} />}
-        {tab === "billing" && <BillingTab profile={profile} onAction={onMembershipAction} />}
+        {tab === "billing" && <BillingTab profile={profile} onAction={onMembershipAction} onCharge={() => setSheet({ kind: "charge" })} />}
         {tab === "messages" && <MessagesTab profile={profile} showReviewed={canCustomers} />}
         {tab === "projects" && <ProjectsTab projects={projectsQ.data} loading={projectsQ.isLoading} error={projectsQ.error} />}
         {tab === "activity" && <ActivityTab profile={profile} showProfileHistory={canCustomers || canMembers} />}
@@ -348,6 +351,7 @@ export function CustomerProfile({ id }: { id: string }) {
           }}
         />
       )}
+      {sheet?.kind === "charge" && <ChargeCustomerSheet customerId={c.id} onClose={close} />}
       {sheet?.kind === "sell" && <BuyMembershipSheet customer={legacy} onClose={close} onDone={(note) => (close(), done(note))} />}
       {sheet?.kind === "visit" && (
         <CreateVisitSheet

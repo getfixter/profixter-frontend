@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- a plain Node script, like the other scripts/ */
 /*
- * Charge customer in a real browser: open a job, type the total, press
- * "Charge $X". Failures, payment links, repeats, keyboard and sizes.
+ * Charge customer in a real browser, from BOTH entry points: open a job (or
+ * the customer's profile, with no booking), type the total, press
+ * "Charge $X". Failures, payment links, repeats across the two screens,
+ * keyboard and sizes.
  *
  *   npx next start -p 3130          (after npm run build)
  *   node scripts/test_admin_extra_charges_ui.js http://localhost:3130
@@ -19,6 +21,7 @@ const SHOTS = process.env.SHOTS_DIR || path.join(__dirname, "..", "..", "reports
 fs.mkdirSync(SHOTS, { recursive: true });
 
 const OWNER = { _id: "owner1", userId: "PF-OWNER", name: "Owner Test", email: "owner@example.test", phone: "5550100", role: "admin", addresses: [] };
+const MANAGER = { _id: "mg1", userId: "PF-MG", name: "Mia Manager", email: "mia@example.test", phone: "5550103", role: "employee", employeeTitle: "Manager", isActive: true, permissions: ["customers.manage", "members.read", "bookings.read", "bookings.write"], adminSections: ["customers", "members", "jobs"], addresses: [] };
 const GENERAL = { _id: "gf1", userId: "PF-GF", name: "Gina General", email: "gina@example.test", phone: "5550102", role: "employee", employeePosition: "General Fixter", isActive: true, permissions: ["bookings.read", "bookings.write", "bookings.assign"], addresses: [] };
 const iso = (h) => new Date(Date.now() + h * 3600_000).toISOString();
 const money2 = (c) => `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -39,13 +42,15 @@ function makeServer(user, scenario = {}) {
   const owner = user.role === "admin";
   const state = { charges: [], calls: [], keys: new Map(), behavior: scenario.behavior || "ok", failOnceNetwork: Boolean(scenario.failOnceNetwork), card: scenario.card === undefined ? { brand: "visa", last4: "4242", expMonth: 12, expYear: 2030 } : scenario.card, fp: "fp-1" };
   const j = baseJob("j1", scenario.job || {});
-  const detail = () => ({ ...j, allowedActions: ["addInternalNote", "addPhotos", ...(owner ? ["chargeExtra"] : [])], ...(owner ? { extraCharges: { count: state.charges.length, paidCents: 0, open: 0 } } : {}), history: { href: `/api/admin/bookings/${j.id}/history` } });
+  const detail = () => ({ ...j, allowedActions: ["addInternalNote", "addPhotos", ...(owner ? ["chargeExtra"] : [])], ...(owner ? { extraCharges: { count: state.charges.filter((c) => c.bookingId === j.id).length, paidCents: 0, open: 0 } } : {}), history: { href: `/api/admin/bookings/${j.id}/history` } });
   const toCents = (a) => {
     const m = String(a || "").replace(/[$,\s]/g, "").match(/^(\d{1,6})(?:\.(\d{1,2}))?$/);
     return m ? Number(m[1]) * 100 + Number((m[2] || "").padEnd(2, "0")) : null;
   };
-  const target = () => ({
-    booking: { id: j.id, number: j.bookingNumber, date: j.date, service: j.service, status: j.status },
+  // "job": who pays = the booking's owner. "customer": the profile u-j1, a direct charge with no booking.
+  const target = (kind = "job") => ({
+    scope: kind === "job" ? "booking" : "direct",
+    booking: kind === "job" ? { id: j.id, number: j.bookingNumber, date: j.date, service: j.service, status: j.status } : null,
     customer: { name: j.customer.name, guest: Boolean(scenario.guest), accountLinked: !scenario.guest, hasEmail: true, hasPhone: true },
     serviceAddress: { line1: j.address.line1, unit: "", city: j.address.city, state: "NY", zip: j.address.zip, full: j.address.full },
     card: scenario.guest ? null : state.card,
@@ -80,24 +85,30 @@ function makeServer(user, scenario = {}) {
     if (p === "/api/admin/jobs" && method === "GET") return [200, { view: "today", from: null, to: null, total: 1, rows: [detail()], nextCursor: null, counts: { today: 1, tomorrow: 0, week: 1, needsAction: 0 } }];
     if (/\/history$/.test(p)) return [200, { history: [], records: [] }];
     if (p === "/api/admin/jobs/j1" && method === "GET") return [200, { job: detail() }];
-    if (p.startsWith("/api/admin/jobs/j1/extra-charges")) {
-      if (!owner) return [403, { code: "OWNER_ONLY", message: "Only the owner can charge extras." }];
+    const cm = /^\/api\/admin\/(jobs\/j1\/extra-charges|customers\/u-j1\/charges)(\/.*)?$/.exec(p);
+    if (cm) {
+      if (!owner) return [403, { code: "OWNER_ONLY", message: "Only the owner can charge customers." }];
       state.calls.push({ method, p, body });
-      if (p.endsWith("/target")) return [200, { target: target() }];
-      if (p === "/api/admin/jobs/j1/extra-charges" && method === "GET") return [200, { charges: state.charges }];
-      if (p === "/api/admin/jobs/j1/extra-charges" && method === "POST") {
+      const kind = cm[1].startsWith("customers") ? "customer" : "job";
+      const rest = cm[2] || "";
+      if (rest === "/target") return [200, { target: target(kind) }];
+      if (!rest && method === "GET") return [200, { charges: kind === "job" ? state.charges.filter((c) => c.bookingId === j.id) : [...state.charges].reverse() }];
+      if (!rest && method === "POST") {
         if (state.failOnceNetwork) {
           state.failOnceNetwork = false;
           return [502, { message: "Bad gateway" }];
         }
         if (state.keys.has(body.idempotencyKey)) return [200, { charge: state.keys.get(body.idempotencyKey), replayed: true }];
-        if (body.targetFingerprint !== state.fp) return [409, { code: "TARGET_CHANGED", message: "The customer or saved card for this visit changed since the screen opened. Check it and press Charge again.", target: target() }];
+        if (body.targetFingerprint !== state.fp) return [409, { code: "TARGET_CHANGED", message: "The customer or saved card for this visit changed since the screen opened. Check it and press Charge again.", target: target(kind) }];
         const cents = toCents(body.amount);
-        if (!body.allowRepeat && state.charges.some((c) => c.totalCents === cents && ["paid", "processing", "charging", "awaiting_payment"].includes(c.status))) {
-          return [409, { code: "POSSIBLE_DUPLICATE", message: `${money2(cents)} was already charged on this visit at 2:14 PM. Charge it again?` }];
+        // As the server: the same amount to the same CUSTOMER, from either screen, asks first.
+        const recent = state.charges.find((c) => c.totalCents === cents && ["paid", "processing", "charging", "awaiting_payment"].includes(c.status));
+        if (!body.allowRepeat && recent) {
+          return [409, { code: "POSSIBLE_DUPLICATE", message: `${money2(cents)} was already charged for ${j.customer.name} at 2:14 PM, ${recent.bookingId ? `on job #${recent.bookingNumber}` : "as a direct charge"}. Charge it again?` }];
         }
         const n = state.charges.length + 1;
-        const c = { id: `x${n}`, number: `${j.bookingNumber}-E${n}`, note: body.note || "", totalCents: cents, taxStatus: "not_calculated", status: "charging", statusLabel: "", method: body.method, createdAt: new Date().toISOString(), createdByName: user.name, confirmedByName: user.name, confirmedAt: new Date().toISOString(), customerName: j.customer.name, guest: Boolean(scenario.guest), card: body.method === "card" ? { brand: state.card.brand, last4: state.card.last4 } : null, paidAt: null, failure: null, refundedCents: 0, stripeUrl: "", receiptUrl: "", extraPayments: [], link: null, actions: [] };
+        const onJob = kind === "job";
+        const c = { id: `x${n}`, number: onJob ? `${j.bookingNumber}-E${n}` : `PF-1-D${n}`, scope: onJob ? "booking" : "direct", bookingId: onJob ? j.id : null, bookingNumber: onJob ? j.bookingNumber : "", where: onJob ? `Job #${j.bookingNumber}` : "Direct charge", note: body.note || "", totalCents: cents, taxStatus: "not_calculated", status: "charging", statusLabel: "", method: body.method, createdAt: new Date().toISOString(), createdByName: user.name, confirmedByName: user.name, confirmedAt: new Date().toISOString(), customerName: j.customer.name, guest: Boolean(scenario.guest), card: body.method === "card" ? { brand: state.card.brand, last4: state.card.last4 } : null, paidAt: null, failure: null, refundedCents: 0, stripeUrl: "", receiptUrl: "", extraPayments: [], link: null, actions: [] };
         state.charges.push(c);
         if (body.method === "card") chargeCard(c);
         else {
@@ -108,8 +119,9 @@ function makeServer(user, scenario = {}) {
         const delivery = body.send ? { email: body.channels.includes("email") ? "sent" : "not_requested", sms: body.channels.includes("sms") ? "skipped:transactional_not_opted_in" : "not_requested" } : undefined;
         return [201, { charge: c, replayed: false, ...(body.method === "link" ? { payUrl: "https://www.profixter.com/pay/TESTTOKENabcdefghij12" } : {}), ...(delivery ? { delivery } : {}) }];
       }
-      const m = /^\/api\/admin\/jobs\/j1\/extra-charges\/([^/]+)\/(refresh|retry-card|payment-link|close)$/.exec(p);
-      const c = m && state.charges.find((x) => x.id === m[1]);
+      const m = /^\/([^/]+)\/(refresh|retry-card|payment-link|close)$/.exec(rest);
+      // A charge only under its own job, or its own customer.
+      const c = m && state.charges.find((x) => x.id === m[1] && (kind === "customer" || x.bookingId === j.id));
       if (!c) return [404, { code: "NOT_FOUND", message: "Charge not found" }];
       if (m[2] === "refresh") {
         if (c.status === "processing" && state.settleOnRefresh) {
@@ -128,6 +140,38 @@ function makeServer(user, scenario = {}) {
         return [200, { charge: c }];
       }
       return [200, { charge: c }];
+    }
+    const pm = /^\/api\/admin\/customers\/u-j1(\/[a-z-]+)?$/.exec(p);
+    if (pm) {
+      const rest = pm[1] || "";
+      if (!rest) {
+        return [200, {
+          customer: { id: "u-j1", userId: "PF-1", name: j.customer.name, firstName: "Maria", lastName: "Rivera-Montgomery", email: j.customer.email, phone: j.customer.phoneE164, phoneFormatted: j.customer.phone, signupMethod: "web", customerSince: iso(-24 * 400), updatedAt: iso(-24), archivedAt: null },
+          addresses: [],
+          visits: { completed: 4, next: null, last: null },
+          flags: { blocked: false, phoneVerified: true, emailVerified: true, textsOk: true, offersByTextOk: false, archived: false, hasStripeCustomer: true },
+          notesCount: 0,
+          allowedActions: { editProfile: true, editContact: owner, changePlan: true, scheduleCancellation: true, grantComplimentary: owner, sellMembership: true, createVisit: true, addNote: true, block: false, unblock: false, archive: owner, unarchive: false, viewBilling: true, changeCommunication: true, resendAccess: false, chargeCustomer: owner },
+        }];
+      }
+      if (rest === "/billing") {
+        // The Stripe list, with each charge's payment labelled by its record (never a second entry).
+        const paid = state.charges.filter((c) => c.status === "paid");
+        return [200, {
+          available: true, cachedAt: new Date().toISOString(),
+          customers: [{ id: "cus_fake", deleted: false, defaultPaymentMethod: { brand: "visa", last4: "4242", expMonth: 12, expYear: 2030 }, dashboardUrl: "https://dashboard.stripe.com/test/customers/cus_fake" }],
+          subscriptions: [], invoices: [], upcoming: [], refundsNote: "Refunds are made in Stripe.",
+          payments: paid.map((c, i) => ({ id: `ch_${i}`, paymentIntentId: `pi_${c.id}`, amountCents: c.totalCents, amountRefundedCents: 0, refunded: false, currency: "usd", status: "succeeded", paid: true, failureCode: null, failureMessage: null, description: "", createdAt: c.createdAt, card: c.card, dashboardUrl: "https://dashboard.stripe.com/test/payments/x", extraCharge: { id: c.id, number: c.number, direct: !c.bookingId, bookingId: c.bookingId, bookingNumber: c.bookingNumber, description: c.note } })),
+          additionalCharges: paid.map((c) => ({ id: c.id, number: c.number, direct: !c.bookingId, bookingId: c.bookingId, bookingNumber: c.bookingNumber, description: c.note, status: c.status, totalCents: c.totalCents, taxStatus: "not_calculated", refundedCents: 0, paidAt: c.paidAt, createdAt: c.createdAt, inPayments: true, stripeUrl: null })),
+        }];
+      }
+      if (rest === "/consent") {
+        const sw = { enabled: true, locked: null, changedAt: null, source: "" };
+        return [200, { switches: { service: { email: sw, sms: sw }, marketing: { email: { ...sw, delivery: { sending: true, reason: null } }, sms: { ...sw, enabled: false, consent: { status: "none", basis: "", method: "", evidence: "", confirmRequestedAt: null }, delivery: { sending: false, reason: null } } } }, evidence: {}, stop: { phoneOptedOut: false, scope: "", at: null, source: "" }, history: [] }];
+      }
+      if (rest === "/visits") return [200, { items: [], nextCursor: null }];
+      if (rest === "/projects") return [200, { moneyVisible: owner, items: [] }];
+      return [200, { items: [] }];
     }
     return [200, p.includes("summary") || p.includes("settings") ? {} : []];
   }
@@ -175,6 +219,17 @@ async function open(browser, user, scenario = {}, { width = 390, height = 844 } 
   return { ctx, page, server, external, errors };
 }
 const sheet = (page) => page.locator("[role=dialog][data-sheet=job]");
+const chargeSheet = (page) => page.locator("[role=dialog][data-sheet=charge-customer]");
+async function openCustomer(page, tab = "billing") {
+  await page.goto(`${BASE}/admin/customers/u-j1${tab ? `?tab=${tab}` : ""}`, { waitUntil: "domcontentloaded" });
+  await page.locator("[data-customer-profile=u-j1]").waitFor({ timeout: 20000 });
+}
+async function startDirect(page, amount = "80") {
+  await page.locator("[data-extra-block=customer] [data-extra-open]").click();
+  await chargeSheet(page).locator("[data-stage=charge]").waitFor();
+  if (amount !== null) await page.locator("input[name=extra-amount]").fill(amount);
+}
+const customerPosts = (server) => server.state.calls.filter((c) => c.method === "POST" && /\/customers\/u-j1\/charges$/.test(c.p));
 async function openJob(page) {
   await page.goto(`${BASE}/admin/jobs/j1`, { waitUntil: "domcontentloaded" });
   await sheet(page).locator("[data-job-body=j1]").waitFor({ timeout: 20000 });
@@ -185,9 +240,9 @@ async function startCharge(page, amount = "134.10") {
   if (amount !== null) await page.locator("input[name=extra-amount]").fill(amount);
 }
 const posts = (server) => server.state.calls.filter((c) => c.method === "POST" && /extra-charges$/.test(c.p));
-async function overflow(page) {
-  return page.evaluate(() => {
-    const d = document.querySelector("[role=dialog][data-sheet=job]");
+async function overflow(page, which = "job") {
+  return page.evaluate((which) => {
+    const d = document.querySelector(`[role=dialog][data-sheet=${which}]`);
     const vw = document.documentElement.clientWidth;
     const bad = [];
     for (const el of d.querySelectorAll("*")) {
@@ -195,7 +250,7 @@ async function overflow(page) {
       if (r.width && r.right > vw + 1) bad.push(`${el.tagName}.${String(el.className).slice(0, 30)} ${Math.round(r.right)}`);
     }
     return { scroll: document.documentElement.scrollWidth > vw + 1, bad: bad.slice(0, 5) };
-  });
+  }, which);
 }
 
 (async () => {
@@ -387,6 +442,119 @@ async function overflow(page) {
         check(`${size.w}x${size.h}: inputs 16px+ (no zoom on focus)`, fs16);
       }
       await page.screenshot({ path: path.join(SHOTS, `charge-${size.w}x${size.h}.png`) });
+      await ctx.close();
+    }
+
+    /* 8. the customer profile: Charge customer with no booking */
+    {
+      const { ctx, page, server, external, errors } = await open(browser, OWNER);
+      await openCustomer(page, "billing");
+      await page.locator("[data-extra-block=customer]").waitFor();
+      check("profile: the owner's Billing tab has Charges with a Charge customer button", (await page.locator("[data-extra-block=customer] [data-extra-open]").innerText()).includes("Charge customer"));
+      await page.locator("[data-action=more]").click();
+      check("profile: Charge customer is in More too", (await page.locator("[role=menuitem]:has-text('Charge customer')").count()) === 1);
+      await page.keyboard.press("Escape");
+      await startDirect(page, null);
+      const focused = await page.evaluate(() => document.activeElement?.getAttribute("name"));
+      check("profile: the amount field is focused straight away", focused === "extra-amount", String(focused));
+      const who = await chargeSheet(page).locator("[data-extra-identity]").innerText();
+      check("profile: shows the customer, 'no booking' and the saved card's last four (no job number)", /Maria Rivera-Montgomery/.test(who) && /Direct charge · no booking/.test(who) && /Visa •••• 4242/.test(who) && !/Job #/.test(who), who);
+      await page.locator("input[name=extra-amount]").fill("80");
+      check("profile: the button states the exact total", (await page.locator("[data-extra-charge]").innerText()).trim() === "Charge $80.00");
+      await page.locator("[data-extra-add-note]").click();
+      await page.locator("input[name=extra-note]").fill("Emergency call-out, burst pipe");
+      await page.screenshot({ path: path.join(SHOTS, "9-profile-charge-390x844.png") });
+      await page.locator("[data-extra-charge]").click();
+      await chargeSheet(page).locator("[data-stage=result][data-extra-status=paid]").waitFor();
+      check("profile: Paid only on the server's answer", /Paid \$80\.00/.test(await chargeSheet(page).locator("[data-stage=result]").innerText()));
+      const sent = customerPosts(server)[0];
+      check("profile: posted to this customer's charges, no booking, no customer or card ids in the request", sent && sent.body.amount === "80" && sent.body.note === "Emergency call-out, burst pipe" && sent.body.targetFingerprint === "fp-1" && !/bookingId|customerId|userId|stripeCustomer|paymentMethod|cus_|pm_/.test(JSON.stringify(sent.body)), JSON.stringify(sent?.body || {}));
+      await page.screenshot({ path: path.join(SHOTS, "10-profile-paid-390x844.png") });
+      await page.locator("[data-extra-done]").click();
+      await chargeSheet(page).waitFor({ state: "detached" });
+      await page.locator("[data-extra-block=customer] [data-extra-row=paid]").waitFor();
+      const row = await page.locator("[data-extra-block=customer] [data-extra-row=paid]").innerText();
+      check("profile: recorded under the customer as Direct charge, with note, owner, time, status and receipt", /Direct charge/.test(row) && /Emergency call-out/.test(row) && /by Owner Test/.test(row) && /Paid/.test(row) && (await page.locator("[data-extra-block=customer] [data-extra-row=paid] [data-extra-receipt]").count()) === 1, row);
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.locator("[data-payment-extra=direct]").waitFor({ timeout: 15000 });
+      check("billing: the Stripe payment is labelled Direct charge; no separate 'paid by link' list for the owner", /Direct charge/.test(await page.locator("[data-payment-extra=direct]").innerText()) && (await page.locator("text=Charges paid by link").count()) === 0);
+
+      // Switching screens: the same amount from the job is caught.
+      await openJob(page);
+      await startCharge(page, "80");
+      await page.locator("[data-extra-charge]").click();
+      await page.locator("[data-extra-repeat]").waitFor();
+      check("switching to the job: the same amount is caught as a repeat of the direct charge", /already charged .*as a direct charge/.test(await page.locator("[data-extra-repeat]").innerText()) && server.state.charges.length === 1);
+      await page.screenshot({ path: path.join(SHOTS, "12-cross-repeat-390x844.png") });
+      await page.locator("[data-extra-repeat-confirm]").click();
+      await page.locator("[data-stage=result][data-extra-status=paid]").waitFor();
+      await page.locator("[data-extra-done]").click();
+      await page.locator("[data-extra-block=job] [data-extra-row]").first().waitFor();
+      check("the job lists only its own charge, not the direct one", (await page.locator("[data-extra-block=job] [data-extra-row]").count()) === 1 && !/Direct charge/.test(await page.locator("[data-extra-block=job]").innerText()));
+
+      // And back on the profile: both, once each, the job one linked to its job.
+      await openCustomer(page, "billing");
+      await page.locator("[data-extra-block=customer] [data-extra-row]").nth(1).waitFor();
+      const rows = page.locator("[data-extra-block=customer] [data-extra-row]");
+      const jobRow = page.locator("[data-extra-block=customer] [data-extra-row-where=job] a");
+      check("profile lists every charge once: the job charge (linked to its job) and the direct one", (await rows.count()) === 2 && (await jobRow.count()) === 1 && (await jobRow.getAttribute("href")) === "/admin/jobs/j1" && (await page.locator("[data-extra-block=customer] [data-extra-row-where=direct]").count()) === 1);
+      await page.locator("[data-extra-block=customer]").scrollIntoViewIfNeeded();
+      await page.screenshot({ path: path.join(SHOTS, "11-profile-charges-390x844.png") });
+      check("profile: no outside requests, no page errors", external.length === 0 && errors.length === 0, [...external, ...errors].join(" | "));
+      await ctx.close();
+    }
+    {
+      const { ctx, page, server } = await open(browser, OWNER);
+      await openCustomer(page, "billing");
+      await page.locator("[data-extra-block=customer]").waitFor();
+      await startDirect(page, "45");
+      await page.locator("[data-extra-charge]").dblclick();
+      await chargeSheet(page).locator("[data-stage=result]").waitFor();
+      check("profile: double tap makes one charge request", customerPosts(server).length === 1, String(customerPosts(server).length));
+      await page.locator("[data-extra-done]").click();
+      await startDirect(page, "30");
+      server.state.fp = "fp-2";
+      server.state.card = { brand: "mastercard", last4: "5555", expMonth: 1, expYear: 2031 };
+      await page.locator("[data-extra-charge]").click();
+      await page.locator("[data-extra-error=TARGET_CHANGED]").waitFor();
+      check("profile: a card changed since the sheet opened is not charged; the new card is shown", server.state.charges.length === 1 && /Mastercard •••• 5555/.test(await chargeSheet(page).locator("[data-extra-identity]").innerText()));
+      await page.keyboard.press("Escape");
+      check("profile: closing with an amount typed asks first", (await page.locator("text=Leave without charging?").count()) >= 1);
+      await ctx.close();
+    }
+    {
+      const { ctx, page, server } = await open(browser, OWNER, { behavior: "decline" });
+      await openCustomer(page, "billing");
+      await page.locator("[data-extra-block=customer]").waitFor();
+      await startDirect(page, "75");
+      await page.locator("[data-extra-charge]").click();
+      await chargeSheet(page).locator("[data-stage=result][data-extra-status=failed]").waitFor();
+      check("profile: a decline shows the bank's reason, never Paid", /insufficient funds/.test(await chargeSheet(page).locator("[data-stage=result]").innerText()));
+      await page.locator("[data-extra-result-copy]").click();
+      await page.locator("[data-extra-pay-url]").waitFor();
+      check("profile: the payment link is for this charge, through this customer's charges", server.state.calls.some((c) => c.method === "POST" && /\/customers\/u-j1\/charges\/x1\/payment-link$/.test(c.p)));
+      await ctx.close();
+    }
+    {
+      const { ctx, page, server } = await open(browser, MANAGER);
+      await openCustomer(page, "billing");
+      await page.locator("[data-tab-panel=billing]").waitFor();
+      await page.locator("[data-action=more]").click();
+      check("a manager sees no Charges block and no Charge customer, and nothing is requested", (await page.locator("[data-extra-block]").count()) === 0 && (await page.locator("[role=menuitem]:has-text('Charge customer')").count()) === 0 && server.state.calls.length === 0);
+      await ctx.close();
+    }
+    for (const size of [{ w: 320, h: 568 }, { w: 390, h: 844 }, { w: 1440, h: 900 }]) {
+      const { ctx, page } = await open(browser, OWNER, {}, { width: size.w, height: size.h });
+      await openCustomer(page, "billing");
+      await page.locator("[data-extra-block=customer]").waitFor();
+      await startDirect(page, "134.10");
+      // Measure the settled sheet, not its slide-in.
+      await chargeSheet(page).evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((x) => x.finished)));
+      const o = await overflow(page, "charge-customer");
+      const btn = await page.locator("[data-extra-charge]").boundingBox();
+      const input = await page.locator("input[name=extra-amount]").boundingBox();
+      check(`profile ${size.w}x${size.h}: no overflow; amount and Charge visible together; 44px button`, !o.scroll && !o.bad.length && btn && btn.y + btn.height <= size.h + 1 && btn.height >= 43.5 && input && input.y >= 0 && input.y + input.height <= btn.y, JSON.stringify({ o, btn, input }));
+      await page.screenshot({ path: path.join(SHOTS, `profile-charge-${size.w}x${size.h}.png`) });
       await ctx.close();
     }
   } finally {

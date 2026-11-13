@@ -54,6 +54,7 @@ import { useAdmin } from "@/app/components/admin/shell/AdminContext";
 import { FlagBadge } from "@/app/components/admin/jobs/JobRows";
 import { CancelStep, ConfirmStep, DoneStep, EditStep, ReassignStep, ReinstateStep, RescheduleStep, type StepResult } from "@/app/components/admin/jobs/JobSteps";
 import { ChargeExtraStep, ExtraChargesBlock } from "@/app/components/admin/jobs/ChargeExtra";
+import { jobScope } from "@/lib/admin/extraCharges";
 import { peekOpenedFromList, takeOpenedFromList } from "@/app/components/admin/jobs/openedFrom";
 import { badgeTypeOf } from "@/lib/admin/jobs";
 import "@/app/components/admin/jobs/jobs.css";
@@ -225,7 +226,7 @@ export function JobDetailSheet({ id, backHref = "/admin/jobs" }: { id: string; b
       ) : step === "edit" ? (
         <EditStep {...stepProps} />
       ) : step === "chargeExtra" ? (
-        <ChargeExtraStep job={job} footer={footerEl} onBack={leaveStep} setBusy={setStepBusy} setDirty={setStepDirty} />
+        <ChargeExtraStep scope={jobScope(job.id)} footer={footerEl} onBack={leaveStep} setBusy={setStepBusy} setDirty={setStepDirty} />
       ) : (
         <JobBody job={job} field={field} result={result} onDismissResult={() => setResult(null)} onOpen={open} canCustomers={canOpen("customers")} canComms={can(user, PERM.COMMUNICATIONS_MANAGE)} refreshing={q.isFetching} onRefresh={() => void q.refetch()} />
       )}
@@ -362,7 +363,7 @@ function JobBody({
       {!field && job.money && <MoneyView job={job} />}
 
       {/* Additional charges (owner only: the server sends extraCharges to the owner alone) */}
-      {!field && job.extraCharges && <ExtraChargesBlock job={job} canCharge={allowed.has("chargeExtra")} onCharge={() => onOpen("chargeExtra")} />}
+      {!field && job.extraCharges && <ExtraChargesBlock scope={jobScope(job.id)} canCharge={allowed.has("chargeExtra")} onCharge={() => onOpen("chargeExtra")} />}
 
       {/* Internal notes */}
       <Block title="Internal notes" hint="Staff only. The customer never sees these.">
