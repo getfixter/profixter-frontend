@@ -30,7 +30,8 @@ export function parseNeedsAction(body: unknown): NeedsActionCounts {
   const out: NeedsActionCounts = { bookings: 0, members: 0, projects: 0, total: 0 };
   if (!body || typeof body !== "object") return out;
   const b = body as Record<string, unknown>;
-  const list = (Array.isArray(b.groups) ? b.groups : Array.isArray(b.collectors) ? b.collectors : null) as Group[] | null;
+  // BE-BOOK ships { sections: [{ key, count, items }] } (an array), checked first.
+  const list = (Array.isArray(b.sections) ? b.sections : Array.isArray(b.groups) ? b.groups : Array.isArray(b.collectors) ? b.collectors : null) as Group[] | null;
   const map = (list ? null : (b.sections && typeof b.sections === "object" ? b.sections : b.collectors && typeof b.collectors === "object" ? b.collectors : b)) as Record<string, Group> | null;
   const read = (key: keyof Omit<NeedsActionCounts, "total">) => {
     if (list) return countOf(list.find((g) => g?.key === key || g?.id === key));

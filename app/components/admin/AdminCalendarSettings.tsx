@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, Sheet } from "@/app/components/admin/ui";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import {
   bootstrapCalendarFoundation,
@@ -178,7 +180,7 @@ function WeeklyScheduleEditor({
   return (
     <div className="space-y-3">
       {days.map((day) => (
-        <div key={day.weekday} className="rounded-xl border border-slate-200 p-3">
+        <div key={day.weekday} className="rounded-xl border border-adm-line p-3">
           <label className="flex items-center justify-between gap-3 font-semibold text-slate-800">
             {LONG_WEEKDAYS[day.weekday]}
             <input
@@ -215,7 +217,7 @@ function WeeklyScheduleEditor({
                       };
                       updateDay(day.weekday, { starts, intervals: [] });
                     }}
-                    className="min-w-0 rounded-lg border border-slate-300 px-2 py-2"
+                    className="min-w-0 rounded-lg border border-adm-line-2 px-2 py-2"
                   />
                   <button
                     type="button"
@@ -227,7 +229,7 @@ function WeeklyScheduleEditor({
                         intervals: [],
                       })
                     }
-                    className="rounded-lg border border-slate-200 px-3 text-slate-500"
+                    className="rounded-lg border border-adm-line px-3 text-adm-text-2"
                     aria-label="Remove appointment start"
                   >
                     ×
@@ -248,7 +250,7 @@ function WeeklyScheduleEditor({
                         };
                         updateDay(day.weekday, { starts, intervals: [] });
                       }}
-                      className="rounded-lg border border-slate-300 px-3 py-2"
+                      className="rounded-lg border border-adm-line-2 px-3 py-2"
                       placeholder="Optional capacity"
                     />
                   )}
@@ -289,6 +291,8 @@ export default function AdminCalendarSettings({
   const [summary, setSummary] = useState<ShadowCalendarDaySummary[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [day, setDay] = useState<ShadowCalendarDay | null>(null);
+  /* "Custom starts" form (a kit sheet; it replaced window.prompt). null = closed. */
+  const [customStarts, setCustomStarts] = useState<string[] | null>(null);
   const [timeOff, setTimeOff] = useState<ShadowTimeOff[]>([]);
   const [company, setCompany] = useState<ShadowCompanyTemplate | null>(null);
   const [techTemplate, setTechTemplate] =
@@ -506,7 +510,7 @@ export default function AdminCalendarSettings({
 
   if (!status) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">
+      <div className="rounded-adm-md border border-adm-line bg-adm-surface p-8 text-center text-adm-text-2">
         Loading calendar foundation…
       </div>
     );
@@ -518,7 +522,7 @@ export default function AdminCalendarSettings({
         <p className="text-xs font-bold uppercase tracking-widest text-amber-700">
           Scheduling system
         </p>
-        <h2 className="mt-2 text-2xl font-black text-slate-900">
+        <h2 className="mt-2 text-[20px] font-semibold text-adm-ink">
           Calendar foundation is not ready
         </h2>
         <p className="mt-2 text-sm text-slate-600">
@@ -614,16 +618,16 @@ export default function AdminCalendarSettings({
 
   return (
     <section className="mx-auto max-w-7xl space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-adm-md border border-adm-line bg-adm-surface p-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-blue-700">
+            <p className="text-[13px] font-semibold text-adm-accent-ink">
               Scheduling engine
             </p>
-            <h2 className="text-2xl font-black text-slate-900">
+            <h2 className="text-[20px] font-semibold text-adm-ink">
               Calendar Control Center
             </h2>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-adm-text-2">
               These controls power customer availability when the reservation
               engine feature flag is enabled.
             </p>
@@ -631,20 +635,21 @@ export default function AdminCalendarSettings({
           <button
             type="button"
             onClick={openSettings}
-            className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-800"
+            className="rounded-xl border border-adm-line-2 px-4 py-2.5 text-sm font-bold text-slate-800"
           >
             Templates & Settings
           </button>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+        <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
           <select
             value={scopeValue}
             onChange={(event) => {
               setScopeValue(event.target.value);
               setSelectedDate(null);
             }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-3 font-semibold"
+            className="w-full min-w-0 rounded-xl border border-adm-line-2 bg-white px-3 py-3 font-semibold"
+            aria-label="Whose calendar"
           >
             <option value="company">All Company</option>
             {technicians.map((technician) => (
@@ -653,7 +658,7 @@ export default function AdminCalendarSettings({
               </option>
             ))}
           </select>
-          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+          <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
             <button
               type="button"
               onClick={() =>
@@ -661,7 +666,7 @@ export default function AdminCalendarSettings({
                   new Date(month.getFullYear(), month.getMonth() - 1, 1)
                 )
               }
-              className="rounded-xl border border-slate-300 px-4 py-3"
+              className="rounded-xl border border-adm-line-2 px-4 py-3"
               aria-label="Previous month"
             >
               ‹
@@ -672,7 +677,7 @@ export default function AdminCalendarSettings({
                 const [year, monthNumber] = todayNY().split("-").map(Number);
                 setMonth(new Date(year, monthNumber - 1, 1));
               }}
-              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold"
+              className="rounded-xl border border-adm-line-2 px-4 py-3 text-sm font-bold"
             >
               Today
             </button>
@@ -683,7 +688,7 @@ export default function AdminCalendarSettings({
                   new Date(month.getFullYear(), month.getMonth() + 1, 1)
                 )
               }
-              className="rounded-xl border border-slate-300 px-4 py-3"
+              className="rounded-xl border border-adm-line-2 px-4 py-3"
               aria-label="Next month"
             >
               ›
@@ -693,7 +698,7 @@ export default function AdminCalendarSettings({
       </div>
 
       {isAdmin && cutoverStatus && (
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface">
           <button
             type="button"
             aria-expanded={cutoverOpen}
@@ -701,7 +706,7 @@ export default function AdminCalendarSettings({
             onClick={() => setCutoverOpen((current) => !current)}
             className="flex w-full flex-wrap items-center gap-2 px-4 py-3 text-left transition hover:bg-slate-50"
           >
-            <span className="mr-1 shrink-0 text-sm font-black text-slate-900 sm:text-base">
+            <span className="mr-1 shrink-0 text-sm font-semibold text-adm-ink sm:text-base">
               Customer Calendar Cutover
             </span>
             <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
@@ -711,7 +716,7 @@ export default function AdminCalendarSettings({
                   className={`whitespace-nowrap rounded-full border px-2 py-1 text-[10px] font-bold leading-none ${
                     pill.ok
                       ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-slate-200 bg-slate-100 text-slate-600"
+                      : "border-adm-line bg-slate-100 text-slate-600"
                   }`}
                 >
                   {pill.label}: {pill.value}
@@ -744,14 +749,14 @@ export default function AdminCalendarSettings({
           {cutoverOpen && (
             <div
               id="customer-calendar-cutover-content"
-              className="border-t border-slate-200 p-4"
+              className="border-t border-adm-line p-4"
             >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+              <p className="text-xs font-bold uppercase tracking-widest text-adm-text-2">
                 Customer calendar cutover
               </p>
-              <h3 className="mt-1 text-xl font-black text-slate-900">
+              <h3 className="mt-1 text-xl font-semibold text-adm-ink">
                 Production readiness
               </h3>
               <p className="mt-1 text-sm text-slate-600">
@@ -774,7 +779,7 @@ export default function AdminCalendarSettings({
                 type="button"
                 disabled={busy || cutoverLoading}
                 onClick={reconcileFoundation}
-                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-800 disabled:cursor-not-allowed disabled:opacity-45"
+                className="rounded-xl border border-adm-line-2 px-4 py-2.5 text-sm font-bold text-slate-800 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 Reconcile imported schedule
               </button>
@@ -796,7 +801,7 @@ export default function AdminCalendarSettings({
             <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-black text-slate-900">
+                  <p className="font-semibold text-adm-ink">
                     Assignment dry run
                   </p>
                   <p className="mt-1 text-sm text-slate-700">
@@ -823,7 +828,7 @@ export default function AdminCalendarSettings({
                       key={entry.bookingId}
                       className="rounded-lg bg-white p-3 text-sm"
                     >
-                      <p className="font-bold text-slate-900">
+                      <p className="font-bold text-adm-ink">
                         {new Date(entry.requestedStart).toLocaleString()} →{" "}
                         {entry.technicianName || entry.technicianId}
                       </p>
@@ -843,7 +848,7 @@ export default function AdminCalendarSettings({
                   <div className="mt-2 space-y-3">
                     {assignmentPreview.issues.map((issue) => (
                       <div key={`${issue.category}-${issue.bookingId}`}>
-                        <p className="font-bold text-slate-900">
+                        <p className="font-bold text-adm-ink">
                           Booking {issue.bookingId}
                           {issue.slotStart
                             ? ` · ${new Date(issue.slotStart).toLocaleString()}`
@@ -890,7 +895,7 @@ export default function AdminCalendarSettings({
                   type="button"
                   disabled={assignmentLoading}
                   onClick={confirmAutoAssignments}
-                  className="mt-4 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white disabled:opacity-50"
+                  className="mt-4 w-full rounded-xl bg-adm-accent px-4 py-3 font-bold text-white disabled:opacity-50"
                 >
                   {assignmentLoading
                     ? "Assigning..."
@@ -966,10 +971,10 @@ export default function AdminCalendarSettings({
                     : "border-amber-200 bg-amber-50"
                 }`}
               >
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <p className="text-xs font-bold uppercase tracking-wide text-adm-text-2">
                   {String(label)}
                 </p>
-                <p className="mt-1 font-black text-slate-900">
+                <p className="mt-1 font-semibold text-adm-ink">
                   {String(value)}
                 </p>
               </div>
@@ -985,7 +990,7 @@ export default function AdminCalendarSettings({
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-black text-slate-900">
+                <p className="font-semibold text-adm-ink">
                   Safe to cut over: {cutoverReadiness.decision}
                 </p>
                 <p className="text-sm font-semibold text-slate-600">
@@ -1037,7 +1042,7 @@ export default function AdminCalendarSettings({
                       key={key}
                       className="rounded-lg bg-white/80 px-3 py-2"
                     >
-                      <span className="block text-xs text-slate-500">{key}</span>
+                      <span className="block text-xs text-adm-text-2">{key}</span>
                       <strong>{count}</strong>
                     </div>
                   )
@@ -1068,8 +1073,8 @@ export default function AdminCalendarSettings({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 p-4 text-center text-lg font-black text-slate-900">
+      <div className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface">
+        <div className="border-b border-adm-line p-4 text-center text-lg font-semibold text-adm-ink">
           {month.toLocaleDateString("en-US", {
             month: "long",
             year: "numeric",
@@ -1079,7 +1084,7 @@ export default function AdminCalendarSettings({
           {WEEKDAYS.map((weekday) => (
             <div
               key={weekday}
-              className="py-2 text-center text-[10px] font-bold uppercase text-slate-500 sm:text-xs"
+              className="py-2 text-center text-[10px] font-bold uppercase text-adm-text-2 sm:text-xs"
             >
               {weekday}
             </div>
@@ -1097,7 +1102,7 @@ export default function AdminCalendarSettings({
                 }`}
               >
                 <div className="flex items-start justify-between gap-1">
-                  <span className="font-black text-slate-900">
+                  <span className="font-semibold text-adm-ink">
                     {Number(item.date.slice(-2))}
                   </span>
                   {item.bookingCount > 0 && (
@@ -1105,7 +1110,7 @@ export default function AdminCalendarSettings({
                       title={`${item.bookingCount} booking${
                         item.bookingCount === 1 ? "" : "s"
                       }`}
-                      className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-black text-white shadow-sm sm:h-6 sm:min-w-6 sm:text-xs"
+                      className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold text-white shadow-sm sm:h-6 sm:min-w-6 sm:text-xs"
                     >
                       {item.bookingCount}
                     </span>
@@ -1136,7 +1141,7 @@ export default function AdminCalendarSettings({
           )}
         </div>
         {loading && (
-          <div className="border-t border-slate-200 p-3 text-center text-sm text-slate-500">
+          <div className="border-t border-adm-line p-3 text-center text-sm text-adm-text-2">
             Loading calendar…
           </div>
         )}
@@ -1150,15 +1155,15 @@ export default function AdminCalendarSettings({
             onClick={() => setSelectedDate(null)}
             className="absolute inset-0"
           />
-          <div className="relative max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 shadow-2xl lg:h-full lg:max-h-none lg:max-w-xl lg:rounded-none lg:p-6">
-            <div className="sticky top-0 z-10 -mx-4 -mt-4 flex items-start justify-between border-b border-slate-200 bg-white p-4 lg:-mx-6 lg:-mt-6 lg:p-6">
+          <div className="relative max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 shadow-2xl lg:h-full lg:max-h-none lg:max-w-xl lg:rounded-none lg:p-6">
+            <div className="sticky top-0 z-10 -mx-4 -mt-4 flex items-start justify-between border-b border-adm-line bg-white p-4 lg:-mx-6 lg:-mt-6 lg:p-6">
               <div>
                 <p className="text-sm font-semibold text-blue-700">
                   {scope === "company"
                     ? "All Company"
                     : technicians.find((item) => item.id === technicianId)?.name}
                 </p>
-                <h3 className="text-xl font-black text-slate-900">
+                <h3 className="text-xl font-semibold text-adm-ink">
                   {new Date(`${selectedDate}T12:00:00`).toLocaleDateString(
                     "en-US",
                     { weekday: "long", month: "long", day: "numeric" }
@@ -1175,7 +1180,7 @@ export default function AdminCalendarSettings({
             </div>
 
             {!day ? (
-              <p className="py-10 text-center text-slate-500">Loading day…</p>
+              <p className="py-10 text-center text-adm-text-2">Loading day…</p>
             ) : (
               <div className="space-y-5 pt-4">
                 {selectedDateIsPast && (
@@ -1190,8 +1195,8 @@ export default function AdminCalendarSettings({
                     ["Open slots", day.openSlotCount],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-xl bg-slate-100 p-3">
-                      <div className="text-xs text-slate-500">{label}</div>
-                      <div className="text-lg font-black text-slate-900">{value}</div>
+                      <div className="text-xs text-adm-text-2">{label}</div>
+                      <div className="text-lg font-semibold text-adm-ink">{value}</div>
                     </div>
                   ))}
                 </div>
@@ -1238,30 +1243,14 @@ export default function AdminCalendarSettings({
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => {
-                      const input = window.prompt(
-                        "Appointment starts, comma separated (HH:MM)",
-                        DEFAULT_APPOINTMENT_STARTS.join(", ")
-                      );
-                      const starts = String(input || "")
-                        .split(",")
-                        .map((time) => time.trim())
-                        .filter(Boolean)
-                        .map((time) => ({ time }));
-                      if (!starts.length) return;
-                      void mutate(
-                        () =>
-                          saveShadowDayOverride({
-                            scopeType: scope,
-                            technicianId,
-                            date: selectedDate,
-                            mode: "custom_hours",
-                            starts,
-                            intervals: [],
-                          }),
-                        "Custom appointment starts saved"
-                      );
-                    }}
+                    onClick={() =>
+                      setCustomStarts(
+                        day && day.slots.length
+                          ? day.slots.map((slot) => slot.time)
+                          : [...DEFAULT_APPOINTMENT_STARTS]
+                      )
+                    }
+                    data-custom-starts=""
                     className="rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700"
                   >
                     Custom starts
@@ -1276,7 +1265,7 @@ export default function AdminCalendarSettings({
                     onChange={(event) => setNote(event.target.value)}
                     readOnly={selectedDateIsPast}
                     rows={2}
-                    className="mt-2 w-full rounded-xl border border-slate-300 p-3"
+                    className="mt-2 w-full rounded-xl border border-adm-line-2 p-3"
                     placeholder="Add a note for the team"
                   />
                   {!selectedDateIsPast && (
@@ -1304,7 +1293,7 @@ export default function AdminCalendarSettings({
                             "Note removed"
                           )
                         }
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold"
+                        className="rounded-lg border border-adm-line-2 px-3 py-2 text-sm font-bold"
                       >
                         Delete
                       </button>
@@ -1313,8 +1302,8 @@ export default function AdminCalendarSettings({
                   )}
                 </div>
 
-                <details className="rounded-xl border border-slate-200 p-3">
-                  <summary className="cursor-pointer font-bold text-slate-900">
+                <details className="rounded-xl border border-adm-line p-3">
+                  <summary className="cursor-pointer font-bold text-adm-ink">
                     {selectedDateIsPast
                       ? "Technician time off"
                       : "Add technician time off"}
@@ -1331,7 +1320,7 @@ export default function AdminCalendarSettings({
                     />
                   )}
                   {timeOff.length > 0 && (
-                    <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
+                    <div className="mt-3 space-y-2 border-t border-adm-line pt-3">
                       {timeOff.map((entry) => {
                         const technician =
                           typeof entry.technicianId === "object"
@@ -1375,14 +1364,14 @@ export default function AdminCalendarSettings({
                     day.slots.map((slot) => (
                       <div
                         key={slot.time}
-                        className="rounded-2xl border border-slate-200 p-4"
+                        className="rounded-adm-md border border-adm-line p-4"
                       >
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="text-lg font-black text-slate-900">
+                            <div className="text-lg font-semibold text-adm-ink">
                               {formatTime(slot.time)}–{formatTime(slot.endTime)}
                             </div>
-                            <div className="text-sm text-slate-500">
+                            <div className="text-sm text-adm-text-2">
                               90-minute visit · {slot.usedCapacity} /{" "}
                               {slot.totalCapacity} booked · {slot.remainingCapacity} open
                             </div>
@@ -1416,7 +1405,7 @@ export default function AdminCalendarSettings({
                                     ? "font-semibold text-blue-700"
                                     : technician.available
                                       ? "text-emerald-700"
-                                      : "text-slate-500"
+                                      : "text-adm-text-2"
                                 }
                               >
                                 {technician.booked
@@ -1458,7 +1447,7 @@ export default function AdminCalendarSettings({
                                   `${label} applied`
                                 )
                               }
-                              className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-bold"
+                              className="rounded-lg border border-adm-line-2 px-2 py-2 text-xs font-bold"
                             >
                               {label}
                             </button>
@@ -1472,13 +1461,17 @@ export default function AdminCalendarSettings({
                             </summary>
                             <div className="mt-2 space-y-2">
                               {slot.bookings.map((booking) => (
-                                <div key={booking.id}>
+                                <Link
+                                  key={booking.id}
+                                  href={`/admin/schedule/jobs/${encodeURIComponent(booking.id)}`}
+                                  className="flex min-h-[44px] items-center font-semibold text-adm-accent-ink underline-offset-4 hover:underline"
+                                >
                                   {booking.customerName || "Customer"} ·{" "}
                                   {booking.service || "Service"}
                                   {booking.assignedFixterName
                                     ? ` · ${booking.assignedFixterName}`
                                     : ""}
-                                </div>
+                                </Link>
                               ))}
                             </div>
                           </details>
@@ -1498,10 +1491,10 @@ export default function AdminCalendarSettings({
           <div className="mx-auto max-w-3xl rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-black text-slate-900">
+                <h3 className="text-xl font-semibold text-adm-ink">
                   Templates & Settings
                 </h3>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-adm-text-2">
                   Customer availability and technician schedules
                 </p>
               </div>
@@ -1514,8 +1507,8 @@ export default function AdminCalendarSettings({
               </button>
             </div>
 
-            <details open className="mt-5 rounded-2xl border border-slate-200 p-4">
-              <summary className="cursor-pointer text-lg font-black">
+            <details open className="mt-5 rounded-adm-md border border-adm-line p-4">
+              <summary className="cursor-pointer text-lg font-semibold">
                 Company Schedule
               </summary>
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1547,7 +1540,7 @@ export default function AdminCalendarSettings({
                   }
                 />
               </div>
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-adm-text-2">
                 Add the exact appointment starts customers may book. The
                 standard Profixter starts are 8:00 AM, 10:30 AM, 1:00 PM, and
                 3:30 PM. Every visit lasts 90 minutes.
@@ -1580,14 +1573,14 @@ export default function AdminCalendarSettings({
               </button>
             </details>
 
-            <details className="mt-4 rounded-2xl border border-slate-200 p-4">
-              <summary className="cursor-pointer text-lg font-black">
+            <details className="mt-4 rounded-adm-md border border-adm-line p-4">
+              <summary className="cursor-pointer text-lg font-semibold">
                 Technician Schedule
               </summary>
               <select
                 value={settingsTechId}
                 onChange={(event) => setSettingsTechId(event.target.value)}
-                className="mt-4 w-full rounded-xl border border-slate-300 px-3 py-3"
+                className="mt-4 w-full rounded-xl border border-adm-line-2 px-3 py-3"
               >
                 {technicians.map((technician) => (
                   <option key={technician.id} value={technician.id}>
@@ -1638,7 +1631,7 @@ export default function AdminCalendarSettings({
                         "Technician schedule saved"
                       )
                     }
-                    className="mt-4 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white"
+                    className="mt-4 w-full rounded-xl bg-adm-accent px-4 py-3 font-bold text-white"
                   >
                     Save technician schedule
                   </button>
@@ -1648,6 +1641,27 @@ export default function AdminCalendarSettings({
           </div>
         </div>
       )}
+      <CustomStartsSheet
+        starts={customStarts}
+        date={selectedDate}
+        onClose={() => setCustomStarts(null)}
+        onSave={async (times) => {
+          if (!selectedDate) return;
+          await mutate(
+            () =>
+              saveShadowDayOverride({
+                scopeType: scope,
+                technicianId,
+                date: selectedDate,
+                mode: "custom_hours",
+                starts: times.map((time) => ({ time })),
+                intervals: [],
+              }),
+            "Custom appointment starts saved"
+          );
+          setCustomStarts(null);
+        }}
+      />
     </section>
   );
 }
@@ -1672,7 +1686,7 @@ function NumberField({
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-base text-slate-900 disabled:bg-slate-100 disabled:text-slate-500"
+        className="mt-1 w-full rounded-lg border border-adm-line-2 px-2 py-2 text-base text-adm-ink disabled:bg-slate-100 disabled:text-adm-text-2"
       />
     </label>
   );
@@ -1766,11 +1780,11 @@ function TimeOffEditor({
         )}
       </div>
       {editing && (
-        <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3">
+        <div className="mt-3 grid gap-3 border-t border-adm-line pt-3">
           <select
             value={type}
             onChange={(event) => setType(event.target.value as TimeOffType)}
-            className="rounded-lg border border-slate-300 px-3 py-2"
+            className="rounded-lg border border-adm-line-2 px-3 py-2"
           >
             {TIME_OFF_TYPES.map((value) => (
               <option key={value} value={value}>
@@ -1778,7 +1792,7 @@ function TimeOffEditor({
               </option>
             ))}
           </select>
-          <label className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold">
+          <label className="flex items-center justify-between rounded-lg border border-adm-line bg-white px-3 py-2 font-semibold">
             All day
             <input
               type="checkbox"
@@ -1794,7 +1808,7 @@ function TimeOffEditor({
                 type="date"
                 value={startDate}
                 onChange={(event) => setStartDate(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900"
+                className="mt-1 w-full rounded-lg border border-adm-line-2 px-3 py-2 text-base text-adm-ink"
               />
             </label>
             <label className="text-xs font-bold text-slate-600">
@@ -1804,7 +1818,7 @@ function TimeOffEditor({
                 value={endDate}
                 min={startDate}
                 onChange={(event) => setEndDate(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900"
+                className="mt-1 w-full rounded-lg border border-adm-line-2 px-3 py-2 text-base text-adm-ink"
               />
             </label>
             {!allDay && (
@@ -1815,7 +1829,7 @@ function TimeOffEditor({
                     type="time"
                     value={startTime}
                     onChange={(event) => setStartTime(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900"
+                    className="mt-1 w-full rounded-lg border border-adm-line-2 px-3 py-2 text-base text-adm-ink"
                   />
                 </label>
                 <label className="text-xs font-bold text-slate-600">
@@ -1824,7 +1838,7 @@ function TimeOffEditor({
                     type="time"
                     value={endTime}
                     onChange={(event) => setEndTime(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900"
+                    className="mt-1 w-full rounded-lg border border-adm-line-2 px-3 py-2 text-base text-adm-ink"
                   />
                 </label>
               </>
@@ -1833,14 +1847,14 @@ function TimeOffEditor({
           <input
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2"
+            className="rounded-lg border border-adm-line-2 px-3 py-2"
             placeholder="Optional reason"
           />
           <button
             type="button"
             disabled={busy || !validRange}
             onClick={() => void save()}
-            className="rounded-lg bg-blue-700 px-3 py-2 font-bold text-white disabled:opacity-50"
+            className="rounded-lg bg-adm-accent px-3 py-2 font-bold text-white disabled:opacity-50"
           >
             Save time off
           </button>
@@ -1881,7 +1895,7 @@ function TimeOffForm({
       <select
         value={technicianId}
         onChange={(event) => setTechnicianId(event.target.value)}
-        className="rounded-lg border border-slate-300 px-3 py-2"
+        className="rounded-lg border border-adm-line-2 px-3 py-2"
       >
         {technicians.map((technician) => (
           <option key={technician.id} value={technician.id}>
@@ -1892,7 +1906,7 @@ function TimeOffForm({
       <select
         value={type}
         onChange={(event) => setType(event.target.value as typeof type)}
-        className="rounded-lg border border-slate-300 px-3 py-2"
+        className="rounded-lg border border-adm-line-2 px-3 py-2"
       >
         <option value="vacation">Vacation</option>
         <option value="sick">Sick day</option>
@@ -1903,7 +1917,7 @@ function TimeOffForm({
       <input
         value={reason}
         onChange={(event) => setReason(event.target.value)}
-        className="rounded-lg border border-slate-300 px-3 py-2"
+        className="rounded-lg border border-adm-line-2 px-3 py-2"
         placeholder="Optional reason"
       />
       <button
@@ -1918,10 +1932,84 @@ function TimeOffForm({
             reason,
           })
         }
-        className="rounded-lg bg-blue-700 px-3 py-2 font-bold text-white disabled:opacity-50"
+        className="rounded-lg bg-adm-accent px-3 py-2 font-bold text-white disabled:opacity-50"
       >
         Add full-day time off
       </button>
     </div>
+  );
+}
+
+/**
+ * Appointment starts for one day (replaces the old window.prompt with its
+ * comma-separated HH:MM): one time field per start, add or remove a row,
+ * each checked before saving.
+ */
+function CustomStartsSheet({
+  starts,
+  date,
+  onClose,
+  onSave,
+}: {
+  starts: string[] | null;
+  date: string | null;
+  onClose: () => void;
+  onSave: (times: string[]) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState<{ source: string[] | null; times: string[] }>({ source: null, times: [] });
+  if (starts !== draft.source) setDraft({ source: starts, times: starts ? [...starts] : [] });
+  const times = starts === draft.source ? draft.times : starts || [];
+  const setTimes = (next: string[]) => setDraft((d) => ({ ...d, times: next }));
+  const valid = times.map((t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t));
+  const unique = new Set(times).size === times.length;
+  const ok = times.length > 0 && valid.every(Boolean) && unique;
+  const dirty = Boolean(starts) && JSON.stringify(starts) !== JSON.stringify(times);
+  return (
+    <Sheet
+      open={Boolean(starts)}
+      onClose={onClose}
+      title="Custom appointment starts"
+      description={date ? `For ${date}. Each start is one appointment time customers can book.` : undefined}
+      dirty={dirty}
+      data-sheet="custom-starts"
+      footer={
+        <>
+          <Button variant="secondary" large onClick={onClose}>
+            Cancel
+          </Button>
+          <Button large disabled={!ok} onClick={() => onSave([...times].sort())} data-save-starts="">
+            Save {times.length} {times.length === 1 ? "start" : "starts"}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-2">
+        {times.map((time, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <label className="sr-only" htmlFor={`custom-start-${index}`}>
+              Start {index + 1}
+            </label>
+            <input
+              id={`custom-start-${index}`}
+              type="time"
+              step={300}
+              value={time}
+              onChange={(event) => setTimes(times.map((t, i) => (i === index ? event.target.value : t)))}
+              className="adm-input min-w-0 flex-1"
+              aria-invalid={!valid[index] || undefined}
+              data-start-input=""
+            />
+            <Button variant="destructive" onClick={() => setTimes(times.filter((_, i) => i !== index))} aria-label={`Remove start ${index + 1}`}>
+              Remove
+            </Button>
+          </div>
+        ))}
+        {!unique && <p className="text-[13px] font-medium text-adm-problem">Two starts have the same time.</p>}
+        {times.length === 0 && <p className="text-[14px] text-adm-text-2">Add at least one start.</p>}
+        <Button variant="secondary" className="self-start" onClick={() => setTimes([...times, ""])}>
+          Add a start
+        </Button>
+      </div>
+    </Sheet>
   );
 }

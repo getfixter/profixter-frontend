@@ -337,7 +337,7 @@ const visible = (page, selector) => page.locator(selector).locator("visible=true
     await jobsVisit.waitFor({ timeout: 15000 });
     check(`${tag}: + Visit on Jobs`, await jobsVisit.isVisible());
     await jobsVisit.click();
-    const cv = page.locator("[data-admin-sheet=create-visit]");
+    const cv = page.locator("[data-sheet=create-visit]");
     await cv.waitFor();
     await cv.locator("[data-choice=guest]").click();
     await cv.locator("[data-input=guest-name]").fill("Lee Walker");

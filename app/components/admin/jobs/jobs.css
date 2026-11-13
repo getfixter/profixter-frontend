@@ -1,0 +1,146 @@
+/* Jobs, job sheet, My day and Schedule (track FE-JOBS). Kit tokens only. */
+
+/* Day headings stay under the sticky view bar (52px) while their jobs scroll. */
+.adm-day-head {
+  position: sticky;
+  top: calc(var(--adm-header-h) + var(--adm-safe-top) + 52px);
+  z-index: 20;
+  background: var(--adm-bg);
+}
+.adm-day-head--plain { top: calc(var(--adm-header-h) + var(--adm-safe-top)); }
+
+/* Quick-create "+": bottom right, above the bottom bar (E.5 one-handed reach). */
+.adm-fab {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(var(--adm-nav-h) + var(--adm-safe-bottom) + 16px);
+  z-index: 44;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--adm-accent);
+  color: var(--adm-on-accent);
+  box-shadow: var(--ui-shadow-2);
+}
+.adm-fab:hover { background: var(--adm-accent-ink); }
+.adm-fab svg { width: 26px; height: 26px; }
+html[data-keyboard="open"] .adm-fab { display: none; }
+@media (min-width: 1024px) and (min-height: 501px) and (pointer: fine) {
+  .adm-fab { display: none; }
+}
+.adm-desk-only { display: none; }
+@media (min-width: 1024px) and (min-height: 501px) and (pointer: fine) {
+  .adm-desk-only { display: inline-flex; }
+}
+
+/* "N new" pill: under the view bar, never moves the list. */
+.adm-new-pill {
+  position: sticky;
+  top: calc(var(--adm-header-h) + var(--adm-safe-top) + 60px);
+  z-index: 25;
+  display: flex;
+  justify-content: center;
+  height: 0;
+  overflow: visible;
+}
+.adm-new-pill > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--adm-ink);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--ui-shadow-2);
+}
+
+/* Two lines of the customer's description until "More". */
+.adm-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---- schedule ------------------------------------------------------ */
+
+.adm-sched {
+  position: relative;
+  display: grid;
+  border: 1px solid var(--adm-line);
+  border-radius: var(--ui-r-md);
+  background: var(--adm-surface);
+  overflow: hidden;
+}
+.adm-sched-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+.adm-sched-col { position: relative; border-left: 1px solid var(--adm-line); }
+.adm-sched-hour {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--adm-line);
+}
+.adm-sched-band { position: absolute; left: 0; right: 0; }
+.adm-sched-band[data-state="full"] { background: var(--adm-sunk); }
+.adm-sched-band[data-state="closed"],
+.adm-sched-closed {
+  background: repeating-linear-gradient(135deg, var(--adm-sunk) 0 6px, transparent 6px 12px);
+}
+.adm-sched-job {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  overflow: hidden;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--adm-line-2);
+  border-left-width: 4px;
+  background: var(--adm-surface);
+  padding: 4px 6px;
+  text-align: left;
+}
+.adm-sched-job[data-tone="attention"] { border-left-color: var(--adm-attn); }
+.adm-sched-job[data-tone="info"] { border-left-color: var(--adm-info); }
+.adm-sched-job[data-tone="success"] { border-left-color: var(--adm-ok); }
+.adm-sched-job[data-tone="problem"] { border-left-color: var(--adm-problem); }
+.adm-sched-job[data-conflict="true"] {
+  border-color: var(--adm-problem);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--adm-problem) 35%, transparent);
+}
+.adm-sched-job:focus-visible { outline: none; box-shadow: var(--adm-focus); }
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-new-pill > button,
+  .adm-fab { transition: none; animation: none; }
+}
+
+/* Step buttons are portaled into the sheet footer through a display:contents slot. */
+.adm-sheet-footer > [data-step-footer] > .adm-btn { flex: 1 1 auto; }
+@media (min-width: 1024px) {
+  .adm-sheet-footer > [data-step-footer] > .adm-btn { flex: 0 0 auto; }
+}
+
+/* A row's flag gives way first on narrow phones (its label ellipsizes). */
+.adm-row-flag { min-width: 0; flex-shrink: 0; max-width: 50%; }
+.adm-row-flag > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Room under the last row for the + button. */
+.adm-fab-room { padding-bottom: 72px; }
+@media (min-width: 1024px) and (min-height: 501px) and (pointer: fine) {
+  .adm-fab-room { padding-bottom: 0; }
+}
+
+/* Header actions sit beside the search on phones (no separate row). */
+.adm-phone-only { display: flex; }
+@media (min-width: 1024px) and (min-height: 501px) and (pointer: fine) {
+  .adm-phone-only { display: none; }
+}
+.adm-desk-actions { display: none; }
+@media (min-width: 1024px) and (min-height: 501px) and (pointer: fine) {
+  .adm-desk-actions { display: flex; }
+}

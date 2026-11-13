@@ -70,6 +70,46 @@ const USERS = [1, 2, 3, 4].map((n) => ({
 USERS.push({ ...USERS[0], _id: "u9", userId: "PF-U9", name: "Ann Example", email: "ann@example.test" });
 const LEADS = [{ _id: "l1", name: "Lead Person", email: "lead@example.test", phone: "5550199", serviceType: "Kitchen", status: "new", message: "Estimate please", createdAt: new Date().toISOString() }];
 
+/* The Jobs API (BE-BOOK DTOs) answered from the same bookings, for the new Jobs screens (FE-JOBS). */
+const STATUS_WORD = { pending: "Pending", "pending confirmation": "Pending Confirmation", confirmed: "Confirmed", completed: "Completed", canceled: "Canceled" };
+function jobRow(b) {
+  const status = STATUS_WORD[b.status] || "Pending";
+  return {
+    id: b._id, bookingNumber: b.bookingNumber.replace("#", ""), date: b.date, endEstimate: new Date(new Date(b.date).getTime() + 90 * 60000).toISOString(), status,
+    type: b.bookingType === "one_time_handyman_visit" ? "one_time" : status === "Pending Confirmation" ? "free_visit" : "member",
+    typeLabel: b.bookingType === "one_time_handyman_visit" ? "One-Time Visit" : status === "Pending Confirmation" ? "Free First Visit" : "Membership visit",
+    customer: { id: b.userId, name: b.name, phone: b.phone }, addressShort: b.address, town: b.city,
+    technician: b.assignedFixterId ? { id: b.assignedFixterId, name: b.assignedFixterName } : null,
+    flags: status === "Pending" || status === "Pending Confirmation" ? [{ key: "request_review", label: "Needs confirming", severity: "attention" }] : [],
+    timing: null, updatedAt: new Date().toISOString(),
+  };
+}
+function jobDetail(b) {
+  const row = jobRow(b);
+  return {
+    ...row, customer: { id: b.userId, name: b.name, phone: b.phone, phoneE164: null, email: b.email, guest: false },
+    address: { line1: b.address, city: b.city, state: b.state, zip: b.zip, full: `${b.address}, ${b.city}, ${b.state} ${b.zip}` },
+    service: b.service, selectedTask: "", description: "", adminNote: "", photos: [], libraryReference: "",
+    money: { kind: "membership_included", label: "Included in the membership" }, staffNotes: [], freeVisit: null, reservationIssue: null,
+    cancellationReason: "", completedAt: null, createdAt: b.date, allowedActions: ["addInternalNote", "addPhotos"], history: { href: `/api/admin/bookings/${b._id}/history` },
+  };
+}
+function jobsApi(p, u, user) {
+  const mine = (b) => b.assignedFixterId === "fx1";
+  const scoped = user && user.employeePosition === "Fixter" ? BOOKINGS.filter(mine) : BOOKINGS;
+  const counts = { today: 7, tomorrow: 0, week: 7, needsAction: 3 };
+  if (p === "/api/admin/jobs") return [200, { view: u.searchParams.get("view") || "today", from: null, to: null, total: scoped.length, rows: scoped.filter((b) => b.status !== "canceled").map(jobRow), nextCursor: null, counts }];
+  if (p === "/api/admin/jobs/search") return [200, { q: "", total: 0, limited: false, groups: [] }];
+  if (p === "/api/admin/my-day") return [200, { today: { date: nyToday, rows: BOOKINGS.filter(mine).map(jobRow) }, tomorrow: { date: nyToday, rows: [] } }];
+  if (p === "/api/admin/schedule") return [200, { from: nyToday, to: nyToday, total: scoped.length, lanes: [{ technician: null, rows: scoped.map(jobRow) }], capacity: null, capacityError: null }];
+  const m = /^\/api\/admin\/jobs\/([^/]+)$/.exec(p);
+  if (m) {
+    const b = scoped.find((x) => x._id === m[1]);
+    return b ? [200, { job: jobDetail(b) }] : [404, { message: "Job not found", code: "BOOKING_NOT_FOUND" }];
+  }
+  return [200, {}];
+}
+
 const results = [];
 function check(name, pass, detail = "") {
   results.push({ name, pass: !!pass });
@@ -114,6 +154,10 @@ async function open(browser, user, { width = 390, height = 844, touch, fakeViewp
       const p = u.pathname.replace(/^.*?(\/api\/)/, "/api/");
       if (p === "/api/auth/me") return user ? json(user) : json({ message: "No token" }, 401);
       if (p === "/api/auth/logout" || p === "/api/auth/logout-all") return json({ message: "Not found" }, 404);
+      if (p.startsWith("/api/admin/jobs") || p === "/api/admin/my-day" || p === "/api/admin/schedule") {
+        const [status, body] = jobsApi(p, u, user);
+        return json(body, status);
+      }
       if (p === "/api/admin/bookings") return json(u.searchParams.get("assigned") === "me" ? BOOKINGS.filter((b) => b.assignedFixterId === "fx1") : BOOKINGS);
       if (p === "/api/admin/booking-assignees") return json({ fixters: [] });
       if (p === "/api/admin/users" || p === "/api/admin/members") return json(USERS);

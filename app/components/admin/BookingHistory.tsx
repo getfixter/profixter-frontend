@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getBookingHistory,
   type BookingHistoryEntry,
@@ -92,12 +92,32 @@ function actorBadgeTone(label: string) {
   return "border-slate-200 bg-slate-100 text-slate-600";
 }
 
-export default function BookingHistory({ bookingId }: { bookingId: string }) {
-  const [open, setOpen] = useState(false);
+/**
+ * `embedded`: the parent already shows a disclosure (the job sheet), so this
+ * loads when it mounts and renders the entries without its own toggle.
+ */
+export default function BookingHistory({ bookingId, embedded = false }: { bookingId: string; embedded?: boolean }) {
+  const [open, setOpen] = useState(embedded);
   const [loaded, setLoaded] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(embedded);
   const [error, setError] = useState("");
   const [entries, setEntries] = useState<BookingHistoryEntry[]>([]);
+
+  useEffect(() => {
+    if (!embedded) return;
+    let alive = true;
+    getBookingHistory(bookingId)
+      .then((list) => {
+        if (!alive) return;
+        setEntries(list);
+        setLoaded(true);
+      })
+      .catch(() => alive && setError("History could not be loaded."))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, [embedded, bookingId]);
 
   const toggle = async () => {
     const next = !open;
@@ -115,19 +135,7 @@ export default function BookingHistory({ bookingId }: { bookingId: string }) {
     }
   };
 
-  return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <button
-        type="button"
-        onClick={toggle}
-        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-slate-700"
-        aria-expanded={open}
-      >
-        <span>History</span>
-        <span className="text-slate-400">{open ? "−" : "+"}</span>
-      </button>
-
-      {open && (
+  const list = (
         <div className="border-t border-slate-100 p-3">
           {loading && <p className="text-sm text-slate-500">Loading history...</p>}
           {error && <p className="text-sm font-semibold text-rose-600">{error}</p>}
@@ -190,7 +198,23 @@ export default function BookingHistory({ bookingId }: { bookingId: string }) {
             })}
           </div>
         </div>
-      )}
+  );
+
+  if (embedded) return <div data-booking-history="">{list}</div>;
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <button
+        type="button"
+        onClick={toggle}
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-slate-700"
+        aria-expanded={open}
+      >
+        <span>History</span>
+        <span className="text-slate-400">{open ? "−" : "+"}</span>
+      </button>
+
+      {open && list}
     </section>
   );
 }
