@@ -204,6 +204,24 @@ export type BillingAvailable = {
     createdAt: string | null;
     card: { brand: string; last4: string } | null;
     dashboardUrl: string;
+    /** A Charge extra payment: labelled here, never listed twice. */
+    extraCharge?: { id: string; number: string; bookingId: string; bookingNumber: string; description: string };
+  }[];
+  /** Charge extra records of this account; inPayments = already one of the payments above. */
+  additionalCharges?: {
+    id: string;
+    number: string;
+    bookingId: string;
+    bookingNumber: string;
+    description: string;
+    status: string;
+    totalCents: number;
+    taxCents: number;
+    refundedCents: number;
+    paidAt: string | null;
+    createdAt: string;
+    inPayments: boolean;
+    stripeUrl: string | null;
   }[];
   upcoming: { customerId: string; amountDueCents: number; currency: string; nextPaymentAttempt: string | null; periodEnd: string | null; subscriptionId: string | null }[];
   refundsNote?: string;
@@ -465,6 +483,7 @@ export async function fetchBilling(id: string, signal?: AbortSignal, fresh = fal
     subscriptions: arr(data.subscriptions),
     invoices: arr(data.invoices),
     payments: arr(data.payments),
+    additionalCharges: arr(data.additionalCharges),
     upcoming: arr(data.upcoming),
   } as BillingAvailable;
 }

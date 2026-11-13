@@ -7,6 +7,7 @@ import {
   CheckCircleIcon,
   ChevronDownIcon,
   ClipboardDocumentIcon,
+  CreditCardIcon,
   EllipsisHorizontalIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
@@ -52,11 +53,12 @@ import {
 import { useAdmin } from "@/app/components/admin/shell/AdminContext";
 import { FlagBadge } from "@/app/components/admin/jobs/JobRows";
 import { CancelStep, ConfirmStep, DoneStep, EditStep, ReassignStep, ReinstateStep, RescheduleStep, type StepResult } from "@/app/components/admin/jobs/JobSteps";
+import { ChargeExtraStep, ExtraChargesBlock } from "@/app/components/admin/jobs/ChargeExtra";
 import { peekOpenedFromList, takeOpenedFromList } from "@/app/components/admin/jobs/openedFrom";
 import { badgeTypeOf } from "@/lib/admin/jobs";
 import "@/app/components/admin/jobs/jobs.css";
 
-type Step = "confirm" | "done" | "reinstate" | "cancel" | "reschedule" | "reassign" | "edit" | "review";
+type Step = "confirm" | "done" | "reinstate" | "cancel" | "reschedule" | "reassign" | "edit" | "review" | "chargeExtra";
 
 const STEP_TITLE: Record<Step, string> = {
   confirm: "Confirm & assign",
@@ -67,6 +69,7 @@ const STEP_TITLE: Record<Step, string> = {
   reassign: "Change Fixter",
   edit: "Edit description",
   review: "Review request",
+  chargeExtra: "Charge extra",
 };
 
 const MAX_PHOTOS = 10;
@@ -152,6 +155,7 @@ export function JobDetailSheet({ id, backHref = "/admin/jobs" }: { id: string; b
     if (allowed.has("reassign")) menuItems.push({ label: job.technician ? "Change Fixter" : "Assign a Fixter", icon: <UserIcon />, onSelect: () => open("reassign") });
     if (allowed.has("edit")) menuItems.push({ label: "Edit description", icon: <PencilSquareIcon />, onSelect: () => open("edit") });
     if (allowed.has("complete") && primary?.step !== "done") menuItems.push({ label: "Mark done", icon: <CheckCircleIcon />, onSelect: () => open("done") });
+    if (allowed.has("chargeExtra")) menuItems.push({ label: "Charge extra", icon: <CreditCardIcon />, onSelect: () => open("chargeExtra") });
     if (job.customer.id && canOpen("customers")) menuItems.push({ label: "Open customer", icon: <UserCircleIcon />, href: `/admin/customers/${encodeURIComponent(job.customer.id)}` });
     if (job.customer.email && !field) menuItems.push({ label: "Email the customer", hint: job.customer.email, icon: <EnvelopeIcon />, href: `mailto:${job.customer.email}` });
     menuItems.push({
@@ -220,6 +224,8 @@ export function JobDetailSheet({ id, backHref = "/admin/jobs" }: { id: string; b
         <ReassignStep {...stepProps} />
       ) : step === "edit" ? (
         <EditStep {...stepProps} />
+      ) : step === "chargeExtra" ? (
+        <ChargeExtraStep job={job} footer={footerEl} onBack={leaveStep} setBusy={setStepBusy} setDirty={setStepDirty} />
       ) : (
         <JobBody job={job} field={field} result={result} onDismissResult={() => setResult(null)} onOpen={open} canCustomers={canOpen("customers")} canComms={can(user, PERM.COMMUNICATIONS_MANAGE)} refreshing={q.isFetching} onRefresh={() => void q.refetch()} />
       )}
@@ -354,6 +360,9 @@ function JobBody({
 
       {/* Money (not for field Fixters: K.1) */}
       {!field && job.money && <MoneyView job={job} />}
+
+      {/* Additional charges (owner only: the server sends extraCharges to the owner alone) */}
+      {!field && job.extraCharges && <ExtraChargesBlock job={job} canCharge={allowed.has("chargeExtra")} onCharge={() => onOpen("chargeExtra")} />}
 
       {/* Internal notes */}
       <Block title="Internal notes" hint="Staff only. The customer never sees these.">

@@ -45,7 +45,7 @@ export type JobRow = {
   conflictReason?: string;
 };
 
-export type JobAction = "addInternalNote" | "addPhotos" | "complete" | "confirm" | "reviewFreeVisit" | "cancel" | "reschedule" | "reassign" | "edit" | "reinstate";
+export type JobAction = "addInternalNote" | "addPhotos" | "complete" | "confirm" | "reviewFreeVisit" | "cancel" | "reschedule" | "reassign" | "edit" | "reinstate" | "chargeExtra";
 
 export type JobMoney = {
   kind: "membership_included" | "paid" | "payment_pending" | "payment_failed" | "refunded" | "free" | "admin_free" | "full_day_included" | "full_day_loyalty" | string;
@@ -84,6 +84,8 @@ export type JobDetail = Omit<JobRow, "customer"> & {
   completedAt: string | null;
   createdAt: string | null;
   allowedActions: JobAction[];
+  /** Owner only (absent for everyone else): Charge extra on this visit. */
+  extraCharges?: { count: number; paidCents: number; open: number };
   history: { href: string };
 };
 

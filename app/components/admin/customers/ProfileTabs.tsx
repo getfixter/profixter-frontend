@@ -418,9 +418,18 @@ function BillingBlock({ billing }: { billing: BillingAvailable }) {
                   <p className="adm-num text-[15px] font-semibold text-adm-ink">
                     {formatCents(p.amountCents)} <span className="font-normal text-adm-text-2">· {shortDate(p.createdAt)}</span>
                   </p>
-                  <p className="text-[13px] text-adm-text-2">
-                    {[p.description, p.card ? `${p.card.brand} ${p.card.last4}` : "", p.amountRefundedCents > 0 ? `${formatCents(p.amountRefundedCents)} refunded` : "", p.failureMessage || ""].filter(Boolean).join(" · ")}
-                  </p>
+                  {p.extraCharge ? (
+                    <p className="text-[13px] text-adm-text-2" data-payment-extra="">
+                      <a href={`/admin/jobs/${encodeURIComponent(p.extraCharge.bookingId)}`} className="font-semibold text-adm-accent-ink underline-offset-4 hover:underline">
+                        Extra on job #{p.extraCharge.bookingNumber}
+                      </a>
+                      {[": " + p.extraCharge.description, p.card ? ` · ${p.card.brand} ${p.card.last4}` : "", p.amountRefundedCents > 0 ? ` · ${formatCents(p.amountRefundedCents)} refunded` : ""].join("")}
+                    </p>
+                  ) : (
+                    <p className="text-[13px] text-adm-text-2">
+                      {[p.description, p.card ? `${p.card.brand} ${p.card.last4}` : "", p.amountRefundedCents > 0 ? `${formatCents(p.amountRefundedCents)} refunded` : "", p.failureMessage || ""].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
                 </div>
                 <span className="flex items-center gap-2">
                   <StatusBadge tone={p.refunded ? "neutral" : toneFor(p.status)}>{p.refunded ? "refunded" : words(p.status)}</StatusBadge>
@@ -433,6 +442,34 @@ function BillingBlock({ billing }: { billing: BillingAvailable }) {
           <p className="px-4 py-3 text-[14px] text-adm-text-3">No payments.</p>
         )}
       </Section>
+      {(() => {
+        // Paid extras that Stripe does not list under this customer (a link paid without the account): shown once, here.
+        const elsewhere = (billing.additionalCharges || []).filter((a) => !a.inPayments && ["paid", "partially_refunded", "refunded"].includes(a.status));
+        if (!elsewhere.length) return null;
+        return (
+          <Section title="Extras paid by link" count={elsewhere.length}>
+            <ul role="list">
+              {elsewhere.map((a) => (
+                <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-adm-line px-4 py-3 last:border-b-0" data-extra-elsewhere="">
+                  <div className="min-w-0">
+                    <p className="adm-num text-[15px] font-semibold text-adm-ink">
+                      {formatCents(a.totalCents)} <span className="font-normal text-adm-text-2">· {shortDate(a.paidAt || a.createdAt)}</span>
+                    </p>
+                    <p className="text-[13px] text-adm-text-2">
+                      <a href={`/admin/jobs/${encodeURIComponent(a.bookingId)}`} className="font-semibold text-adm-accent-ink">
+                        Extra on job #{a.bookingNumber}
+                      </a>
+                      : {a.description}
+                      {a.refundedCents > 0 ? ` · ${formatCents(a.refundedCents)} refunded` : ""}
+                    </p>
+                  </div>
+                  {a.stripeUrl && <StripeLink href={a.stripeUrl} label="Stripe" />}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        );
+      })()}
       <p className="px-1 text-[13px] text-adm-text-3">{billing.refundsNote || "Refunds are made in Stripe. Cancelling a membership does not refund."}</p>
       {billing.cachedAt && <p className="px-1 text-[12px] text-adm-text-3">From Stripe, {dateTime(billing.cachedAt)}.</p>}
     </div>
