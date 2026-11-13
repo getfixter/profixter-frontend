@@ -13,6 +13,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   confirmFreeVisit,
   declineFreeVisit,
@@ -28,6 +29,13 @@ type Props = {
   onClose: () => void;
   /** After a save, confirm or decline: the parent refreshes its lists. */
   onChanged?: (message: string) => void;
+  /**
+   * Render inside a sheet the parent already shows (the job sheet), instead of
+   * as its own overlay: the body goes where the panel is placed, the buttons
+   * into `footer`, and the dirty/busy state is reported so the parent sheet
+   * protects typed changes (J-27). Decline asks for its reason inline.
+   */
+  embedded?: { footer: HTMLElement | null; onState?: (state: { dirty: boolean; busy: boolean }) => void };
 };
 
 type Form = {
@@ -103,7 +111,7 @@ function imageUrl(img: string | { key: string; url: string }) {
   return typeof img === "string" ? img : img.url;
 }
 
-export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: Props) {
+export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged, embedded }: Props) {
   const [detail, setDetail] = useState<FreeVisitDetail | null>(null);
   const [form, setForm] = useState<Form | null>(null);
   const [saved, setSaved] = useState<Form | null>(null);
@@ -112,6 +120,8 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
   const [error, setError] = useState("");
   const [blockedBy, setBlockedBy] = useState<FreeVisitEligibility | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
+  /* Embedded only: the decline reason is asked inline, not with window.prompt. */
+  const [declining, setDeclining] = useState<null | string>(null);
 
   const apply = useCallback((next: FreeVisitDetail) => {
     setDetail(next);
@@ -162,6 +172,11 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
   const blocked = eligibility?.decision === "blocked";
   const needsAck = eligibility?.decision === "review";
   const addressComplete = !!(form && form.line1.trim() && form.city.trim() && /^\d{5}$/.test(form.zip.trim()));
+
+  const reportState = embedded?.onState;
+  useEffect(() => {
+    reportState?.({ dirty: dirty || Boolean(declining), busy: Boolean(busy) && busy !== "load" });
+  }, [reportState, dirty, declining, busy]);
 
   const set = (key: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => (f ? { ...f, [key]: e.target.value } : f));
@@ -222,8 +237,8 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
     }
   };
 
-  const decline = async () => {
-    const reason = window.prompt(
+  const decline = async (given?: string) => {
+    const reason = given !== undefined ? given : window.prompt(
       online
         ? "Decline this online booking? Its time goes back on the calendar, their free visit is not used, and they get a cancellation email.\n\nReason (optional):"
         : "Decline this request? Its time goes back on the calendar and their free visit is not used.\n\nReason (optional):",
@@ -234,6 +249,7 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
     setError("");
     try {
       apply(await declineFreeVisit(bookingId, reason));
+      setDeclining(null);
       onChanged?.("Request declined - the time is free again");
     } catch (e) {
       setError(errorMessage(e, "Could not decline."));
@@ -247,16 +263,7 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
   const label = "mb-1 block text-xs font-semibold text-slate-600";
   const disabled = !pending || !!busy;
 
-  return (
-    <div className="fixed inset-0 z-[95] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-4" onClick={onClose} data-free-visit-panel>
-      <div
-        className="flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[24px] bg-white shadow-2xl sm:max-h-[92vh] sm:rounded-[24px]"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Free visit request"
-      >
-        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+  const headerInfo = (
           <div className="min-w-0">
             <div
               className={`text-[11px] font-bold uppercase tracking-[0.16em] ${online ? "text-blue-700" : "text-amber-700"}`}
@@ -280,12 +287,9 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
               </span>
             ) : null}
           </div>
-          <button type="button" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Close">
-            ✕
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
+  );
+  const bodyContent = (
+    <>
           {busy === "load" && !detail ? <p className="text-sm text-slate-500">Loading...</p> : null}
 
           {detail && form ? (
@@ -438,6 +442,77 @@ export default function FreeVisitReviewPanel({ bookingId, onClose, onChanged }: 
           ) : null}
 
           {error ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700" role="alert" data-free-visit-error>{error}</p> : null}
+    </>
+  );
+
+  if (embedded) {
+    const btn = "adm-btn adm-btn--lg";
+    const footer = detail && pending ? (
+      declining !== null ? (
+        <>
+          <button type="button" className={`${btn} adm-btn--secondary`} onClick={() => setDeclining(null)} disabled={!!busy}>
+            Back
+          </button>
+          <button type="button" className={`${btn} adm-btn--danger`} onClick={() => void decline(declining)} disabled={!!busy} aria-busy={busy === "decline" || undefined} data-free-visit-decline-confirm>
+            {busy === "decline" ? "Declining…" : "Decline request"}
+          </button>
+        </>
+      ) : (
+        <>
+          <button type="button" className={`${btn} adm-btn--destructive`} onClick={() => setDeclining("")} disabled={!!busy} data-free-visit-decline>
+            Decline
+          </button>
+          <button type="button" className={`${btn} adm-btn--secondary`} onClick={() => void save()} disabled={!!busy || !dirty} data-free-visit-save>
+            {busy === "save" ? "Saving…" : "Save"}
+          </button>
+          <button type="button" className={`${btn} adm-btn--primary`} onClick={() => void confirm()} disabled={!!busy || blocked || (needsAck && !acknowledged)} data-free-visit-confirm>
+            {busy === "confirm" ? (online ? "Approving…" : "Confirming…") : online ? "Approve" : "Confirm visit"}
+          </button>
+        </>
+      )
+    ) : null;
+    return (
+      <div className="space-y-4" data-free-visit-panel data-embedded="">
+        <div className="flex items-start justify-between gap-3">{headerInfo}</div>
+        {declining !== null ? (
+          <div className="space-y-2" data-free-visit-decline-form>
+            <p className="text-[15px] text-adm-ink">
+              {online
+                ? "Decline this online booking? Its time goes back on the calendar, their free visit is not used, and they get a cancellation email."
+                : "Decline this request? Its time goes back on the calendar and their free visit is not used."}
+            </p>
+            <label className="block text-[13px] font-semibold text-adm-ink" htmlFor="fv-decline-reason">
+              Reason (optional)
+            </label>
+            <textarea id="fv-decline-reason" className="adm-input min-h-[88px] py-2" value={declining} onChange={(e) => setDeclining(e.target.value)} maxLength={300} />
+            {error ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700" role="alert" data-free-visit-error>{error}</p> : null}
+          </div>
+        ) : (
+          bodyContent
+        )}
+        {footer && embedded.footer ? createPortal(footer, embedded.footer) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-4" onClick={onClose} data-free-visit-panel>
+      <div
+        className="flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[24px] bg-white shadow-2xl sm:max-h-[92vh] sm:rounded-[24px]"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Free visit request"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+          {headerInfo}
+          <button type="button" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Close">
+            ✕
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
+          {bodyContent}
         </div>
 
         {detail && pending ? (

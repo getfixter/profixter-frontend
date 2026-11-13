@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AddressField, { type AddressValue } from '@/app/components/address/AddressField';
-import AdminSheet, { FieldError, Notice, PrimaryButton, Segmented, SmsAgreedChoice, deliveryText, inputClass, labelClass } from './AdminSheet';
+import { FieldError, Notice, Segmented, SmsAgreedChoice, deliveryText } from './AdminSheet';
+import { Sheet } from '@/app/components/admin/ui';
 import { openInNewTab } from './BuyMembershipSheet';
 import { compressImage } from '@/lib/compressImage';
 import { getFullDayAvailability, getTimeSlots } from '@/lib/booking-service';
@@ -21,7 +22,15 @@ import type { User } from '@/lib/admin-service';
  * Times come from the same availability the customer sees (company lead time;
  * the member seven-day rule is the customer's own and does not bind Admin).
  * Photos are optional, from the library or the camera.
+ *
+ * Opens in the admin kit's Sheet (2026-11 redesign): focus trap, Escape, the
+ * footer above the keyboard, and typed details are not lost to a stray tap
+ * on the backdrop (the sheet asks before discarding them).
  */
+
+/* Kit field styles (admin.css), replacing AdminSheet's slate ones inside this sheet. */
+const inputClass = 'adm-input';
+const labelClass = 'mb-1 block text-[13px] font-semibold text-adm-ink';
 
 type Customer = Pick<User, '_id' | 'userId' | 'name' | 'email' | 'phone' | 'addresses'> & {
   addressesDetailed?: Array<{ _id: string; plan?: string | null }>;
@@ -156,6 +165,7 @@ export default function CreateVisitSheet({
     if (type === 'membership') setType(null);
   };
 
+  const dirty = Boolean((mode === 'existing' && !presetCustomer && customer) || guestName || guestPhone || guestEmail || guestAddress?.line1 || type || date || task || description || notes || photos.length);
   const whoReady = mode === 'existing' ? !!customer && !!addressId : !!guestName.trim() && !!guestPhone.trim() && !!guestEmail.trim() && !!guestAddress?.line1 && guestSms !== null;
   const whenReady = isFullDay ? !!date && fullDayOk?.ok !== false : !!date && !!time;
   const ready = whoReady && !!type && whenReady && !!task.trim() && (!paid || payment === 'phone' || channels.length > 0);
@@ -212,27 +222,30 @@ export default function CreateVisitSheet({
   ];
 
   return (
-    <AdminSheet
-      eyebrow="Create visit"
-      title={mode === 'existing' && customer ? customer.name || 'Customer' : mode === 'guest' ? 'Guest visit' : 'Choose a customer'}
-      subtitle={mode === 'existing' && customer ? [customer.phone, customer.email].filter(Boolean).join(' · ') : 'No account needed'}
+    <Sheet
+      open
+      title={mode === 'existing' && customer ? `New visit · ${customer.name || 'Customer'}` : mode === 'guest' ? 'New visit · guest' : 'New visit'}
+      description={mode === 'existing' && customer ? [customer.phone, customer.email].filter(Boolean).join(' · ') || undefined : 'Choose a customer, or book a guest with no account.'}
       onClose={onClose}
       busy={busy}
-      testId="create-visit"
+      dirty={!phoneUrl && dirty}
+      size="full"
+      data-sheet="create-visit"
+      bodyClassName="space-y-4"
       footer={
         phoneUrl ? (
-          <div className="space-y-2">
-            <a href={phoneUrl} target="_blank" rel="noopener noreferrer" data-action="open-stripe" className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-sky-600 px-4 text-[15px] font-bold text-white">
+          <div className="flex w-full flex-col gap-2">
+            <a href={phoneUrl} target="_blank" rel="noopener noreferrer" data-action="open-stripe" className="adm-btn adm-btn--primary adm-btn--lg adm-btn--block">
               Open payment page
             </a>
-            <button type="button" onClick={() => onCreated('Visit held. It confirms when Stripe confirms payment.')} className="w-full text-sm font-semibold text-slate-600">
+            <button type="button" onClick={() => onCreated('Visit held. It confirms when Stripe confirms payment.')} className="adm-btn adm-btn--tertiary adm-btn--lg adm-btn--block">
               Done
             </button>
           </div>
         ) : (
-          <PrimaryButton disabled={!ready || busy} onClick={submit} testId="create-visit-submit">
+          <button type="button" disabled={!ready || busy} onClick={submit} data-action="create-visit-submit" aria-busy={busy || undefined} className="adm-btn adm-btn--primary adm-btn--lg adm-btn--block">
             {busy ? 'Creating…' : paid ? (payment === 'phone' ? 'Hold time & take payment' : 'Hold time & send link') : 'Create visit'}
-          </PrimaryButton>
+          </button>
         )
       }
     >
@@ -439,6 +452,6 @@ export default function CreateVisitSheet({
           )}
         </div>
       )}
-    </AdminSheet>
+    </Sheet>
   );
 }
