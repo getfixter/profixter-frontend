@@ -532,13 +532,39 @@ export function shortTypeLabel(row: Pick<JobRow, "type" | "typeLabel">): string 
     case "one_time":
       return "One-time";
     case "full_day":
-      return "Full Day";
+      return "Full day";
     case "admin_free":
       return "Admin free";
     case "free_visit":
-      return /to-do/i.test(row.typeLabel) ? "Free · review" : "Free visit";
+      // Whether it still needs review is the flag's job ("Review"), never the type's.
+      return "Free visit";
     default:
       return row.typeLabel || "Visit";
+  }
+}
+
+/**
+ * A row flag in one or two words, so a phone row never cuts it off. The
+ * full wording stays in the row's aria-label, the badge's title and the job
+ * sheet.
+ */
+export function shortFlagLabel(flag: JobFlag): string {
+  switch (String(flag.key)) {
+    case "request_review":
+      return /free visit/i.test(flag.label) ? "Review" : "Confirm";
+    case "unassigned":
+      return "Unassigned";
+    case "not_closed":
+      return "Not closed";
+    case "payment_pending":
+    case "payment_problem":
+      return "Payment";
+    case "reservation_issue":
+      return "Slot issue";
+    case "repeat_check":
+      return "Verify";
+    default:
+      return flag.label;
   }
 }
 

@@ -50,7 +50,7 @@ export function BottomNav() {
               <SectionGlyph icon={s.icon} />
               {count > 0 && <CountBadge value={count} className="absolute -right-2.5 -top-1.5" />}
             </span>
-            <span className="max-w-full truncate px-1">{s.label}</span>
+            <span className="adm-bottomnav-label" data-nav-label="">{s.label}</span>
             {count > 0 && <span className="sr-only">, {count} need action</span>}
           </Link>
         );

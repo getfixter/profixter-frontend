@@ -114,7 +114,7 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
       <dt className="text-[12px] font-semibold uppercase tracking-[0.04em] text-adm-text-3">{label}</dt>
-      <dd className="mt-0.5 truncate text-[14px] font-medium text-adm-ink">{children}</dd>
+      <dd className="mt-0.5 min-w-0 text-[14px] font-medium text-adm-ink [overflow-wrap:anywhere]">{children}</dd>
     </div>
   );
 }

@@ -15,6 +15,8 @@ export type ListRowProps = {
   leading?: ReactNode;
   /** After the text, before the chevron: a badge. */
   trailing?: ReactNode;
+  /** Badges after the title (wrapping under it when they do not fit), instead of a trailing column that would squeeze the name. */
+  footer?: ReactNode;
   chevron?: boolean;
   href?: string;
   onClick?: () => void;
@@ -25,20 +27,39 @@ export type ListRowProps = {
 };
 
 /**
- * A two-line row with a full-row tap target and a chevron (J.5). Rows hold
+ * A two-line row with a full-row tap target and a chevron (J.5). The title
+ * and subtitle wrap to a second line instead of being cut off (names and
+ * addresses must stay readable on a 320px phone); only longer text is
+ * clamped. `footer` puts badges after the title. Rows hold
  * no buttons: actions live in the detail. Use inside <ul role="list"> or a
  * <Section>.
  *
  *   <ListRow href={`/admin/jobs/${id}`} title="Maria Lopez" subtitle="12 Oak St · Taras"
  *            leading={<span className="adm-num">9:00</span>} trailing={<StatusBadge status="pending" />} />
  */
-export function ListRow({ title, subtitle, meta, leading, trailing, chevron = true, href, onClick, label, className, selected }: ListRowProps) {
+export function ListRow({ title, subtitle, meta, leading, trailing, footer, chevron = true, href, onClick, label, className, selected }: ListRowProps) {
   const body = (
     <>
       {leading && <span className="flex flex-none items-center text-adm-text-2">{leading}</span>}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-[15px] font-semibold text-adm-ink">{title}</span>
-        {subtitle && <span className="truncate text-[13px] text-adm-text-2">{subtitle}</span>}
+        {footer ? (
+          // The badges follow the title on its line when they fit, and wrap under it when they do not: never squeezed, never cut.
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="adm-clamp-2 max-w-full text-[15px] font-semibold leading-5 text-adm-ink" data-row-title="">
+              {title}
+            </span>
+            <span className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">{footer}</span>
+          </span>
+        ) : (
+          <span className="adm-clamp-2 text-[15px] font-semibold leading-5 text-adm-ink" data-row-title="">
+            {title}
+          </span>
+        )}
+        {subtitle && (
+          <span className="adm-clamp-2 text-[13px] leading-[18px] text-adm-text-2" data-row-subtitle="">
+            {subtitle}
+          </span>
+        )}
       </span>
       {(meta || trailing) && (
         <span className="flex flex-none flex-col items-end gap-1">

@@ -76,7 +76,7 @@ function useDebounced(value: string, ms: number): string {
   return out;
 }
 
-/** One compact row: name, plan chip with its state, phone as text, town. No actions (they live in the profile). */
+/** One compact row: name with the plan chip after it (wrapping under it when it does not fit, so it never squeezes the name), then phone and town. No actions (they live in the profile). */
 function CustomerListRow({ row }: { row: CustomerRow }) {
   const head = headlineAddress(row.addresses);
   const chip = head ? planChip(head) : null;
@@ -87,8 +87,8 @@ function CustomerListRow({ row }: { row: CustomerRow }) {
       href={`/admin/customers/${encodeURIComponent(row.id)}`}
       title={row.name || "Unnamed customer"}
       subtitle={<span className="adm-num">{subtitle}</span>}
-      trailing={
-        <span className="flex max-w-[52vw] flex-col items-end gap-1 sm:max-w-none" data-row-chips="">
+      footer={
+        <span className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5" data-row-chips="">
           {row.blocked && <StatusBadge tone="problem">Blocked</StatusBadge>}
           {row.archived && <StatusBadge tone="neutral">Archived</StatusBadge>}
           {chip ? (

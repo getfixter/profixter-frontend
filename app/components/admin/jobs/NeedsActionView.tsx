@@ -193,8 +193,8 @@ function ItemRow({ item }: { item: NeedsItem }) {
     <li className="border-b border-adm-line last:border-b-0" data-needs-item={item.kind}>
       <Link href={item.href} onClick={item.href.startsWith("/admin/jobs/") ? markOpenedFromList : undefined} className="flex min-h-[64px] items-center gap-3 px-4 py-2.5 hover:bg-adm-bg">
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[15px] font-semibold text-adm-ink">{item.title}</span>
-          {item.subtitle && <span className="truncate text-[13px] text-adm-text-2">{item.subtitle}</span>}
+          <span className="adm-clamp-2 text-[15px] font-semibold leading-5 text-adm-ink">{item.title}</span>
+          {item.subtitle && <span className="adm-clamp-2 text-[13px] leading-[18px] text-adm-text-2">{item.subtitle}</span>}
           {item.reason && <span className={cx("text-[13px]", item.severity === "problem" ? "text-adm-problem" : "text-adm-attn")}>{item.reason}</span>}
         </span>
         <StatusBadge tone={item.severity === "problem" ? "problem" : "attention"} className="hidden sm:inline-flex">

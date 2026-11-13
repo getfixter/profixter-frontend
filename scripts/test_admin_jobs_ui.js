@@ -149,6 +149,8 @@ function freshJobs() {
     job("j11", { name: "Una Assigned", date: nyISO(addDays(T, 2), "10:30"), status: "Confirmed", tech: null, town: "Ronkonkoma" }),
     job("j12", { name: "Pat Problem", date: nyISO(addDays(T, 2), "15:30"), status: "Confirmed", type: "one_time", tech: "fx1", town: "Bohemia", paymentState: "failed" }),
     job("j13", { name: "Tom Today", date: nyISO(T, "15:30"), status: "Confirmed", tech: "fx1", town: "Babylon" }),
+    // Realistic long values: a phone row must show them whole (wrapped), never "Christopher Mon…".
+    job("j14", { name: "Christopher Montgomery-Smith", date: nyISO(addDays(T, 4), "10:30"), status: "Pending Confirmation", type: "free_visit", tech: "fx2", street: "1287 Old Country Road, Apt 12B", town: "Huntington Station" }),
     job("j20", { name: "Maria Rivera", date: nyISO(addDays(T, -380), "10:30"), status: "Completed", tech: "fx2", town: "Babylon" }),
   ];
   // Filler so the week list is long enough to scroll on a phone.
@@ -576,7 +578,14 @@ async function a11y(page, scopeSel, { targets = true } = {}) {
     const nc = page.locator("[data-job-row=j3]");
     check("a not-closed job shows the 'Not closed' flag (never 'In progress')", /Not closed/.test(await nc.innerText()) && !/In progress/i.test(await page.locator("body").innerText()));
     const h = await page.locator("[data-needs-action] [data-job-row] a").first().boundingBox();
-    check("job rows are 76-88px", h && h.height >= 76 && h.height <= 88, `${h && h.height}px`);
+    check("job rows are 84-100px (name, address and badges each on their own line)", h && h.height >= 84 && h.height <= 100, `${h && h.height}px`);
+    const j14 = page.locator("[data-job-row=j14]");
+    const j14Text = (await j14.innerText()).replace(/\s+/g, " ");
+    check("a free visit to review reads 'Free visit' + 'Review' (no 'Free · review' twice)", /Free visit/.test(j14Text) && /\bReview\b/.test(j14Text) && !/Free · review|Free visit to review/.test(j14Text), j14Text);
+    check("the short flag keeps its full meaning in the title and the row's label", (await j14.locator("[data-row-meta] [title='Free visit to review']").count()) === 1 && /Free visit to review/.test(await j14.locator("a").getAttribute("aria-label")));
+    const j1Text = (await page.locator("[data-job-row=j1]").innerText()).replace(/\s+/g, " ");
+    check("a request to confirm reads 'Confirm' and says Unassigned once", /\bConfirm\b/.test(j1Text) && (j1Text.match(/Unassigned/g) || []).length === 1 && !/Needs confirming/.test(j1Text), j1Text);
+    check("a row shows street then town", /\d+ Oak Demo St, Apt 2B, Babylon/.test(j1Text), j1Text);
     const fonts = await page.locator("[data-job-row] a").first().evaluate((a) => {
       const spans = [...a.querySelectorAll("span")].filter((s) => s.childElementCount === 0 && s.textContent.trim());
       return spans.map((s) => parseFloat(getComputedStyle(s).fontSize));
@@ -1134,6 +1143,26 @@ async function a11y(page, scopeSel, { targets = true } = {}) {
         check(`${size.name} sheet: no text under 12px`, a.tiny.length === 0, a.tiny.slice(0, 5).join(","));
         check(`${size.name} sheet: dialog is modal and labelled`, a.dialogs.length === 1 && a.dialogs[0].modal === "true" && a.dialogs[0].label.length > 0, JSON.stringify(a.dialogs));
         if (touchy) check(`${size.name} sheet: tap targets at least 44px`, a.small.length === 0, a.small.slice(0, 6).join(" ; "));
+      }
+      if (name === "jobs" && ["320x568", "375x667", "390x844", "430x932"].includes(size.name)) {
+        // The owner's rule: names and addresses readable over cramming. Nothing in a row is cut off.
+        const fit = await page.locator("[data-job-row=j14]").evaluate((li) => {
+          const box = li.getBoundingClientRect();
+          const part = (sel) => {
+            const el = li.querySelector(sel);
+            return { text: el.textContent.trim(), sw: el.scrollWidth, cw: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight };
+          };
+          const meta = [...li.querySelectorAll("[data-row-meta] > *")].map((el) => {
+            const r = el.getBoundingClientRect();
+            const label = el.querySelector("span:last-child") || el;
+            return { text: el.textContent.trim(), inside: r.left >= box.left - 0.5 && r.right <= box.right + 0.5, whole: label.scrollWidth <= label.clientWidth + 1 };
+          });
+          return { name: part("[data-row-name]"), place: part("[data-row-place]"), meta, height: box.height };
+        });
+        const whole = (p) => p.sw <= p.cw + 1 && p.sh <= p.ch + 1;
+        check(`${size.name} jobs: a long customer name is shown whole (no ellipsis)`, fit.name.text === "Christopher Montgomery-Smith" && whole(fit.name), JSON.stringify(fit.name));
+        check(`${size.name} jobs: a long street and town are shown whole (wrapped, no ellipsis)`, fit.place.text === "1287 Old Country Road, Apt 12B, Huntington Station" && whole(fit.place), JSON.stringify(fit.place));
+        check(`${size.name} jobs: flag, type and Fixter all fit the row uncut`, fit.meta.length === 3 && fit.meta.every((m) => m.inside && m.whole) && fit.meta.map((m) => m.text).join("|") === "Review|Free visit|G. General", JSON.stringify(fit.meta));
       }
       if (name === "jobs" || name === "today") {
         const a = await a11y(page, "[data-section=jobs]", { targets: touchy });

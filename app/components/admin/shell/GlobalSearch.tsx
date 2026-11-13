@@ -9,7 +9,7 @@ import { GLOBAL_SEARCH_MIN, searchEverything, type GlobalSearchResult } from "@/
 import { planChip } from "@/lib/admin/customers";
 import { dayLabel, nyYMD, timeNY } from "@/lib/admin/jobs";
 import { errorMessage, useAdminQuery } from "@/lib/admin/query";
-import { EmptyState, ErrorState, IconButton, ListRow, SearchField, Section, Sheet, SkeletonRows, StatusBadge } from "@/app/components/admin/ui";
+import { EmptyState, ErrorState, IconButton, ListRow, SearchField, Section, Sheet, SkeletonRows, StatusBadge, bookingStatusTone } from "@/app/components/admin/ui";
 import { useAdmin } from "./AdminContext";
 import { SectionGlyph } from "./icons";
 
@@ -22,6 +22,20 @@ const humanize = (s: string) => {
   const t = s.replace(/[_-]+/g, " ").trim();
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
 };
+
+/** A job's status in the short words the job lists use ("Confirm", "Review"); the full wording is its title. */
+function JobStatusPill({ status }: { status: string }) {
+  const { tone, label } = bookingStatusTone(status);
+  const s = status.trim().toLowerCase();
+  const short = s === "pending" ? "Confirm" : s === "pending confirmation" ? "Review" : "";
+  return short ? (
+    <StatusBadge tone={tone} title={label}>
+      {short}
+    </StatusBadge>
+  ) : (
+    <StatusBadge status={status} />
+  );
+}
 
 function jobWhen(date: string | null): string {
   if (!date) return "";
@@ -163,7 +177,7 @@ export function GlobalSearch() {
                         title={j.customerName || (j.bookingNumber ? `#${j.bookingNumber}` : "Job")}
                         subtitle={[jobWhen(j.date), j.address].filter(Boolean).join(" · ")}
                         meta={j.bookingNumber ? `#${j.bookingNumber}` : undefined}
-                        trailing={j.status ? <StatusBadge status={j.status} /> : null}
+                        trailing={j.status ? <JobStatusPill status={j.status} /> : null}
                         label={`Job ${j.bookingNumber ? `#${j.bookingNumber} ` : ""}${j.customerName}`}
                       />
                     ))}

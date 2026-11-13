@@ -71,14 +71,18 @@ function ProjectRowItem({ row, attention }: { row: ProjectRow; attention?: { tit
   return (
     <li className="border-b border-adm-line last:border-b-0" data-project-row={row.id}>
       <Link href={`/admin/projects/${encodeURIComponent(row.id)}`} scroll={false} className="flex w-full flex-col gap-2 px-4 py-3 hover:bg-adm-bg focus-visible:bg-adm-bg">
-        <div className="flex min-w-0 items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold text-adm-ink">{row.customerName || "Unnamed customer"}</p>
-            <p className="truncate text-[13px] text-adm-text-2">{row.address || "No address"}</p>
-          </div>
-          <span className="adm-num flex-none text-[13px] text-adm-text-3">{row.projectNumber}</span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className="adm-clamp-2 text-[15px] font-semibold leading-5 text-adm-ink" data-row-title="">
+            {row.customerName || "Unnamed customer"}
+          </p>
+          <p className="adm-clamp-2 text-[13px] leading-[18px] text-adm-text-2" data-row-subtitle="">
+            {row.address || "No address"}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
+          <span className="adm-num mr-1 text-[13px] text-adm-text-3" data-row-number="">
+            {row.projectNumber}
+          </span>
           <StageBadge stage={row.derivedStage} />
           <ManualStatusBadge status={row.manualStatus} />
           {row.nextStep !== undefined

@@ -73,8 +73,8 @@ function LeadRowItem({ lead }: { lead: LeadRow }) {
       <Link href={`/admin/leads/${encodeURIComponent(lead.key)}`} scroll={false} className="flex w-full flex-col gap-1.5 px-4 py-3 hover:bg-adm-bg focus-visible:bg-adm-bg">
         <div className="flex min-w-0 items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold text-adm-ink">{lead.name || lead.email || "Unnamed lead"}</p>
-            <p className="truncate text-[13px] text-adm-text-2">{[lead.serviceLabel, lead.address].filter(Boolean).join(" · ") || "No details"}</p>
+            <p className="adm-clamp-2 text-[15px] font-semibold leading-5 text-adm-ink">{lead.name || lead.email || "Unnamed lead"}</p>
+            <p className="adm-clamp-2 text-[13px] leading-[18px] text-adm-text-2">{[lead.serviceLabel, lead.address].filter(Boolean).join(" · ") || "No details"}</p>
           </div>
           <span className="adm-num flex-none text-[13px] text-adm-text-3">{formatDay(lead.createdAt, false)}</span>
         </div>

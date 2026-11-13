@@ -125,9 +125,43 @@ html[data-keyboard="open"] .adm-fab { display: none; }
   .adm-sheet-footer > [data-step-footer] > .adm-btn { flex: 0 0 auto; }
 }
 
-/* A row's flag gives way first on narrow phones (its label ellipsizes). */
-.adm-row-flag { min-width: 0; flex-shrink: 0; max-width: 50%; }
-.adm-row-flag > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/*
+ * A job row's body. Phone: name, address and the short badges each on their
+ * own line; the name and the address wrap instead of being cut off (only a
+ * genuinely long one is clamped). From 640px the badges sit to the right.
+ */
+.adm-row-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  row-gap: 4px;
+  column-gap: 12px;
+  min-width: 0;
+  flex: 1 1 0%;
+}
+.adm-row-name,
+.adm-row-place {
+  min-width: 0;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.adm-row-name { -webkit-line-clamp: 2; }
+.adm-row-place { -webkit-line-clamp: 3; }
+.adm-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+@media (min-width: 640px) {
+  .adm-row-body { grid-template-columns: minmax(0, 1fr) auto; }
+  .adm-row-name { grid-column: 1; grid-row: 1; }
+  .adm-row-place { grid-column: 1; grid-row: 2; }
+  .adm-row-meta { grid-column: 2; grid-row: 1 / span 2; justify-content: flex-end; align-self: center; max-width: 320px; }
+}
 
 /* Room under the last row for the + button. */
 .adm-fab-room { padding-bottom: 72px; }

@@ -348,6 +348,18 @@ async function waitPath(page, re, timeout = 15000) {
         check(`${label}: ${size.nav === "bottom" ? "bottom bar, no sidebar" : "sidebar, no bottom bar"}`, size.nav === "bottom" ? m.bottom && !m.side : m.side && !m.bottom, JSON.stringify(m));
         check(`${label}: header height`, size.height <= 500 ? m.header === 44 : m.header === 52, `${m.header}px`);
         if (size.nav === "bottom") check(`${label}: Jobs, Schedule, Customers, Projects, More`, m.navItems === 5, `${m.navItems}`);
+        if (size.nav === "bottom") {
+          // Every label whole (no "Custom…"), at 12px or more, with text (never icons only).
+          const labels = await page.locator("[data-adm-bottomnav] [data-nav-label]").evaluateAll((els) =>
+            els.map((el) => {
+              const a = el.closest("a").getBoundingClientRect();
+              const r = el.getBoundingClientRect();
+              const cs = getComputedStyle(el);
+              return { text: el.textContent.trim(), px: parseFloat(cs.fontSize), whole: el.scrollWidth <= el.clientWidth + 0.5 && r.left >= a.left - 0.5 && r.right <= a.right + 0.5, ellipsis: cs.textOverflow === "ellipsis" && cs.overflow === "hidden" };
+            })
+          );
+          check(`${label}: bottom bar labels whole at 12px or more`, labels.length === 5 && labels.map((l) => l.text).join(",") === "Jobs,Schedule,Customers,Projects,More" && labels.every((l) => l.whole && !l.ellipsis && l.px >= 12), JSON.stringify(labels));
+        }
         check(`${label}: no text under 12px in the shell`, m.small === 0, `${m.small} elements`);
         await page.screenshot({ path: path.join(SHOTS, `jobs-${size.name}.png`) });
       }

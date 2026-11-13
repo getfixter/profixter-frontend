@@ -100,8 +100,8 @@ function DocumentsList({ overview, onTab }: { overview: ProjectOverview; onTab: 
     <li key={key} className="border-b border-adm-line last:border-b-0">
       <button type="button" onClick={onClick} className="flex min-h-[52px] w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-adm-bg" data-document={key}>
         <span className="min-w-0">
-          <span className="block truncate text-[14px] font-semibold text-adm-ink">{label}</span>
-          {(note || extra) && <span className="block truncate text-[13px] text-adm-text-2">{[note, extra].filter(Boolean).join(" · ")}</span>}
+          <span className="adm-clamp-2 text-[14px] font-semibold leading-5 text-adm-ink">{label}</span>
+          {(note || extra) && <span className="adm-clamp-2 text-[13px] leading-[18px] text-adm-text-2">{[note, extra].filter(Boolean).join(" · ")}</span>}
         </span>
         <StatusBadge tone={tone}>{status}</StatusBadge>
       </button>
@@ -257,11 +257,6 @@ export function ProjectDetail({ id }: { id: string }) {
             <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" /> Projects
           </Link>
           <div className="flex items-center gap-1">
-            {overview.allowedActions.edit && (
-              <Button variant="secondary" onClick={() => setEditing(true)} disabled={!record} data-action="edit-project">
-                Edit details
-              </Button>
-            )}
             <IconButton ref={menuRef} label="More project actions" icon={<EllipsisHorizontalIcon className="h-5 w-5" />} onClick={() => setMenuOpen(true)} />
           </div>
         </div>
@@ -286,6 +281,12 @@ export function ProjectDetail({ id }: { id: string }) {
           {overview.allowedActions.edit && (
             <Button variant="tertiary" onClick={() => setStatusOpen(true)} data-action="change-status">
               Change status
+            </Button>
+          )}
+          {/* A secondary action beside Change status, not a big button competing with the back link. */}
+          {overview.allowedActions.edit && (
+            <Button variant="tertiary" onClick={() => setEditing(true)} disabled={!record} data-action="edit-project">
+              Edit details
             </Button>
           )}
           {overview.lead && (

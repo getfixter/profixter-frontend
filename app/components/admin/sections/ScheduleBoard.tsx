@@ -16,6 +16,7 @@ import {
   relativeDay,
   rememberKey,
   shortName,
+  shortFlagLabel,
   shortTypeLabel,
   timeNY,
   todayYMD,
@@ -286,6 +287,17 @@ function capText(cap: CapacityDay | undefined): string {
   return `${open} of ${cap.totalCapacity} seats open${cap.note ? ` · ${cap.note}` : ""}`;
 }
 
+/** A block's most important flag in its short list word ("Review", "Payment"); the full wording is its title. */
+function SchedFlag({ row }: { row: JobRow }) {
+  const flag = topFlag(row);
+  if (!flag) return null;
+  return (
+    <span className={cx("min-w-0 truncate", flag.severity === "problem" ? "text-adm-problem" : "text-adm-attn")} title={flag.label} data-sched-flag={String(flag.key)}>
+      · {shortFlagLabel(flag)}
+    </span>
+  );
+}
+
 function JobBlock({ p, start, href }: { p: Placed; start: number; href: string }) {
   const top = (p.start - start) * PX_PER_MIN;
   const height = Math.max(40, (p.end - p.start) * PX_PER_MIN - 2);
@@ -306,8 +318,12 @@ function JobBlock({ p, start, href }: { p: Placed; start: number; href: string }
       <span className="flex items-center gap-1 text-[12px] font-semibold text-adm-text-2">
         {p.conflict && <ExclamationTriangleIcon className="h-3.5 w-3.5 flex-none text-adm-problem" aria-hidden="true" />}
         <span className="adm-num">{p.row.type === "full_day" ? "Full day" : timeNY(p.row.date)}</span>
+        {!p.conflict && <SchedFlag row={p.row} />}
       </span>
-      <span className="block truncate text-[14px] font-semibold text-adm-ink">{p.row.customer?.name || "Customer"}</span>
+      {/* A block of 80 minutes or more has room for a long name on two lines; a shorter one keeps one line (full name in the label and title). */}
+      <span className={cx("text-[14px] font-semibold leading-[18px] text-adm-ink", height >= 88 ? "adm-clamp-2" : "block truncate")} title={p.row.customer?.name || undefined}>
+        {p.row.customer?.name || "Customer"}
+      </span>
       <span className="block truncate text-[12px] text-adm-text-2">{[shortTypeLabel(p.row), p.row.town].filter(Boolean).join(" · ")}</span>
     </Link>
   );
@@ -425,13 +441,14 @@ function WeekColumns({ data, from, rows, conflicts, hrefFor }: { data: ScheduleD
                   data-tone={toneOf(r)}
                   data-conflict={conflicts.has(r.id) ? "true" : undefined}
                   data-sched-job={r.id}
-                  aria-label={[r.customer?.name || "Customer", timeNY(r.date), r.technician?.name || "Unassigned", r.status, conflicts.has(r.id) ? "conflicts with another job" : ""].filter(Boolean).join(", ")}
+                  aria-label={[r.customer?.name || "Customer", timeNY(r.date), r.technician?.name || "Unassigned", r.status, conflicts.has(r.id) ? "conflicts with another job" : topFlag(r)?.label || ""].filter(Boolean).join(", ")}
                 >
                   <span className="flex items-center gap-1 text-[12px] font-semibold text-adm-text-2">
                     {conflicts.has(r.id) && <ExclamationTriangleIcon className="h-3.5 w-3.5 text-adm-problem" aria-hidden="true" />}
                     <span className="adm-num">{r.type === "full_day" ? "Full day" : timeNY(r.date)}</span>
+                    {!conflicts.has(r.id) && <SchedFlag row={r} />}
                   </span>
-                  <span className="block truncate text-[14px] font-semibold text-adm-ink">{r.customer?.name || "Customer"}</span>
+                  <span className="adm-clamp-2 text-[14px] font-semibold leading-[18px] text-adm-ink">{r.customer?.name || "Customer"}</span>
                   <span className={cx("block truncate text-[12px]", r.technician ? "text-adm-text-2" : "font-semibold text-adm-attn")}>{r.technician ? shortName(r.technician.name) : "Unassigned"}</span>
                 </Link>
               ))}

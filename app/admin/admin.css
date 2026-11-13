@@ -179,6 +179,13 @@
   font-weight: 600;
   text-decoration: none;
 }
+/* Five labels fit a 320px phone at 12px: no side padding, slightly tighter tracking, never cut. */
+.adm-bottomnav-label {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+}
 .adm-bottomnav a[aria-current="page"] {
   color: var(--adm-ink);
 }
@@ -676,4 +683,14 @@ html[data-keyboard="open"] .adm-toasts { bottom: calc(var(--kb-inset, 0px) + 12p
     white-space: nowrap;
     border: 0;
   }
+}
+
+/* Two lines, then an ellipsis: names and addresses wrap before anything is cut off. */
+.adm-clamp-2 {
+  min-width: 0;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

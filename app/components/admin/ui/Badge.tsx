@@ -40,8 +40,8 @@ export function bookingStatusTone(status: string | null | undefined): { tone: St
 }
 
 export type StatusBadgeProps =
-  | { status: string | null | undefined; tone?: never; children?: never; className?: string }
-  | { tone: StatusTone; children: ReactNode; status?: never; className?: string };
+  | { status: string | null | undefined; tone?: never; children?: never; className?: string; title?: string }
+  | { tone: StatusTone; children: ReactNode; status?: never; className?: string; /** The full wording when the badge shows a short one. */ title?: string };
 
 /**
  * Icon plus word, 12/600, radius 6, J.2 colours. Meaning never rests on
@@ -53,7 +53,7 @@ export type StatusBadgeProps =
 export function StatusBadge(props: StatusBadgeProps) {
   const { tone, label } = props.tone ? { tone: props.tone, label: props.children } : bookingStatusTone(props.status);
   return (
-    <span className={cx("inline-flex h-6 flex-none items-center gap-1 rounded-adm-xs px-1.5 text-[12px] font-semibold leading-none", TONE_CLASS[tone], props.className)}>
+    <span title={props.title} className={cx("inline-flex h-6 flex-none items-center gap-1 rounded-adm-xs px-1.5 text-[12px] font-semibold leading-none", TONE_CLASS[tone], props.className)}>
       {TONE_ICON[tone]({ className: "h-3.5 w-3.5" })}
       <span>{label}</span>
     </span>

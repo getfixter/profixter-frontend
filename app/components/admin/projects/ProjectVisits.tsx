@@ -120,7 +120,7 @@ function LinkVisitSheet({ open, onClose, overview, onLinked }: { open: boolean; 
                   <p className="text-[15px] font-semibold text-adm-ink">
                     #{String(row.bookingNumber).replace(/^#/, "")} · {formatDay(row.date) || "No date"}
                   </p>
-                  <p className="truncate text-[13px] text-adm-text-2">{[row.customer?.name, row.addressShort, row.town].filter(Boolean).join(" · ")}</p>
+                  <p className="adm-clamp-2 text-[13px] leading-[18px] text-adm-text-2">{[row.customer?.name, row.addressShort, row.town].filter(Boolean).join(" · ")}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge tone={tone.tone}>{tone.label}</StatusBadge>
