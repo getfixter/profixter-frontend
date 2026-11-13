@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PhotoLightbox from "../ui/PhotoLightbox";
+import { Button, ConfirmSheet, Field, Select, Sheet, TextInput, Textarea } from "@/app/components/admin/ui";
 import RecentWorkUploader, { RecentWorkPairUploader } from "./RecentWorkUploader";
 import {
   STATUS_LABELS,
   STATUS_TONES,
   UPLOADER_LABELS,
-  countdownTo,
   deletePhoto,
   fetchGallery,
   publishPhoto,
@@ -54,6 +54,20 @@ const EMPTY_COUNTS: GalleryCounts = {
   library: 0,
 };
 
+/*
+ * Minute resolution. The server publishes a scheduled photo on its own; this
+ * text only says roughly when, so "Live in 12 min" replaces a seconds ticker
+ * that re-rendered the whole grid every second (audit C.1).
+ */
+function minutesUntil(publishAt: string | null, now: number): string | null {
+  if (!publishAt) return null;
+  const remaining = new Date(publishAt).getTime() - now;
+  if (!Number.isFinite(remaining) || remaining <= 0) return null;
+  const minutes = Math.ceil(remaining / 60000);
+  if (minutes < 60) return `${minutes} min`;
+  return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+}
+
 function relativeDate(iso: string | null) {
   if (!iso) return "";
   return new Intl.DateTimeFormat("en-US", {
@@ -77,14 +91,38 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [editing, setEditing] = useState<AdminWorkPhoto | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [rejecting, setRejecting] = useState<AdminWorkPhoto | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [deleting, setDeleting] = useState<AdminWorkPhoto | null>(null);
   const requestRef = useRef(0);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const hasScheduled = photos.some((photo) => photo.status === "scheduled");
 
-  /* One second is the resolution a countdown needs and no more. */
+  /*
+   * The countdown is in minutes, so the clock ticks once a minute, only while
+   * a scheduled photo is on screen and the page is visible, and catches up
+   * when the tab comes back.
+   */
   useEffect(() => {
-    if (!photos.some((photo) => photo.status === "scheduled")) return undefined;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [photos]);
+    if (!hasScheduled) return undefined;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (timer || document.visibilityState !== "visible") return;
+      setNow(Date.now());
+      timer = setInterval(() => setNow(Date.now()), 60_000);
+    };
+    const stop = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+    };
+    const onVisibility = () => (document.visibilityState === "visible" ? start() : stop());
+    start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [hasScheduled]);
 
   const load = useCallback(
     async (options: { quiet?: boolean } = {}) => {
@@ -118,19 +156,22 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
 
   /*
    * A scheduled photo publishes itself server-side. When its countdown runs
-   * out the screen is stale, so refresh once rather than leaving an admin
-   * looking at a timer that reached zero and did nothing.
+   * out the screen is stale. One timer for the earliest publish time (plus a
+   * few seconds for the server's own sweep) reloads the grid once, instead of
+   * polling.
    */
   useEffect(() => {
-    const due = photos.filter(
-      (photo) => photo.status === "scheduled" && photo.publishAt && new Date(photo.publishAt).getTime() <= now
-    );
-    if (due.length) {
-      const timer = setTimeout(() => load({ quiet: true }), 3000);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [photos, now, load]);
+    const times = photos
+      .filter((photo) => photo.status === "scheduled" && photo.publishAt)
+      .map((photo) => new Date(photo.publishAt as string).getTime())
+      .filter((t) => Number.isFinite(t));
+    if (!times.length) return undefined;
+    const wait = Math.max(0, Math.min(...times) - Date.now()) + 3000;
+    // setTimeout overflows past ~24.8 days; a later reload picks those up.
+    if (wait > 2_000_000_000) return undefined;
+    const timer = setTimeout(() => load({ quiet: true }), wait);
+    return () => clearTimeout(timer);
+  }, [photos, load]);
 
   /** Optimistic where it is safe, reloaded where counts move. */
   const act = async (
@@ -160,18 +201,38 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
   const onUnpublish = (photo: AdminWorkPhoto) =>
     act(photo, () => unpublishPhoto(photo.id), "Moved to Library");
 
+  /* Reject and Delete ask in a sheet. From the viewer, the viewer closes first: one dialog at a time. */
   const onReject = (photo: AdminWorkPhoto) => {
-    const reason = window.prompt("Why is this being rejected? (optional)") ?? "";
-    return act(photo, () => rejectPhoto(photo.id, reason), "Rejected");
+    setLightboxIndex(null);
+    setRejectReason("");
+    setRejecting(photo);
   };
 
   const onDelete = (photo: AdminWorkPhoto) => {
-    const warning =
-      photo.status === "published"
-        ? "Delete this photo? It is live right now, and deleting removes the image permanently. To take it off the site but keep it, use Unpublish."
-        : "Delete this photo permanently? The image file is removed and cannot be recovered.";
-    if (!window.confirm(warning)) return Promise.resolve();
-    return act(photo, () => deletePhoto(photo.id), "Photo deleted");
+    setLightboxIndex(null);
+    setDeleting(photo);
+  };
+
+  /* Inside a confirm sheet a failure is shown in the sheet, so this throws instead of toasting. */
+  const confirmAct = async (photo: AdminWorkPhoto, action: () => Promise<unknown>, successMessage: string) => {
+    setBusyId(photo.id);
+    try {
+      await action();
+      onToast(successMessage);
+      void load({ quiet: true });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const openLightbox = (index: number) => {
+    openerRef.current = (document.activeElement as HTMLElement) || null;
+    setLightboxIndex(index);
+  };
+  const closeLightbox = () => {
+    setLightboxIndex(null);
+    const opener = openerRef.current;
+    if (opener && document.contains(opener)) requestAnimationFrame(() => opener.focus());
   };
 
   const onToggleFeatured = (photo: AdminWorkPhoto) =>
@@ -212,33 +273,33 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
       {/* ------------------------------- header ------------------------------ */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Work</h2>
-          <p className="text-[13px] text-slate-500">
+          <p className="text-[14px] text-adm-text-2">
             Photos of real jobs, and the before &amp; after pairs shown in What&rsquo;s Included.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => setPairOpen(true)}
-            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 md:min-h-[38px]"
+            icon={
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <path d="M12 5v14" />
+              </svg>
+            }
           >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="3" y="5" width="18" height="14" rx="2" />
-              <path d="M12 5v14" />
-            </svg>
             Add before &amp; after
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             onClick={() => setUploaderOpen(true)}
-            className="flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:min-h-[38px]"
+            icon={
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            }
           >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
             Add photos
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -253,12 +314,13 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
               key={item.id}
               type="button"
               onClick={() => setView(item.id)}
-              className={`flex min-h-[42px] flex-shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[13px] font-semibold transition md:min-h-[34px] ${
+              aria-pressed={isActive}
+              className={`flex min-h-[44px] flex-shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-semibold transition ${
                 isActive
-                  ? "border-slate-900 bg-slate-900 text-white"
+                  ? "border-adm-ink bg-adm-ink text-white"
                   : needsAttention
-                    ? "border-amber-300 bg-amber-50 text-amber-900"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    ? "border-adm-attn-bg bg-adm-attn-bg text-adm-attn"
+                    : "border-adm-line bg-adm-surface text-adm-text-2 hover:bg-adm-sunk"
               }`}
             >
               {item.label}
@@ -271,7 +333,7 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
 
       {counts.scheduled > 0 && (
         <div className="flex">
-          <span className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-900">
+          <span className="inline-flex items-center gap-1.5 rounded-adm-sm border border-adm-line bg-adm-sunk px-2.5 py-1.5 text-[12px] font-semibold text-adm-ink">
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
               <circle cx="12" cy="12" r="9" />
               <path d="M12 7v5l3 2" />
@@ -287,21 +349,15 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
         * screen is two places to wonder why your typing had no effect.
         */}
       <div className="flex items-center gap-2">
-        <select
+        <Select
           value={category}
           onChange={(event) => setCategory(event.target.value)}
           aria-label="Filter by category"
-          className="min-h-[42px] flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 sm:max-w-[220px] md:min-h-[34px]"
-        >
-          <option value="">All categories</option>
-          {categories.map((option) => (
-            <option key={option.slug} value={option.slug}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          className="flex-1 sm:max-w-[220px]"
+          options={[{ value: "", label: "All categories" }, ...categories.map((option) => ({ value: option.slug, label: option.label }))]}
+        />
         {(searchQuery || category) && (
-          <span className="text-xs text-slate-500">
+          <span className="text-[12px] text-adm-text-3">
             {photos.length} match{photos.length === 1 ? "" : "es"}
           </span>
         )}
@@ -311,11 +367,11 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
       {loading ? (
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div className="aspect-square animate-pulse bg-slate-100" />
+            <div key={index} className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface">
+              <div className="aspect-square animate-pulse bg-adm-sunk" />
               <div className="space-y-2 p-2.5">
-                <div className="h-3 w-3/4 animate-pulse rounded bg-slate-100" />
-                <div className="h-2.5 w-1/2 animate-pulse rounded bg-slate-100" />
+                <div className="h-3 w-3/4 animate-pulse rounded bg-adm-sunk" />
+                <div className="h-2.5 w-1/2 animate-pulse rounded bg-adm-sunk" />
               </div>
             </div>
           ))}
@@ -331,7 +387,7 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
               busy={busyId === photo.id}
               now={now}
               showModeration={view === "pending"}
-              onOpen={() => setLightboxIndex(index)}
+              onOpen={() => openLightbox(index)}
               onPublish={() => onPublish(photo)}
               onReject={() => onReject(photo)}
             />
@@ -380,7 +436,7 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
           items={lightboxItems}
           index={lightboxIndex}
           onIndexChange={setLightboxIndex}
-          onClose={() => setLightboxIndex(null)}
+          onClose={closeLightbox}
           actions={
             <LightboxActions
               photo={activePhoto}
@@ -388,10 +444,7 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
               onPublish={() => onPublish(activePhoto)}
               onUnpublish={() => onUnpublish(activePhoto)}
               onReject={() => onReject(activePhoto)}
-              onDelete={async () => {
-                await onDelete(activePhoto);
-                setLightboxIndex(null);
-              }}
+              onDelete={() => onDelete(activePhoto)}
               onToggleFeatured={() => onToggleFeatured(activePhoto)}
               onEdit={() => {
                 setEditing(activePhoto);
@@ -401,6 +454,33 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
           }
         />
       )}
+
+      <ConfirmSheet
+        open={!!rejecting}
+        onClose={() => setRejecting(null)}
+        title="Reject this photo?"
+        consequence="It stays off the website and leaves Needs review."
+        confirmLabel="Reject photo"
+        onConfirm={() => rejecting && confirmAct(rejecting, () => rejectPhoto(rejecting.id, rejectReason.trim()), "Rejected")}
+      >
+        <Field label="Why is this being rejected? (optional)">
+          <Textarea value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} rows={3} maxLength={300} />
+        </Field>
+      </ConfirmSheet>
+
+      <ConfirmSheet
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title="Delete this photo?"
+        tone="danger"
+        consequence={
+          deleting?.status === "published"
+            ? "Delete this photo? It is live right now, and deleting removes the image permanently. To take it off the site but keep it, use Unpublish."
+            : "Delete this photo permanently? The image file is removed and cannot be recovered."
+        }
+        confirmLabel="Delete photo"
+        onConfirm={() => deleting && confirmAct(deleting, () => deletePhoto(deleting.id), "Photo deleted")}
+      />
 
       {editing && (
         <EditSheet
@@ -439,7 +519,7 @@ function PhotoTile({
   onReject: () => void;
 }) {
   const [broken, setBroken] = useState(false);
-  const countdown = countdownTo(photo.publishAt, now);
+  const countdown = minutesUntil(photo.publishAt, now);
   const needsReview = photo.status === "pending_review";
   /*
    * Approve and Reject only in the review tab. In a mixed Library grid two
@@ -452,14 +532,14 @@ function PhotoTile({
 
   return (
     <article
-      className={`overflow-hidden rounded-xl border bg-white transition ${
-        needsReview ? "border-amber-200" : "border-slate-200"
+      className={`overflow-hidden rounded-adm-md border bg-adm-surface transition ${
+        needsReview ? "border-adm-attn-bg" : "border-adm-line"
       } ${busy ? "opacity-60" : ""}`}
     >
       <button
         type="button"
         onClick={onOpen}
-        className="group relative block aspect-square w-full overflow-hidden bg-slate-100"
+        className="group relative block aspect-square w-full overflow-hidden bg-adm-sunk"
         aria-label={`Open ${photo.title || "photo"}`}
       >
         {/*
@@ -470,19 +550,19 @@ function PhotoTile({
           * which of those it is.
           */}
         {broken ? (
-          <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-slate-100 px-2 text-center text-slate-400">
+          <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-adm-sunk px-2 text-center text-adm-text-3">
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="5" width="18" height="14" rx="2" />
               <path d="m3 17 5-5 4 4 3-3 6 6" />
               <path d="M3 3l18 18" />
             </svg>
-            <span className="text-[10px] font-semibold leading-tight">Preview unavailable</span>
+            <span className="text-[12px] font-semibold leading-tight">Preview unavailable</span>
           </span>
         ) : isPair ? (
           /* A pair: BEFORE on the left half, AFTER on the right. */
-          <span className="absolute inset-0 grid grid-cols-2 gap-px bg-white">
+          <span className="absolute inset-0 grid grid-cols-2 gap-px bg-adm-surface">
             {[photo.beforeThumbUrl || "", photo.thumbUrl].map((src, side) => (
-              <span key={side} className="relative overflow-hidden bg-slate-100">
+              <span key={side} className="relative overflow-hidden bg-adm-sunk">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={src}
@@ -495,7 +575,7 @@ function PhotoTile({
                   className="absolute inset-0 object-cover"
                   style={{ height: "100%", width: "100%" }}
                 />
-                <span className="absolute bottom-1 left-1 rounded bg-slate-900/70 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-white">
+                <span className="absolute bottom-1 left-1 rounded bg-adm-ink/70 px-1 py-px text-[12px] font-bold uppercase tracking-wider text-white">
                   {side === 0 ? "Before" : "After"}
                 </span>
               </span>
@@ -525,13 +605,13 @@ function PhotoTile({
         />
         )}
         <span
-          className={`absolute left-1.5 top-1.5 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_TONES[photo.status]}`}
+          className={`absolute left-1.5 top-1.5 rounded-md border px-1.5 py-0.5 text-[12px] font-semibold ${STATUS_TONES[photo.status]}`}
         >
           {countdown ? `Live in ${countdown}` : STATUS_LABELS[photo.status]}
         </span>
         {photo.featured && (
           <span
-            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-md bg-slate-900/80 text-white"
+            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-md bg-adm-ink/80 text-white"
             title="Featured"
           >
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -542,21 +622,21 @@ function PhotoTile({
       </button>
 
       <div className="p-2.5">
-        <div className="truncate text-[13px] font-semibold text-slate-900">
+        <div className="truncate text-[13px] font-semibold text-adm-ink">
           {photo.title || "Untitled"}
         </div>
-        <div className="mt-0.5 truncate text-[11px] text-slate-500">
+        <div className="mt-0.5 truncate text-[12px] text-adm-text-3">
           {UPLOADER_LABELS[photo.uploaderType]} · {relativeDate(photo.createdAt)}
         </div>
         {isPair || photo.illustrative ? (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {isPair ? (
-              <span className="rounded-md border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-900">
+              <span className="rounded-md border border-adm-line bg-adm-info-bg px-1.5 py-0.5 text-[12px] font-semibold text-adm-accent-ink">
                 Before/After{photo.group ? ` · ${photo.group}` : ""}
               </span>
             ) : null}
             {photo.illustrative ? (
-              <span className="rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-900">
+              <span className="rounded-md border border-adm-line bg-adm-sunk px-1.5 py-0.5 text-[12px] font-semibold text-adm-ink">
                 Illustrative
               </span>
             ) : null}
@@ -575,7 +655,7 @@ function PhotoTile({
         {moderating && photo.internalNote ? (
           <p
             title={photo.internalNote}
-            className="mt-1.5 line-clamp-3 rounded-md bg-slate-50 px-2 py-1.5 text-[11px] leading-4 text-slate-600"
+            className="mt-1.5 line-clamp-3 rounded-md bg-adm-sunk px-2 py-1.5 text-[12px] leading-4 text-adm-text-2"
           >
             {photo.internalNote}
           </p>
@@ -587,7 +667,7 @@ function PhotoTile({
               type="button"
               onClick={onPublish}
               disabled={busy}
-              className="flex min-h-[36px] items-center justify-center rounded-lg bg-emerald-600 px-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+              className="flex min-h-[44px] items-center justify-center rounded-adm-sm bg-adm-ok px-2 text-[12px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
             >
               Approve
             </button>
@@ -595,7 +675,7 @@ function PhotoTile({
               type="button"
               onClick={onReject}
               disabled={busy}
-              className="flex min-h-[36px] items-center justify-center rounded-lg border border-slate-200 px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              className="flex min-h-[44px] items-center justify-center rounded-adm-sm border border-adm-line px-2 text-[12px] font-semibold text-adm-text-2 transition hover:bg-adm-sunk disabled:opacity-50"
             >
               Reject
             </button>
@@ -633,12 +713,12 @@ function LightboxActions({
    * nobody looked at it on a large screen.
    */
   const base =
-    "flex min-h-[42px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold transition disabled:opacity-50 sm:min-w-[116px] sm:flex-none sm:px-5";
+    "flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-adm-sm px-3 text-[13px] font-semibold transition disabled:opacity-50 sm:min-w-[116px] sm:flex-none sm:px-5";
   const ghost = `${base} border border-white/20 text-white hover:bg-white/10`;
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-2">
-      {photo.caption && <p className="text-xs leading-5 text-white/70">{photo.caption}</p>}
+      {photo.caption && <p className="text-[12px] leading-5 text-white/70">{photo.caption}</p>}
 
       <div className="flex flex-wrap gap-2">
         {photo.status === "published" ? (
@@ -650,7 +730,7 @@ function LightboxActions({
             type="button"
             onClick={onPublish}
             disabled={busy}
-            className={`${base} bg-emerald-600 text-white hover:bg-emerald-500`}
+            className={`${base} bg-adm-ok text-white hover:opacity-90`}
           >
             {photo.status === "pending_review" ? "Approve & publish" : "Publish"}
           </button>
@@ -674,19 +754,19 @@ function LightboxActions({
           type="button"
           onClick={onDelete}
           disabled={busy}
-          className={`${base} border border-rose-400/40 text-rose-200 hover:bg-rose-500/20`}
+          className={`${base} border border-white/30 text-adm-problem-bg hover:bg-white/10`}
         >
           Delete
         </button>
       </div>
 
       {photo.status === "published" && (
-        <p className="text-[11px] text-white/50">
+        <p className="text-[12px] text-white/50">
           Unpublish takes it off the site and keeps it in the Library. Delete removes the file for good.
         </p>
       )}
       {photo.rejectionReason && (
-        <p className="text-[11px] text-rose-200">Rejected: {photo.rejectionReason}</p>
+        <p className="text-[12px] text-adm-problem-bg">Rejected: {photo.rejectionReason}</p>
       )}
     </div>
   );
@@ -732,164 +812,106 @@ function EditSheet({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-slate-950/50 backdrop-blur-sm sm:items-center sm:p-6">
-      <div className="flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white sm:max-w-lg sm:rounded-2xl">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-          <h3 className="text-base font-semibold text-slate-900">Edit photo</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-        </div>
+  const dirty =
+    title !== photo.title || caption !== photo.caption || category !== photo.category || location !== photo.location;
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
-          <div className="flex gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photo.thumbUrl}
-              alt=""
-              width={160}
-              height={160}
-              style={{ height: "5rem", width: "5rem" }}
-              className="shrink-0 rounded-lg border border-slate-200 bg-slate-100 object-cover"
-            />
-            <div className="min-w-0 text-xs text-slate-500">
-              <div>
-                <span className="font-semibold text-slate-700">
-                  {STATUS_LABELS[photo.status]}
-                </span>{" "}
-                · {UPLOADER_LABELS[photo.uploaderType]}
-              </div>
-              {photo.uploadedByName && <div className="truncate">By {photo.uploadedByName}</div>}
-              {photo.bookingNumber && <div>Booking #{photo.bookingNumber}</div>}
-              <div>
-                {photo.sourceWidth}×{photo.sourceHeight} · {Math.round(photo.bytes / 1024)} KB
-              </div>
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title="Edit photo"
+      dirty={dirty}
+      busy={saving}
+      footer={
+        <>
+          <Button variant="secondary" large onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button large onClick={save} busy={saving}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <div className="flex gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photo.thumbUrl}
+            alt=""
+            width={160}
+            height={160}
+            style={{ height: "5rem", width: "5rem" }}
+            className="shrink-0 rounded-adm-sm border border-adm-line bg-adm-sunk object-cover"
+          />
+          <div className="min-w-0 text-[12px] text-adm-text-3">
+            <div>
+              <span className="font-semibold text-adm-text-2">{STATUS_LABELS[photo.status]}</span> ·{" "}
+              {UPLOADER_LABELS[photo.uploaderType]}
+            </div>
+            {photo.uploadedByName && <div className="truncate">By {photo.uploadedByName}</div>}
+            {photo.bookingNumber && <div>Booking #{photo.bookingNumber}</div>}
+            <div>
+              {photo.sourceWidth}×{photo.sourceHeight} · {Math.round(photo.bytes / 1024)} KB
             </div>
           </div>
+        </div>
 
-          <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Title
-            </span>
-            <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              maxLength={120}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-            />
-          </label>
+        <Field label="Title">
+          <TextInput value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} />
+        </Field>
 
-          {/*
-            The sender's note, immediately above the caption written from it.
+        {/*
+          The sender's note, immediately above the caption written from it.
 
-            Read-only on purpose, and never copied across on its own. "Use as
-            caption" fills the field below and nothing else - the admin still
-            edits it, still saves, still publishes. A customer's sentence
-            about their own home does not become site copy by arriving.
-          */}
-          {photo.internalNote ? (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  From the sender
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    /* The attribution is for the office. It is not site copy. */
-                    setCaption(photo.internalNote.replace(/^(?:Customer|Fixter) note:\s*/i, "").slice(0, 400))
-                  }
-                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
-                >
-                  Use as caption
-                </button>
-              </div>
-              <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-5 text-slate-700">
-                {photo.internalNote}
-              </p>
-              <p className="mt-1.5 text-[11px] text-slate-500">
-                Internal. Not shown on the website unless you put it in the caption.
-              </p>
+          Read-only on purpose, and never copied across on its own. "Use as
+          caption" fills the field below and nothing else - the admin still
+          edits it, still saves, still publishes. A customer's sentence
+          about their own home does not become site copy by arriving.
+        */}
+        {photo.internalNote ? (
+          <div className="rounded-adm-sm border border-adm-line bg-adm-sunk p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[13px] font-semibold text-adm-text-2">From the sender</span>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  /* The attribution is for the office. It is not site copy. */
+                  setCaption(photo.internalNote.replace(/^(?:Customer|Fixter) note:\s*/i, "").slice(0, 400))
+                }
+              >
+                Use as caption
+              </Button>
             </div>
-          ) : null}
+            <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-5 text-adm-text-2">{photo.internalNote}</p>
+            <p className="mt-1.5 text-[12px] text-adm-text-3">
+              Internal. Not shown on the website unless you put it in the caption.
+            </p>
+          </div>
+        ) : null}
 
-          <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Caption
-            </span>
-            <textarea
-              value={caption}
-              onChange={(event) => setCaption(event.target.value)}
-              rows={3}
-              maxLength={400}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-            />
-          </label>
+        <Field label="Caption">
+          <Textarea value={caption} onChange={(event) => setCaption(event.target.value)} rows={3} maxLength={400} />
+        </Field>
 
-          <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Category
-            </span>
-            <select
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-            >
-              {categories.map((option) => (
-                <option key={option.slug} value={option.slug}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+        <Field label="Category">
+          <Select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            options={categories.map((option) => ({ value: option.slug, label: option.label }))}
+          />
+        </Field>
 
-          <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Town / City (public)
-            </span>
-            <input
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              maxLength={80}
-              placeholder="Babylon, NY"
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-            />
-            <span className="mt-1 block text-xs text-slate-500">
-              Town and state only, never a street address.
-            </span>
-          </label>
-        </div>
-
-        <div
-          className="flex gap-2 border-t border-slate-200 px-4 py-3"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-        >
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-[44px] flex-1 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={saving}
-            className="min-h-[44px] flex-1 rounded-xl bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
-          >
-            {saving ? "Saving…" : "Save"}
-          </button>
-        </div>
+        <Field label="Town / City (public)" help="Town and state only, never a street address.">
+          <TextInput
+            value={location}
+            onChange={(event) => setLocation(event.target.value)}
+            maxLength={80}
+            placeholder="Babylon, NY"
+          />
+        </Field>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -906,9 +928,9 @@ function EmptyState({
 }) {
   if (searching) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-        <div className="text-sm font-semibold text-slate-900">Nothing matches that</div>
-        <p className="mt-1 text-[13px] text-slate-500">Try a different word or clear the filters.</p>
+      <div className="rounded-adm-md border border-dashed border-adm-line-2 bg-adm-surface px-6 py-12 text-center">
+        <div className="text-sm font-semibold text-adm-ink">Nothing matches that</div>
+        <p className="mt-1 text-[13px] text-adm-text-3">Try a different word or clear the filters.</p>
       </div>
     );
   }
@@ -932,25 +954,21 @@ function EmptyState({
   }[view];
 
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+    <div className="rounded-adm-md border border-dashed border-adm-line-2 bg-adm-surface px-6 py-12 text-center">
       <svg
-        className="mx-auto h-10 w-10 text-slate-300"
+        className="mx-auto h-10 w-10 text-adm-text-3"
         viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
       >
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <circle cx="8.5" cy="10.5" r="1.5" />
         <path d="m21 15-5-5-9 9" />
       </svg>
-      <div className="mt-3 text-sm font-semibold text-slate-900">{copy.title}</div>
-      <p className="mx-auto mt-1 max-w-sm text-[13px] text-slate-500">{copy.body}</p>
+      <div className="mt-3 text-sm font-semibold text-adm-ink">{copy.title}</div>
+      <p className="mx-auto mt-1 max-w-sm text-[13px] text-adm-text-3">{copy.body}</p>
       {copy.cta && (
-        <button
-          type="button"
-          onClick={onAdd}
-          className="mt-4 inline-flex min-h-[40px] items-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
-        >
+        <Button onClick={onAdd} className="mt-4">
           Add photos
-        </button>
+        </Button>
       )}
     </div>
   );

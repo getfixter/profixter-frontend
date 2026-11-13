@@ -26,12 +26,12 @@ export default class OverviewBoundary extends Component<Props, State> {
   render() {
     if (!this.state.failed) return this.props.children;
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
-        <p className="text-[15px] text-slate-600">Overview couldn&apos;t be shown. The other tabs still work.</p>
+      <div className="rounded-adm-md border border-adm-line bg-adm-surface p-6">
+        <p className="text-[15px] text-adm-text-2">Overview couldn&apos;t be shown. The other tabs still work.</p>
         <button
           type="button"
           onClick={() => this.setState({ failed: false })}
-          className="mt-4 h-10 rounded-full bg-slate-900 px-5 text-[14px] font-semibold text-white"
+          className="mt-4 h-11 rounded-adm-sm border border-adm-line-2 bg-adm-surface px-5 text-[14px] font-semibold text-adm-ink"
         >
           Try again
         </button>

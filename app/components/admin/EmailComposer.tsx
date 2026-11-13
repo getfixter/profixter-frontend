@@ -1,639 +1,642 @@
-'use client';
+"use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+/**
+ * Email campaign: compose, check, confirm, then watch it go out.
+ *
+ * SENDING (audit U-8 / X-03, backend BE-DOCS section C)
+ * - One idempotency key per campaign attempt, created when the confirmation
+ *   opens and reused by every retry of that same attempt. A request that timed
+ *   out but reached the server therefore returns the campaign it already
+ *   created instead of sending it twice. Editing the campaign makes a new key.
+ * - The confirmation states the segment and the recipient count; the button
+ *   repeats the verb. The button is busy (and ignores taps) until the server
+ *   answers, and a ref guard stops a second request even from a double tap.
+ * - The server answers within about 20 seconds; a large send carries on in
+ *   the background. The progress view polls GET /api/admin/campaigns/:id while
+ *   the page is visible, offers Resume when the server says rows are still
+ *   pending and nobody holds the lease, and says plainly when nothing was sent.
+ * - The campaign being watched is remembered for this browser tab, so leaving
+ *   and coming back shows its progress again.
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getCampaignRecipients,
   getCampaignVariables,
   getSegmentCounts,
   previewCampaign,
-  sendCampaign,
   sendCampaignTest,
-} from '@/lib/admin-service';
-import EmailHistory from './EmailHistory';
-import type {
-  CampaignPreview,
-  CampaignRecipient,
-  CampaignRequest,
-  CampaignRecipientsResponse,
-  CampaignVariableGroup,
-  SegmentCounts,
-} from '@/lib/admin-service';
+  type CampaignPreview,
+  type CampaignRecipient,
+  type CampaignRecipientsResponse,
+  type CampaignRequest,
+  type CampaignVariableGroup,
+  type SegmentCounts,
+} from "@/lib/admin-service";
+import {
+  arr,
+  getCampaignProgress,
+  newIdempotencyKey,
+  resumeCampaign,
+  sendQueuedCampaign,
+  str,
+  type CampaignProgress,
+} from "@/lib/admin/sections-api";
+import { writeToClipboard } from "@/lib/utils/clipboard";
+import { Button, Chip, ConfirmSheet, EmptyState, Field, SearchField, Section, TextInput, Textarea, cx, useToast } from "@/app/components/admin/ui";
 
 const SEGMENTS = [
-  { id: 'all', label: 'All Customers' },
-  { id: 'subscribed', label: 'Subscribed' },
-  { id: 'not_subscribed', label: 'Not Subscribed' },
-  { id: 'basic', label: 'Basic' },
-  { id: 'plus', label: 'Plus' },
-  { id: 'premium', label: 'Premium' },
-  { id: 'elite', label: 'Elite' },
+  { id: "all", label: "All Customers" },
+  { id: "subscribed", label: "Subscribed" },
+  { id: "not_subscribed", label: "Not Subscribed" },
+  { id: "basic", label: "Basic" },
+  { id: "plus", label: "Plus" },
+  { id: "premium", label: "Premium" },
+  { id: "elite", label: "Elite" },
 ] as const;
 
+const ADMIN_COPY_TO = "getfixter@gmail.com";
+const ACTIVE_KEY = "pfa:campaign:active";
+const POLL_MS = 3000;
+
+const segmentLabel = (id: string) => SEGMENTS.find((s) => s.id === id)?.label ?? id;
+
 function errorMessage(error: unknown) {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error
-  ) {
-    const response = (error as { response?: { data?: { message?: string } } })
-      .response;
-    if (response?.data?.message) return response.data.message;
-  }
-  return error instanceof Error ? error.message : 'Request failed';
+  const data = (error as { response?: { data?: { message?: string } } })?.response?.data;
+  if (data?.message) return data.message;
+  if ((error as { code?: string })?.code === "ECONNABORTED") return "The server did not answer in time. Your campaign may still be sending: press Send again to check. It will not be sent twice.";
+  return error instanceof Error ? error.message : "Request failed";
 }
 
+function readActive(): string {
+  try {
+    return window.sessionStorage.getItem(ACTIVE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+function writeActive(id: string) {
+  try {
+    if (id) window.sessionStorage.setItem(ACTIVE_KEY, id);
+    else window.sessionStorage.removeItem(ACTIVE_KEY);
+  } catch {
+    /* storage blocked */
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* progress                                                            */
+/* ------------------------------------------------------------------ */
+
+const STATUS_TEXT: Record<string, string> = {
+  queued: "Queued",
+  sending: "Sending",
+  completed: "Sent",
+  completed_with_errors: "Sent with failures",
+  failed: "Failed",
+};
+
+function CampaignProgressView({ initial, onNew }: { initial: CampaignProgress; onNew: () => void }) {
+  const [c, setC] = useState(initial);
+  const [pollError, setPollError] = useState("");
+  const [asking, setAsking] = useState(false);
+  const [tick, setTick] = useState(0);
+  const ref = c.id || c.campaignNumber;
+
+  useEffect(() => {
+    if (!ref || (c.finished && tick === 0)) return undefined;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const run = async () => {
+      if (document.visibilityState !== "visible") {
+        timer = setTimeout(run, POLL_MS);
+        return;
+      }
+      try {
+        const next = await getCampaignProgress(ref, controller.signal);
+        setC((prev) => ({ ...next, duplicate: prev.duplicate, code: prev.code, message: prev.message }));
+        setPollError("");
+        if (!next.finished) timer = setTimeout(run, POLL_MS);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setPollError(errorMessage(err));
+        timer = setTimeout(run, POLL_MS * 3);
+      }
+    };
+    timer = setTimeout(run, c.finished ? 0 : POLL_MS);
+    return () => {
+      controller.abort();
+      if (timer) clearTimeout(timer);
+    };
+    // Re-arm only when the campaign changes state (resume) or on manual refresh.
+     
+  }, [ref, c.finished, tick]);
+
+  const total = Math.max(c.total, c.sent + c.failed + c.pending);
+  const done = c.sent + c.failed;
+  const pct = total ? Math.round((done / total) * 100) : c.finished ? 100 : 0;
+  const nothingSent = c.status === "failed" && !c.adminCopySent;
+  const tone = nothingSent || c.status === "failed" ? "problem" : c.failed ? "attn" : c.finished ? "ok" : "info";
+
+  return (
+    <Section title="Campaign progress" action={c.campaignNumber ? <span className="adm-num text-[13px] text-adm-text-2">{c.campaignNumber}</span> : undefined}>
+      <div className="space-y-4 p-4" data-campaign-progress data-status={c.status}>
+        {c.duplicate || c.code === "CAMPAIGN_ALREADY_SENDING" ? (
+          <p role="status" className="rounded-adm-sm bg-adm-info-bg px-3 py-2 text-[14px] text-adm-info" data-duplicate>
+            {c.message || "This campaign was already created. Showing its progress; nothing was sent twice."}
+          </p>
+        ) : null}
+        <div>
+          <p className="text-[15px] font-semibold text-adm-ink">{c.subject || "Email campaign"}</p>
+          <p className="text-[13px] text-adm-text-2">
+            {segmentLabel(c.segment)}
+            {c.actorName ? ` · started by ${c.actorName}` : ""}
+          </p>
+        </div>
+        <div>
+          <div className="flex items-baseline justify-between gap-3">
+            <span
+              className={cx(
+                "text-[14px] font-semibold",
+                tone === "problem" ? "text-adm-problem" : tone === "attn" ? "text-adm-attn" : tone === "ok" ? "text-adm-ok" : "text-adm-info"
+              )}
+              data-status-text
+            >
+              {STATUS_TEXT[c.status] || c.status}
+            </span>
+            <span className="adm-num text-[14px] text-adm-ink" data-progress-count>
+              {c.sent} of {total} sent
+            </span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-adm-sunk" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Sending progress">
+            <div className={cx("h-full transition-[width] motion-reduce:transition-none", tone === "problem" ? "bg-adm-problem" : "bg-adm-accent")} style={{ width: `${pct}%` }} />
+          </div>
+          <dl className="mt-3 grid grid-cols-2 gap-2 text-[13px] sm:grid-cols-4">
+            {(
+              [
+                ["Sent", c.sent],
+                ["Failed", c.failed],
+                ["Still to send", c.pending],
+                ["Excluded", c.excluded],
+              ] as Array<[string, number]>
+            ).map(([label, value]) => (
+              <div key={label} className="rounded-adm-sm bg-adm-sunk px-3 py-2">
+                <dt className="text-adm-text-2">{label}</dt>
+                <dd className="adm-num text-[17px] font-semibold text-adm-ink">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-2 text-[13px] text-adm-text-2">Admin copy: {c.adminCopySent ? "sent" : "not sent"}.</p>
+        </div>
+
+        {nothingSent ? (
+          <p role="alert" className="rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] text-adm-problem" data-nothing-sent>
+            Nothing was sent to customers: the admin copy could not be sent, so the campaign stopped before the first customer. Check the email settings, then send it again.
+          </p>
+        ) : c.status === "failed" ? (
+          <p role="alert" className="rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] text-adm-problem">
+            The campaign stopped. {c.sent} {c.sent === 1 ? "email was" : "emails were"} sent and none of them will be sent again.
+            {c.canResume ? " You can resume the rest." : ""}
+          </p>
+        ) : !c.finished ? (
+          <p className="text-[13px] text-adm-text-2">Sending continues on the server even if you close this page. Each person gets it once.</p>
+        ) : null}
+
+        {pollError ? (
+          <p role="alert" className="flex flex-wrap items-center gap-2 rounded-adm-sm bg-adm-attn-bg px-3 py-2 text-[14px] text-adm-attn">
+            Could not refresh progress: {pollError}
+            <Button variant="tertiary" onClick={() => setTick((t) => t + 1)}>
+              Retry
+            </Button>
+          </p>
+        ) : null}
+
+        {c.failures.length ? (
+          <details className="rounded-adm-sm border border-adm-line">
+            <summary className="flex min-h-11 cursor-pointer items-center px-3 text-[14px] font-semibold text-adm-ink">Failed addresses ({c.failures.length})</summary>
+            <ul className="divide-y divide-adm-line">
+              {c.failures.map((f, i) => (
+                <li key={`${f.email}-${i}`} className="px-3 py-2 text-[13px]">
+                  <span className="block break-all text-adm-ink">{f.email || "(no address)"}</span>
+                  <span className="block break-words text-adm-problem">{f.error || "Failed"}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+
+        <div className="flex flex-wrap gap-2">
+          {c.canResume ? (
+            <Button onClick={() => setAsking(true)} data-resume>
+              Resume sending
+            </Button>
+          ) : null}
+          {c.finished ? (
+            <Button variant={c.canResume ? "secondary" : "primary"} onClick={onNew} data-new-campaign>
+              New campaign
+            </Button>
+          ) : (
+            <Button variant="secondary" onClick={() => setTick((t) => t + 1)}>
+              Refresh
+            </Button>
+          )}
+        </div>
+      </div>
+      <ConfirmSheet
+        open={asking}
+        onClose={() => setAsking(false)}
+        title="Resume this campaign?"
+        consequence={`The ${c.pending} ${c.pending === 1 ? "person who has" : "people who have"} not been emailed yet will get it now. Anyone already sent, failed or interrupted is never emailed again.`}
+        confirmLabel={`Resume sending to ${c.pending}`}
+        onConfirm={async () => {
+          const next = await resumeCampaign(ref);
+          setC(next);
+          setTick((t) => t + 1);
+        }}
+      />
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* composer                                                            */
+/* ------------------------------------------------------------------ */
+
 export default function EmailComposer() {
-  const [section, setSection] = useState<'compose' | 'history'>('compose');
+  const toast = useToast();
+  const [active, setActive] = useState<CampaignProgress | null>(null);
+  const [restoring, setRestoring] = useState(true);
   const [counts, setCounts] = useState<SegmentCounts | null>(null);
-  const [segment, setSegment] = useState('not_subscribed');
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
-  const [ctaText, setCtaText] = useState('View Plans');
-  const [ctaUrl, setCtaUrl] = useState('https://profixter.com/subscription');
+  const [segment, setSegment] = useState("not_subscribed");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [ctaText, setCtaText] = useState("View Plans");
+  const [ctaUrl, setCtaUrl] = useState("https://profixter.com/subscription");
   const [loadingCounts, setLoadingCounts] = useState(false);
-  const [busy, setBusy] = useState<'preview' | 'test' | 'send' | null>(null);
-  const [notice, setNotice] = useState('');
-  const [noticeType, setNoticeType] = useState<'success' | 'error' | 'info'>('info');
+  const [busy, setBusy] = useState<"preview" | "test" | null>(null);
+  const [notice, setNotice] = useState<{ tone: "ok" | "problem"; text: string } | null>(null);
   const [preview, setPreview] = useState<CampaignPreview | null>(null);
   const [variableGroups, setVariableGroups] = useState<CampaignVariableGroup[]>([]);
-  const [variablesOpen, setVariablesOpen] = useState(false);
-  const [copiedTag, setCopiedTag] = useState('');
   const [recipients, setRecipients] = useState<CampaignRecipientsResponse | null>(null);
   const [loadingRecipients, setLoadingRecipients] = useState(false);
-  const [recipientSearch, setRecipientSearch] = useState('');
+  const [recipientSearch, setRecipientSearch] = useState("");
   const [excludedUserIds, setExcludedUserIds] = useState<Set<string>>(new Set());
+  const [confirming, setConfirming] = useState(false);
+  const keyRef = useRef<{ key: string; fingerprint: string } | null>(null);
+  const sendingRef = useRef(false);
 
   const excludedUserIdList = useMemo(() => Array.from(excludedUserIds), [excludedUserIds]);
-  const selectedCount =
-    recipients?.includedCount ?? counts?.[segment as keyof SegmentCounts] ?? 0;
-  const excludedCount =
-    recipients?.excludedCount ??
-    Math.max(0, (counts?.[segment as keyof SegmentCounts] ?? 0) - selectedCount);
+  const segmentCount = counts ? Number(counts[segment as keyof SegmentCounts]) || 0 : 0;
+  const selectedCount = recipients?.includedCount ?? segmentCount;
+  const excludedCount = recipients?.excludedCount ?? Math.max(0, segmentCount - selectedCount);
   const payload = useMemo<CampaignRequest>(
-    () => ({
-      segment,
-      subject,
-      body,
-      ctaText,
-      ctaUrl,
-      excludedUserIds: excludedUserIdList,
-    }),
+    () => ({ segment, subject, body, ctaText, ctaUrl, excludedUserIds: excludedUserIdList }),
     [body, ctaText, ctaUrl, excludedUserIdList, segment, subject]
   );
+  const fingerprint = JSON.stringify(payload);
 
-  const allDisplayedRecipients = useMemo(
-    () => [
-      ...(recipients?.recipients || []),
-      ...(recipients?.excludedRecipients || []),
-    ],
-    [recipients]
-  );
+  /* A campaign this tab was watching: show its progress again. */
+  useEffect(() => {
+    const id = readActive();
+    if (!id) {
+       
+      setRestoring(false);
+      return;
+    }
+    getCampaignProgress(id)
+      .then((c) => setActive(c))
+      .catch(() => writeActive(""))
+      .finally(() => setRestoring(false));
+  }, []);
 
-  const visibleRecipients = useMemo(() => {
-    const query = recipientSearch.trim().toLowerCase();
-    const list = allDisplayedRecipients;
-    if (!query) return list;
-    return list.filter((recipient) =>
-      [
-        recipient.name,
-        recipient.email,
-        recipient.userId,
-        recipient.plans.join(', '),
-        recipient.subscriptionStatuses.join(', '),
-      ]
-        .map((value) => String(value || '').toLowerCase())
-        .some((value) => value.includes(query))
-    );
-  }, [allDisplayedRecipients, recipientSearch]);
-
-  async function loadCounts() {
+  const loadCounts = useCallback(async () => {
     try {
       setLoadingCounts(true);
       setCounts(await getSegmentCounts());
     } catch (error) {
-      setNoticeType('error');
-      setNotice(errorMessage(error));
+      setNotice({ tone: "problem", text: errorMessage(error) });
     } finally {
       setLoadingCounts(false);
     }
-  }
-
-  useEffect(() => {
-    void loadCounts();
-    void getCampaignVariables()
-      .then(setVariableGroups)
-      .catch((error) => {
-        setNoticeType('error');
-        setNotice(errorMessage(error));
-      });
   }, []);
 
   useEffect(() => {
+     
+    void loadCounts();
+    void getCampaignVariables()
+      .then((groups) => setVariableGroups(arr<CampaignVariableGroup>(groups)))
+      .catch((error) => setNotice({ tone: "problem", text: errorMessage(error) }));
+  }, [loadCounts]);
+
+  useEffect(() => {
     let cancelled = false;
-    async function loadRecipients() {
-      try {
-        setLoadingRecipients(true);
-        setRecipients(
-          await getCampaignRecipients(segment, excludedUserIdList)
-        );
-      } catch (error) {
-        if (!cancelled) {
-          setNoticeType('error');
-          setNotice(errorMessage(error));
-        }
-      } finally {
-        if (!cancelled) setLoadingRecipients(false);
-      }
-    }
-    void loadRecipients();
+     
+    setLoadingRecipients(true);
+    getCampaignRecipients(segment, excludedUserIdList)
+      .then((next) => !cancelled && setRecipients(next))
+      .catch((error) => !cancelled && setNotice({ tone: "problem", text: errorMessage(error) }))
+      .finally(() => !cancelled && setLoadingRecipients(false));
     return () => {
       cancelled = true;
     };
   }, [excludedUserIdList, segment]);
 
-  async function copyVariable(tag: string) {
-    try {
-      await navigator.clipboard.writeText(tag);
-    } catch {
-      const input = document.createElement('textarea');
-      input.value = tag;
-      input.style.position = 'fixed';
-      input.style.opacity = '0';
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand('copy');
-      input.remove();
-    }
-    setCopiedTag(tag);
-    window.setTimeout(() => setCopiedTag(''), 1400);
-  }
+  const allRecipients = useMemo(() => [...arr<CampaignRecipient>(recipients?.recipients), ...arr<CampaignRecipient>(recipients?.excludedRecipients)], [recipients]);
+  const visibleRecipients = useMemo(() => {
+    const q = recipientSearch.trim().toLowerCase();
+    if (!q) return allRecipients;
+    return allRecipients.filter((r) =>
+      [r.name, r.email, r.userId, arr(r.plans).join(", "), arr(r.subscriptionStatuses).join(", ")].some((v) => str(v).toLowerCase().includes(q))
+    );
+  }, [allRecipients, recipientSearch]);
 
-  function validate() {
+  const validate = () => {
     if (!subject.trim() || !body.trim()) {
-      setNoticeType('error');
-      setNotice('Subject and message are required.');
+      setNotice({ tone: "problem", text: "Subject and message are required." });
       return false;
     }
     return true;
-  }
+  };
 
-  async function handlePreview() {
+  const handlePreview = async () => {
     if (!validate()) return;
     try {
-      setBusy('preview');
-      setNotice('');
+      setBusy("preview");
+      setNotice(null);
       setPreview(await previewCampaign(payload));
     } catch (error) {
-      setNoticeType('error');
-      setNotice(errorMessage(error));
+      setNotice({ tone: "problem", text: errorMessage(error) });
     } finally {
       setBusy(null);
     }
-  }
+  };
 
-  async function handleTest() {
+  const handleTest = async () => {
     if (!validate()) return;
     try {
-      setBusy('test');
+      setBusy("test");
       const result = await sendCampaignTest(payload);
-      setNoticeType('success');
-      setNotice(
-        `Test sent only to ${result.recipient}. Estimated audience: ${result.estimatedRecipientCount}; excluded ${result.excludedRecipientCount || 0}.`
-      );
+      setNotice({
+        tone: "ok",
+        text: `Test sent only to ${result.recipient}. Estimated audience: ${result.estimatedRecipientCount}; excluded ${result.excludedRecipientCount || 0}.`,
+      });
     } catch (error) {
-      setNoticeType('error');
-      setNotice(errorMessage(error));
+      setNotice({ tone: "problem", text: errorMessage(error) });
     } finally {
       setBusy(null);
     }
-  }
+  };
 
-  async function handleSend() {
+  const askToSend = () => {
     if (!validate()) return;
-    const confirmed = window.confirm(
-      `Send this campaign to ${selectedCount} ${SEGMENTS.find((item) => item.id === segment)?.label ?? segment} recipient(s)? ${excludedCount} excluded. An admin copy will also be sent to getfixter@gmail.com.`
-    );
-    if (!confirmed) return;
+    // Same content as the last attempt: keep its key, so a retry can never send twice.
+    if (!keyRef.current || keyRef.current.fingerprint !== fingerprint) keyRef.current = { key: newIdempotencyKey("campaign"), fingerprint };
+    setConfirming(true);
+  };
 
+  const send = async () => {
+    if (sendingRef.current || !keyRef.current) return;
+    sendingRef.current = true;
     try {
-      setBusy('send');
-      const result = await sendCampaign(payload);
-      setNoticeType(result.failed || !result.adminCopySent ? 'error' : 'success');
-      setNotice(
-        `${result.campaignId}: sent ${result.sent}/${result.total}; failed ${result.failed}; admin copy ${
-          result.adminCopySent ? 'sent' : 'failed'
-        }; excluded ${result.excluded || result.skipped || 0}.`
-      );
-      await loadCounts();
-    } catch (error) {
-      setNoticeType('error');
-      setNotice(errorMessage(error));
+      const result = await sendQueuedCampaign(payload, keyRef.current.key);
+      writeActive(result.id || result.campaignNumber);
+      setActive(result);
+      setNotice(null);
+      toast.show(result.duplicate ? "Already sent; showing its progress" : result.finished ? "Campaign sent" : "Campaign is sending");
+      void loadCounts();
     } finally {
-      setBusy(null);
+      sendingRef.current = false;
     }
-  }
+  };
 
-  function toggleRecipient(recipient: CampaignRecipient) {
-    setExcludedUserIds((current) => {
-      const next = new Set(current);
-      if (next.has(recipient.id)) next.delete(recipient.id);
-      else next.add(recipient.id);
-      return next;
-    });
-  }
-
-  function includeAll() {
+  const startNew = () => {
+    writeActive("");
+    setActive(null);
+    keyRef.current = null;
+    setSubject("");
+    setBody("");
+    setPreview(null);
     setExcludedUserIds(new Set());
-  }
+  };
 
-  function excludeVisible() {
-    setExcludedUserIds((current) => {
-      const next = new Set(current);
-      for (const recipient of visibleRecipients) next.add(recipient.id);
-      return next;
-    });
-  }
+  if (restoring) return <p className="text-[14px] text-adm-text-2">Loading…</p>;
+  if (active) return <CampaignProgressView key={active.id || active.campaignNumber} initial={active} onNew={startNew} />;
+
+  const canSend = !!counts && !loadingRecipients && selectedCount > 0;
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:flex-row">
-        {[
-          ['compose', 'Compose Campaign'],
-          ['history', 'Email History'],
-        ].map(([id, label]) => {
-          const active = section === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setSection(id as 'compose' | 'history')}
-              className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                active
-                  ? 'bg-slate-950 text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
-              }`}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+    <div className="space-y-4" data-campaign-composer>
+      <p className="text-[14px] text-adm-text-2">Audiences use current subscription access, account status, blacklist and email suppression records.</p>
 
-      {section === 'history' ? (
-        <EmailHistory />
-      ) : (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <header className="border-b border-slate-200 bg-slate-950 px-5 py-5 text-white md:px-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-          Customer communications
-        </p>
-        <h2 className="mt-1 text-2xl font-semibold">Email campaign</h2>
-        <p className="mt-1 max-w-2xl text-sm text-slate-300">
-          Audiences use current subscription access, account status, blacklist,
-          and email suppression records.
-        </p>
-      </header>
-
-      <div className="space-y-6 p-4 md:p-7">
-        <div className="rounded-xl border border-blue-200 bg-blue-50">
-          <button
-            type="button"
-            onClick={() => setVariablesOpen((open) => !open)}
-            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-            aria-expanded={variablesOpen}
-          >
-            <span>
-              <span className="block text-sm font-semibold text-blue-950">
-                Variables and help
-              </span>
-              <span className="block text-xs text-blue-700">
-                Personalize the subject, message, button text, and button URL.
-              </span>
-            </span>
-            <span className="text-sm font-semibold text-blue-800">
-              {variablesOpen ? 'Hide' : 'Show'}
-            </span>
-          </button>
-
-          {variablesOpen && (
-            <div className="border-t border-blue-200 px-4 py-4">
-              <p className="mb-4 text-sm leading-6 text-slate-700">
-                Copy a variable and paste it wherever you want the customer value
-                to appear. Missing and unknown values become blank and never stop
-                a campaign.
-              </p>
-              <div className="grid gap-4 lg:grid-cols-3">
-                {variableGroups.map((group) => (
-                  <section
-                    key={group.id}
-                    className="rounded-xl border border-slate-200 bg-white p-3"
-                  >
-                    <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      {group.label}
-                    </h3>
-                    <div className="divide-y divide-slate-100">
-                      {group.variables.map((variable) => (
-                        <div
-                          key={variable.key}
-                          className="flex items-start justify-between gap-3 py-3"
-                        >
-                          <div className="min-w-0">
-                            <code className="break-all text-sm font-semibold text-blue-700">
-                              {variable.tag}
-                            </code>
-                            <p className="mt-1 text-xs leading-5 text-slate-500">
-                              {variable.description}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => void copyVariable(variable.tag)}
-                            className="shrink-0 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            {copiedTag === variable.tag ? 'Copied' : 'Copy'}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ))}
+      <details className="rounded-adm-md border border-adm-line bg-adm-surface">
+        <summary className="flex min-h-11 cursor-pointer flex-col justify-center px-4 py-2">
+          <span className="text-[14px] font-semibold text-adm-ink">Variables and help</span>
+          <span className="text-[13px] text-adm-text-2">Personalize the subject, message, button text and button URL.</span>
+        </summary>
+        <div className="border-t border-adm-line px-4 py-3">
+          <p className="mb-3 text-[14px] text-adm-text-2">Copy a variable and paste it where the customer value should appear. Missing and unknown values become blank and never stop a campaign.</p>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {variableGroups.map((group) => (
+              <div key={group.id} className="rounded-adm-sm border border-adm-line p-3">
+                <h3 className="mb-1 text-[13px] font-semibold text-adm-text-2">{group.label}</h3>
+                <ul className="divide-y divide-adm-line">
+                  {arr<{ key: string; tag: string; description: string }>(group.variables).map((v) => (
+                    <li key={v.key} className="flex items-start justify-between gap-3 py-2">
+                      <span className="min-w-0">
+                        <code className="break-all text-[13px] font-semibold text-adm-accent-ink">{v.tag}</code>
+                        <span className="mt-0.5 block text-[13px] text-adm-text-2">{v.description}</span>
+                      </span>
+                      <Button variant="secondary" onClick={() => writeToClipboard(v.tag).then((ok) => toast.show(ok ? `Copied ${v.tag}` : "Could not copy"))}>
+                        Copy
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
+      </details>
 
-        <div>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <label className="text-sm font-semibold text-slate-900">Audience</label>
-            <button
-              type="button"
-              onClick={() => void loadCounts()}
-              disabled={loadingCounts || busy !== null}
-              className="text-sm font-semibold text-blue-700 disabled:opacity-50"
+      <Section
+        title="Audience"
+        action={
+          <Button variant="tertiary" onClick={loadCounts} disabled={loadingCounts}>
+            {loadingCounts ? "Refreshing…" : "Refresh counts"}
+          </Button>
+        }
+      >
+        <div className="flex flex-wrap gap-2 p-3" role="group" aria-label="Segment">
+          {SEGMENTS.map((item) => (
+            <Chip
+              key={item.id}
+              selected={segment === item.id}
+              count={counts ? Number(counts[item.id]) || 0 : undefined}
+              onClick={() => {
+                setSegment(item.id);
+                setExcludedUserIds(new Set());
+                setRecipientSearch("");
+              }}
             >
-              {loadingCounts ? 'Refreshing…' : 'Refresh counts'}
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-            {SEGMENTS.map((item) => {
-              const active = segment === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setSegment(item.id);
-                    setExcludedUserIds(new Set());
-                    setRecipientSearch('');
-                  }}
-                  className={`rounded-xl border p-3 text-left transition ${
-                    active
-                      ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600'
-                      : 'border-slate-200 hover:border-slate-400'
-                  }`}
-                >
-                  <span className="block text-xs font-medium text-slate-500">
-                    {item.label}
-                  </span>
-                  <span className="mt-1 block text-xl font-semibold text-slate-950">
-                    {counts ? counts[item.id] : '-'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+              {item.label}
+            </Chip>
+          ))}
         </div>
+      </Section>
 
-        <section className="rounded-xl border border-slate-200 bg-slate-50">
-          <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-slate-950">Recipients included</h3>
-              <p className="mt-1 text-xs text-slate-500">
-                {loadingRecipients
-                  ? 'Loading recipients...'
-                  : `${selectedCount} included · ${excludedCount} excluded`}
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                value={recipientSearch}
-                onChange={(event) => setRecipientSearch(event.target.value)}
-                placeholder="Search name or email"
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600"
-              />
-              <button
-                type="button"
-                onClick={includeAll}
-                disabled={!excludedUserIds.size}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
-              >
+      <Section title="Recipients" count={selectedCount}>
+        <div className="space-y-3 p-3">
+          <p className="text-[13px] text-adm-text-2" data-recipient-summary>
+            {loadingRecipients ? "Loading recipients…" : `${selectedCount} included · ${excludedCount} excluded`}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <SearchField label="Search recipients" placeholder="Search name or email" value={recipientSearch} onChange={setRecipientSearch} className="min-w-0 flex-1" />
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={() => setExcludedUserIds(new Set())} disabled={!excludedUserIds.size}>
                 Include all
-              </button>
-              <button
-                type="button"
-                onClick={excludeVisible}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  setExcludedUserIds((current) => {
+                    const next = new Set(current);
+                    for (const r of visibleRecipients) next.add(r.id);
+                    return next;
+                  })
+                }
                 disabled={!visibleRecipients.length}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
               >
                 Exclude visible
-              </button>
+              </Button>
             </div>
           </div>
-
-          <div className="max-h-[360px] overflow-y-auto p-3">
+          <div className="max-h-[360px] overflow-y-auto rounded-adm-sm border border-adm-line">
             {loadingRecipients && !recipients ? (
-              <div className="rounded-xl bg-white px-4 py-5 text-center text-sm text-slate-500">
-                Loading recipient list...
-              </div>
-            ) : visibleRecipients.length === 0 ? (
-              <div className="rounded-xl bg-white px-4 py-5 text-center text-sm text-slate-500">
-                No recipients match this search.
-              </div>
+              <p className="px-4 py-5 text-center text-[14px] text-adm-text-2">Loading recipient list…</p>
+            ) : !visibleRecipients.length ? (
+              <EmptyState message="No recipients match this search." />
             ) : (
-              <div className="grid gap-2">
-                {visibleRecipients.map((recipient) => {
-                  const included = !excludedUserIds.has(recipient.id);
-                  const planText = recipient.plans.length
-                    ? recipient.plans.join(', ')
-                    : 'not subscribed';
-                  const statusText = recipient.subscriptionStatuses.length
-                    ? recipient.subscriptionStatuses.join(', ')
-                    : 'no active plan';
+              <ul role="list" className="divide-y divide-adm-line">
+                {visibleRecipients.map((r) => {
+                  const included = !excludedUserIds.has(r.id);
+                  const plans = arr(r.plans);
+                  const statuses = arr(r.subscriptionStatuses);
                   return (
-                    <label
-                      key={recipient.id}
-                      className={`flex cursor-pointer items-start gap-3 rounded-xl border bg-white p-3 transition ${
-                        included
-                          ? 'border-slate-200 hover:border-blue-300'
-                          : 'border-rose-200 bg-rose-50/50'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={included}
-                        onChange={() => toggleRecipient(recipient)}
-                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-500"
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-bold text-slate-950">
-                          {recipient.name || 'Unnamed customer'}
+                    <li key={r.id}>
+                      <label className={cx("flex min-h-11 cursor-pointer items-start gap-3 px-3 py-2.5", !included && "bg-adm-problem-bg")}>
+                        <input
+                          type="checkbox"
+                          checked={included}
+                          onChange={() =>
+                            setExcludedUserIds((current) => {
+                              const next = new Set(current);
+                              if (next.has(r.id)) next.delete(r.id);
+                              else next.add(r.id);
+                              return next;
+                            })
+                          }
+                          className="mt-0.5 h-5 w-5 accent-adm-accent"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[14px] font-semibold text-adm-ink">{r.name || "Unnamed customer"}</span>
+                          <span className="block break-all text-[13px] text-adm-text-2">{r.email}</span>
+                          <span className="block text-[12px] text-adm-text-3">
+                            {plans.length ? plans.join(", ") : "not subscribed"} · {statuses.length ? statuses.join(", ") : "no active plan"}
+                          </span>
                         </span>
-                        <span className="block break-all text-xs text-slate-500">
-                          {recipient.email}
-                        </span>
-                        <span className="mt-1 block text-xs text-slate-500">
-                          {planText} · {statusText}
-                        </span>
-                      </span>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-bold ${
-                          included
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-rose-100 text-rose-700'
-                        }`}
-                      >
-                        {included ? 'Included' : 'Excluded'}
-                      </span>
-                    </label>
+                        <span className={cx("shrink-0 text-[12px] font-semibold", included ? "text-adm-ok" : "text-adm-problem")}>{included ? "Included" : "Excluded"}</span>
+                      </label>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             )}
           </div>
-        </section>
+        </div>
+      </Section>
 
-        <div className="grid gap-5">
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-900">Subject</span>
-            <input
-              value={subject}
-              maxLength={180}
-              onChange={(event) => setSubject(event.target.value)}
-              placeholder="A clear, useful subject"
-              className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-900">Message</span>
-            <textarea
+      <Section title="Message">
+        <div className="grid gap-4 p-4">
+          <Field label="Subject">
+            <TextInput value={subject} maxLength={180} onChange={(e) => setSubject(e.target.value)} placeholder="A clear, useful subject" />
+          </Field>
+          <Field label="Message">
+            <Textarea
               value={body}
               maxLength={30000}
-              onChange={(event) => setBody(event.target.value)}
+              onChange={(e) => setBody(e.target.value)}
               rows={10}
               placeholder="Example: Hello {{firstName}}, thank you for being a {{planName}} member."
-              className="resize-y rounded-xl border border-slate-300 px-4 py-3 leading-7 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             />
-          </label>
-
+          </Field>
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-slate-900">Button text</span>
-              <input
-                value={ctaText}
-                maxLength={80}
-                onChange={(event) => setCtaText(event.target.value)}
-                className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600"
-              />
-            </label>
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-slate-900">Button URL</span>
-              <input
-                value={ctaUrl}
-                onChange={(event) => setCtaUrl(event.target.value)}
-                placeholder="https://profixter.com/..."
-                className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600"
-              />
-            </label>
+            <Field label="Button text">
+              <TextInput value={ctaText} maxLength={80} onChange={(e) => setCtaText(e.target.value)} />
+            </Field>
+            <Field label="Button URL">
+              <TextInput type="url" inputMode="url" value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} placeholder="https://profixter.com/..." />
+            </Field>
           </div>
+          <div className="flex flex-col gap-2 border-t border-adm-line pt-4 sm:flex-row">
+            <Button variant="secondary" onClick={handlePreview} busy={busy === "preview"} disabled={busy !== null}>
+              Preview
+            </Button>
+            <Button variant="secondary" onClick={handleTest} busy={busy === "test"} disabled={busy !== null}>
+              Send test to admin only
+            </Button>
+            <Button onClick={askToSend} disabled={busy !== null || !canSend} className="sm:ml-auto" data-send-campaign>
+              {`Send to ${selectedCount} recipient${selectedCount === 1 ? "" : "s"}`}
+            </Button>
+          </div>
+          {notice ? (
+            <p role={notice.tone === "problem" ? "alert" : "status"} className={cx("rounded-adm-sm px-3 py-2 text-[14px]", notice.tone === "ok" ? "bg-adm-ok-bg text-adm-ok" : "bg-adm-problem-bg text-adm-problem")}>
+              {notice.text}
+            </p>
+          ) : null}
         </div>
+      </Section>
 
-        <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row">
-          <button
-            type="button"
-            onClick={() => void handlePreview()}
-            disabled={busy !== null}
-            className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-800 disabled:opacity-50"
-          >
-            {busy === 'preview' ? 'Building preview…' : 'Preview'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleTest()}
-            disabled={busy !== null}
-            className="rounded-xl border border-slate-900 px-5 py-3 font-semibold text-slate-950 disabled:opacity-50"
-          >
-            {busy === 'test' ? 'Sending test…' : 'Send test to admin only'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleSend()}
-            disabled={busy !== null || !counts}
-            className="rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white shadow-sm disabled:opacity-50 sm:ml-auto"
-          >
-            {busy === 'send'
-              ? 'Sending campaign…'
-              : `Send to ${selectedCount} recipient${selectedCount === 1 ? '' : 's'}`}
-          </button>
-        </div>
-
-        {notice && (
-          <div
-            className={`rounded-xl border px-4 py-3 text-sm ${
-              noticeType === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                : noticeType === 'error'
-                  ? 'border-red-200 bg-red-50 text-red-800'
-                  : 'border-blue-200 bg-blue-50 text-blue-800'
-            }`}
-          >
-            {notice}
-          </div>
-        )}
-
-        {preview && (
-          <div className="space-y-3 border-t border-slate-200 pt-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h3 className="font-semibold text-slate-950">Customer preview</h3>
-                <p className="text-sm text-slate-500">
-                  Representative rendering · {preview.recipientCount} recipients
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPreview(null)}
-                className="text-sm font-semibold text-slate-600"
-              >
-                Close
-              </button>
+      {preview ? (
+        <Section
+          title="Customer preview"
+          action={
+            <Button variant="tertiary" onClick={() => setPreview(null)}>
+              Close
+            </Button>
+          }
+        >
+          <div className="space-y-3 p-4">
+            <p className="text-[13px] text-adm-text-2">Representative rendering · {preview.recipientCount} recipients</p>
+            <div className="grid gap-x-6 gap-y-1 rounded-adm-sm bg-adm-sunk p-3 text-[13px] sm:grid-cols-2 lg:grid-cols-3">
+              {Object.entries(preview.sampleValues || {}).map(([key, value]) => (
+                <div key={key} className="min-w-0 break-words">
+                  <span className="text-adm-text-2">{`{{${key}}}`}</span> <span className="font-medium text-adm-ink">{value || "(blank)"}</span>
+                </div>
+              ))}
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                Sample values used
-              </p>
-              <div className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                {Object.entries(preview.sampleValues).map(([key, value]) => (
-                  <div key={key} className="min-w-0">
-                    <span className="text-slate-500">{`{{${key}}}`}</span>
-                    <span className="ml-2 break-words font-medium text-slate-900">
-                      {value || '(blank)'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <iframe
-              title="Campaign email preview"
-              srcDoc={preview.html}
-              sandbox=""
-              className="h-[640px] w-full rounded-xl border border-slate-300 bg-white"
-            />
+            <iframe title="Campaign email preview" srcDoc={preview.html} sandbox="" className="h-[640px] w-full rounded-adm-sm border border-adm-line bg-adm-surface" />
           </div>
-        )}
-      </div>
-    </section>
-      )}
+        </Section>
+      ) : null}
+
+      <ConfirmSheet
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        title="Send this campaign?"
+        consequence={
+          <>
+            <span data-confirm-count>
+              {selectedCount} {selectedCount === 1 ? "person" : "people"} in <strong>{segmentLabel(segment)}</strong>
+            </span>{" "}
+            will get “{subject.trim()}”. {excludedCount} excluded. An admin copy goes to {ADMIN_COPY_TO} first; if it fails, no customer is emailed.
+          </>
+        }
+        confirmLabel={`Send to ${selectedCount} ${selectedCount === 1 ? "person" : "people"}`}
+        onConfirm={send}
+        errorText={errorMessage}
+      >
+        <p className="text-[13px] text-adm-text-2">Large campaigns keep sending in the background. Pressing Send again never sends it twice.</p>
+      </ConfirmSheet>
     </div>
   );
 }

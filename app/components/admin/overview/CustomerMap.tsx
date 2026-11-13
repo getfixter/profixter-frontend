@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { Sheet } from "@/app/components/admin/ui";
 import { ISLAND_PATH, MAP_VIEWBOX } from "@/app/components/home/MembershipMap/island-geometry";
 import { getOverviewMap, customerHandoff, customerHref, planLabel, shortDate, type MapPoint, type OverviewMap } from "@/lib/admin-overview";
 
@@ -78,30 +79,30 @@ export default function CustomerMap({
   const W = MAP_VIEWBOX.width;
   const H = MAP_VIEWBOX.height;
 
-  const body = (
-    <div className={full ? "flex h-full flex-col" : ""}>
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
+  const renderBody = (inSheet: boolean) => (
+    <div className="min-w-0">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="-mx-1 flex min-w-0 max-w-full gap-1 overflow-x-auto px-1 [scrollbar-width:none]" role="group" aria-label="Map layer">
           {LAYERS.map((l) => (
             <button
               key={l.key}
               type="button"
               onClick={() => setLayer(l.key)}
               aria-pressed={layer === l.key}
-              className={`h-9 flex-none rounded-full px-3.5 text-[13px] font-semibold transition ${layer === l.key ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+              className={`h-9 [@media(pointer:coarse)]:h-11 flex-none rounded-full px-3.5 text-[13px] font-semibold transition ${layer === l.key ? "bg-adm-ink text-white" : "bg-adm-sunk text-adm-text-2 hover:bg-adm-sunk"}`}
             >
               {l.label}
             </button>
           ))}
         </div>
-        <div className="flex gap-1">
+        <div className="-mx-1 flex min-w-0 max-w-full gap-1 overflow-x-auto px-1 [scrollbar-width:none]" role="group" aria-label="Plan">
           {Object.keys(PLAN_COLORS).map((p) => (
             <button
               key={p}
               type="button"
               onClick={() => setPlan(plan === p ? null : p)}
               aria-pressed={plan === p}
-              className={`flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold transition ${plan === p ? "bg-slate-900 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-slate-300"}`}
+              className={`flex h-9 [@media(pointer:coarse)]:h-11 flex-none items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold transition ${plan === p ? "bg-adm-ink text-white" : "bg-adm-surface text-adm-text-2 ring-1 ring-adm-line hover:ring-adm-line-2"}`}
             >
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: PLAN_COLORS[p] }} />
               {planLabel(p)}
@@ -109,15 +110,15 @@ export default function CustomerMap({
           ))}
         </div>
         {cityFilter ? (
-          <button type="button" onClick={onClearCity} className="h-9 rounded-full bg-blue-50 px-3 text-[12px] font-semibold text-blue-700">
+          <button type="button" onClick={onClearCity} className="h-9 [@media(pointer:coarse)]:h-11 rounded-full bg-adm-info-bg px-3 text-[12px] font-semibold text-adm-accent-ink">
             {cityFilter} ×
           </button>
         ) : null}
       </div>
 
-      <div className={`relative mt-3 overflow-hidden rounded-[18px] bg-[#f4f7fc] ${full ? "flex-1" : ""}`}>
+      <div className="relative mt-3 overflow-hidden rounded-adm-md bg-adm-sunk">
         {error ? (
-          <p className="p-10 text-center text-[14px] text-slate-500">{error}</p>
+          <p className="p-10 text-center text-[14px] text-adm-text-3">{error}</p>
         ) : !data ? (
           <div className="ov-skel aspect-[1000/449] w-full" />
         ) : (
@@ -137,30 +138,30 @@ export default function CustomerMap({
         )}
 
         {picked ? (
-          <div className="absolute bottom-3 left-3 right-3 rounded-[16px] border border-slate-200 bg-white/95 p-4 shadow-[0_18px_40px_-18px_rgba(11,22,40,0.45)] backdrop-blur sm:left-auto sm:w-[290px]">
+          <div className="absolute bottom-3 left-3 right-3 rounded-adm-md border border-adm-line bg-adm-surface p-4 sm:left-auto sm:w-[290px]">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <div className="text-[16px] font-bold text-slate-900">{picked.name}</div>
-                <div className="text-[13px] text-slate-500">{picked.city || "—"}</div>
+                <div className="text-[16px] font-semibold text-adm-ink">{picked.name}</div>
+                <div className="text-[13px] text-adm-text-3">{picked.city || "—"}</div>
               </div>
-              <button type="button" onClick={() => setPicked(null)} className="-mr-1 -mt-1 h-8 w-8 rounded-full text-[18px] text-slate-400 hover:bg-slate-100" aria-label="Close">
+              <button type="button" onClick={() => setPicked(null)} className="-mr-2 -mt-2 h-11 w-11 flex-none rounded-full text-[18px] text-adm-text-3 hover:bg-adm-sunk" aria-label="Close">
                 ×
               </button>
             </div>
             <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px]">
-              <dt className="text-slate-400">Plan</dt>
-              <dd className="font-semibold text-slate-800">{picked.member ? `${planLabel(picked.plan)}${picked.gift ? " (gift)" : ""}` : "Not a member"}</dd>
-              <dt className="text-slate-400">Joined</dt>
-              <dd className="text-slate-700">{shortDate(picked.memberSince || picked.joinedAt)}</dd>
-              <dt className="text-slate-400">Source</dt>
-              <dd className="text-slate-700">{picked.source}</dd>
-              <dt className="text-slate-400">Last visit</dt>
-              <dd className="text-slate-700">{shortDate(picked.lastVisit)}</dd>
-              <dt className="text-slate-400">Upcoming</dt>
-              <dd className="text-slate-700">{shortDate(picked.nextVisit)}</dd>
+              <dt className="text-adm-text-3">Plan</dt>
+              <dd className="font-semibold text-adm-ink">{picked.member ? `${planLabel(picked.plan)}${picked.gift ? " (gift)" : ""}` : "Not a member"}</dd>
+              <dt className="text-adm-text-3">Joined</dt>
+              <dd className="text-adm-text-2">{shortDate(picked.memberSince || picked.joinedAt)}</dd>
+              <dt className="text-adm-text-3">Source</dt>
+              <dd className="text-adm-text-2">{picked.source}</dd>
+              <dt className="text-adm-text-3">Last visit</dt>
+              <dd className="text-adm-text-2">{shortDate(picked.lastVisit)}</dd>
+              <dt className="text-adm-text-3">Upcoming</dt>
+              <dd className="text-adm-text-2">{shortDate(picked.nextVisit)}</dd>
             </dl>
             {linkCustomers ? (
-              <a href={customerHref(picked.ref)} onClick={customerHandoff(picked.ref)} className="mt-3 inline-flex h-9 items-center rounded-full bg-slate-900 px-4 text-[13px] font-semibold text-white">
+              <a href={customerHref(picked.ref)} onClick={customerHandoff(picked.ref)} className="mt-3 inline-flex h-9 [@media(pointer:coarse)]:h-11 items-center rounded-full bg-adm-ink px-4 text-[13px] font-semibold text-white">
                 View customer
               </a>
             ) : null}
@@ -168,23 +169,23 @@ export default function CustomerMap({
         ) : null}
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] text-slate-500">
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] text-adm-text-3">
         <span>
           {data ? `${visible.length.toLocaleString()} shown · ${data.placed.toLocaleString()} of ${data.total.toLocaleString()} customers have a mappable address` : " "}
         </span>
-        <button type="button" onClick={() => setFull((v) => !v)} className="font-semibold text-blue-600">
-          {full ? "Close full screen" : "Full screen"}
+        <button type="button" onClick={() => setFull(!inSheet)} className="min-h-11 font-semibold text-adm-accent-ink">
+          {inSheet ? "Close full screen" : "Full screen"}
         </button>
       </div>
     </div>
   );
 
-  if (full) {
-    return (
-      <div className="fixed inset-0 z-[95] bg-white p-4 md:p-8" role="dialog" aria-modal="true" aria-label="Customer map">
-        {body}
-      </div>
-    );
-  }
-  return body;
+  return (
+    <>
+      {renderBody(false)}
+      <Sheet open={full} onClose={() => setFull(false)} title="Customer map" size="full" width="wide">
+        {full ? renderBody(true) : null}
+      </Sheet>
+    </>
+  );
 }

@@ -51,18 +51,18 @@ function Tooltip({ tip, width }: { tip: Tip; width: number }) {
   const left = Math.min(Math.max(tip.x - 80, 0), Math.max(width - 168, 0));
   return (
     <div
-      className="pointer-events-none absolute z-10 w-[168px] rounded-[12px] border border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_12px_32px_-12px_rgba(11,22,40,0.35)] backdrop-blur"
+      className="pointer-events-none absolute z-10 w-[168px] rounded-adm-md border border-adm-line bg-adm-surface px-3 py-2"
       style={{ left, top: Math.max(tip.y - 74, 0) }}
       role="status"
     >
-      <div className="text-[11px] font-semibold text-slate-500">{tip.title}</div>
+      <div className="text-[12px] font-semibold text-adm-text-3">{tip.title}</div>
       {tip.rows.map((r) => (
         <div key={r.label} className="mt-1 flex items-center justify-between gap-3">
-          <span className="flex items-center gap-1.5 text-[12px] text-slate-500">
+          <span className="flex items-center gap-1.5 text-[12px] text-adm-text-3">
             {r.color ? <span className="inline-block h-[3px] w-3 rounded-full" style={{ background: r.color }} /> : null}
             {r.label}
           </span>
-          <span className="text-[14px] font-semibold text-slate-900">{r.value}</span>
+          <span className="text-[14px] font-semibold text-adm-ink">{r.value}</span>
         </div>
       ))}
     </div>
@@ -265,8 +265,8 @@ export function Legend({ items }: { items: Array<{ label: string; color: string;
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
       {items.map((it) => (
-        <span key={it.label} className="flex items-center gap-1.5 text-[12px] text-slate-500">
-          <span className={it.line ? "inline-block h-[3px] w-3.5 rounded-full" : "inline-block h-2.5 w-2.5 rounded-[3px]"} style={{ background: it.color }} />
+        <span key={it.label} className="flex items-center gap-1.5 text-[12px] text-adm-text-3">
+          <span className={it.line ? "inline-block h-[3px] w-3.5 rounded-full" : "inline-block h-2.5 w-2.5 rounded-adm-xs"} style={{ background: it.color }} />
           {it.label}
         </span>
       ))}
@@ -278,16 +278,16 @@ export function Legend({ items }: { items: Array<{ label: string; color: string;
 export function DataTable({ head, rows }: { head: string[]; rows: Array<Array<string>> }) {
   return (
     <details className="ov-data mt-2">
-      <summary className="cursor-pointer select-none text-[12px] font-semibold text-slate-400 hover:text-slate-600">Show data</summary>
-      <div className="mt-2 max-h-[220px] overflow-auto rounded-[10px] border border-slate-100">
+      <summary className="flex min-h-11 cursor-pointer select-none items-center text-[13px] font-semibold text-adm-text-2 hover:text-adm-ink">Show data</summary>
+      <div className="mt-2 max-h-[220px] overflow-auto rounded-adm-sm border border-adm-line">
         <table className="w-full text-left text-[12px]">
-          <thead className="sticky top-0 bg-slate-50 text-slate-500">
+          <thead className="sticky top-0 bg-adm-sunk text-adm-text-3">
             <tr>{head.map((h) => <th key={h} className="px-3 py-1.5 font-semibold">{h}</th>)}</tr>
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i} className="border-t border-slate-100">
-                {r.map((c, j) => <td key={j} className="px-3 py-1.5 tabular-nums text-slate-700">{c}</td>)}
+              <tr key={i} className="border-t border-adm-line">
+                {r.map((c, j) => <td key={j} className="px-3 py-1.5 tabular-nums text-adm-text-2">{c}</td>)}
               </tr>
             ))}
           </tbody>

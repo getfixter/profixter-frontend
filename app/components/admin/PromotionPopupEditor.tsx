@@ -8,9 +8,7 @@ import {
   savePromotionPopup,
   type PromotionPopup,
 } from "@/lib/promotion-popup";
-
-const inputClass =
-  "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10";
+import { Button, ErrorState, Field, Select, SkeletonRows, StatusBadge, TextInput, Textarea } from "@/app/components/admin/ui";
 
 function toLocalDateTime(value?: string | null) {
   if (!value) return "";
@@ -24,24 +22,33 @@ function toIso(value: string) {
   return value ? new Date(value).toISOString() : null;
 }
 
+const TARGETS = [
+  { value: "homepage", label: "Homepage only" },
+  { value: "all_public", label: "All public visitor pages" },
+];
+
 export default function PromotionPopupEditor() {
   const [popup, setPopup] = useState<PromotionPopup>(EMPTY_PROMOTION_POPUP);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    void getPromotionPopup()
-      .then((data) => setPopup(data))
-      .catch(() => setError("Failed to load promotion popup settings."))
+  const load = () => {
+    setLoading(true);
+    setLoadError("");
+    return getPromotionPopup()
+      .then((data) => setPopup(data && typeof data === "object" ? { ...EMPTY_PROMOTION_POPUP, ...data } : EMPTY_PROMOTION_POPUP))
+      .catch(() => setLoadError("Failed to load promotion popup settings."))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    void load();
   }, []);
 
-  const update = <K extends keyof PromotionPopup>(
-    key: K,
-    value: PromotionPopup[K]
-  ) => {
+  const update = <K extends keyof PromotionPopup>(key: K, value: PromotionPopup[K]) => {
     setPopup((current) => ({ ...current, [key]: value }));
     setMessage("");
     setError("");
@@ -53,43 +60,26 @@ export default function PromotionPopupEditor() {
     setError("");
     try {
       const saved = await savePromotionPopup(popup);
-      setPopup(saved);
+      setPopup(saved && typeof saved === "object" ? { ...EMPTY_PROMOTION_POPUP, ...saved } : popup);
       setMessage("Promotion popup settings saved.");
     } catch (saveError) {
-      const responseMessage =
-        typeof saveError === "object" &&
-        saveError !== null &&
-        "response" in saveError
-          ? (
-              saveError as {
-                response?: { data?: { message?: string } };
-              }
-            ).response?.data?.message
-          : undefined;
+      const responseMessage = (saveError as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(responseMessage || "Failed to save promotion popup.");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500">
-        Loading popup settings...
-      </div>
-    );
-  }
+  if (loading) return <SkeletonRows count={6} leading={false} label="Loading popup settings" />;
+  if (loadError) return <ErrorState message={loadError} onRetry={load} />;
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Promotion Popup</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Control the visitor popup without changing customer account flows.
-          </p>
+    <div className="space-y-4" data-promotion-editor>
+      <div className="flex flex-col gap-3 rounded-adm-md border border-adm-line bg-adm-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[14px] text-adm-text-2">Control the visitor popup without changing customer account flows.</p>
           {popup.updatedAt ? (
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-1 text-[12px] text-adm-text-3">
               Last updated{" "}
               {new Date(popup.updatedAt).toLocaleString("en-US", {
                 timeZone: "America/New_York",
@@ -99,231 +89,103 @@ export default function PromotionPopupEditor() {
             </p>
           ) : null}
         </div>
-        <label className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-3 rounded-adm-sm border border-adm-line bg-adm-sunk px-4">
           <input
             type="checkbox"
             checked={popup.enabled}
             onChange={(event) => update("enabled", event.target.checked)}
-            className="h-5 w-5 accent-blue-600"
+            className="h-5 w-5 accent-adm-accent"
           />
-          <span className="text-sm font-bold text-slate-800">
-            Popup enabled
-          </span>
+          <span className="text-[14px] font-semibold text-adm-ink">Popup enabled</span>
         </label>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-adm-md border border-adm-line bg-adm-surface p-4 sm:p-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block sm:col-span-2">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Eyebrow text
-              </span>
-              <input
-                className={inputClass}
-                value={popup.eyebrow}
-                onChange={(event) => update("eyebrow", event.target.value)}
-                placeholder="Profixter update"
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Title
-              </span>
-              <input
-                className={inputClass}
-                value={popup.title}
-                onChange={(event) => update("title", event.target.value)}
-                placeholder="A helpful offer for your home"
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Message
-              </span>
-              <textarea
-                className={`${inputClass} min-h-24 resize-y py-3`}
-                value={popup.message}
-                onChange={(event) => update("message", event.target.value)}
-                placeholder="Keep the message concise and useful."
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Promo code
-              </span>
-              <input
-                className={inputClass}
-                value={popup.promoCode}
-                onChange={(event) =>
-                  update("promoCode", event.target.value.toUpperCase())
-                }
-                placeholder="Optional"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Target pages
-              </span>
-              <select
-                className={inputClass}
+            <Field label="Eyebrow text" className="sm:col-span-2">
+              <TextInput value={popup.eyebrow} onChange={(event) => update("eyebrow", event.target.value)} placeholder="Profixter update" />
+            </Field>
+            <Field label="Title" className="sm:col-span-2">
+              <TextInput value={popup.title} onChange={(event) => update("title", event.target.value)} placeholder="A helpful offer for your home" />
+            </Field>
+            <Field label="Message" className="sm:col-span-2">
+              <Textarea value={popup.message} onChange={(event) => update("message", event.target.value)} rows={4} placeholder="Keep the message concise and useful." />
+            </Field>
+            <Field label="Promo code">
+              <TextInput value={popup.promoCode} onChange={(event) => update("promoCode", event.target.value.toUpperCase())} placeholder="Optional" autoCapitalize="characters" />
+            </Field>
+            <Field label="Target pages">
+              <Select
                 value={popup.target}
-                onChange={(event) =>
-                  update(
-                    "target",
-                    event.target.value as PromotionPopup["target"]
-                  )
-                }
-              >
-                <option value="homepage">Homepage only</option>
-                <option value="all_public">All public visitor pages</option>
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Primary button text
-              </span>
-              <input
-                className={inputClass}
-                value={popup.ctaText}
-                onChange={(event) => update("ctaText", event.target.value)}
-                placeholder="View offer"
+                onChange={(event) => update("target", event.target.value as PromotionPopup["target"])}
+                options={TARGETS}
               />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Primary button URL
-              </span>
-              <input
-                className={inputClass}
-                value={popup.ctaUrl}
-                onChange={(event) => update("ctaUrl", event.target.value)}
-                placeholder="/membership or https://..."
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Secondary button text
-              </span>
-              <input
-                className={inputClass}
-                value={popup.secondaryText}
-                onChange={(event) =>
-                  update("secondaryText", event.target.value)
-                }
-                placeholder="Optional"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Secondary button URL
-              </span>
-              <input
-                className={inputClass}
-                value={popup.secondaryUrl}
-                onChange={(event) =>
-                  update("secondaryUrl", event.target.value)
-                }
-                placeholder="Optional"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Start date
-              </span>
-              <input
-                type="datetime-local"
-                className={inputClass}
-                value={toLocalDateTime(popup.startAt)}
-                onChange={(event) =>
-                  update("startAt", toIso(event.target.value))
-                }
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                End date
-              </span>
-              <input
-                type="datetime-local"
-                className={inputClass}
-                value={toLocalDateTime(popup.endAt)}
-                onChange={(event) =>
-                  update("endAt", toIso(event.target.value))
-                }
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Internal admin note
-              </span>
-              <input
-                className={inputClass}
-                value={popup.internalNote || ""}
-                onChange={(event) =>
-                  update("internalNote", event.target.value)
-                }
-                placeholder="Optional note; never shown publicly"
-              />
-            </label>
+            </Field>
+            <Field label="Primary button text">
+              <TextInput value={popup.ctaText} onChange={(event) => update("ctaText", event.target.value)} placeholder="View offer" />
+            </Field>
+            <Field label="Primary button URL">
+              <TextInput value={popup.ctaUrl} onChange={(event) => update("ctaUrl", event.target.value)} placeholder="/membership or https://..." inputMode="url" />
+            </Field>
+            <Field label="Secondary button text">
+              <TextInput value={popup.secondaryText} onChange={(event) => update("secondaryText", event.target.value)} placeholder="Optional" />
+            </Field>
+            <Field label="Secondary button URL">
+              <TextInput value={popup.secondaryUrl} onChange={(event) => update("secondaryUrl", event.target.value)} placeholder="Optional" inputMode="url" />
+            </Field>
+            <Field label="Start date">
+              <TextInput type="datetime-local" value={toLocalDateTime(popup.startAt)} onChange={(event) => update("startAt", toIso(event.target.value))} />
+            </Field>
+            <Field label="End date">
+              <TextInput type="datetime-local" value={toLocalDateTime(popup.endAt)} onChange={(event) => update("endAt", toIso(event.target.value))} />
+            </Field>
+            <Field label="Internal admin note" className="sm:col-span-2">
+              <TextInput value={popup.internalNote || ""} onChange={(event) => update("internalNote", event.target.value)} placeholder="Optional note; never shown publicly" />
+            </Field>
           </div>
 
           {error ? (
-            <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            <p role="alert" className="mt-4 rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] font-medium text-adm-problem">
               {error}
-            </div>
+            </p>
           ) : null}
           {message ? (
-            <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+            <p role="status" className="mt-4 rounded-adm-sm bg-adm-ok-bg px-3 py-2 text-[14px] font-medium text-adm-ok">
               {message}
-            </div>
+            </p>
           ) : null}
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={save}
-              disabled={saving}
-              className="h-12 rounded-xl bg-slate-900 px-6 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-60"
-            >
-              {saving ? "Saving..." : "Save popup"}
-            </button>
-            <button
-              type="button"
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <Button large onClick={save} busy={saving}>
+              Save popup
+            </Button>
+            <Button
+              variant="secondary"
+              large
               onClick={() => {
-                localStorage.removeItem(
-                  "profixter_promotion_popup_dismissed_date"
-                );
+                try {
+                  localStorage.removeItem("profixter_promotion_popup_dismissed_date");
+                } catch {
+                  /* storage blocked: nothing to reset */
+                }
                 setMessage("Visitor dismissal reset on this browser.");
               }}
-              className="h-12 rounded-xl border border-slate-300 bg-white px-6 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
             >
               Reset visitor dismissal
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-100 p-4 shadow-inner sm:p-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="rounded-adm-md border border-adm-line bg-adm-sunk p-4 sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                Exact preview
-              </div>
-              <p className="mt-1 text-xs text-slate-500">
-                Preview works even when the popup is disabled.
-              </p>
+              <div className="text-[13px] font-semibold text-adm-text-2">Exact preview</div>
+              <p className="mt-0.5 text-[12px] text-adm-text-3">Preview works even when the popup is disabled.</p>
             </div>
-            <span
-              className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                popup.enabled
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-slate-200 text-slate-600"
-              }`}
-            >
-              {popup.enabled ? "Enabled" : "Disabled"}
-            </span>
+            <StatusBadge tone={popup.enabled ? "success" : "neutral"}>{popup.enabled ? "Enabled" : "Disabled"}</StatusBadge>
           </div>
-          <div className="flex min-h-[540px] items-center justify-center rounded-2xl bg-[radial-gradient(circle_at_top,#dbeafe,#e2e8f0_55%,#cbd5e1)] p-3 sm:p-6">
+          <div className="flex min-h-[480px] items-center justify-center overflow-hidden rounded-adm-sm bg-adm-surface p-3 sm:p-6">
             <PromotionPopupCard popup={popup} preview />
           </div>
         </div>

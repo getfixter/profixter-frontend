@@ -97,7 +97,7 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
     const after = await page.locator(".ov-num").allInnerTexts();
     check("numbers follow the new range", after[1] === String(FIX.overview7d.kpis.newMembers.value), after.join(" | "));
     /* Money: net MRR, full price and discount are three separate, labelled numbers. */
-    const mrrText = await page.locator("text=Monthly recurring revenue").first().locator("xpath=ancestor::div[contains(@class,'rounded-[16px]')][1]").innerText();
+    const mrrText = await page.locator("text=Monthly recurring revenue").first().locator("xpath=ancestor::div[@data-mrr-panel][1]").innerText();
     check("MRR shows the net figure", mrrText.includes("$6,525"), mrrText.replace(/\s+/g, " "));
     check("MRR shows full price and the discount beside it", /Full price \$6,749/.test(mrrText) && /discounts −\$223\.50/.test(mrrText));
     check("comped and ending memberships are named", /1 comped \(100% off\)/.test(mrrText) && /1 ending \(\$111\.75\)/.test(mrrText));
