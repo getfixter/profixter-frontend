@@ -302,9 +302,18 @@ function makeServer(user) {
       return [200, { days: Array.from({ length: n }, (_, i) => ({ date: `${month}-${String(i + 1).padStart(2, "0")}`, bookingCount: i % 3, openSlotCount: 4, usedCapacity: 1, totalCapacity: 8, closed: false, reducedCapacity: false, hasOverrides: false, hasTimeOff: false, hasNote: false })) }];
     }
     if (p === "/api/admin/calendar/day") {
-      return [200, { date: sp.get("date"), timezone: TZ, scope: "company", technicianId: null, bookingCount: 1, openSlotCount: 3, usedCapacity: 1, totalCapacity: 8, closed: false, reducedCapacity: false, hasOverrides: false, hasTimeOff: false, note: "",
-        slots: [{ time: "08:00", endTime: "09:30", configuredCapacity: 2, totalCapacity: 2, usedCapacity: 1, remainingCapacity: 1, open: true, technicians: [], bookings: [{ id: "j4", bookingNumber: "55500004", customerName: "Oscar Lane", service: "Handyman visit", status: "Confirmed", assignedFixterName: "Gina General" }] },
-          { time: "13:00", endTime: "14:30", configuredCapacity: 2, totalCapacity: 2, usedCapacity: 0, remainingCapacity: 2, open: true, technicians: [], bookings: [] }], technicians: [] }];
+      // J-22: 08:00 holds Oscar (booked) and a canceled visit; 13:00 holds Paula,
+      // unless the test empties the day (state.emptyDay) to check the no-warning path.
+      const empty = state.emptyDay;
+      const at8 = empty ? [] : [{ id: "j4", bookingNumber: "55500004", customerName: "Oscar Lane", service: "Handyman visit", status: "Confirmed", assignedFixterName: "Gina General" }, { id: "jc", bookingNumber: "55500099", customerName: "Carl Canceled", service: "Handyman visit", status: "Canceled", assignedFixterName: "" }];
+      const at13 = empty ? [] : [{ id: "j5", bookingNumber: "55500005", customerName: "Paula Paid", service: "One-Time Visit", status: "Confirmed", assignedFixterName: "Field Fixter" }];
+      return [200, { date: sp.get("date"), timezone: TZ, scope: "company", technicianId: null, bookingCount: empty ? 0 : 2, openSlotCount: 2, usedCapacity: empty ? 0 : 2, totalCapacity: 4, closed: false, reducedCapacity: false, hasOverrides: false, hasTimeOff: false, note: "",
+        slots: [{ time: "08:00", endTime: "09:30", configuredCapacity: 2, totalCapacity: 2, usedCapacity: at8.length ? 1 : 0, remainingCapacity: at8.length ? 1 : 2, open: true, technicians: [], bookings: at8 },
+          { time: "13:00", endTime: "14:30", configuredCapacity: 2, totalCapacity: 2, usedCapacity: at13.length, remainingCapacity: 2 - at13.length, open: true, technicians: [], bookings: at13 }], technicians: [] }];
+    }
+    if (p === "/api/admin/calendar/capacity-overrides/slot-action") {
+      state.calls.push({ method, p, body });
+      return [200, { ok: true }];
     }
     if (p === "/api/admin/calendar/time-off") return method === "GET" ? [200, { timeOff: [] }] : [200, {}];
     if (p === "/api/admin/calendar/overrides/day") {
@@ -1096,6 +1105,47 @@ async function a11y(page, scopeSel, { targets = true } = {}) {
     const ovr = server.state.calls.find((c) => c.p === "/api/admin/calendar/overrides/day");
     check("Custom starts saves the times (no window.prompt)", ovr && JSON.stringify(ovr.body.starts) === JSON.stringify([{ time: "08:00" }, { time: "13:00" }, { time: "16:00" }]) && ovr.body.mode === "custom_hours", JSON.stringify(ovr && ovr.body));
     check("slot bookings link to the job", (await page.locator("a[href='/admin/schedule/jobs/j4']").count()) === 1);
+
+    /* J-22: closing or shrinking capacity warns about visits already booked. */
+    const writes = () => server.state.calls.filter((c) => /\/api\/admin\/calendar\/(overrides\/day|capacity-overrides\/slot-action)$/.test(c.p) && c.method !== "GET").length;
+    const warnSheet = page.locator("[role=dialog]:has([data-booked-warning])");
+    const before = writes();
+    await page.locator("[data-close-day]").click();
+    await warnSheet.waitFor({ timeout: 10000 });
+    const dayText = await warnSheet.innerText();
+    check("J-22 Close whole day: warning counts the 2 booked visits (canceled left out)", (await warnSheet.locator("[data-booked-count]").getAttribute("data-booked-count")) === "2" && /The 2 visits already booked stay booked/.test(dayText) && /Closing the day stops new bookings/.test(dayText), dayText);
+    check("J-22 Close whole day: lists each visit with time, name and a job link", (await warnSheet.locator("a[href='/admin/jobs/j4']").count()) === 1 && (await warnSheet.locator("a[href='/admin/jobs/j5']").count()) === 1 && (await warnSheet.locator("[data-booked-visit=jc]").count()) === 0 && /8:00\s*AM\s*Oscar Lane/.test(dayText) && /1:00\s*PM\s*Paula Paid/.test(dayText), dayText);
+    await page.screenshot({ path: path.join(SHOTS, "availability-close-day-warning-320x568.png") });
+    await warnSheet.getByRole("button", { name: "Cancel" }).click();
+    await warnSheet.waitFor({ state: "detached", timeout: 5000 });
+    check("J-22 Cancel on the day warning changes nothing", writes() === before, `${writes() - before} writes`);
+
+    await page.locator("[data-slot-action='08:00:close']").click();
+    await warnSheet.waitFor({ timeout: 10000 });
+    const slotText = await warnSheet.innerText();
+    check("J-22 Close slot: warning names the 1 visit in that slot only", (await warnSheet.locator("[data-booked-count]").getAttribute("data-booked-count")) === "1" && /The 1 visit already booked stays booked/.test(slotText) && (await warnSheet.locator("a[href='/admin/jobs/j4']").count()) === 1 && (await warnSheet.locator("a[href='/admin/jobs/j5']").count()) === 0, slotText);
+    await page.keyboard.press("Escape");
+    await warnSheet.waitFor({ state: "detached", timeout: 5000 });
+    check("J-22 Escape on the slot warning changes nothing", writes() === before, `${writes() - before} writes`);
+
+    await page.locator("[data-slot-action='13:00:remove_spot']").click();
+    await warnSheet.waitFor({ timeout: 10000 });
+    check("J-22 Remove 1 spot warns too", (await warnSheet.locator("a[href='/admin/jobs/j5']").count()) === 1 && /Remove 1 spot at 1:00/.test(await warnSheet.innerText()));
+    // The refresh after this confirm finds the day empty (no warning path below).
+    server.state.emptyDay = true;
+    await warnSheet.locator("[data-confirm]").click();
+    await warnSheet.waitFor({ state: "detached", timeout: 5000 });
+    const sent = server.state.calls.filter((c) => c.p === "/api/admin/calendar/capacity-overrides/slot-action").pop();
+    check("J-22 confirming applies exactly the chosen action", writes() === before + 1 && sent && sent.body.action === "remove_spot" && sent.body.startTime === "13:00", JSON.stringify(sent && sent.body));
+
+    // No booked visits: the action applies at once, no extra sheet.
+    await page.waitForFunction(() => ![...document.querySelectorAll("summary")].some((el) => /View bookings/.test(el.textContent || "")), null, { timeout: 5000 }).catch(() => null);
+    const beforeEmpty = writes();
+    await page.locator("[data-close-day]").click();
+    await page.waitForTimeout(600);
+    const dayWrite = server.state.calls.filter((c) => c.p === "/api/admin/calendar/overrides/day").pop();
+    check("J-22 nothing booked: Close whole day applies without a warning", (await warnSheet.count()) === 0 && writes() === beforeEmpty + 1 && dayWrite.body.mode === "closed", JSON.stringify(dayWrite && dayWrite.body));
+    server.state.emptyDay = false;
     check("no page errors (availability)", errors.length === 0, errors.join(" | "));
     await ctx.close();
   }

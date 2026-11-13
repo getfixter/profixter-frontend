@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Sheet } from "@/app/components/admin/ui";
+import { Button, ConfirmSheet, Sheet } from "@/app/components/admin/ui";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import {
   bootstrapCalendarFoundation,
@@ -37,6 +37,7 @@ import type {
   ReservationAutoAssignmentReport,
   ShadowCalendarDay,
   ShadowCalendarDaySummary,
+  ShadowCalendarSlot,
   ShadowCompanyTemplate,
   ShadowTechnician,
   ShadowTechnicianTemplate,
@@ -106,6 +107,64 @@ function messageFrom(error: unknown) {
     if (data.message) return data.message;
   }
   return error instanceof Error ? error.message : "Something went wrong";
+}
+
+type BookedVisit = ShadowCalendarSlot["bookings"][number] & { time: string };
+
+/*
+ * J-22: closing a day or taking capacity away from a slot never touches the
+ * visits already booked there, so the owner is told about them first.
+ * Canceled visits hold no seat and are left out.
+ */
+function activeBookings(slots: ShadowCalendarSlot[]): BookedVisit[] {
+  const seen = new Set<string>();
+  const out: BookedVisit[] = [];
+  for (const slot of slots) {
+    for (const booking of slot.bookings || []) {
+      const status = String(booking.status || "").toLowerCase();
+      if (status === "canceled" || status === "cancelled") continue;
+      if (seen.has(booking.id)) continue;
+      seen.add(booking.id);
+      out.push({ ...booking, time: slot.time });
+    }
+  }
+  return out;
+}
+
+type BookedWarning = {
+  kind: "day" | "close" | "remove_spot";
+  slotTime?: string;
+  visits: BookedVisit[];
+  run: () => Promise<unknown>;
+  success: string;
+};
+
+function bookedWarningText(warning: BookedWarning) {
+  const n = warning.visits.length;
+  const stay =
+    n === 1
+      ? "The 1 visit already booked stays booked — contact the customer or reschedule it."
+      : `The ${n} visits already booked stay booked — contact the customers or reschedule them.`;
+  const at = warning.slotTime ? formatTime(warning.slotTime) : "";
+  if (warning.kind === "day") {
+    return {
+      title: "Close the whole day?",
+      consequence: `Closing the day stops new bookings. ${stay}`,
+      confirmLabel: "Close the day",
+    };
+  }
+  if (warning.kind === "close") {
+    return {
+      title: `Close the ${at} slot?`,
+      consequence: `Closing this slot stops new bookings at ${at}. ${stay}`,
+      confirmLabel: "Close the slot",
+    };
+  }
+  return {
+    title: `Remove 1 spot at ${at}?`,
+    consequence: `Removing a spot leaves fewer places for new bookings at ${at}. ${stay}`,
+    confirmLabel: "Remove 1 spot",
+  };
 }
 
 function timeToMinutes(value: string) {
@@ -301,6 +360,7 @@ export default function AdminCalendarSettings({
   const [settingsTechId, setSettingsTechId] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [bookedWarning, setBookedWarning] = useState<BookedWarning | null>(null);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [cutoverStatus, setCutoverStatus] =
@@ -404,6 +464,28 @@ export default function AdminCalendarSettings({
       setNotice(messageFrom(error));
     } finally {
       setBusy(false);
+    }
+  };
+
+  /* Apply at once when nothing is booked; otherwise ask first (J-22). */
+  const guardBooked = (warning: BookedWarning) => {
+    if (warning.visits.length === 0) {
+      void mutate(warning.run, warning.success);
+      return;
+    }
+    setBookedWarning(warning);
+  };
+
+  const confirmBookedWarning = async () => {
+    const warning = bookedWarning;
+    if (!warning) return;
+    // A failure here keeps the sheet open with the server's message.
+    await warning.run();
+    setNotice(warning.success);
+    try {
+      await refresh();
+    } catch (error) {
+      setNotice(messageFrom(error));
     }
   };
 
@@ -1206,17 +1288,20 @@ export default function AdminCalendarSettings({
                   <button
                     type="button"
                     disabled={busy}
+                    data-close-day=""
                     onClick={() =>
-                      mutate(
-                        () =>
+                      guardBooked({
+                        kind: "day",
+                        visits: activeBookings(day.slots),
+                        run: () =>
                           saveShadowDayOverride({
                             scopeType: scope,
                             technicianId,
                             date: selectedDate,
                             mode: "closed",
                           }),
-                        "Day closed"
-                      )
+                        success: "Day closed",
+                      })
                     }
                     className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700"
                   >
@@ -1429,24 +1514,33 @@ export default function AdminCalendarSettings({
                               key={action}
                               type="button"
                               disabled={busy}
-                              onClick={() =>
-                                mutate(
-                                  () =>
-                                    runShadowSlotAction({
-                                      scopeType: scope,
-                                      technicianId,
-                                      date: selectedDate,
-                                      startTime: slot.time,
-                                      endTime: slot.endTime,
-                                      action: action as
-                                        | "close"
-                                        | "open"
-                                        | "remove_spot"
-                                        | "add_spot",
-                                    }),
-                                  `${label} applied`
-                                )
-                              }
+                              data-slot-action={`${slot.time}:${action}`}
+                              onClick={() => {
+                                const run = () =>
+                                  runShadowSlotAction({
+                                    scopeType: scope,
+                                    technicianId,
+                                    date: selectedDate,
+                                    startTime: slot.time,
+                                    endTime: slot.endTime,
+                                    action: action as
+                                      | "close"
+                                      | "open"
+                                      | "remove_spot"
+                                      | "add_spot",
+                                  });
+                                if (action === "close" || action === "remove_spot") {
+                                  guardBooked({
+                                    kind: action,
+                                    slotTime: slot.time,
+                                    visits: activeBookings([slot]),
+                                    run,
+                                    success: `${label} applied`,
+                                  });
+                                } else {
+                                  void mutate(run, `${label} applied`);
+                                }
+                              }}
                               className="rounded-lg border border-adm-line-2 px-2 py-2 text-xs font-bold"
                             >
                               {label}
@@ -1640,6 +1734,43 @@ export default function AdminCalendarSettings({
             </details>
           </div>
         </div>
+      )}
+      {bookedWarning && (
+        <ConfirmSheet
+          open
+          onClose={() => setBookedWarning(null)}
+          tone="danger"
+          {...bookedWarningText(bookedWarning)}
+          onConfirm={confirmBookedWarning}
+        >
+          <div
+            data-booked-warning={bookedWarning.kind}
+            data-booked-count={bookedWarning.visits.length}
+          >
+            <p className="text-[14px] font-semibold text-adm-text-2">
+              Already booked
+            </p>
+            <ul className="mt-1 divide-y divide-adm-line">
+              {bookedWarning.visits.map((visit) => (
+                <li key={visit.id}>
+                  <Link
+                    href={`/admin/jobs/${encodeURIComponent(visit.id)}`}
+                    data-booked-visit={visit.id}
+                    className="flex min-h-[44px] items-center gap-2 font-semibold text-adm-accent-ink underline-offset-4 hover:underline"
+                  >
+                    <span className="shrink-0 tabular-nums">
+                      {formatTime(visit.time)}
+                    </span>
+                    <span className="min-w-0 break-words">
+                      {visit.customerName || "Customer"}
+                      {visit.service ? ` · ${visit.service}` : ""}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </ConfirmSheet>
       )}
       <CustomStartsSheet
         starts={customStarts}
