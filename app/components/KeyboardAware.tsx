@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { surfaceFor } from "@/lib/surface";
 import { keepInView } from "@/lib/form-guide";
+import { keepFieldUncovered } from "@/lib/admin/keyboard";
 
 /**
  * The phone keyboard never covers the field being typed in (2026-11-03).
@@ -25,17 +26,23 @@ import { keepInView } from "@/lib/form-guide";
  *    the keyboard and hide the field or its error. They return the moment
  *    focus leaves, so the buttons are all there when the keyboard closes.
  *
- * Only the customer site; Admin and the /event kiosk are left alone.
+ * The customer site and the admin (2026-11-12, audit E.3). The /event kiosk
+ * is left alone. The admin differs in one rule: a field is moved only when it
+ * is actually covered (below the visible area minus 16px, or under a sheet's
+ * sticky footer), and then so that it and its label sit about 24px above the
+ * keyboard. A visible field never moves; nothing ever moves on blur.
  */
 const TEXT_ENTRY =
   "input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=hidden]):not([type=color]), textarea, [contenteditable='true']";
 
 export default function KeyboardAware() {
   const pathname = usePathname() || "/";
-  const site = surfaceFor(pathname) === "site";
+  const mode: "site" | "admin" | "off" =
+    surfaceFor(pathname) === "site" ? "site" : pathname === "/admin" || pathname.startsWith("/admin/") ? "admin" : "off";
 
   useEffect(() => {
-    if (!site) return;
+    if (mode === "off") return;
+    const reveal = (field: HTMLElement) => (mode === "admin" ? keepFieldUncovered(field) : keepInView(field, { behavior: "auto" }));
     const root = document.documentElement;
     const touch = () => {
       try {
@@ -63,7 +70,7 @@ export default function KeyboardAware() {
       else delete root.dataset.keyboard;
       const height = vv ? vv.height : window.innerHeight;
       // The keyboard opened or grew: the field moves into what is left of the screen.
-      if (open && field && height < lastHeight - 1) keepInView(field, { behavior: "auto" });
+      if (open && field && height < lastHeight - 1) reveal(field);
       lastHeight = height;
     };
     const schedule = () => {
@@ -75,7 +82,7 @@ export default function KeyboardAware() {
       if (!target?.matches?.(TEXT_ENTRY) || !touch()) return schedule();
       root.dataset.keyboard = "open";
       // A keyboard already on screen does not resize again: the newly focused field is checked now.
-      requestAnimationFrame(() => keepInView(target, { behavior: "auto" }));
+      requestAnimationFrame(() => reveal(target));
       schedule();
     };
     const onFocusOut = () => {
@@ -99,7 +106,7 @@ export default function KeyboardAware() {
       delete root.dataset.keyboard;
       root.style.removeProperty("--kb-inset");
     };
-  }, [site]);
+  }, [mode]);
 
   return null;
 }

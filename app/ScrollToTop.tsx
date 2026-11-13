@@ -29,6 +29,17 @@ export default function ScrollToTop() {
       window.history.scrollRestoration = "manual";
     }
 
+    /*
+     * The admin keeps its own scroll (app/components/admin/shell/AdminScroll.tsx):
+     * opening a job keeps the list where it was under the sheet, and Back to a
+     * list returns to the same row. Scrolling to the top here would undo both.
+     */
+    const adminShell =
+      (pathname === "/admin" || pathname?.startsWith("/admin/")) &&
+      !pathname.startsWith("/admin/lab") &&
+      !pathname.startsWith("/admin/event-display");
+    if (adminShell) return;
+
     const hash = window.location.hash;
 
     if (hash) {

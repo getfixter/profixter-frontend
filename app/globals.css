@@ -18,6 +18,58 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/*
+ * Admin design tokens as Tailwind utilities (text-adm-ink, bg-adm-attn-bg,
+ * rounded-adm-md, shadow-adm-2, font-adm ...). The values live in
+ * app/admin/admin.css (--adm-*), which builds on the site's --ui-* tokens in
+ * app/ui.css, so there is one owner of every colour. "inline" makes each
+ * utility read the variable, never a copied hex. Unused utilities are never
+ * generated, so this costs the customer site nothing.
+ */
+@theme inline {
+  --font-adm: var(--adm-font);
+
+  --color-adm-ink: var(--adm-ink);
+  --color-adm-text-2: var(--adm-text-2);
+  --color-adm-text-3: var(--adm-text-3);
+  --color-adm-line: var(--adm-line);
+  --color-adm-line-2: var(--adm-line-2);
+  --color-adm-bg: var(--adm-bg);
+  --color-adm-surface: var(--adm-surface);
+  --color-adm-sunk: var(--adm-sunk);
+  --color-adm-accent: var(--adm-accent);
+  --color-adm-accent-ink: var(--adm-accent-ink);
+  --color-adm-accent-soft: var(--adm-accent-soft);
+  --color-adm-on-accent: var(--adm-on-accent);
+
+  --color-adm-attn: var(--adm-attn);
+  --color-adm-attn-bg: var(--adm-attn-bg);
+  --color-adm-info: var(--adm-info);
+  --color-adm-info-bg: var(--adm-info-bg);
+  --color-adm-ok: var(--adm-ok);
+  --color-adm-ok-bg: var(--adm-ok-bg);
+  --color-adm-neutral: var(--adm-neutral);
+  --color-adm-neutral-bg: var(--adm-neutral-bg);
+  --color-adm-problem: var(--adm-problem);
+  --color-adm-problem-bg: var(--adm-problem-bg);
+  --color-adm-member: var(--adm-member);
+  --color-adm-member-bg: var(--adm-member-bg);
+  --color-adm-free: var(--adm-free);
+  --color-adm-free-bg: var(--adm-free-bg);
+  --color-adm-fullday: var(--adm-fullday);
+  --color-adm-fullday-bg: var(--adm-fullday-bg);
+  --color-adm-scrim: var(--adm-scrim);
+
+  --radius-adm-xs: var(--ui-r-xs);
+  --radius-adm-sm: var(--ui-r-sm);
+  --radius-adm-md: var(--ui-r-md);
+  --radius-adm-lg: var(--ui-r-lg);
+
+  --shadow-adm-1: var(--ui-shadow-1);
+  --shadow-adm-2: var(--ui-shadow-2);
+  --shadow-adm-3: var(--ui-shadow-3);
+}
+
 /* =========================
    Base + rendering
    ========================= */
@@ -90,6 +142,15 @@ section[id] {
   input,
   select,
   textarea {
+    font-size: 16px;
+  }
+}
+
+/* Touch screens wider than 768px (landscape phones, tablets) too: legible, and no focus zoom. */
+@media (pointer: coarse) {
+  :root[data-surface="staff"] input,
+  :root[data-surface="staff"] select,
+  :root[data-surface="staff"] textarea {
     font-size: 16px;
   }
 }
