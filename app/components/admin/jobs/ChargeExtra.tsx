@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { errorCode, errorMessage, invalidateQueries, useAdminQuery } from "@/lib/admin/query";
 import { jobKeys, newIdempotencyKey, type JobDetail } from "@/lib/admin/jobs";
 import {
+  BASIS_DOCUMENTS,
   TAX_OPTIONS,
   STATUS_TONE,
   amountToCents,
@@ -136,7 +137,10 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
     description: input.description.trim().length > 0 && input.description.trim().length < 3 ? "Describe the work in a few words." : "",
     amount: input.amount.trim() && (cents === null || cents < 50) ? "Enter dollars and cents, at least $0.50." : cents !== null && cents > 500000 ? "One extra can be at most $5,000." : "",
   };
-  const canReview = input.description.trim().length >= 3 && cents !== null && cents >= 50 && cents <= 500000 && Boolean(input.taxTreatment);
+  const basisDocs = input.taxTreatment ? BASIS_DOCUMENTS[input.taxTreatment] : undefined;
+  const basis = input.taxBasis || { document: "", reference: "", onFile: false };
+  const basisOk = !basisDocs || (basisDocs.some((d) => d.value === basis.document) && basis.reference.trim().length >= 4 && basis.onFile);
+  const canReview = input.description.trim().length >= 3 && cents !== null && cents >= 50 && cents <= 500000 && Boolean(input.taxTreatment) && basisOk;
 
   const review = () =>
     run("review", async () => {
@@ -209,7 +213,13 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
           <legend className="mb-1.5 text-[13px] font-semibold text-adm-ink">Sales tax</legend>
           {TAX_OPTIONS.map((o) => (
             <label key={o.value} className={cx("flex min-h-[44px] cursor-pointer items-start gap-3 rounded-adm-sm border px-3 py-2.5", input.taxTreatment === o.value ? "border-adm-accent bg-adm-accent-soft" : "border-adm-line")}>
-              <input type="radio" name="extra-tax" checked={input.taxTreatment === o.value} onChange={() => setInput({ ...input, taxTreatment: o.value })} className="mt-0.5 h-5 w-5 flex-none accent-[var(--adm-accent)]" />
+              <input
+                type="radio"
+                name="extra-tax"
+                checked={input.taxTreatment === o.value}
+                onChange={() => setInput({ ...input, taxTreatment: o.value, taxBasis: BASIS_DOCUMENTS[o.value] ? { document: BASIS_DOCUMENTS[o.value].length === 1 ? BASIS_DOCUMENTS[o.value][0].value : "", reference: "", onFile: false } : undefined })}
+                className="mt-0.5 h-5 w-5 flex-none accent-[var(--adm-accent)]"
+              />
               <span className="flex flex-col">
                 <span className="text-[15px] font-semibold text-adm-ink">{o.label}</span>
                 <span className="text-[13px] text-adm-text-2">{o.help}</span>
@@ -218,6 +228,37 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
           ))}
           {!input.taxTreatment && <p className="text-[13px] text-adm-text-2">Choose one. Nothing is assumed about tax.</p>}
         </fieldset>
+        {basisDocs && (
+          <fieldset className="flex flex-col gap-3 rounded-adm-md border border-adm-line px-3 py-3" data-extra-basis="">
+            <legend className="px-1 text-[13px] font-semibold text-adm-ink">Document that makes it tax free</legend>
+            {basisDocs.length > 1 ? (
+              <Field label="Document" required>
+                <select
+                  className="adm-input"
+                  name="extra-basis-document"
+                  value={basis.document}
+                  onChange={(e) => setInput({ ...input, taxBasis: { ...basis, document: e.target.value } })}
+                >
+                  <option value="">Choose…</option>
+                  {basisDocs.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ) : (
+              <p className="text-[14px] text-adm-ink">{basisDocs[0].label}</p>
+            )}
+            <Field label="Reference" required help="Certificate number, date signed, or where it is filed.">
+              <TextInput value={basis.reference} onChange={(e) => setInput({ ...input, taxBasis: { ...basis, reference: e.target.value } })} maxLength={200} enterKeyHint="done" name="extra-basis-reference" />
+            </Field>
+            <label className="flex min-h-[44px] cursor-pointer items-start gap-3" data-extra-basis-onfile="">
+              <input type="checkbox" checked={basis.onFile} onChange={(e) => setInput({ ...input, taxBasis: { ...basis, onFile: e.target.checked } })} className="mt-0.5 h-5 w-5 flex-none accent-[var(--adm-accent)]" name="extra-basis-onfile" />
+              <span className="text-[14px] text-adm-ink">I have this document on file for this job.</span>
+            </label>
+          </fieldset>
+        )}
         <Field label="Written approval (optional)" help="Where the customer's written OK is, e.g. “text 2:14 pm” or “signed change order”.">
           <TextInput value={input.writtenApprovalRef || ""} onChange={(e) => setInput({ ...input, writtenApprovalRef: e.target.value })} maxLength={300} enterKeyHint="done" name="extra-approval" />
         </Field>
@@ -272,6 +313,11 @@ export function ChargeExtraStep({ job, footer, onBack, setBusy, setDirty }: Char
             </div>
           </dl>
           {preview.tax.ok && preview.tax.source === "stripe_tax" && <p className="pt-1 text-[12px] text-adm-text-2">Tax by Stripe Tax for the service address{preview.tax.taxCode ? ` · code ${preview.tax.taxCode}` : ""}.</p>}
+          {preview.tax.ok && preview.tax.basis && (
+            <p className="pt-1 text-[12px] text-adm-text-2" data-extra-basis-review="">
+              No tax on the basis of: {preview.tax.basis.label} · {preview.tax.basis.reference}
+            </p>
+          )}
         </div>
 
         {!preview.tax.ok && <Problem code={preview.tax.code}>{preview.tax.message}</Problem>}
@@ -586,6 +632,7 @@ function ExtraRow({ job, charge: c }: { job: JobDetail; charge: ExtraCharge }) {
       )}
       {c.tax.recordError && <p className="mt-1 text-[12px] text-adm-attn">Stripe Tax did not record this sale yet ({c.tax.recordError}). It is retried when the job is opened.</p>}
       {c.consent.writtenApprovalRef && <p className="mt-1 text-[12px] text-adm-text-2">Written approval: {c.consent.writtenApprovalRef}</p>}
+      {c.tax.basis && <p className="mt-1 text-[12px] text-adm-text-2">No tax: {c.tax.basis.document} · {c.tax.basis.reference}</p>}
 
       <div className="mt-1 flex flex-wrap gap-x-4">
         {c.stripeUrl && (

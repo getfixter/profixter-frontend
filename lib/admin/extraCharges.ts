@@ -15,9 +15,21 @@ export type TaxTreatment = "Taxable Repair / Maintenance" | "Capital Improvement
 
 export const TAX_OPTIONS: { value: TaxTreatment; label: string; help: string }[] = [
   { value: "Taxable Repair / Maintenance", label: "Taxable repair or maintenance", help: "Stripe Tax adds the tax for the service address." },
-  { value: "Capital Improvement - No Sales Tax", label: "Capital improvement, no tax", help: "No sales tax. Keep the customer's certificate if one is needed." },
-  { value: "Tax Exempt", label: "Tax exempt", help: "No sales tax. Keep the exemption proof." },
+  { value: "Capital Improvement - No Sales Tax", label: "Capital improvement, no tax", help: "Only with the customer's signed NY Form ST-124 on file." },
+  { value: "Tax Exempt", label: "Tax exempt", help: "Only with an exemption certificate or government purchase order on file." },
 ];
+
+/** The documents that make "no tax" true, per treatment (the server holds the same list). */
+export const BASIS_DOCUMENTS: Record<string, { value: string; label: string }[]> = {
+  "Capital Improvement - No Sales Tax": [{ value: "ST-124", label: "NY Form ST-124, Certificate of Capital Improvement (signed by the customer)" }],
+  "Tax Exempt": [
+    { value: "ST-119.1", label: "NY Form ST-119.1, Exempt Organization Certificate" },
+    { value: "ST-121", label: "NY Form ST-121, Exempt Use Certificate" },
+    { value: "GOVERNMENT_PO", label: "Government purchase order" },
+    { value: "OTHER_CERTIFICATE", label: "Another NY exemption certificate" },
+  ],
+};
+export type TaxBasis = { document: string; reference: string; onFile: boolean };
 
 export type Gate = { allowed: boolean; code?: string; message?: string; canSend?: boolean };
 
@@ -30,7 +42,7 @@ export type ExtraPreview = {
   subtotalCents: number;
   taxCents: number | null;
   totalCents: number | null;
-  tax: { ok: boolean; treatment: string; source?: string; ratePercent?: string; taxCode?: string; taxabilityReason?: string; code?: string; message?: string };
+  tax: { ok: boolean; treatment: string; source?: string; ratePercent?: string; taxCode?: string; taxabilityReason?: string; code?: string; message?: string; basis?: { document: string; label: string; reference: string } | null };
   direct: Gate;
   link: Gate;
   consentStatement: string;
@@ -46,7 +58,7 @@ export type ExtraCharge = {
   subtotalCents: number;
   taxCents: number;
   totalCents: number;
-  tax: { treatment: string; source: string; ratePercent: string; taxCode: string; recorded: boolean; recordError: string };
+  tax: { treatment: string; source: string; ratePercent: string; taxCode: string; recorded: boolean; recordError: string; basis: { document: string; label: string; reference: string } | null };
   status: ExtraStatus;
   statusLabel: string;
   method: "card" | "link";
@@ -66,7 +78,7 @@ export type ExtraCharge = {
   actions: ("retryCard" | "paymentLink" | "copyLink" | "close")[];
 };
 
-export type ExtraInput = { description: string; amount: string; taxTreatment: TaxTreatment | ""; writtenApprovalRef?: string };
+export type ExtraInput = { description: string; amount: string; taxTreatment: TaxTreatment | ""; writtenApprovalRef?: string; taxBasis?: TaxBasis };
 export type Delivery = { email?: string; sms?: string } | null;
 
 export const extraKeys = {
@@ -81,7 +93,7 @@ export async function fetchExtraCharges(jobId: string, signal?: AbortSignal): Pr
 }
 
 export async function previewExtraCharge(jobId: string, input: ExtraInput): Promise<ExtraPreview> {
-  const { data } = await API.post(`${base(jobId)}/preview`, { description: input.description, amount: input.amount, taxTreatment: input.taxTreatment || "Not Determined" });
+  const { data } = await API.post(`${base(jobId)}/preview`, { description: input.description, amount: input.amount, taxTreatment: input.taxTreatment || "Not Determined", taxBasis: basisFor(input) });
   return data.preview as ExtraPreview;
 }
 
@@ -95,6 +107,7 @@ export async function createExtraCharge(
     amount: input.amount,
     taxTreatment: input.taxTreatment || "Not Determined",
     writtenApprovalRef: input.writtenApprovalRef || "",
+    taxBasis: basisFor(input),
     ...confirm,
   });
   return data;
@@ -122,6 +135,11 @@ export async function extraPaymentLink(
 export async function closeExtraCharge(jobId: string, chargeId: string): Promise<ExtraCharge> {
   const { data } = await API.post(`${base(jobId)}/${encodeURIComponent(chargeId)}/close`, {});
   return data.charge;
+}
+
+/** The basis travels only with a no-tax treatment; taxable work never carries one. */
+function basisFor(input: ExtraInput): TaxBasis | undefined {
+  return input.taxTreatment && BASIS_DOCUMENTS[input.taxTreatment] && input.taxBasis ? input.taxBasis : undefined;
 }
 
 /** Always two decimals: the button must state the exact total ("Charge $123.00"). */

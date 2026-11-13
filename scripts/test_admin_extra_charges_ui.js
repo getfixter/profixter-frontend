@@ -82,6 +82,22 @@ function makeServer(user, scenario = {}) {
     const t = b.taxTreatment;
     const tc = tax(sub, t);
     const noTax = !t || t === "Not Determined";
+    const needsBasis = t === "Capital Improvement - No Sales Tax" || t === "Tax Exempt";
+    const basisOk = !needsBasis || (b.taxBasis && b.taxBasis.document && String(b.taxBasis.reference || "").length >= 4 && b.taxBasis.onFile === true);
+    if (t === "Taxable Repair / Maintenance" && scenario.taxCodeMissing) {
+      const msg = "Taxable extras need the Stripe tax code your accountant confirms for this work, and it is not set yet. Nothing was charged.";
+      return {
+        booking: { id: j.id, number: j.bookingNumber, date: j.date, service: j.service, status: j.status },
+        customer: { name: j.customer.name, guest: false, accountLinked: true, hasEmail: true, hasPhone: true },
+        serviceAddress: { line1: j.address.line1, unit: "", city: j.address.city, state: "NY", zip: j.address.zip, full: j.address.full },
+        card, description: b.description, subtotalCents: sub, taxCents: null, totalCents: null,
+        tax: { ok: false, treatment: t, code: "TAX_CODE_NOT_CONFIGURED", message: msg },
+        direct: { allowed: false, code: "TAX_CODE_NOT_CONFIGURED", message: msg }, link: { allowed: false, canSend: false, code: "TAX_CODE_NOT_CONFIGURED", message: msg },
+        consentStatement: "", fingerprint: "fp-blocked",
+      };
+    }
+    state.lastBasis = b.taxBasis || null;
+    if (!basisOk) state.badBasis = true; // the UI must never ask without a complete basis
     const direct = scenario.guest ? { allowed: false, code: "GUEST_BOOKING", message: "This is a guest visit with no account, so there is no saved card to charge. Use a payment link." } : card ? { allowed: true } : { allowed: false, code: "NO_SAVED_CARD", message: "There is no saved card on this customer. Use a payment link." };
     const total = noTax ? null : sub + tc;
     return {
@@ -93,11 +109,11 @@ function makeServer(user, scenario = {}) {
       subtotalCents: sub,
       taxCents: noTax ? null : tc,
       totalCents: total,
-      tax: noTax ? { ok: false, treatment: "Not Determined", code: "TAX_TREATMENT_REQUIRED", message: "Choose how sales tax applies to this work before charging." } : { ok: true, treatment: t, source: tc ? "stripe_tax" : "owner_treatment", ratePercent: tc ? "8.625" : "0", taxCode: tc ? "txcd_20030000" : "" },
+      tax: noTax ? { ok: false, treatment: "Not Determined", code: "TAX_TREATMENT_REQUIRED", message: "Choose how sales tax applies to this work before charging." } : { ok: true, treatment: t, source: tc ? "stripe_tax" : "documented_exemption", ratePercent: tc ? "8.625" : "0", taxCode: tc ? "txcd_20080007" : "", basis: needsBasis ? { document: b.taxBasis.document, label: b.taxBasis.document === "ST-124" ? "NY Form ST-124, Certificate of Capital Improvement (signed by the customer)" : "NY Form ST-119.1, Exempt Organization Certificate", reference: b.taxBasis.reference } : null },
       direct: noTax ? { allowed: false, code: "TAX_TREATMENT_REQUIRED" } : direct,
       link: noTax ? { allowed: false } : { allowed: true, canSend: true },
       consentStatement: total ? `I confirm the customer agreed to this additional work and to the total of ${money2(total)}.` : "",
-      fingerprint: `fp-${sub}-${tc}-${b.description.length}`,
+      fingerprint: `fp-${sub}-${tc}-${b.description.length}-${b.taxBasis ? b.taxBasis.reference.length : 0}`,
     };
   }
   function record(j, b, p, method) {
@@ -109,7 +125,7 @@ function makeServer(user, scenario = {}) {
       subtotalCents: p.subtotalCents,
       taxCents: p.taxCents,
       totalCents: p.totalCents,
-      tax: { treatment: p.tax.treatment, source: p.tax.source, ratePercent: p.tax.ratePercent, taxCode: p.tax.taxCode, recorded: true, recordError: "" },
+      tax: { treatment: p.tax.treatment, source: p.tax.source, ratePercent: p.tax.ratePercent, taxCode: p.tax.taxCode, recorded: true, recordError: "", basis: p.tax.basis ? { document: p.tax.basis.document, label: p.tax.basis.label, reference: p.tax.basis.reference } : null },
       status: "awaiting_payment",
       statusLabel: "Awaiting payment",
       method,
@@ -265,13 +281,18 @@ async function openJob(page) {
   await page.goto(`${BASE}/admin/jobs/j1`, { waitUntil: "domcontentloaded" });
   await sheet(page).locator("[data-job-body=j1]").waitFor({ timeout: 20000 });
 }
-async function fill(page, { description = "Replace two GFCI outlets in the kitchen", amount = "123.45", tax = "Taxable Repair / Maintenance", approval = "" } = {}) {
+async function fill(page, { description = "Replace two GFCI outlets in the kitchen", amount = "123.45", tax = "Taxable Repair / Maintenance", approval = "", basis = true } = {}) {
   await page.locator("[data-extra-open]").click();
   await page.locator("[data-stage=enter]").waitFor();
   await page.locator("textarea[name=extra-description]").fill(description);
   await page.locator("input[name=extra-amount]").fill(amount);
   if (tax) await page.locator(`[data-extra-tax] label:has-text("${{ "Taxable Repair / Maintenance": "Taxable repair", "Capital Improvement - No Sales Tax": "Capital improvement", "Tax Exempt": "Tax exempt" }[tax]}")`).click();
   if (approval) await page.locator("input[name=extra-approval]").fill(approval);
+  if (basis && (tax === "Capital Improvement - No Sales Tax" || tax === "Tax Exempt")) {
+    if (tax === "Tax Exempt") await page.locator("select[name=extra-basis-document]").selectOption("ST-119.1");
+    await page.locator("input[name=extra-basis-reference]").fill(tax === "Tax Exempt" ? "Exempt org cert #EX-12345" : "ST-124 signed 11/13, job folder");
+    await page.locator("[data-extra-basis-onfile]").click();
+  }
 }
 async function overflow(page) {
   return page.evaluate(() => {
@@ -328,6 +349,37 @@ async function overflow(page) {
       await page.locator("[data-extra-block]").scrollIntoViewIfNeeded();
       await page.screenshot({ path: path.join(SHOTS, "5b-history-section-390x844.png") });
       check("no outside requests, no page errors (owner path)", external.length === 0 && errors.length === 0, [...external, ...errors].join(" | "));
+      await ctx.close();
+    }
+
+    /* 1b. no tax needs a documented basis; taxable work waits for the configured tax code */
+    {
+      const { ctx, page, server } = await open(browser, OWNER);
+      await openJob(page);
+      await fill(page, { tax: "Capital Improvement - No Sales Tax", amount: "250", basis: false });
+      check("capital improvement asks for the signed ST-124 and Review waits for it", (await page.locator("[data-extra-basis]").count()) === 1 && /ST-124/.test(await page.locator("[data-extra-basis]").innerText()) && (await page.locator("[data-extra-review]").isDisabled()));
+      await page.locator("input[name=extra-basis-reference]").fill("ST-124 signed 11/13, job folder");
+      check("a reference alone is not enough: the on-file confirmation is required too", await page.locator("[data-extra-review]").isDisabled());
+      await page.locator("[data-extra-basis-onfile]").click();
+      await page.screenshot({ path: path.join(SHOTS, "12-capital-basis-390x844.png") });
+      await page.locator("[data-extra-review]").click();
+      await page.locator("[data-stage=review]").waitFor();
+      check("the UI never asked for a no-tax preview without a complete basis", !server.state.badBasis);
+      check("the review states the basis for no tax", /ST-124/.test(await page.locator("[data-extra-basis-review]").innerText()) && server.state.lastBasis && server.state.lastBasis.onFile === true);
+      await page.locator("[data-extra-review], button:has-text('Edit')").first().click();
+      await page.locator("[data-stage=enter]").waitFor();
+      await page.locator(`[data-extra-tax] label:has-text("Tax exempt")`).click();
+      check("tax exempt asks to choose the exemption document", (await page.locator("select[name=extra-basis-document]").count()) === 1 && (await page.locator("[data-extra-review]").isDisabled()));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open(browser, OWNER, { taxCodeMissing: true });
+      await openJob(page);
+      await fill(page);
+      await page.locator("[data-extra-review]").click();
+      await page.locator("[data-stage=review]").waitFor();
+      check("tax code not configured: the reason is shown, and there is no Charge or link action", /tax code your accountant confirms/.test(await page.locator("[data-stage=review]").innerText()) && (await page.locator("[data-extra-charge]").count()) === 0 && (await page.locator("[data-extra-copy-link]").count()) === 0);
+      await page.screenshot({ path: path.join(SHOTS, "13-taxable-blocked-390x844.png") });
       await ctx.close();
     }
 
