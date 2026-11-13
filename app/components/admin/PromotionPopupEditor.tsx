@@ -39,7 +39,7 @@ export default function PromotionPopupEditor() {
     setLoading(true);
     setLoadError("");
     return getPromotionPopup()
-      .then((data) => setPopup(data))
+      .then((data) => setPopup(data && typeof data === "object" ? { ...EMPTY_PROMOTION_POPUP, ...data } : EMPTY_PROMOTION_POPUP))
       .catch(() => setLoadError("Failed to load promotion popup settings."))
       .finally(() => setLoading(false));
   };
@@ -60,7 +60,7 @@ export default function PromotionPopupEditor() {
     setError("");
     try {
       const saved = await savePromotionPopup(popup);
-      setPopup(saved);
+      setPopup(saved && typeof saved === "object" ? { ...EMPTY_PROMOTION_POPUP, ...saved } : popup);
       setMessage("Promotion popup settings saved.");
     } catch (saveError) {
       const responseMessage = (saveError as { response?: { data?: { message?: string } } })?.response?.data?.message;
