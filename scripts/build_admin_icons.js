@@ -17,12 +17,10 @@
  *     public/icons/admin-192.png, admin-512.png, admin-maskable-192.png, admin-maskable-512.png,
  *     public/icons/admin-apple-touch-180.png
  *   The header and loader mark (transparent): public/images/profixter-hammer-mark.png
- *   PROPOSED, not wired up (needs the owner's approval): public/proposed/hammer-*.png,
- *     the same icons built from the hammer head alone, which stays legible at
- *     16-48px where the full badge does not.
+ *   (A hammer-head-only icon set was proposed and left out of the release; not built.)
  *
  * The badge is about 2.4:1, so in a square it is small, and its lettering is
- * illegible below ~96px. That is why the hammer-head set exists as a proposal.
+ * illegible below ~96px.
  */
 /* eslint-disable @typescript-eslint/no-require-imports -- a plain Node script, like the other scripts/ */
 const fs = require("fs");
@@ -143,14 +141,6 @@ async function write(rel, buffer) {
   const markSize = 256;
   const markArt = await sharp(head).resize({ width: markSize, height: markSize, fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).png({ compressionLevel: 9 }).toBuffer();
   await write("public/images/profixter-hammer-mark.png", markArt);
-
-  // PROPOSED hammer-head icons (owner approval needed before use).
-  for (const [name, bg] of [["navy", NAVY], ["blue", BLUE]]) {
-    for (const size of [16, 32, 48, 180, 192, 512]) {
-      await write(`public/proposed/hammer-${name}-${size}.png`, await square(head, size, bg, { fill: size <= 48 ? 0.94 : 0.8 }));
-    }
-    await write(`public/proposed/hammer-${name}-maskable-512.png`, await square(head, 512, bg, { maskable: true }));
-  }
 })().catch((error) => {
   console.error(error);
   process.exit(1);
