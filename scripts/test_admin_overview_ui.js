@@ -8,7 +8,7 @@
  * the browser, so this needs only the built frontend.
  *
  * What it pins:
- * - the admin lands on Overview; six numbers; charts; map; activity
+ * - /admin/overview (the owner now lands on Jobs, 2026-11-12); six numbers; charts; map; activity
  * - a number opens its drawer with rows; Escape closes it
  * - the date range refetches with the new range and keeps the frame
  * - empty, partial or garbage responses never take the admin down
@@ -61,10 +61,10 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
   {
     console.log("\n--- admin, desktop ---");
     const { ctx, page, calls, errors } = await open(browser, OWNER);
-    await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE}/admin/overview`, { waitUntil: "networkidle" });
     await page.waitForSelector("h2:has-text('Overview')", { timeout: 20000 }).catch(() => {});
     await page.waitForTimeout(1200);
-    check("admin lands on Overview", (await page.locator("h2", { hasText: /^Overview$/ }).count()) === 1);
+    check("/admin/overview shows Overview", (await page.locator("h2", { hasText: /^Overview$/ }).count()) === 1);
     const kpis = await page.locator(".ov-num").allInnerTexts();
     check("six snapshot numbers", kpis.length === 6, kpis.join(" | "));
     check("active members shown from the payload", kpis[0] === String(FIX.overview.kpis.activeMembers.value));
@@ -130,7 +130,7 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
       const { ctx, page, errors } = await open(browser, OWNER, {
         answer: withKpis((k) => (k.mrr = { source: "list_price", cents: null, fullPriceCents: 674883, discountCents: null, startCents: 674883, delta: null, payingMembers: 27, error: "Recurring revenue is unavailable right now." })),
       });
-      await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE}/admin/overview`, { waitUntil: "networkidle" });
       await page.waitForTimeout(1200);
       check("Stripe MRR missing: says so, offers Try again, shows only the list-price figure", (await page.getByText("Recurring revenue is unavailable right now.").count()) === 1 && (await page.getByText(/At full price: \$6,749\/mo/).count()) === 1);
       check("Stripe MRR missing: the other numbers still show", (await page.locator(".ov-num").count()) === 6);
@@ -141,14 +141,14 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
       const { ctx, page } = await open(browser, OWNER, {
         answer: withKpis((k) => Object.assign(k.revenue, { available: false, syncing: true, error: "Revenue is loading from Stripe for the first time. It will appear in a minute." })),
       });
-      await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE}/admin/overview`, { waitUntil: "networkidle" });
       await page.waitForTimeout(1200);
       check("first Stripe sync: revenue says it is loading, members show at once", (await page.getByText("Loading from Stripe…").count()) === 1 && (await page.locator(".ov-num").first().innerText()) === String(FIX.overview.kpis.activeMembers.value));
       await ctx.close();
     }
     {
       const { ctx, page } = await open(browser, OWNER, { answer: withKpis((k) => Object.assign(k.revenue, { stale: true })) });
-      await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE}/admin/overview`, { waitUntil: "networkidle" });
       await page.waitForTimeout(1200);
       check("a delayed Stripe sync is flagged on the revenue number, not shown as final", (await page.getByText(/Stripe sync delayed · may miss payments/).count()) === 1);
       await ctx.close();
@@ -158,7 +158,7 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
       let fail = true;
       const { ctx, page } = await open(browser, OWNER, { answer: (u) => (u.pathname.endsWith("/map") ? FIX.map : u.pathname.endsWith("/list") ? FIX.list : FIX.overview) });
       await ctx.route(/\/api\/admin\/overview\?/, (route) => (fail ? ((fail = false), route.abort("connectionreset")) : route.fallback()));
-      await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE}/admin/overview`, { waitUntil: "networkidle" });
       await page.waitForTimeout(1200);
       check("a failed load ends in a message, not a skeleton", (await page.getByText("Overview couldn't load").count()) >= 1 && (await page.locator("[aria-label='Loading overview']").count()) === 0);
       await page.getByRole("button", { name: "Try again" }).click();
@@ -169,7 +169,7 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
     {
       const { ctx, page, errors } = await open(browser, OWNER, { width: 390, height: 844 });
       const t0 = Date.now();
-      await page.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded" });
+      await page.goto(`${BASE}/admin/overview`, { waitUntil: "domcontentloaded" });
       await page.waitForSelector(".ov-num", { timeout: 20000 }).catch(() => {});
       const ms = Date.now() - t0;
       check("phone: main numbers appear within 3 seconds", (await page.locator(".ov-num").count()) === 6 && ms < 3000, `${ms}ms`);
@@ -181,7 +181,7 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
 
   for (const [label, width, height] of [["phone", 390, 844], ["tablet", 834, 1112], ["desktop", 1440, 900]]) {
     const { ctx, page } = await open(browser, OWNER, { width, height });
-    await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE}/admin/overview`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1500);
     /*
      * Against the device width, not innerWidth: on a phone a too-wide element
@@ -213,7 +213,7 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
     ];
     for (const [label, answer, expect] of cases) {
       const { ctx, page, errors } = await open(browser, OWNER, { answer });
-      await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE}/admin/overview`, { waitUntil: "networkidle" });
       await page.waitForTimeout(1500);
       const shell = await page.evaluate(() => document.documentElement.id !== "__next_error__" && !!document.querySelector("header, nav"));
       check(`${label}: admin shell stays up`, shell);
@@ -236,7 +236,7 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
     const { ctx, page, calls } = await open(browser, FIXTER);
     await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1500);
-    check("no Overview tab for a Fixter", (await page.getByRole("button", { name: /Overview/ }).count()) === 0);
+    check("no Overview in the navigation for a Fixter", (await page.locator("a[data-nav=overview]").count()) === 0);
     await page.goto(`${BASE}/admin?tab=overview`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1500);
     check("?tab=overview does not open it for a Fixter", (await page.locator("h2", { hasText: /^Overview$/ }).count()) === 0);

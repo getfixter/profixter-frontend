@@ -143,20 +143,25 @@ async function open(browser, who, { width = 1440, height = 900, mutate, growthVi
   return { ctx, page, state, errors };
 }
 
+/*
+ * The admin shell (2026-11-12): sections are routes, offered in the desktop
+ * sidebar (or the phone bottom bar). tabs() returns the label of every
+ * section offered; selectedTab() the open section, under its old tab id so
+ * the ?tab= cases below read as before (Growth is now Assistant).
+ */
 async function tabs(page) {
-  // The visible tab bar (desktop row or phone bottom bar): the label of each section offered.
   return page.evaluate(() =>
-    [...document.querySelectorAll("[role=tablist] [role=tab][data-tab]")]
+    [...document.querySelectorAll("[data-adm-sidebar] a[data-nav], [data-adm-bottomnav] a[data-nav]")]
       .filter((el) => el.getBoundingClientRect().width > 0)
-      .map((el) => el.getAttribute("aria-label") || (el.innerText || "").split(/\n/).map((s) => s.trim()).filter(Boolean)[1] || "")
+      .map((el) => (el.innerText || "").split("\n").map((s) => s.trim()).filter((s) => s && !/^\d+\+?$/.test(s))[0] || "")
   );
 }
 
 async function selectedTab(page) {
-  return page.evaluate(() => {
-    const el = [...document.querySelectorAll("[role=tab][aria-selected=true][data-tab]")].find((e) => e.getBoundingClientRect().width > 0);
-    return el ? el.getAttribute("data-tab") : null;
-  });
+  const m = /^\/admin\/([^/?#]+)/.exec(new URL(page.url()).pathname);
+  if (!m || !(await page.locator("[data-adm-shell]").count())) return null;
+  if (await page.locator("[data-permission-state]").count()) return null;
+  return { assistant: "growth", customers: "users", team: "fixters" }[m[1]] || m[1];
 }
 
 (async () => {
@@ -164,14 +169,15 @@ async function selectedTab(page) {
 
   console.log("\n--- who sees what ---");
   const EXPECT = {
-    owner: { has: ["Overview", "Growth", "Jobs", "All Users", "Projects", "Leads", "Communications", "Recent Work", "Blacklist", "Schedule", "Employees", "Activity Log"], not: ["Work Photos"] },
-    overview: { has: ["Overview"], not: ["Growth", "Jobs", "All Users", "Recent Work", "Employees", "Tips"] },
-    growth: { has: ["Growth"], not: ["Overview", "Jobs", "All Users", "Recent Work", "Employees", "Tips"] },
-    overviewGrowth: { has: ["Overview", "Growth"], not: ["Jobs", "All Users", "Recent Work", "Employees"] },
-    photos: { has: ["Recent Work"], not: ["Overview", "Growth", "Jobs", "All Users", "Employees", "Work Photos"] },
-    both: { has: ["Overview", "Recent Work"], not: ["Jobs", "All Users", "Employees", "Members"] },
-    fixter: { has: ["Jobs", "Tips", "Work Photos"], not: ["Overview", "Members", "Schedule", "Employees", "All Users"] },
-    general: { has: ["Jobs", "Tips", "Work Photos", "Members", "Schedule"], not: ["Overview", "Employees", "All Users"] },
+    owner: { has: ["Overview", "Assistant", "Jobs", "Customers", "Projects", "Leads", "Communications", "Recent Work", "Schedule", "Team", "Activity Log"], not: ["Photos"] },
+    overview: { has: ["Overview"], not: ["Assistant", "Jobs", "Customers", "Recent Work", "Team", "Tips"] },
+    growth: { has: ["Assistant"], not: ["Overview", "Jobs", "Customers", "Recent Work", "Team", "Tips"] },
+    overviewGrowth: { has: ["Overview", "Assistant"], not: ["Jobs", "Customers", "Recent Work", "Team"] },
+    photos: { has: ["Recent Work"], not: ["Overview", "Assistant", "Jobs", "Customers", "Team", "Photos"] },
+    both: { has: ["Overview", "Recent Work"], not: ["Jobs", "Customers", "Team"] },
+    // A field Fixter gets My day instead of the Jobs board (owner decision Q-1).
+    fixter: { has: ["My day", "Tips", "Photos"], not: ["Overview", "Customers", "Schedule", "Team", "Jobs"] },
+    general: { has: ["Jobs", "Tips", "Photos", "Customers", "Schedule"], not: ["Overview", "Team"] },
   };
   for (const [who, want] of Object.entries(EXPECT)) {
     const { ctx, page, state, errors } = await open(browser, who);
@@ -263,10 +269,10 @@ async function selectedTab(page) {
     await page.waitForTimeout(1500);
     const after = (await tabs(page)).join(" | ");
     check("access removed while signed in: the tab goes on the next check", before.includes("Recent Work") && !after.includes("Recent Work") && after.includes("Overview"), `${before} -> ${after}`);
-    state.me.permissions = ["analytics.read", "analytics.map", "recentWork.manage", "customers.manage"]; // and turned All Users on
+    state.me.permissions = ["analytics.read", "analytics.map", "recentWork.manage", "customers.manage"]; // and turned Customers on
     await page.evaluate(() => window.dispatchEvent(new Event("focus")));
     await page.waitForTimeout(1500);
-    check("access added while signed in: the tab appears", (await tabs(page)).join(" | ").includes("All Users"));
+    check("access added while signed in: the tab appears", (await tabs(page)).join(" | ").includes("Customers"));
     await ctx.close();
   }
 

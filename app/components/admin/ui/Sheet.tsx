@@ -124,7 +124,9 @@ function SheetPanel({
   const titleId = `${id}-title`;
   const descId = description ? `${id}-desc` : undefined;
   const panelRef = useRef<HTMLDivElement>(null);
-  const returnTo = useRef<HTMLElement | null>(null);
+  // The opener, read during the first render: before any autoFocus inside the sheet moves focus.
+  const [opener] = useState<HTMLElement | null>(() => (typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null)));
+  const returnTo = useRef<HTMLElement | null>(opener);
   const [asking, setAsking] = useState(false);
   const [shake, setShake] = useState(false);
   const [drag, setDrag] = useState(0);
@@ -142,7 +144,8 @@ function SheetPanel({
       const { dirty: isDirty, busy: isBusy, onClose: close } = stateRef.current;
       if (isBusy) return nudge();
       if (isDirty) {
-        if (source === "backdrop" || source === "swipe") nudge();
+        // A stray tap or swipe never throws work away: the sheet only nudges.
+        if (source === "backdrop" || source === "swipe") return nudge();
         setAsking(true);
         return;
       }
@@ -153,11 +156,13 @@ function SheetPanel({
 
   // Open: remember the opener, lock scroll, focus inside. Close: give focus back.
   useEffect(() => {
-    returnTo.current = (document.activeElement as HTMLElement | null) || null;
     stack.push(id);
     lockScroll();
-    const target = initialFocusRef?.current || panelRef.current;
-    target?.focus({ preventScroll: true });
+    // Something inside already took focus (an autoFocus field): leave it there.
+    if (!panelRef.current?.contains(document.activeElement)) {
+      const target = initialFocusRef?.current || panelRef.current;
+      target?.focus({ preventScroll: true });
+    }
     return () => {
       const at = stack.lastIndexOf(id);
       if (at >= 0) stack.splice(at, 1);
