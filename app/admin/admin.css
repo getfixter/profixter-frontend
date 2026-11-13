@@ -88,7 +88,9 @@
 .adm-shell :is(.text-\[9px\], .text-\[10px\], .text-\[10\.5px\], .text-\[11px\], .text-\[11\.5px\]) {
   font-size: 12px;
 }
-.adm-shell :is(a, button, summary, [role="button"], [role="tab"], [tabindex]):focus-visible {
+.adm-shell :is(a, button, summary, [role="button"], [role="tab"], [tabindex]):focus-visible,
+.adm-sheet :is(a, button, summary, [role="button"], [role="tab"]):focus-visible,
+.adm-popover :is(a, button):focus-visible {
   outline: 2px solid var(--adm-accent);
   outline-offset: 2px;
 }

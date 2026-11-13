@@ -126,7 +126,6 @@ function SheetPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   // The opener, read during the first render: before any autoFocus inside the sheet moves focus.
   const [opener] = useState<HTMLElement | null>(() => (typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null)));
-  const returnTo = useRef<HTMLElement | null>(opener);
   const [asking, setAsking] = useState(false);
   const [shake, setShake] = useState(false);
   const [drag, setDrag] = useState(0);
@@ -167,7 +166,7 @@ function SheetPanel({
       const at = stack.lastIndexOf(id);
       if (at >= 0) stack.splice(at, 1);
       unlockScroll();
-      const back = returnTo.current;
+      const back = opener;
       if (back && back.isConnected) back.focus({ preventScroll: true });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open/close only

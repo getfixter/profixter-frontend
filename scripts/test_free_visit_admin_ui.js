@@ -146,8 +146,8 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `$
   {
     const { ctx, page, state, errors } = await open(browser);
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
-    const pendingChip = page.getByRole("button", { name: /All Pending/ });
-    check("All Pending counts both held free visits", /2/.test(await pendingChip.innerText()), await pendingChip.innerText());
+    const pendingChip = page.getByRole("button", { name: /^Pending/ });
+    check("Pending counts both held free visits", /2/.test(await pendingChip.innerText()), await pendingChip.innerText());
     await page.getByRole("button", { name: /Upcoming/ }).click();
     await page.waitForSelector("article", { timeout: 15000 });
     const guest = card(page, "55501234");
@@ -200,7 +200,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `$
   {
     const { ctx, page, state, errors } = await open(browser);
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: /All Pending/ }).click();
+    await page.getByRole("button", { name: /^Pending/ }).click();
     await page.waitForSelector("article", { timeout: 15000 });
     const online = card(page, "55507777");
     check("the online booking is on the Jobs list", (await online.count()) === 1);
@@ -228,7 +228,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `$
   {
     const { ctx, page, state } = await open(browser);
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: /All Pending/ }).click();
+    await page.getByRole("button", { name: /^Pending/ }).click();
     await page.waitForSelector("article", { timeout: 15000 });
     await card(page, "55507777").locator("[data-review-free-visit]").click();
     await page.waitForSelector("[data-free-visit-decline]", { timeout: 10000 });
@@ -240,7 +240,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `$
   {
     const { ctx, page } = await open(browser);
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: /All Pending/ }).click();
+    await page.getByRole("button", { name: /^Pending/ }).click();
     await page.waitForSelector("article", { timeout: 15000 });
     await card(page, "55501234").locator("[data-review-free-visit]").click();
     await page.waitForSelector("[data-free-visit-missing]", { timeout: 10000 }).catch(() => {});
@@ -273,7 +273,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `$
     const review = { decision: "review", code: "FREE_VISIT_REVIEW", reasons: ["same_address_different_person"], matches: [{ source: "booking", bookingNumber: "40001111", state: "consumed", status: "Completed", matchedOn: ["address"], strength: "review" }] };
     const { ctx, page, state } = await open(browser, { eligibility: review });
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: /All Pending/ }).click();
+    await page.getByRole("button", { name: /^Pending/ }).click();
     await page.waitForSelector("[data-review-free-visit]", { timeout: 15000 });
     await card(page, "55501234").locator("[data-review-free-visit]").click();
     await page.waitForSelector('[data-free-visit-eligibility="review"]', { timeout: 10000 });
@@ -296,7 +296,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `$
     const blocked = { decision: "blocked", code: "FREE_VISIT_USED", reasons: ["completed_free_visit"], matches: [{ source: "booking", bookingNumber: "40002222", state: "consumed", status: "Completed", matchedOn: ["phone", "email"], strength: "strong" }] };
     const { ctx, page } = await open(browser, { eligibility: blocked });
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: /All Pending/ }).click();
+    await page.getByRole("button", { name: /^Pending/ }).click();
     await page.waitForSelector("[data-review-free-visit]", { timeout: 15000 });
     await card(page, "55501234").locator("[data-review-free-visit]").click();
     await page.waitForSelector('[data-free-visit-eligibility="blocked"]', { timeout: 10000 });
@@ -308,6 +308,8 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `$
   {
     const { ctx, page } = await open(browser, { width: 1280, height: 900 });
     await page.goto(`${BASE}/admin?tab=bookings`, { waitUntil: "networkidle" });
+    // The admin shell (2026-11-12) keeps the calendar behind the Calendar chip on Jobs.
+    await page.getByRole("button", { name: /Calendar/ }).first().click().catch(() => {});
     await page.waitForSelector(".react-calendar", { timeout: 15000 }).catch(() => {});
     // The fixtures sit five days out, which is next month near a month's end.
     const thisMonth = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }).slice(0, 7);
