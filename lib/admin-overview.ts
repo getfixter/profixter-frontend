@@ -1,3 +1,4 @@
+import { handOffQuery } from "@/lib/admin/handoff";
 import API from "./api";
 
 /* Types mirror BackEnd/utils/analytics/overview.js - keep the two in step. */
@@ -453,7 +454,17 @@ export function ymdLabel(ymd: string): string {
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
-/** Level 3: the customer's full record, found by email or account number in All Users. */
+/**
+ * Level 3: the customer's full record, found by email or account number in
+ * Customers. The query is never put in the URL (audit X-11): the link goes
+ * to /admin/customers and customerHandoff(query), called on click, hands the
+ * search text to that screen through sessionStorage.
+ */
 export function customerHref(query: string): string {
-  return `/admin?tab=users&q=${encodeURIComponent(query)}`;
+  void query;
+  return "/admin/customers";
+}
+
+export function customerHandoff(query: string): () => void {
+  return () => handOffQuery("customers", query);
 }

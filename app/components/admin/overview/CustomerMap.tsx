@@ -14,7 +14,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ISLAND_PATH, MAP_VIEWBOX } from "@/app/components/home/MembershipMap/island-geometry";
-import { getOverviewMap, customerHref, planLabel, shortDate, type MapPoint, type OverviewMap } from "@/lib/admin-overview";
+import { getOverviewMap, customerHandoff, customerHref, planLabel, shortDate, type MapPoint, type OverviewMap } from "@/lib/admin-overview";
 
 type Layer = "all" | "members" | "free" | "onetime" | "new";
 const LAYERS: Array<{ key: Layer; label: string }> = [
@@ -160,7 +160,7 @@ export default function CustomerMap({
               <dd className="text-slate-700">{shortDate(picked.nextVisit)}</dd>
             </dl>
             {linkCustomers ? (
-              <a href={customerHref(picked.ref)} className="mt-3 inline-flex h-9 items-center rounded-full bg-slate-900 px-4 text-[13px] font-semibold text-white">
+              <a href={customerHref(picked.ref)} onClick={customerHandoff(picked.ref)} className="mt-3 inline-flex h-9 items-center rounded-full bg-slate-900 px-4 text-[13px] font-semibold text-white">
                 View customer
               </a>
             ) : null}

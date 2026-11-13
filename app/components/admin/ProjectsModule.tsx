@@ -1,6 +1,8 @@
 "use client";
 
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { handOffQuery } from "@/lib/admin/handoff";
 import ProjectChangeOrders from "@/app/components/admin/ProjectChangeOrders";
 import ProjectContracts from "@/app/components/admin/ProjectContracts";
 import ProjectEstimates from "@/app/components/admin/ProjectEstimates";
@@ -500,12 +502,13 @@ function ProjectForm({
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <a
-                      href={`/admin?tab=users&q=${encodeURIComponent(selectedCustomer.email || selectedCustomer.name)}`}
+                    <Link
+                      href="/admin/customers"
+                      onClick={() => handOffQuery("customers", selectedCustomer.email || selectedCustomer.name)}
                       className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50"
                     >
                       Open Customer Account
-                    </a>
+                    </Link>
                     <button
                       type="button"
                       onClick={() => {
@@ -737,14 +740,25 @@ function ProjectForm({
   );
 }
 
-export default function ProjectsModule() {
+type ProjectsModuleProps = {
+  /** The project the URL names (/admin/projects/[id]): opened once the list has loaded. */
+  projectId?: string;
+  /** Open a project by route instead of in place. */
+  onOpenProject?: (id: string) => void;
+  /** Back to the list by route. */
+  onCloseProject?: () => void;
+  /** A customer search handed over from another screen (never from the URL). */
+  initialCustomerQuery?: string;
+};
+
+export default function ProjectsModule({ projectId, onOpenProject, onCloseProject, initialCustomerQuery }: ProjectsModuleProps = {}) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [view, setView] = useState<View>("list");
   const [selected, setSelected] = useState<Project | null>(null);
   const [detailTab, setDetailTab] = useState<ProjectDetailTab>("overview");
   const [status, setStatus] = useState("");
   const [projectType, setProjectType] = useState("");
-  const [customer, setCustomer] = useState("");
+  const [customer, setCustomer] = useState(initialCustomerQuery || "");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -797,7 +811,32 @@ export default function ProjectsModule() {
     });
   }, [customer, projectType, projects, status]);
 
+  /* Follow the route: /admin/projects/[id] shows that project, /admin/projects the list. */
+  useEffect(() => {
+    if (!onOpenProject) return;
+    if (!projectId) {
+      setView((current) => (current === "details" || current === "edit" ? "list" : current));
+      return;
+    }
+    const found = projects.find((project) => project._id === projectId);
+    if (found) {
+      setSelected(found);
+      setView((current) => (current === "edit" ? current : "details"));
+    }
+  }, [onOpenProject, projectId, projects]);
+
+  const backToList = () => {
+    if (onCloseProject) onCloseProject();
+    setView("list");
+  };
+
   const openDetails = (project: Project) => {
+    if (onOpenProject) {
+      setDetailTab("overview");
+      setError("");
+      onOpenProject(project._id);
+      return;
+    }
     setSelected(project);
     setDetailTab("overview");
     setError("");
@@ -833,7 +872,7 @@ export default function ProjectsModule() {
       setProjects((current) => current.filter((project) => project._id !== deleteTarget._id));
       if (selected?._id === deleteTarget._id) {
         setSelected(null);
-        setView("list");
+        backToList();
       }
       setDeleteTarget(null);
       setDeleteProjectNumberConfirmation("");
@@ -860,6 +899,7 @@ export default function ProjectsModule() {
           setSelected(project);
           setDetailTab("overview");
           setView("details");
+          onOpenProject?.(project._id);
         }}
       />
     );
@@ -915,7 +955,7 @@ export default function ProjectsModule() {
       <div className="mx-auto max-w-5xl space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <button type="button" onClick={() => setView("list")} className="text-sm font-semibold text-blue-700">← Back to projects</button>
+            <button type="button" onClick={backToList} className="text-sm font-semibold text-blue-700">← Back to projects</button>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <h2 className="text-2xl font-bold text-slate-950">{selected.projectNumber}</h2>
               <span className={`rounded-full border px-3 py-1 text-xs font-bold ${STATUS_STYLES[selected.status]}`}>{selected.status}</span>

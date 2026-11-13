@@ -38,7 +38,12 @@ interface UsersTableProps {
   onBlacklist: (userId: string) => void;
   onUnblacklist: (blacklistId: string) => void;
   onDeleteUser: (user: User, confirmation: string) => Promise<void> | void;
-  onRunSubscriptionCleanup: () => Promise<void> | void;
+  /** Retired with GoHighLevel (owner decision Q-6): accepted and ignored so old callers compile. */
+  onRunSubscriptionCleanup?: () => Promise<void> | void;
+  /** Open this customer's detail (history) sheet on mount: the /admin/customers/[id] route. */
+  openHistoryForId?: string;
+  /** The detail sheet closed (the route goes back to the list). */
+  onHistoryClosed?: () => void;
   readOnly?: boolean;
   /*
    * Finer than readOnly, for an employee granted All Users but not everything
@@ -47,6 +52,7 @@ interface UsersTableProps {
    */
   canBlacklist?: boolean;
   canDelete?: boolean;
+  /** Retired with GoHighLevel (Q-6); ignored. */
   canFixGhl?: boolean;
   showCustomerPanels?: boolean;
   /* Members view: a loyalty line on every membership row. */
@@ -281,11 +287,9 @@ export default function UsersTable({
   onBlacklist,
   onUnblacklist,
   onDeleteUser,
-  onRunSubscriptionCleanup,
   readOnly = false,
   canBlacklist = !readOnly,
   canDelete = !readOnly,
-  canFixGhl = !readOnly,
   showCustomerPanels = true,
   showLoyalty = false,
   canViewLoyalty = false,
@@ -297,10 +301,11 @@ export default function UsersTable({
   canCreateVisit = false,
   onCustomerCreated,
   onNotify,
+  openHistoryForId,
+  onHistoryClosed,
 }: UsersTableProps) {
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
   const [savingCancellationByAddress, setSavingCancellationByAddress] = useState<Record<string, boolean>>({});
-  const [isRunningCleanup, setIsRunningCleanup] = useState(false);
   const [historyUser, setHistoryUser] = useState<User | null>(null);
   const [historyLimit, setHistoryLimit] = useState<ActivityLimit>(10);
   const [historyItems, setHistoryItems] = useState<CustomerActivityItem[]>([]);
@@ -407,7 +412,29 @@ export default function UsersTable({
     setHistoryTotal(0);
     setHistoryUnavailableSources([]);
     setHistoryError('');
+    if (openHistoryForId) onHistoryClosed?.();
   };
+
+  /* The /admin/customers/[id] route: open that customer's detail once the list has them. */
+  const routeOpened = React.useRef(false);
+  useEffect(() => {
+    // Back to the list (browser Back): the routed detail closes with it.
+    if (openHistoryForId || !routeOpened.current) return;
+    routeOpened.current = false;
+    setHistoryUser(null);
+  }, [openHistoryForId]);
+  const routeUser = openHistoryForId ? users.find((u) => u._id === openHistoryForId || u.userId === openHistoryForId) : undefined;
+  useEffect(() => {
+    if (!routeUser || historyUser?._id === routeUser._id) return;
+    routeOpened.current = true;
+    setHistoryUser(routeUser);
+    setHistoryLimit(10);
+    setHistoryItems([]);
+    setHistoryTotal(0);
+    setHistoryUnavailableSources([]);
+    setHistoryError('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the routed customer changes
+  }, [routeUser?._id]);
 
   const openDeleteUser = (selectedUser: User) => {
     setDeleteUserTarget(selectedUser);
@@ -465,26 +492,6 @@ export default function UsersTable({
         ...current,
         [addressId]: false,
       }));
-    }
-  };
-
-  const handleRunCleanup = async () => {
-    const ok = window.confirm(
-      'Run Fix GHL?\n\nStep 1: sync all DB users into GHL.\nStep 2: remove subscription_purchased tag for users with no active subscription.'
-    );
-
-    if (!ok) return;
-
-    setIsRunningCleanup(true);
-
-    try {
-      await onRunSubscriptionCleanup();
-      window.alert('Fix GHL finished.');
-    } catch (error) {
-      console.error('Fix GHL failed:', error);
-      window.alert('Fix GHL failed. Check console or backend response.');
-    } finally {
-      setIsRunningCleanup(false);
     }
   };
 
@@ -733,18 +740,6 @@ export default function UsersTable({
               <span className="font-semibold text-slate-900">{formatPlanLabel(planFilter)}</span>
             </div>
 
-            {canFixGhl && <button
-              type="button"
-              onClick={handleRunCleanup}
-              disabled={isRunningCleanup}
-              className={`rounded-2xl px-4 py-3 text-sm font-semibold text-white transition ${
-                isRunningCleanup
-                  ? 'cursor-wait bg-amber-400'
-                  : 'bg-amber-600 hover:bg-amber-700'
-              }`}
-            >
-              {isRunningCleanup ? 'Fixing GHL...' : 'Fix GHL'}
-            </button>}
 
             {canCreateCustomer && (
               <button

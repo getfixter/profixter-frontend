@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { customerHref, planLabel, shortDate, type ListRow } from "@/lib/admin-overview";
+import { customerHandoff, customerHref, planLabel, shortDate, type ListRow } from "@/lib/admin-overview";
 import MaybeLink from "./MaybeLink";
 
 export type DrawerState =
@@ -72,7 +72,7 @@ export default function OverviewDrawer({ state, onClose, linkCustomers = false }
             <ul className="divide-y divide-slate-100">
               {state.rows.map((r) => (
                 <li key={r.userId + (r.date || "")}>
-                  <MaybeLink href={linkCustomers && r.email ? customerHref(r.email) : null} className={`flex items-center gap-3 rounded-[12px] px-2 py-3 ${linkCustomers ? "transition hover:bg-slate-50" : ""}`}>
+                  <MaybeLink href={linkCustomers && r.email ? customerHref(r.email) : null} onClick={r.email ? customerHandoff(r.email) : undefined} className={`flex items-center gap-3 rounded-[12px] px-2 py-3 ${linkCustomers ? "transition hover:bg-slate-50" : ""}`}>
                     <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-slate-100 text-[13px] font-bold text-slate-600">
                       {(r.name || r.email || "?").trim()[0]?.toUpperCase()}
                     </span>

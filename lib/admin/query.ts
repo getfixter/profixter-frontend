@@ -28,7 +28,10 @@
  *   key and send it in a POST body.
  */
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+
+/* Refs updated before any effect reads them, without the server warning. */
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export type QueryKey = string | readonly (string | number | boolean | null | undefined)[];
 export type Fetcher<T> = (signal: AbortSignal) => Promise<T>;
@@ -245,9 +248,11 @@ export function useAdminQuery<T>(key: QueryKey, fetcher: Fetcher<T>, options: Qu
   const { staleTime = 30_000, refetchOnFocus = true, pollMs, enabled = true } = options;
   const hash = hashKey(key);
   const keyRef = useRef(key);
-  keyRef.current = key;
   const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+  useIsoLayoutEffect(() => {
+    keyRef.current = key;
+    fetcherRef.current = fetcher;
+  });
 
   const subscribe = useCallback(
     (notify: () => void) => {

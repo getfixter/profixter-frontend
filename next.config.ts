@@ -4,7 +4,12 @@ const nextConfig: NextConfig = {
   // Lets a local side-by-side build use its own output folder; unset everywhere else.
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   turbopack: {
-    root: __dirname,
+    /*
+     * The project folder. A worktree whose node_modules is a junction to a
+     * shared install elsewhere sets TURBOPACK_ROOT to a folder holding both
+     * (Turbopack refuses links that leave its root). Unset on Vercel.
+     */
+    root: process.env.TURBOPACK_ROOT || __dirname,
   },
   images: {
     remotePatterns: [
@@ -28,7 +33,20 @@ const nextConfig: NextConfig = {
    * Scoped to /3d/ only. Nothing the public site serves is affected.
    */
   async headers() {
+    /*
+     * The admin may never be framed (clickjacking) or indexed, and links out
+     * of it send only the origin. Both the bare /admin and everything under it.
+     */
+    const adminHeaders = [
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "X-Robots-Tag", value: "noindex, nofollow" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+    ];
     return [
+      { source: "/admin", headers: adminHeaders },
+      { source: "/admin/:path*", headers: adminHeaders },
       {
         /*
          * Never let a phone hold on to a version of the Lab that no longer

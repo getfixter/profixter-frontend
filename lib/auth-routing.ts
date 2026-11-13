@@ -23,9 +23,14 @@ export function getRoleLandingKind(user: User | null | undefined): RoleLandingKi
   return "customer";
 }
 
-/* Fixters start on Jobs; office staff (no field work) on their first allowed section. */
+/*
+ * Staff start at /admin, which picks the section (lib/admin/sections.ts
+ * landingPathFor): Jobs for anyone with Jobs, My day for a field Fixter,
+ * otherwise the first section the owner switched on.
+ */
 function staffLandingPath(user: User | null | undefined) {
-  return user?.employeePosition ? "/admin?tab=bookings" : "/admin";
+  void user;
+  return "/admin";
 }
 
 export function getRoleLandingPath(user: User | null | undefined) {

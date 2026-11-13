@@ -27,6 +27,8 @@ interface BookingsTableProps {
   emptyMessage?: string;
   /** The admin page's toast, so a copy can confirm itself. */
   onToast?: (message: string) => void;
+  /** Bookings shown expanded on first render (the job detail sheet opens its one job expanded). */
+  defaultExpandedIds?: string[];
 }
 
 type BookingGroups = Record<string, Booking[]>;
@@ -296,6 +298,7 @@ export default function BookingsTable({
   canAssign = false,
   emptyMessage = "No bookings in this view",
   onToast,
+  defaultExpandedIds,
 }: BookingsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState("");
@@ -306,7 +309,7 @@ export default function BookingsTable({
   const [quickActionId, setQuickActionId] = useState<string | null>(null);
   const [draftAssigneeId, setDraftAssigneeId] = useState("");
   const [confirmAssignees, setConfirmAssignees] = useState<Record<string, string>>({});
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set(defaultExpandedIds || []));
 
   /*
    * Zero until the browser has mounted. The server render has no business

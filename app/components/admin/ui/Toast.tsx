@@ -55,7 +55,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 function ToastView({ item, onDone }: { item: ToastItem; onDone: () => void }) {
   const doneRef = useRef(onDone);
-  doneRef.current = onDone;
+  useEffect(() => {
+    doneRef.current = onDone;
+  });
   useEffect(() => {
     const timer = window.setTimeout(() => doneRef.current(), item.duration ?? (item.undo ? 6000 : 4000));
     return () => window.clearTimeout(timer);

@@ -60,3 +60,14 @@ export function takeToast(): string {
     return "";
   }
 }
+
+/** Fired when a query is handed to a section that may already be on screen. */
+export const HANDOFF_EVENT = "pfa:handoff";
+
+export function announceHandoff(section: SectionId): void {
+  try {
+    window.dispatchEvent(new CustomEvent(HANDOFF_EVENT, { detail: section }));
+  } catch {
+    /* ignore */
+  }
+}

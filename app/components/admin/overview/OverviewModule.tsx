@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import {
   getOverview,
   getOverviewList,
+  customerHandoff,
   customerHref,
   money,
   num,
@@ -1081,7 +1082,7 @@ function ActivityCard({ items, linkCustomers }: { items: ActivityItem[]; linkCus
         <ul className="space-y-0.5">
           {items.map((a, i) => (
             <li key={`${a.at}-${i}`}>
-              <MaybeLink href={linkCustomers ? customerHref(a.ref || a.who) : null} className={`flex items-center gap-3 rounded-[12px] px-2 py-2 ${linkCustomers ? "hover:bg-slate-50" : ""}`}>
+              <MaybeLink href={linkCustomers ? customerHref(a.ref || a.who) : null} onClick={customerHandoff(a.ref || a.who)} className={`flex items-center gap-3 rounded-[12px] px-2 py-2 ${linkCustomers ? "hover:bg-slate-50" : ""}`}>
                 <span className="w-[86px] flex-none text-[12px] tabular-nums text-slate-400">{relTime(a.at)}</span>
                 <span className="h-2 w-2 flex-none rounded-full" style={{ background: dot[a.type] || "#94a3b8" }} />
                 <span className="min-w-0 flex-1 truncate text-[14px] text-slate-800">
