@@ -124,6 +124,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16.png", type: "image/png", sizes: "16x16" },
       { url: "/icon.png", type: "image/png", sizes: "512x512" },
       { url: "/manifest-icon-192.png", type: "image/png", sizes: "192x192" },
       { url: "/manifest-icon-512.png", type: "image/png", sizes: "512x512" },
@@ -134,6 +136,10 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    title: "Profixter",
+    statusBarStyle: "black-translucent",
+  },
   category: "home services",
   creator: SITE_NAME,
   publisher: SITE_NAME,
@@ -187,9 +193,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: IOS_VIEWPORT_SCRIPT }} />
         {/* Homepage with a saved session: no visitor-page flash - see lib/surface.ts. */}
         <script dangerouslySetInnerHTML={{ __html: AUTH_PENDING_SCRIPT }} />
+        {/* Title and status bar style come from metadata.appleWebApp, so /admin can set its own. */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-title" content="Profixter" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         {/*
           A plain script tag rather than next/script.
 

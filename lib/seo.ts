@@ -37,19 +37,17 @@ export const SITE_NAME = "Profixter";
 export const BUSINESS_PHONE_DISPLAY = "631-599-1363";
 export const BUSINESS_PHONE_E164 = "+1-631-599-1363";
 /**
- * The ProFixter brand mark: PRO in brand blue over FIXTER in white, on black,
- * with Long Island beneath it.
- *
- * The same artwork as app/favicon.ico, the manifest icons and the Apple touch
- * icon, all generated from public/images/LogoSquare.png. Square, because
- * that is what both Google's favicon guidance and the manifest want, and
- * because every surface that shows a site icon crops to a square anyway.
+ * The Profixter logo for structured data: the hammer and "PROFIXTER /
+ * Handyman Membership" lockup the site header shows (2026-11-03), as the
+ * full-size PNG. Google accepts any shape for an Organization logo (at least
+ * 112px); the square app icons are built from the same artwork by
+ * scripts/build_admin_icons.js.
  */
 export const PROFIXTER_LOGO = {
-  url: "/icon.png",
-  width: 512,
-  height: 512,
-  alt: "ProFixter Long Island",
+  url: "/images/profixter-logo.png",
+  width: 1231,
+  height: 520,
+  alt: "Profixter",
 };
 
 export const DEFAULT_OG_IMAGE = {
