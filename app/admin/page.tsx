@@ -63,7 +63,13 @@ function AdminRedirect() {
         .then((response) => {
           const data = response.data || {};
           const projectId = data.projectId || data.invoice?.projectId || data.project?._id;
-          go(projectId ? `/admin/projects/${encodeURIComponent(String(projectId))}` : "/admin/projects", "projects");
+          // The invoice itself opens on the project's Invoices tab (FE-PROJ).
+          go(
+            projectId
+              ? `/admin/projects/${encodeURIComponent(String(projectId))}?tab=invoices&invoice=${encodeURIComponent(String(target.invoiceId))}`
+              : "/admin/projects",
+            "projects"
+          );
         })
         .catch(() => go("/admin/projects", "projects"));
       return;

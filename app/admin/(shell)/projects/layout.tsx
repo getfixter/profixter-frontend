@@ -1,33 +1,23 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import ProjectsModule from "@/app/components/admin/ProjectsModule";
-import { takeQuery } from "@/lib/admin/handoff";
+import { useParams } from "next/navigation";
 import { ErrorBoundary } from "@/app/components/admin/ui";
 import { RequireSection } from "@/app/components/admin/shell/RequireSection";
+import { ProjectsBoard } from "@/app/components/admin/projects/ProjectsBoard";
 
 /*
- * Projects, as they work today (the project documents: agreements, change
- * orders, invoices, estimates), with a URL per project. Restyled by the
- * Projects track later.
+ * Projects. The list stays mounted (hidden) while /admin/projects/[id] shows
+ * a project, so its search, stage filter and loaded pages survive Back.
  */
 export default function ProjectsLayout({ children }: { children: React.ReactNode }) {
   const params = useParams<{ id?: string }>();
-  const router = useRouter();
-  const id = params?.id ? decodeURIComponent(String(params.id)) : undefined;
-  const [initialQuery] = useState(() => (typeof window === "undefined" ? "" : takeQuery("projects")));
+  const open = Boolean(params?.id);
   return (
     <RequireSection id="projects">
       <ErrorBoundary label="Projects">
-        <ProjectsModule
-          projectId={id}
-          initialCustomerQuery={initialQuery}
-          onOpenProject={(projectId) => router.push(`/admin/projects/${encodeURIComponent(projectId)}`, { scroll: false })}
-          onCloseProject={() => router.push("/admin/projects", { scroll: false })}
-        />
+        <ProjectsBoard hidden={open} />
+        {children}
       </ErrorBoundary>
-      {children}
     </RequireSection>
   );
 }

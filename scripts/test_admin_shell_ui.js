@@ -161,7 +161,7 @@ async function waitPath(page, re, timeout = 15000) {
     ["?tab=requests", /^\/admin\/leads$/],
     ["?tab=leads", /^\/admin\/leads$/],
     ["?tab=projects", /^\/admin\/projects$/],
-    ["?tab=invoices&invoiceId=inv1", /^\/admin\/projects\/p1$/],
+    ["?tab=invoices&invoiceId=inv1", /^\/admin\/projects\/p1\?tab=invoices&invoice=inv1$/],
     ["?tab=invoices&invoiceId=gone1", /^\/admin\/projects$/],
     ["?tab=emails", /^\/admin\/communications$/],
     ["?tab=fixters", /^\/admin\/team$/],

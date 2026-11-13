@@ -1059,6 +1059,20 @@ export interface ProjectFinancials {
   };
   invoices: ProjectFinancialInvoiceRef[];
   totals: ProjectFinancialTotals;
+  /**
+   * Signed (executed) vs proposed value, from the BE-DOCS financial service.
+   * The authoritative "agreed" figure; absent on an older backend.
+   */
+  valuation?: {
+    agreementSigned: boolean;
+    executedValueCents: number;
+    proposedValueCents: number;
+    awaitingSignatureChangeOrderCents: number;
+    invoicedCents: number;
+    paidCents: number;
+    outstandingCents: number;
+    uninvoicedExecutedCents: number;
+  };
 }
 
 /** An Estimate an Agreement can be built from. */
@@ -1214,6 +1228,9 @@ export interface InvoicePayment {
   note?: string;
   recordedBy?: string | null;
   recordedByEmail?: string;
+  /** "stripe" for money collected online; such rows are read-only (409 STRIPE_PAYMENT_READ_ONLY). */
+  provider?: "manual" | "stripe" | "";
+  stripePaymentIntentId?: string;
   createdAt?: string;
   updatedAt?: string;
 }

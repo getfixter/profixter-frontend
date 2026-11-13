@@ -65,6 +65,33 @@ function isFormField(node: EventTarget | null) {
   return tag === "input" || tag === "textarea" || tag === "select" || el.isContentEditable === true;
 }
 
+/*
+ * Inside the Admin shell a phone has its own bottom navigation. The bar sits
+ * directly above it instead of covering it (and so never hides the way to
+ * another section). Measured, because the shell decides by media query and
+ * keyboard state when that navigation shows.
+ */
+function useBottomNavOffset() {
+  const [offset, setOffset] = useState(0);
+  useEffect(() => {
+    const measure = () => {
+      const nav = document.querySelector<HTMLElement>(".adm-bottomnav");
+      if (!nav) return setOffset(0);
+      const style = window.getComputedStyle(nav);
+      setOffset(style.display === "none" || style.visibility === "hidden" ? 0 : Math.round(nav.getBoundingClientRect().height));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    const observer = new MutationObserver(measure);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-keyboard"] });
+    return () => {
+      window.removeEventListener("resize", measure);
+      observer.disconnect();
+    };
+  }, []);
+  return offset;
+}
+
 export default function AdminActionBar({
   actions,
   hidden = false,
@@ -78,6 +105,7 @@ export default function AdminActionBar({
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [fieldFocused, setFieldFocused] = useState(false);
   const baselineHeight = useRef(0);
+  const navOffset = useBottomNavOffset();
 
   /*
    * The keyboard has no event of its own. Where visualViewport exists, it
@@ -177,6 +205,7 @@ export default function AdminActionBar({
 
       <div
         className={`fixed inset-x-0 bottom-0 z-[61] xl:hidden ${suppressed ? "hidden" : ""}`}
+        style={navOffset ? { bottom: navOffset } : undefined}
         data-testid="admin-action-bar"
       >
         {showMore && (
@@ -228,7 +257,7 @@ export default function AdminActionBar({
         <nav
           aria-label={label}
           className="border-t border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85"
-          style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))" }}
+          style={{ paddingBottom: navOffset ? "0.5rem" : "max(0.5rem, env(safe-area-inset-bottom, 0px))" }}
         >
           <div className="mx-auto flex max-w-3xl items-stretch gap-2 px-3 pt-2">
             {inline.map(renderAction)}

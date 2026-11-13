@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   INVOICE_DISCOUNT_TYPES,
   INVOICE_DUE_TERMS,
@@ -35,6 +35,20 @@ import {
 } from "@/lib/admin-service";
 import { ProjectFinancialSummaryView } from "@/app/components/admin/ProjectFinancialSummary";
 import AdminActionBar, { type AdminAction } from "@/app/components/admin/AdminActionBar";
+import { Button, ConfirmSheet, Field, Select, Sheet, TextInput, Textarea } from "@/app/components/admin/ui";
+
+/** A payment Stripe collected: read-only here (the server refuses edits, 409 STRIPE_PAYMENT_READ_ONLY). */
+function isStripePayment(payment: InvoicePayment) {
+  return payment.provider === "stripe" || Boolean(payment.stripePaymentIntentId);
+}
+
+/** Paid in full or superseded invoices are locked (409 INVOICE_LOCKED); voided ones are closed. */
+function lockReason(invoice: ProjectInvoice): string {
+  if (invoice.status === "Paid in Full") return "Paid in full: this invoice is locked. Payments and the amount can no longer change.";
+  if (invoice.status === "Superseded") return "Superseded by a newer version: this invoice is locked.";
+  if (invoice.status === "Voided") return "Voided: this invoice is closed.";
+  return "";
+}
 
 type InvoiceView = "list" | "create" | "details" | "edit";
 
@@ -895,7 +909,17 @@ function OnlinePaymentState({ invoice }: { invoice: ProjectInvoice }) {
   );
 }
 
-export default function ProjectInvoices({ project }: { project: Project }) {
+export default function ProjectInvoices({
+  project,
+  onChanged,
+  initialInvoiceId,
+}: {
+  project: Project;
+  /** Called after anything here changes the project's money (invoices, payments, voids). */
+  onChanged?: () => void;
+  /** Open this invoice once the list has loaded (deep links: ?tab=invoices&invoice=<id>). */
+  initialInvoiceId?: string;
+}) {
   const [invoices, setInvoices] = useState<ProjectInvoice[]>([]);
   const [selected, setSelected] = useState<ProjectInvoice | null>(null);
   const [view, setView] = useState<InvoiceView>("list");
@@ -912,6 +936,12 @@ export default function ProjectInvoices({ project }: { project: Project }) {
   const [showBilling, setShowBilling] = useState(false);
   const [billing, setBilling] = useState<BillingFormState>(emptyBillingForm);
   const [warnings, setWarnings] = useState<InvoiceFinancialWarning[]>([]);
+  const [confirmVoid, setConfirmVoid] = useState(false);
+  const [voidReason, setVoidReason] = useState("");
+  const [removingPayment, setRemovingPayment] = useState<InvoicePayment | null>(null);
+  const onChangedRef = useRef(onChanged);
+  onChangedRef.current = onChanged;
+  const openedInitial = useRef("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -919,13 +949,23 @@ export default function ProjectInvoices({ project }: { project: Project }) {
     try {
       const next = await getProjectInvoices(project._id);
       setInvoices(next);
+      if (initialInvoiceId && openedInitial.current !== initialInvoiceId) {
+        const target = next.find((invoice) => invoice._id === initialInvoiceId);
+        openedInitial.current = initialInvoiceId;
+        if (target) {
+          setSelected(target);
+          setView("details");
+          return;
+        }
+        setError("That invoice is not on this project. It may have been archived.");
+      }
       setSelected((current) => current ? next.find((invoice) => invoice._id === current._id) || current : null);
     } catch (loadError) {
       setError(errorMessage(loadError));
     } finally {
       setLoading(false);
     }
-  }, [project._id]);
+  }, [project._id, initialInvoiceId]);
 
   /**
    * The project's approved position, reloaded whenever billing changes it.
@@ -953,6 +993,7 @@ export default function ProjectInvoices({ project }: { project: Project }) {
     setSelected(invoice);
     // Issuing, voiding or paying an invoice all move the project totals.
     void loadFinancials();
+    onChangedRef.current?.();
   };
 
   const createNew = () => {
@@ -1094,38 +1135,21 @@ export default function ProjectInvoices({ project }: { project: Project }) {
     }
   };
 
+  /* Asked in a ConfirmSheet; a failure stays in the sheet with the server's reason. */
   const removePayment = async (payment: InvoicePayment) => {
     if (!selected || !payment._id) return;
-    if (!window.confirm("Remove this payment record?")) return;
-    setWorkingAction("Removing payment...");
-    setError("");
-    try {
-      const invoice = await deleteProjectInvoicePayment(project._id, selected._id, payment._id);
-      upsertInvoice(invoice);
-      setSuccess("Payment removed.");
-    } catch (removeError) {
-      setError(errorMessage(removeError));
-    } finally {
-      setWorkingAction("");
-    }
+    const invoice = await deleteProjectInvoicePayment(project._id, selected._id, payment._id);
+    upsertInvoice(invoice);
+    setSuccess("Payment removed.");
   };
 
+  /* Typed VOID and an optional reason, in a ConfirmSheet (never window.prompt). */
   const voidSelected = async () => {
     if (!selected) return;
-    const confirmation = window.prompt(`Type VOID to void Invoice #${selected.invoiceNumber}.`, "");
-    if (confirmation !== "VOID") return;
-    const reason = window.prompt("Optional reason for voiding this invoice:", "") || "";
-    setWorkingAction("Voiding invoice...");
-    setError("");
-    try {
-      const invoice = await voidProjectInvoice(project._id, selected._id, { confirmation: "VOID", reason });
-      upsertInvoice(invoice);
-      setSuccess("Invoice voided. Generate a new PDF if a voided copy is needed.");
-    } catch (voidError) {
-      setError(errorMessage(voidError));
-    } finally {
-      setWorkingAction("");
-    }
+    const invoice = await voidProjectInvoice(project._id, selected._id, { confirmation: "VOID", reason: voidReason.trim() });
+    upsertInvoice(invoice);
+    setVoidReason("");
+    setSuccess("Invoice voided. Generate a new PDF if a voided copy is needed.");
   };
 
   if (view === "create") {
@@ -1161,6 +1185,18 @@ export default function ProjectInvoices({ project }: { project: Project }) {
     const voided = selected.status === "Voided";
     const hasPdf = Boolean(selected.currentPdf?.available);
     const busy = !!workingAction;
+    const locked = lockReason(selected);
+    const lockedForEdit = paid || selected.status === "Superseded" || voided;
+    const paymentCount = selected.payments.length;
+    const stripeCount = selected.payments.filter(isStripePayment).length;
+    const voidBlocked = paymentCount > 0;
+    const voidBlockedReason = voidBlocked
+      ? `This invoice has ${paymentCount} recorded payment${paymentCount === 1 ? "" : "s"} (${moneyFromCents(selected.totalPaidCents)}), so it cannot be voided. ${
+          stripeCount ? "Online (Stripe) payments stay on the invoice; refunds are made in Stripe. " : ""
+        }Remove a manual payment only if it was recorded by mistake.`
+      : "";
+    const canAddPayment = !lockedForEdit && selected.remainingBalanceCents > 0;
+    const anySheet = showEmail || showPayment || confirmVoid || Boolean(removingPayment);
 
     /*
      * Invoice work is operational: produce the PDF, send it, take the money.
@@ -1173,7 +1209,7 @@ export default function ProjectInvoices({ project }: { project: Project }) {
         label: "Payment",
         longLabel: "Add Payment",
         tone: "success",
-        disabled: voided || busy,
+        disabled: !canAddPayment || busy,
         onClick: () => openPayment(),
       },
       {
@@ -1201,17 +1237,17 @@ export default function ProjectInvoices({ project }: { project: Project }) {
       {
         key: "edit",
         label: "Edit",
-        longLabel: "Edit Invoice",
-        disabled: voided || busy,
+        longLabel: lockedForEdit ? "Edit Invoice (locked)" : "Edit Invoice",
+        disabled: lockedForEdit || busy,
         onClick: () => setView("edit"),
       },
       {
         key: "void",
         label: "Void",
-        longLabel: "Void Invoice",
+        longLabel: voidBlocked ? "Void Invoice (has payments)" : "Void Invoice",
         tone: "danger",
-        disabled: voided || busy,
-        onClick: () => void voidSelected(),
+        disabled: voided || voidBlocked || busy,
+        onClick: () => setConfirmVoid(true),
       },
     ];
 
@@ -1233,7 +1269,7 @@ export default function ProjectInvoices({ project }: { project: Project }) {
             </div>
             {/* Duplicated by the mobile action bar; kept for desktop only. */}
             <div className="hidden flex-wrap gap-2 xl:flex">
-              <button type="button" onClick={() => setView("edit")} disabled={selected.status === "Voided" || !!workingAction} className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold disabled:opacity-50">Edit</button>
+              <button type="button" onClick={() => setView("edit")} disabled={lockedForEdit || !!workingAction} className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold disabled:opacity-50">Edit</button>
               <button type="button" onClick={generateSelected} disabled={!!workingAction} className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-bold hover:bg-white/10 disabled:opacity-50">{workingAction || "Generate PDF"}</button>
             </div>
           </div>
@@ -1246,6 +1282,12 @@ export default function ProjectInvoices({ project }: { project: Project }) {
             {warning.message}
           </div>
         ))}
+
+        {locked && (
+          <div data-invoice-locked={selected.status} className="rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm font-semibold text-slate-700">
+            {locked}
+          </div>
+        )}
 
         <AgreementPosition invoice={selected} />
 
@@ -1293,14 +1335,26 @@ export default function ProjectInvoices({ project }: { project: Project }) {
               <button type="button" disabled={!selected.currentPdf?.available || selected.requiresRegeneration || !!workingAction} onClick={() => openEmail(selected)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
                 {paid ? "Email Paid Receipt" : "Email Invoice"}
               </button>
-              <button type="button" disabled={selected.status === "Voided" || !!workingAction} onClick={() => openPayment()} className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50">
+              <button type="button" disabled={!canAddPayment || !!workingAction} onClick={() => openPayment()} className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50">
                 Add Payment
               </button>
-              <button type="button" disabled={selected.status === "Voided" || !!workingAction} onClick={voidSelected} className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50">
+              <button
+                type="button"
+                data-action="void-invoice"
+                disabled={voided || voidBlocked || !!workingAction}
+                aria-describedby={voidBlocked ? "invoice-void-blocked" : undefined}
+                onClick={() => setConfirmVoid(true)}
+                className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+              >
                 Void Invoice
               </button>
             </div>
           </div>
+          {voidBlocked && !voided && (
+            <p id="invoice-void-blocked" data-void-blocked="" className="mt-3 text-sm text-slate-600">
+              {voidBlockedReason}
+            </p>
+          )}
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -1314,17 +1368,35 @@ export default function ProjectInvoices({ project }: { project: Project }) {
             <p className="mt-4 text-sm text-slate-500">No payments recorded.</p>
           ) : (
             <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
-              {selected.payments.map((payment) => (
-                <div key={payment._id || `${payment.paymentDate}-${payment.amountCents}`} className="grid gap-3 p-3 text-sm md:grid-cols-[120px_1fr_120px_auto] md:items-center">
-                  <span className="font-semibold text-slate-700">{displayDate(payment.paymentDate)}</span>
-                  <span className="text-slate-600">{payment.method}{payment.reference ? ` - ${payment.reference}` : ""}</span>
-                  <strong className="text-slate-950">{moneyFromCents(payment.amountCents)}</strong>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => openPayment(payment)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Edit</button>
-                    <button type="button" onClick={() => void removePayment(payment)} className="rounded-lg border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700">Remove</button>
+              {selected.payments.map((payment) => {
+                const stripe = isStripePayment(payment);
+                return (
+                  <div
+                    key={payment._id || `${payment.paymentDate}-${payment.amountCents}`}
+                    data-payment={payment._id || ""}
+                    data-payment-provider={stripe ? "stripe" : "manual"}
+                    className="grid gap-3 p-3 text-sm md:grid-cols-[120px_1fr_120px_auto] md:items-center"
+                  >
+                    <span className="font-semibold text-slate-700">{displayDate(payment.paymentDate)}</span>
+                    <span className="min-w-0 break-words text-slate-600">
+                      {payment.method}
+                      {payment.reference ? ` - ${payment.reference}` : ""}
+                      {stripe && <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">Paid online (Stripe)</span>}
+                    </span>
+                    <strong className="text-slate-950">{moneyFromCents(payment.amountCents)}</strong>
+                    {stripe ? (
+                      <span className="text-xs text-slate-500">Read-only. Refunds are made in Stripe.</span>
+                    ) : lockedForEdit ? (
+                      <span className="text-xs text-slate-500">Locked</span>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button type="button" data-action="edit-payment" onClick={() => openPayment(payment)} className="min-h-[44px] rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-700">Edit</button>
+                        <button type="button" data-action="remove-payment" onClick={() => setRemovingPayment(payment)} className="min-h-[44px] rounded-lg border border-rose-200 px-3 text-xs font-bold text-rose-700">Remove</button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
@@ -1347,85 +1419,106 @@ export default function ProjectInvoices({ project }: { project: Project }) {
           </div>
         </section>
 
-        {showEmail && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:items-center" onClick={() => setShowEmail(false)}>
-            <form onSubmit={sendEmail} className="w-full max-w-2xl rounded-[28px] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.30)] sm:p-6" onClick={(event) => event.stopPropagation()}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Email Invoice</p>
-                  <h3 className="mt-1 text-2xl font-black text-slate-950">Invoice #{selected.invoiceNumber}</h3>
-                </div>
-                <button type="button" onClick={() => setShowEmail(false)} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-600 hover:bg-slate-50">
-                  Close
-                </button>
-              </div>
-              <div className="mt-5 space-y-4">
-                <label className="text-sm font-semibold text-slate-700">
-                  Recipient
-                  <input required type="email" value={emailForm.recipient} onChange={(event) => setEmailForm((current) => ({ ...current, recipient: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
-                </label>
-                <label className="text-sm font-semibold text-slate-700">
-                  Subject
-                  <input required value={emailForm.subject} onChange={(event) => setEmailForm((current) => ({ ...current, subject: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
-                </label>
-                <label className="text-sm font-semibold text-slate-700">
-                  Body
-                  <textarea required rows={8} value={emailForm.message} onChange={(event) => setEmailForm((current) => ({ ...current, message: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
-                </label>
-              </div>
-              <button type="submit" disabled={!!workingAction} className="mt-5 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60">
-                {workingAction || "Send Invoice"}
-              </button>
-            </form>
-          </div>
-        )}
+        <Sheet
+          open={showEmail}
+          onClose={() => setShowEmail(false)}
+          title={`Email Invoice #${selected.invoiceNumber}`}
+          busy={!!workingAction}
+          data-sheet="invoice-email"
+          footer={
+            <>
+              <Button variant="secondary" large onClick={() => setShowEmail(false)}>
+                Cancel
+              </Button>
+              <Button large type="submit" form="invoice-email-form" busy={!!workingAction} disabled={!emailForm.recipient.trim()} data-action="send-invoice-email">
+                {emailForm.recipient.trim() ? `Send to ${emailForm.recipient.trim()}` : "Send"}
+              </Button>
+            </>
+          }
+        >
+          <form id="invoice-email-form" onSubmit={sendEmail} className="flex flex-col gap-3">
+            <p className="text-sm text-slate-600">The customer receives this email with the invoice PDF{paid ? " (a paid receipt)" : ""}.</p>
+            <Field label="Recipient" required>
+              <TextInput required type="email" inputMode="email" autoCapitalize="none" spellCheck={false} value={emailForm.recipient} onChange={(event) => setEmailForm((current) => ({ ...current, recipient: event.target.value }))} />
+            </Field>
+            <Field label="Subject" required>
+              <TextInput required value={emailForm.subject} onChange={(event) => setEmailForm((current) => ({ ...current, subject: event.target.value }))} />
+            </Field>
+            <Field label="Message" required>
+              <Textarea required rows={6} value={emailForm.message} onChange={(event) => setEmailForm((current) => ({ ...current, message: event.target.value }))} />
+            </Field>
+          </form>
+        </Sheet>
 
-        {showPayment && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:items-center" onClick={() => setShowPayment(false)}>
-            <form onSubmit={savePayment} className="w-full max-w-xl rounded-[28px] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.30)] sm:p-6" onClick={(event) => event.stopPropagation()}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-600">{editingPayment ? "Edit Payment" : "Add Payment"}</p>
-                  <h3 className="mt-1 text-2xl font-black text-slate-950">Invoice #{selected.invoiceNumber}</h3>
-                </div>
-                <button type="button" onClick={() => setShowPayment(false)} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-600 hover:bg-slate-50">
-                  Close
-                </button>
-              </div>
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <label className="text-sm font-semibold text-slate-700">
-                  Amount
-                  <input required inputMode="decimal" value={paymentForm.amount} onChange={(event) => setPaymentForm((current) => ({ ...current, amount: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm" />
-                </label>
-                <label className="text-sm font-semibold text-slate-700">
-                  Payment date
-                  <input required type="date" value={paymentForm.paymentDate} onChange={(event) => setPaymentForm((current) => ({ ...current, paymentDate: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm" />
-                </label>
-                <label className="text-sm font-semibold text-slate-700">
-                  Method
-                  <select value={paymentForm.method} onChange={(event) => setPaymentForm((current) => ({ ...current, method: event.target.value as InvoicePaymentMethod }))} className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm">
-                    {INVOICE_PAYMENT_METHODS.map((method) => <option key={method}>{method}</option>)}
-                  </select>
-                </label>
-                <label className="text-sm font-semibold text-slate-700">
-                  Reference
-                  <input value={paymentForm.reference} onChange={(event) => setPaymentForm((current) => ({ ...current, reference: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm" />
-                </label>
-                <label className="text-sm font-semibold text-slate-700 md:col-span-2">
-                  Note
-                  <textarea rows={3} value={paymentForm.note} onChange={(event) => setPaymentForm((current) => ({ ...current, note: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm" />
-                </label>
-              </div>
-              <button type="submit" disabled={!!workingAction} className="mt-5 w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-60">
-                {workingAction || "Save Payment"}
-              </button>
-            </form>
-          </div>
-        )}
+        <Sheet
+          open={showPayment}
+          onClose={() => setShowPayment(false)}
+          title={`${editingPayment ? "Edit payment" : "Add payment"} · Invoice #${selected.invoiceNumber}`}
+          busy={!!workingAction}
+          data-sheet="invoice-payment"
+          footer={
+            <>
+              <Button variant="secondary" large onClick={() => setShowPayment(false)}>
+                Cancel
+              </Button>
+              <Button large type="submit" form="invoice-payment-form" busy={!!workingAction} data-action="save-payment">
+                Save payment
+              </Button>
+            </>
+          }
+        >
+          <form id="invoice-payment-form" onSubmit={savePayment} className="grid gap-3 md:grid-cols-2">
+            <Field label="Amount" required>
+              <TextInput required inputMode="decimal" autoComplete="off" placeholder="0.00" value={paymentForm.amount} onChange={(event) => setPaymentForm((current) => ({ ...current, amount: event.target.value }))} />
+            </Field>
+            <Field label="Payment date" required>
+              <TextInput required type="date" value={paymentForm.paymentDate} onChange={(event) => setPaymentForm((current) => ({ ...current, paymentDate: event.target.value }))} />
+            </Field>
+            <Field label="Method">
+              <Select value={paymentForm.method} onChange={(event) => setPaymentForm((current) => ({ ...current, method: event.target.value as InvoicePaymentMethod }))} options={INVOICE_PAYMENT_METHODS.map((method) => ({ value: method, label: method }))} />
+            </Field>
+            <Field label="Reference">
+              <TextInput value={paymentForm.reference} onChange={(event) => setPaymentForm((current) => ({ ...current, reference: event.target.value }))} />
+            </Field>
+            <Field label="Note" className="md:col-span-2">
+              <Textarea rows={3} value={paymentForm.note} onChange={(event) => setPaymentForm((current) => ({ ...current, note: event.target.value }))} />
+            </Field>
+            <p className="text-sm text-slate-500 md:col-span-2">Record money received outside Stripe (cash, check, transfer). Online payments are recorded by Stripe on their own.</p>
+          </form>
+        </Sheet>
+
+        <ConfirmSheet
+          open={confirmVoid}
+          onClose={() => setConfirmVoid(false)}
+          title={`Void Invoice #${selected.invoiceNumber}?`}
+          consequence={`Invoice #${selected.invoiceNumber} for ${selected.customerSnapshot.fullName || "the customer"} (${moneyFromCents(selected.invoiceTotalCents)}) stops counting as billed, and any online payment page for it is closed.`}
+          confirmLabel="Void invoice"
+          tone="danger"
+          typedConfirmation="VOID"
+          onConfirm={voidSelected}
+        >
+          <Field label="Reason (optional)">
+            <Textarea rows={2} value={voidReason} onChange={(event) => setVoidReason(event.target.value)} />
+          </Field>
+        </ConfirmSheet>
+
+        <ConfirmSheet
+          open={Boolean(removingPayment)}
+          onClose={() => setRemovingPayment(null)}
+          title="Remove this payment record?"
+          consequence={
+            removingPayment
+              ? `The ${moneyFromCents(removingPayment.amountCents)} ${removingPayment.method} payment from ${displayDate(removingPayment.paymentDate)} is removed from Invoice #${selected.invoiceNumber}. Only do this if it was recorded by mistake.`
+              : ""
+          }
+          confirmLabel="Remove payment"
+          tone="danger"
+          onConfirm={() => (removingPayment ? removePayment(removingPayment) : undefined)}
+        />
 
         <AdminActionBar
           actions={barActions}
-          hidden={showEmail || showPayment}
+          hidden={anySheet}
           label="Invoice actions"
         />
       </div>
