@@ -81,7 +81,13 @@ function ProjectRowItem({ row, attention }: { row: ProjectRow; attention?: { tit
         <div className="flex flex-wrap items-center gap-1.5">
           <StageBadge stage={row.derivedStage} />
           <ManualStatusBadge status={row.manualStatus} />
-          {attention && <AttentionBadge severity={attention.severity}>{attention.title}</AttentionBadge>}
+          {row.nextStep !== undefined
+            ? row.nextStep && (
+                <span data-next-step={row.nextStep.key}>
+                  <AttentionBadge severity={row.nextStep.severity}>{row.nextStep.label}</AttentionBadge>
+                </span>
+              )
+            : attention && <AttentionBadge severity={attention.severity}>{attention.title}</AttentionBadge>}
         </div>
         <RowMoney row={row} />
       </Link>

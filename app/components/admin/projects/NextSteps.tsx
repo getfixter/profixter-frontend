@@ -40,7 +40,25 @@ function documentForSignature(overview: ProjectOverview, signatureId: string): {
   return null;
 }
 
-/** The recipient the server will email: the document's own customer snapshot. */
+/**
+ * The recipient straight from the overview, when the server names it (the
+ * step's recipientEmail, or the document's own): no extra document list load.
+ */
+function recipientFromOverview(overview: ProjectOverview, type: "CONTRACT" | "CHANGE_ORDER", id: string, stepEmail: string | null | undefined): Recipient {
+  const name = overview.project.customerName || "";
+  if (type === "CONTRACT") {
+    const a = overview.documents.agreements.find((x) => x.id === id);
+    const email = typeof stepEmail === "string" ? stepEmail : a?.recipientEmail;
+    if (!a || typeof email !== "string") return null;
+    return { name, email, document: `Agreement #${String(a.contractNumber || "").replace(/^#/, "")} v${a.version}` };
+  }
+  const co = overview.documents.changeOrders.find((x) => x.id === id);
+  const email = typeof stepEmail === "string" ? stepEmail : co?.recipientEmail;
+  if (!co || typeof email !== "string") return null;
+  return { name, email, document: `Change order ${co.changeOrderNumber}` };
+}
+
+/** The recipient the server will email: the document's own customer snapshot (older backends: read the document). */
 async function resolveRecipient(projectId: string, type: "CONTRACT" | "CHANGE_ORDER", id: string): Promise<Recipient> {
   if (type === "CONTRACT") {
     const contracts = await getProjectContracts(projectId);
@@ -110,15 +128,21 @@ export function NextSteps({ overview, onTab }: { overview: ProjectOverview; onTa
     let recipient: Recipient = null;
     let amountCents: number | null = null;
     let loadError = "";
+    const facts = step.action;
     try {
-      if (action.kind === "send") recipient = await resolveRecipient(projectId, action.documentType, action.documentId);
+      if (action.kind === "send") {
+        recipient = recipientFromOverview(overview, action.documentType, action.documentId, facts.recipientEmail) || (await resolveRecipient(projectId, action.documentType, action.documentId));
+      }
       if (action.kind === "resend") {
         const doc = documentForSignature(overview, action.signatureId);
-        if (doc) recipient = await resolveRecipient(projectId, doc.type, doc.id);
+        if (doc) recipient = recipientFromOverview(overview, doc.type, doc.id, facts.recipientEmail) || (await resolveRecipient(projectId, doc.type, doc.id));
       }
-      if (action.kind === "bill" && action.billKind === "deposit") {
-        const signed = [...overview.documents.agreements].filter((a) => a.status === "Signed").sort((a, b) => b.version - a.version)[0];
-        amountCents = signed ? signed.depositAmountCents : null;
+      if (action.kind === "bill") {
+        if (typeof facts.amountCents === "number" && Number.isFinite(facts.amountCents)) amountCents = facts.amountCents;
+        else if (action.billKind === "deposit") {
+          const signed = [...overview.documents.agreements].filter((a) => a.status === "Signed").sort((a, b) => b.version - a.version)[0];
+          amountCents = signed ? signed.depositAmountCents : null;
+        }
       }
       if ((action.kind === "send" || action.kind === "resend") && !recipient) loadError = "The document for this step could not be found. Open its tab instead.";
     } catch (error) {
@@ -157,8 +181,18 @@ export function NextSteps({ overview, onTab }: { overview: ProjectOverview; onTa
       }
       invalidateQueries(projectKeys.overview(projectId));
     } catch (error) {
-      // Already billed elsewhere: the invoice exists, so the overview is refreshed for the next look.
-      if (errorCode(error) === "ALREADY_BILLED") invalidateQueries(projectKeys.overview(projectId));
+      if (errorCode(error) === "ALREADY_BILLED") {
+        // Already billed (another tab, a hand-made invoice, a re-signed agreement): nothing new was
+        // created. Say which invoice covers it, refresh the steps, and open that invoice.
+        keys.current.delete(intent);
+        const data = (error as { response?: { data?: { invoiceId?: string | null } } })?.response?.data;
+        const invoiceId = data?.invoiceId ? String(data.invoiceId) : "";
+        toast.show(`${errorMessage(error, "This is already billed.")} Nothing new was created.`);
+        invalidateQueries(projectKeys.overview(projectId));
+        invalidateQueries(["projects", "search"]);
+        if (invoiceId) onTab("invoices", { invoice: invoiceId });
+        return;
+      }
       throw error;
     }
   };
@@ -176,9 +210,7 @@ export function NextSteps({ overview, onTab }: { overview: ProjectOverview; onTa
   const noEmail = isSend && !p?.recipient?.email;
   const billLabel =
     p?.action.kind === "bill"
-      ? p.action.billKind === "deposit"
-        ? `Create deposit invoice${p.amountCents ? ` for ${formatCents(p.amountCents)}` : ""}`
-        : "Create milestone invoice"
+      ? `Create ${p.action.billKind === "deposit" ? "deposit" : "milestone"} invoice${p.amountCents ? ` for ${formatCents(p.amountCents)}` : ""}`
       : "";
 
   return (
@@ -227,7 +259,15 @@ export function NextSteps({ overview, onTab }: { overview: ProjectOverview; onTa
           ) : p.action.kind === "bill" ? (
             <>
               Creates a <strong>draft</strong> invoice
-              {p.action.billKind === "deposit" && p.amountCents ? <> for <strong>{formatCents(p.amountCents)}</strong></> : <> for {p.step.label.replace(/^Bill next milestone:\s*/i, "")}</>} from the signed agreement. Nothing is sent to the
+              {p.amountCents ? (
+                <>
+                  {" "}for <strong data-bill-amount="">{formatCents(p.amountCents)}</strong>
+                  {p.action.billKind === "milestone" ? <> ({p.step.label.replace(/^Bill next milestone:\s*/i, "")})</> : null}
+                </>
+              ) : (
+                <> for {p.step.label.replace(/^Bill next milestone:\s*/i, "")}</>
+              )}{" "}
+              from the signed agreement. Nothing is sent to the
               customer; review and send it from Invoices.
             </>
           ) : noEmail ? (

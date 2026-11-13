@@ -69,7 +69,11 @@ export type ProjectRow = {
   outstandingCents: number;
   createdAt: string;
   href: string;
-  /** Optional: a next-step summary if the server adds one to the list row. */
+  /**
+   * The project's first next step, computed by the server exactly as the
+   * overview's. undefined = an older backend that sends none (the list then
+   * falls back to Needs action items); null = nothing to do.
+   */
   nextStep?: { key: string; label: string; severity: Severity } | null;
 };
 
@@ -78,9 +82,16 @@ export type ProjectSearchResult = { projects: ProjectRow[]; total: number; page:
 
 export type Severity = "problem" | "attention" | "info";
 
+/**
+ * What the server adds to a step's action (BE gap fix): the address a send
+ * goes to (the document's own customer snapshot) and the amount a bill or
+ * overdue step is about. Older backends send neither.
+ */
+type StepFacts = { recipientEmail?: string | null; amountCents?: number | null; scheduleIndex?: number; invoiceId?: string };
+
 export type NextStepAction =
-  | { type: "navigate"; href: string }
-  | { type: "endpoint"; method: string; endpoint: string; body?: Record<string, unknown> };
+  | ({ type: "navigate"; href: string } & StepFacts)
+  | ({ type: "endpoint"; method: string; endpoint: string; body?: Record<string, unknown> } & StepFacts);
 
 export type NextStep = { key: string; label: string; detail: string; severity: Severity; action: NextStepAction };
 
@@ -105,8 +116,10 @@ export type DocAgreement = {
   priceCents: number;
   depositAmountCents: number;
   signature: SignatureState;
+  /** The address the send routes use when no recipient is given (customerSnapshot.email). */
+  recipientEmail?: string | null;
 };
-export type DocChangeOrder = { id: string; changeOrderNumber: string; title: string; status: string; netAdjustmentCents: number; signature: SignatureState };
+export type DocChangeOrder = { id: string; changeOrderNumber: string; title: string; status: string; netAdjustmentCents: number; signature: SignatureState; recipientEmail?: string | null };
 export type DocInvoice = { id: string; invoiceNumber: string; status: string; totalCents: number; paidCents: number; balanceCents: number; dueDate: string | null; overdue: boolean };
 
 export type PunchItem = { id: string; text: string; done: boolean; doneAt: string | null; createdAt?: string | null };
@@ -219,8 +232,16 @@ function normalizeRow(raw: Partial<ProjectRow> & Record<string, unknown>): Proje
     outstandingCents: cents(raw.outstandingCents),
     createdAt: String(raw.createdAt || ""),
     href: String(raw.href || `/admin/projects/${raw.id}`),
-    nextStep: (raw.nextStep as ProjectRow["nextStep"]) || null,
+    nextStep: readRowStep(raw),
   };
+}
+
+function readRowStep(raw: Record<string, unknown>): ProjectRow["nextStep"] {
+  if (!("nextStep" in raw)) return undefined;
+  const s = raw.nextStep as { key?: unknown; label?: unknown; severity?: unknown } | null;
+  if (!s || typeof s !== "object" || typeof s.label !== "string" || !s.label) return null;
+  const severity: Severity = s.severity === "problem" || s.severity === "attention" ? s.severity : "info";
+  return { key: String(s.key || ""), label: s.label, severity };
 }
 
 export async function searchProjects(body: ProjectSearchBody, signal?: AbortSignal): Promise<ProjectSearchResult> {

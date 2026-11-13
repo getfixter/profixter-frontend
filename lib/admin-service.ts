@@ -1726,10 +1726,11 @@ export const deleteUser = async (
   });
 };
 
+/** The activity log. Filters (the free-text search among them) go in a POST body, never the URL. */
 export const getAdminActivityLogs = async (
   filters: AdminActivityLogFilters = {}
 ): Promise<AdminActivityLogResponse> => {
-  const response = await API.get("/api/admin/activity-log", { params: filters });
+  const response = await API.post("/api/admin/activity-log/search", filters);
   return response.data;
 };
 
@@ -1887,10 +1888,11 @@ export const getCampaignRecipients = async (
   return response.data;
 };
 
+/** Send history. Filters (search, recipient, booking number) go in a POST body, never the URL. */
 export const getEmailLogs = async (
   filters: EmailLogFilters = {}
 ): Promise<EmailLogResponse> => {
-  const response = await API.get('/api/admin/email-logs', { params: filters });
+  const response = await API.post('/api/admin/email-logs/search', filters);
   return response.data;
 };
 
@@ -2498,18 +2500,16 @@ export const getProjectDeletionSummary = async (
   return response.data.deletionSummary;
 };
 
+/** The project customer picker: the typed text goes in the POST body, never the URL. */
 export const searchProjectCustomers = async (
   params: { q: string; limit?: number; cursor?: string | null },
   signal?: AbortSignal
 ): Promise<ProjectCustomerSearchResponse> => {
-  const response = await API.get("/api/admin/projects/customer-search", {
-    params: {
-      q: params.q,
-      limit: params.limit,
-      ...(params.cursor ? { cursor: params.cursor } : {}),
-    },
-    signal,
-  });
+  const response = await API.post(
+    "/api/admin/projects/customer-search",
+    { q: params.q, ...(params.limit ? { limit: params.limit } : {}), ...(params.cursor ? { cursor: params.cursor } : {}) },
+    { signal }
+  );
   return response.data;
 };
 
@@ -2656,7 +2656,7 @@ export const generateProjectContractPdf = async (
 
 export const emailProjectContract = async (
   contractId: string,
-  data: { projectId: string; recipient: string; subject: string; message: string }
+  data: { projectId: string; recipient: string; subject: string; message: string; idempotencyKey?: string }
 ): Promise<ProjectContract> => {
   const response = await API.post(`/api/admin/contracts/${contractId}/email`, data, {
     timeout: 300000,
@@ -2761,7 +2761,7 @@ export const downloadChangeOrderPdf = async (
 
 export const emailChangeOrder = async (
   changeOrderId: string,
-  data: { recipient: string; subject: string; message: string }
+  data: { recipient: string; subject: string; message: string; idempotencyKey?: string }
 ): Promise<ProjectChangeOrder> => {
   const response = await API.post(`/api/admin/change-orders/${changeOrderId}/email`, data, {
     timeout: 300000,
@@ -2866,17 +2866,20 @@ export const sendForNativeSignature = async (data: {
   documentId: string;
   mode: "REMOTE" | "IN_PERSON";
   message?: string;
+  /** REMOTE only: a repeat of the same key answers the first result without a second email. */
+  idempotencyKey?: string;
 }): Promise<NativeSignatureRequest> => {
   const response = await API.post("/api/admin/signatures/native/send", data, { timeout: 300000 });
   return response.data;
 };
 
 export const resendNativeSignature = async (
-  signatureId: string
+  signatureId: string,
+  idempotencyKey?: string
 ): Promise<NativeSignatureRequest> => {
   const response = await API.post(
     `/api/admin/signatures/native/${signatureId}/resend`,
-    {},
+    idempotencyKey ? { idempotencyKey } : {},
     { timeout: 120000 }
   );
   return response.data;
@@ -2976,7 +2979,7 @@ export const downloadProjectInvoicePdf = async (
 
 export const emailProjectInvoice = async (
   invoiceId: string,
-  data: { projectId: string; recipient: string; subject: string; message: string }
+  data: { projectId: string; recipient: string; subject: string; message: string; idempotencyKey?: string }
 ): Promise<ProjectInvoice> => {
   const response = await API.post(`/api/admin/invoices/${invoiceId}/email`, data, {
     timeout: 300000,

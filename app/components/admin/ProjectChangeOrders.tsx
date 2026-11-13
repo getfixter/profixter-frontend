@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useIntentKeys } from "@/lib/admin/intent-keys";
 import ESignStatusBadge from "@/app/components/admin/ESignStatusBadge";
 import InPersonSigning from "@/app/components/signing/InPersonSigning";
 import AdminActionBar, { type AdminAction } from "@/app/components/admin/AdminActionBar";
@@ -185,6 +186,8 @@ function openBlobInNewTab(blob: Blob) {
 /* ================================================================== */
 
 export default function ProjectChangeOrders({ project, onChanged }: { project: Project; onChanged?: () => void }) {
+  // One key per customer-facing send intent: a retried send is answered once by the server.
+  const sendKeys = useIntentKeys();
   const [meta, setMeta] = useState<ChangeOrderMeta | null>(null);
   const [signatureMeta, setSignatureMeta] = useState<SignatureMeta | null>(null);
   const [contracts, setContracts] = useState<ProjectContract[]>([]);
@@ -427,8 +430,10 @@ export default function ProjectChangeOrders({ project, onChanged }: { project: P
     if (!selected) return;
     setWorking("Emailing change order...");
     setError("");
+    const intent = `email:${selected._id}:${JSON.stringify(emailForm)}`;
     try {
-      const emailed = await emailChangeOrder(selected._id, emailForm);
+      const emailed = await emailChangeOrder(selected._id, { ...emailForm, idempotencyKey: sendKeys.key(intent) });
+      sendKeys.done(intent);
       setChangeOrders((current) =>
         current.map((item) => (item._id === emailed._id ? emailed : item))
       );
@@ -459,13 +464,16 @@ export default function ProjectChangeOrders({ project, onChanged }: { project: P
     if (!selected) return;
     setError("");
     let result;
+    const intent = `send:${selected._id}:${sendMessage}`;
     try {
       result = await sendForNativeSignature({
         documentType: "CHANGE_ORDER",
         documentId: selected._id,
         mode: "REMOTE",
         message: sendMessage,
+        idempotencyKey: sendKeys.key(intent),
       });
+      sendKeys.done(intent);
     } catch (sendError) {
       throw new Error(signingError(sendError));
     }
@@ -500,7 +508,9 @@ export default function ProjectChangeOrders({ project, onChanged }: { project: P
   const handleResend = async () => {
     if (!selected?.signature) return;
     setError("");
-    await resendNativeSignature(selected.signature.id);
+    const intent = `resend:${selected.signature.id}`;
+    await resendNativeSignature(selected.signature.id, sendKeys.key(intent));
+    sendKeys.done(intent);
     setSuccess("A new signing link has been emailed. The previous link no longer works.");
     await load();
   };

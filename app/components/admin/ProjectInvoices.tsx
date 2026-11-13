@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useIntentKeys } from "@/lib/admin/intent-keys";
 import {
   INVOICE_DISCOUNT_TYPES,
   INVOICE_DUE_TERMS,
@@ -920,6 +921,8 @@ export default function ProjectInvoices({
   /** Open this invoice once the list has loaded (deep links: ?tab=invoices&invoice=<id>). */
   initialInvoiceId?: string;
 }) {
+  // One key per customer-facing send intent: a retried send is answered once by the server.
+  const sendKeys = useIntentKeys();
   const [invoices, setInvoices] = useState<ProjectInvoice[]>([]);
   const [selected, setSelected] = useState<ProjectInvoice | null>(null);
   const [view, setView] = useState<InvoiceView>("list");
@@ -1088,11 +1091,14 @@ export default function ProjectInvoices({
     if (!selected) return;
     setWorkingAction("Emailing invoice...");
     setError("");
+    const intent = `email:${selected._id}:${JSON.stringify(emailForm)}`;
     try {
       const emailed = await emailProjectInvoice(selected._id, {
         ...emailForm,
         projectId: project._id,
+        idempotencyKey: sendKeys.key(intent),
       });
+      sendKeys.done(intent);
       upsertInvoice(emailed);
       setShowEmail(false);
       setSuccess(emailed.status === "Paid in Full" ? "Paid receipt emailed and history saved." : "Invoice emailed and history saved.");

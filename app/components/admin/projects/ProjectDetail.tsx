@@ -355,19 +355,20 @@ export function ProjectDetail({ id }: { id: string }) {
         open={deleting}
         onClose={() => setDeleting(false)}
         title={`Delete ${p.projectNumber}?`}
-        consequence="The project leaves the Projects list. Its agreements, change orders, invoices, files and history are kept for the record."
+        consequence="This project will be removed from the active Projects list. Contracts, estimates, files, and history will be preserved for recordkeeping."
         confirmLabel="Delete project"
         tone="danger"
-        typedConfirmation={p.projectNumber}
+        /* The server refuses a delete with related records unless the confirmation is exactly DELETE. */
+        typedConfirmation="DELETE"
         typedLabel={
           <>
-            Type the project number <span className="font-mono">{p.projectNumber}</span> to confirm
+            Type <span className="font-mono font-semibold">DELETE</span> to confirm deleting {p.projectNumber}
           </>
         }
         onConfirm={async () => {
           await deleteProject(p.id, "DELETE");
           invalidateQueries("projects");
-          toast.show("Project deleted. Its documents were kept.");
+          toast.show("Project deleted. Contracts and saved records were preserved.");
           router.push("/admin/projects", { scroll: false });
         }}
       />

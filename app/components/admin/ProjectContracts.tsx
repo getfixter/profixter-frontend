@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useIntentKeys } from "@/lib/admin/intent-keys";
 import ESignStatusBadge from "@/app/components/admin/ESignStatusBadge";
 import InPersonSigning from "@/app/components/signing/InPersonSigning";
 import SignatureDetails from "@/app/components/admin/SignaturePanel";
@@ -608,6 +609,8 @@ function cancelable(contract: ProjectContract | null, signature: DocumentSignatu
 type ContractConfirm = "send" | "resend" | "revoke" | "cancel" | "upload" | null;
 
 export default function ProjectContracts({ project, onChanged }: { project: Project; onChanged?: () => void }) {
+  // One key per customer-facing send intent: a retried send is answered once by the server.
+  const sendKeys = useIntentKeys();
   const [contracts, setContracts] = useState<ProjectContract[]>([]);
   const [selectedContractId, setSelectedContractId] = useState("");
   const [form, setForm] = useState<ContractFormState>(() => defaultForm(project));
@@ -832,12 +835,15 @@ export default function ProjectContracts({ project, onChanged }: { project: Proj
   const handleNativeSend = async () => {
     if (!selectedContract) return;
     setError("");
+    const intent = `send:${selectedContract._id}`;
     try {
       const result = await sendForNativeSignature({
         documentType: "CONTRACT",
         documentId: selectedContract._id,
         mode: "REMOTE",
+        idempotencyKey: sendKeys.key(intent),
       });
+      sendKeys.done(intent);
       setSuccess(
         result.emailed
           ? "Agreement sent. The customer has been emailed a secure signing link."
@@ -873,7 +879,9 @@ export default function ProjectContracts({ project, onChanged }: { project: Proj
   const handleResend = async () => {
     if (!signature) return;
     setError("");
-    await resendNativeSignature(signature.id);
+    const intent = `resend:${signature.id}`;
+    await resendNativeSignature(signature.id, sendKeys.key(intent));
+    sendKeys.done(intent);
     setSuccess("A new signing link has been emailed. The previous link no longer works.");
     await refreshSignature();
     changed();
@@ -1038,11 +1046,14 @@ export default function ProjectContracts({ project, onChanged }: { project: Proj
     if (!selectedContract) return;
     setWorkingAction("Emailing contract...");
     setError("");
+    const intent = `email:${selectedContract._id}:${JSON.stringify(emailForm)}`;
     try {
       const emailed = await emailProjectContract(selectedContract._id, {
         ...emailForm,
         projectId: project._id,
+        idempotencyKey: sendKeys.key(intent),
       });
+      sendKeys.done(intent);
       setContracts((current) => current.map((contract) => (contract._id === emailed._id ? emailed : contract)));
       setSelectedContractId(emailed._id);
       setForm(formFromContract(emailed));

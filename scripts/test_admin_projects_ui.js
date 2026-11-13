@@ -103,6 +103,10 @@ const ROWS = [
   row(P4, { projectNumber: "PRJ-1004", customerName: "Dan Fixture", address: "88 Birch Demo Ln, Testville, NY 11700", manualStatus: "In Progress", derivedStage: { key: "in_progress", label: "In progress" }, executedValueCents: 900000, invoicedCents: 900000, paidCents: 900000 }),
 ];
 
+ROWS[0].nextStep = { key: "invoice_overdue", label: "Invoice #1001 is overdue", severity: "problem" };
+ROWS[1].nextStep = { key: "send_agreement", label: "Send the agreement for signature", severity: "attention" };
+ROWS[3].nextStep = null;
+
 function sig(id, status, extra = {}) {
   return { id, status, mode: "REMOTE", sentAt: iso(-4), openedAt: null, expiresAt: iso(10), completedAt: status === "Completed" ? iso(-3) : null, declinedAt: null, live: ["Sent", "Viewed"].includes(status), ...extra };
 }
@@ -148,14 +152,15 @@ function overviewFor(id, state) {
     );
     financials = { ...financials, pendingChangeOrderCents: 45000 };
     if (!state.depositBilled) {
-      nextSteps.push({ key: "deposit_not_invoiced", label: "Create the deposit invoice for $2,500.00", detail: "The agreement is signed and no deposit invoice exists yet.", severity: "attention", action: { type: "endpoint", method: "POST", endpoint: `/api/admin/projects/${P1}/invoices/from-schedule`, body: { kind: "deposit" } } });
+      nextSteps.push({ key: "deposit_not_invoiced", label: "Create the deposit invoice for $2,500.00", detail: "The agreement is signed and no deposit invoice exists yet.", severity: "attention", action: { type: "endpoint", method: "POST", endpoint: `/api/admin/projects/${P1}/invoices/from-schedule`, body: { kind: "deposit" }, recipientEmail: "ann.contract@example.test", amountCents: 250000 } });
     }
     nextSteps.unshift({ key: "invoice_overdue", label: "Invoice #1001 is overdue", detail: "$3,500.00 outstanding.", severity: "problem", action: { type: "navigate", href: `/admin/projects/${P1}?tab=invoices&invoice=${INV1}` } });
-    nextSteps.push({ key: "change_order_awaiting_signature", label: "Change order C-2001-CO-01 awaiting signature", detail: "Extra outlet - sent 4 days ago.", severity: "attention", action: { type: "endpoint", method: "POST", endpoint: `/api/admin/signatures/native/${SIG_CO1}/resend` } });
+    nextSteps.push({ key: "change_order_awaiting_signature", label: "Change order C-2001-CO-01 awaiting signature", detail: "Extra outlet - sent 4 days ago.", severity: "attention", action: { type: "endpoint", method: "POST", endpoint: `/api/admin/signatures/native/${SIG_CO1}/resend`, recipientEmail: "ann.co@example.test" } });
+    nextSteps.push({ key: "bill_next_milestone", label: "Bill next milestone: Rough-in complete", detail: "Milestone 2 of the payment schedule.", severity: "info", action: { type: "endpoint", method: "POST", endpoint: `/api/admin/projects/${P1}/invoices/from-schedule`, body: { kind: "milestone", scheduleIndex: 1 }, scheduleIndex: 1, amountCents: 600000, recipientEmail: "ann.contract@example.test" } });
   }
   if (id === P2) {
-    docs.agreements.push({ id: C2, contractNumber: "C-2002", version: 1, status: "Generated", current: true, priceCents: 1800000, depositAmountCents: 300000, signature: null });
-    nextSteps.push({ key: "send_agreement", label: "Send the agreement for signature", detail: "Agreement #C-2002 is generated but no signature request is open.", severity: "attention", action: { type: "endpoint", method: "POST", endpoint: "/api/admin/signatures/native/send", body: { documentType: "CONTRACT", documentId: C2, mode: "REMOTE" } } });
+    docs.agreements.push({ id: C2, contractNumber: "C-2002", version: 1, status: "Generated", current: true, priceCents: 1800000, depositAmountCents: 300000, signature: null, recipientEmail: "ben.contract@example.test" });
+    nextSteps.push({ key: "send_agreement", label: "Send the agreement for signature", detail: "Agreement #C-2002 is generated but no signature request is open.", severity: "attention", action: { type: "endpoint", method: "POST", endpoint: "/api/admin/signatures/native/send", body: { documentType: "CONTRACT", documentId: C2, mode: "REMOTE" }, recipientEmail: "ben.contract@example.test" } });
   }
   if (id === P3) {
     nextSteps.push({ key: "create_agreement", label: "Prepare the agreement", detail: "No agreement has been issued for this project yet.", severity: "attention", action: { type: "navigate", href: `/admin/projects/${P3}?tab=agreement` } });
@@ -405,7 +410,19 @@ async function open(browser, { width = 390, height = 844, touch, state = freshSt
     const m = req.method();
 
     if (p === "/api/auth/me") return json(OWNER);
-    if (p === "/api/admin/needs-action") return json({ total: 1, sections: [{ key: "projects", count: 1, items: [] }], items: [{ id: P1, kind: "project_invoice_overdue", title: "Invoice #1001 overdue", subtitle: "Ann Example", reason: "", severity: "problem", href: `/admin/projects/${P1}?tab=invoices&invoice=${INV1}`, at: iso(-1), section: "projects" }] });
+    if (p === "/api/admin/needs-action") return json({ total: 2, sections: [{ key: "projects", count: 2, items: [] }], items: [{ id: P1, kind: "project_invoice_overdue", title: "Invoice #1001 overdue", subtitle: "Ann Example", reason: "", severity: "problem", href: `/admin/projects/${P1}?tab=invoices&invoice=${INV1}`, at: iso(-1), section: "projects" }, { id: P3, kind: "project_lead", title: "Estimate lead waiting", subtitle: "Cara Tester", reason: "", severity: "attention", href: `/admin/projects/${P3}`, at: iso(-1), section: "projects" }] });
+    if (p === "/api/admin/projects/customer-search") {
+      if (m !== "POST") return json({ message: "Use POST", code: "USE_POST" }, 405);
+      const q = String(body?.q || "").toLowerCase();
+      const customers = q.includes("ann") ? [{ customerId: U1, name: "Ann Example", email: "ann@example.test", phone: "(555) 010-0000", addresses: [], addressCount: 0 }] : [];
+      return json({ customers, nextCursor: null, limit: body?.limit || 12 });
+    }
+    const emailMatch = p.match(/^\/api\/admin\/contracts\/([a-f0-9]{24})\/email$/);
+    if (emailMatch && m === "POST") {
+      state.contractEmails = (state.contractEmails || 0) + 1;
+      if (state.contractEmails === 1) return route.abort("connectionreset");
+      return json({ contract: contract(emailMatch[1], P1, "Signed") });
+    }
 
     /* projects */
     if (p === "/api/admin/projects/search" && m === "POST") {
@@ -428,6 +445,9 @@ async function open(browser, { width = 390, height = 844, touch, state = freshSt
       if (body?.expectedStatus !== current) return json({ message: "The project status changed since you opened it.", code: "STALE", currentStatus: current }, 409);
       state.status[id] = body.status;
       return json({ project: { id, status: body.status, updatedAt: iso(0) } });
+    }
+    if ((match = p.match(/^\/api\/admin\/projects\/([a-f0-9]{24})\/invoices\/from-schedule$/)) && body?.kind === "milestone" && state.milestoneBilledAs) {
+      return json({ message: "This milestone is already billed (invoice #1003).", code: "ALREADY_BILLED", invoiceId: state.milestoneBilledAs }, 409);
     }
     if ((match = p.match(/^\/api\/admin\/projects\/([a-f0-9]{24})\/invoices\/from-schedule$/))) {
       state.depositAttempts += 1;
@@ -561,6 +581,10 @@ async function open(browser, { width = 390, height = 844, touch, state = freshSt
       state.el1Project = P3;
       return json({ created: !already, project: { id: P3, projectNumber: "PRJ-1003", customerName: "Eva Prospect", status: "Lead", projectType: "Kitchen", isDeleted: false, leadRef: { model: "EstimateLead", id: EL1 }, qualification: {}, href: `/admin/projects/${P3}` } }, already ? 200 : 201);
     }
+    if (/^\/api\/admin\/projects\/[a-f0-9]{24}$/.test(p) && m === "DELETE") {
+      if (String(body?.confirmation || "").trim() !== "DELETE") return json({ message: "Type DELETE to confirm deletion while preserving contracts, estimates, files, and history." }, 400);
+      return json({ message: "Project deleted. Contracts and saved records remain preserved.", project: { isDeleted: true } });
+    }
     if (/^\/api\/admin\/requests\/[^/]+\/status$/.test(p)) return json({ request: { status: body.status } });
     if (/^\/api\/admin\/requests\/[^/]+$/.test(p) && m === "DELETE") return json({ message: "Lead deleted" });
 
@@ -617,7 +641,9 @@ const confirmButton = (page) => page.locator('[role="dialog"] [data-confirm]').l
     check("a row's money is the financial service's (signed / paid / outstanding)", /\$25,000/.test(first) && /\$6,500/.test(first) && /\$4,500/.test(first));
     check("the manual estimate is never shown as project money", !(await page.content()).includes("987,654"));
     check("a proposal row says awaiting signature", /Proposed\s*\$18,000.*awaiting signature/s.test(await page.locator(`[data-project-row="${P2}"]`).innerText()));
-    check("the attention badge comes from Needs action", /Invoice #1001 overdue/.test(first));
+    check("the next-step badge comes from the server's row nextStep", /Invoice #1001 is overdue/.test(first) && (await page.locator(`[data-project-row="${P1}"] [data-next-step="invoice_overdue"]`).count()) === 1, first.replace(/\s+/g, " "));
+    check("a row with nextStep null shows no badge", (await page.locator(`[data-project-row="${P4}"] [data-attention]`).count()) === 0);
+    check("a row without the field (older backend) falls back to Needs action", /Estimate lead waiting/.test(await page.locator(`[data-project-row="${P3}"]`).innerText()));
     check("the list was read with a POST search", state.calls.some((c) => c.method === "POST" && c.path === "/api/admin/projects/search"));
 
     await page.getByLabel("Search projects").fill("Ben");
@@ -656,6 +682,14 @@ const confirmButton = (page) => page.locator('[role="dialog"] [data-confirm]').l
     const save = page.locator('[data-action="save-project"]');
     const saveBox = await save.boundingBox();
     check("the footer is sticky and visible without scrolling", saveBox && saveBox.y + saveBox.height <= 844 && saveBox.height >= 44, JSON.stringify(saveBox));
+    await sheet.getByRole("radio", { name: "Registered customer" }).click();
+    await sheet.getByLabel("Search registered customers").fill("Ann Ex");
+    await until(() => state.calls.some((c) => c.path === "/api/admin/projects/customer-search"));
+    await page.waitForTimeout(400);
+    const picks = state.calls.filter((c) => c.path === "/api/admin/projects/customer-search");
+    check("the customer picker searches with POST, the text in the body", picks.length >= 1 && picks.every((c) => c.method === "POST") && picks.some((c) => c.body?.q === "Ann Ex"), JSON.stringify(picks.map((c) => c.method + " " + JSON.stringify(c.body))));
+    check("the picker text is never in a URL", !state.calls.some((c) => /Ann(%20|\+| )Ex/i.test(c.url)) && !page.url().includes("Ann"));
+    check("the picker lists the match", await until(async () => /Ann Example/.test(await sheet.innerText())));
     await sheet.getByRole("radio", { name: "New or manual customer" }).click();
     await save.click();
     check("required fields are named when missing", await waitFor(page, '[data-sheet="project-create"] [data-error]', 4000));
@@ -746,6 +780,20 @@ const confirmButton = (page) => page.locator('[role="dialog"] [data-confirm]').l
     const resend = state.calls.find((c) => c.path === `/api/admin/signatures/native/${SIG_CO1}/resend`);
     check("resend carries an idempotency key", resend && /^[0-9a-f-]{36}$/.test(resend.body?.idempotencyKey || ""));
 
+    // Milestone: the confirm quotes the server's amount.
+    await page.locator('[data-step-action="bill_next_milestone"]').click();
+    check("the milestone confirm states the server's amount", await until(async () => /Creates a draft invoice for \$6,000(\.00)?/.test(await page.locator('[role="dialog"]').last().innerText().catch(() => ""))));
+    check("and its label repeats the amount", /Create milestone invoice for \$6,000/.test(await confirmButton(page).innerText()));
+    // Billed meanwhile (another tab, a hand-made invoice): ALREADY_BILLED names the invoice and opens it.
+    state.milestoneBilledAs = INV3;
+    await confirmButton(page).click();
+    await until(() => pathOf(page).includes(`invoice=${INV3}`));
+    const billedToast = await page.waitForSelector("[data-toast]", { timeout: 6000 }).then((el) => el.innerText()).catch(() => "");
+    check("ALREADY_BILLED: says which invoice already covers it, nothing new created", /already billed \(invoice #1003\)/.test(billedToast) && /Nothing new was created/.test(billedToast), billedToast);
+    check("...opens that invoice and refreshes the steps", pathOf(page).includes(`tab=invoices&invoice=${INV3}`) && state.calls.filter((c) => c.path === `/api/admin/projects/${P1}/overview`).length >= 2, pathOf(page));
+    await go(page, `/admin/projects/${P1}`);
+    await waitFor(page, "[data-next-steps]");
+
     // Overdue invoice navigates within the project.
     await page.locator('[data-step-action="invoice_overdue"]').click();
     check("a navigate step opens its tab", await until(() => pathOf(page) === `/admin/projects/${P1}?tab=invoices&invoice=${INV1}`), pathOf(page));
@@ -756,12 +804,14 @@ const confirmButton = (page) => page.locator('[role="dialog"] [data-confirm]').l
     const { page, state } = o;
     await go(page, `/admin/projects/${P2}`);
     await waitFor(page, '[data-step="send_agreement"]');
+    const contractReadsBefore = state.calls.filter((c) => c.path === `/api/admin/contracts/project/${P2}`).length;
     await page.locator('[data-step-action="send_agreement"]').click();
     const text = await (async () => {
       await until(async () => /example\.test/.test(await page.locator('[role="dialog"]').last().innerText().catch(() => "")));
       return page.locator('[role="dialog"]').last().innerText();
     })();
     check("send confirm names the agreement's own recipient (not the project email)", /ben\.contract@example\.test/.test(text) && /Agreement #C-2002 v1/.test(text), text.replace(/\s+/g, " "));
+    check("the recipient came from the overview (no document list read)", state.calls.filter((c) => c.path === `/api/admin/contracts/project/${P2}`).length === contractReadsBefore);
     check("nothing is sent before confirming", !state.calls.some((c) => c.path === "/api/admin/signatures/native/send"));
     await confirmButton(page).click();
     await until(() => state.calls.some((c) => c.path === "/api/admin/signatures/native/send"));
@@ -807,6 +857,16 @@ const confirmButton = (page) => page.locator('[role="dialog"] [data-confirm]').l
     check("emailing a signed agreement is offered as a copy", (await emailBtn.count()) >= 1);
     await emailBtn.first().click();
     check("the email sheet says it stays Signed and names the recipient on the button", await until(async () => /stays Signed/.test(await page.locator('[data-sheet="agreement-email"]').innerText().catch(() => "")) && /Send to ann\.contract@example\.test/.test(await page.locator('[data-action="send-agreement-email"]').innerText().catch(() => ""))));
+    // The first attempt drops; the retry of the same email reuses its key, so the server answers it once.
+    await page.locator('[data-action="send-agreement-email"]').click();
+    await until(() => state.calls.filter((c) => c.path === `/api/admin/contracts/${C1}/email`).length === 1);
+    await page.waitForTimeout(500);
+    await page.locator('[data-action="send-agreement-email"]').click();
+    await until(() => state.calls.filter((c) => c.path === `/api/admin/contracts/${C1}/email`).length === 2);
+    const mails = state.calls.filter((c) => c.path === `/api/admin/contracts/${C1}/email`);
+    const mailKey = mails[0]?.body?.idempotencyKey || "";
+    check("the agreement email carries an idempotency key in the body (no header)", /^[0-9a-f-]{36}$/.test(mailKey) && !mails[0].headers["idempotency-key"], mailKey);
+    check("the retry of the same email reuses the key", mails.length === 2 && mails[1].body.idempotencyKey === mailKey);
     await finish(o);
   }
 
@@ -973,6 +1033,34 @@ const confirmButton = (page) => page.locator('[role="dialog"] [data-confirm]').l
     check("delete sends the typed name to the existing route", del && decodeURIComponent(del.path) === `/api/admin/requests/estimate:${EL2}` && del.body.confirmation === "Ann Example", del?.path);
     await go(page, `/admin/leads/estimate-${hex(0x7f)}`);
     check("an unknown lead says so", await waitFor(page, "text=This lead was not found"));
+    await finish(o);
+  }
+
+  /* ---------------- project delete: typed DELETE, documents preserved ---------------- */
+  console.log("\n--- project delete ---");
+  {
+    const o = await open(browser, { width: 390, height: 844 });
+    const { page, state } = o;
+    await go(page, `/admin/projects/${P1}`);
+    await waitFor(page, "[data-next-steps]");
+    await page.getByRole("button", { name: "More project actions" }).click();
+    await page.getByRole("menuitem", { name: "Delete project" }).click();
+    await until(async () => /Delete /.test(await page.locator('[role="dialog"]').last().innerText().catch(() => "")));
+    const sheetText = await page.locator('[role="dialog"]').last().innerText();
+    check("delete says the documents are preserved", /Contracts, estimates, files, and history will be preserved for recordkeeping/.test(sheetText), sheetText.replace(/\s+/g, " ").slice(0, 200));
+    check("delete asks for DELETE to be typed", /Type DELETE to confirm/.test(sheetText));
+    check("Delete is disabled until DELETE is typed", await confirmButton(page).isDisabled());
+    const box = page.locator('[role="dialog"]').last().getByLabel(/Type DELETE/);
+    await box.fill("delete");
+    check("lower-case delete is not enough", await confirmButton(page).isDisabled());
+    check("nothing was sent before the confirmation", !state.calls.some((c) => c.method === "DELETE" && /^\/api\/admin\/projects\/[a-f0-9]{24}$/.test(c.path)));
+    await box.fill("DELETE");
+    await confirmButton(page).click();
+    await until(() => state.calls.some((c) => c.method === "DELETE" && c.path === `/api/admin/projects/${P1}`));
+    const del = state.calls.find((c) => c.method === "DELETE" && c.path === `/api/admin/projects/${P1}`);
+    check("the delete sends confirmation DELETE, which the server requires", del && del.body && del.body.confirmation === "DELETE", JSON.stringify(del?.body));
+    const toast = await page.waitForSelector("[data-toast]", { timeout: 8000 }).then((el) => el.innerText()).catch(() => "");
+    check("the result says contracts and saved records were preserved", /Contracts and saved records were preserved/.test(toast), toast);
     await finish(o);
   }
 
