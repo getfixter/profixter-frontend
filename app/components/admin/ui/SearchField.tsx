@@ -101,6 +101,9 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(functi
           type="button"
           aria-label="Clear search"
           className="adm-icon-btn absolute right-0 top-0"
+          /* .adm-icon-btn (unlayered) sets position: relative, which beat the layered `absolute`
+             and dropped the clear button under the field, 44px between the field and its results. */
+          style={{ position: "absolute" }}
           onClick={() => {
             onChange("");
             inputRef.current?.focus();

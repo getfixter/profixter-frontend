@@ -306,19 +306,27 @@ function BenefitList({ row }: { row: AdminLoyaltyRow }) {
  * The support card for one property: the answers to "where am I with my
  * membership?" in the order a call goes, then the whole ladder, then history.
  */
-export function LoyaltyCard({ row }: { row: AdminLoyaltyRow }) {
+export function LoyaltyCard({ row, embedded = false }: { row: AdminLoyaltyRow; embedded?: boolean }) {
   const { membership, loyalty } = row;
   const showNext = onLadder(row) && !loyalty.ladderComplete && loyalty.standing.key !== 'manual';
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Membership & loyalty</div>
-          <div className="mt-0.5 text-sm font-semibold text-slate-900">{addressLine(row)}</div>
+    /* embedded: inside the customer profile's home card, which already names the address. */
+    <section className={embedded ? '' : 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm'} data-loyalty-card={row.addressId}>
+      {embedded ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-[13px] font-semibold text-slate-700">Loyalty</div>
+          <StandingBadge row={row} />
         </div>
-        <StandingBadge row={row} />
-      </div>
+      ) : (
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Membership & loyalty</div>
+            <div className="mt-0.5 text-sm font-semibold text-slate-900">{addressLine(row)}</div>
+          </div>
+          <StandingBadge row={row} />
+        </div>
+      )}
 
       <dl className="mt-2 divide-y divide-slate-100">
         <Fact label="Membership">

@@ -1721,32 +1721,12 @@ export const getAdminActivitySummary = async (): Promise<AdminActivitySummary> =
   return response.data;
 };
 
-export const setAddressPlan = async (
-  userId: string,
-  addressId: string,
-  plan: string
-): Promise<AddressDetailed[]> => {
-  const response = await API.put(
-    `/api/admin/users/${userId}/address/${addressId}/subscription`,
-    { plan }
-  );
-  return response.data.addressesDetailed;
-};
-
-export const setAddressCancellationDate = async (
-  userId: string,
-  addressId: string,
-  cancelOnDate: string | null
-): Promise<AddressDetailed[]> => {
-  const response = await API.put(
-    `/api/admin/users/${userId}/address/${addressId}/cancellation-date`,
-    {
-      cancelOnDate,
-      timezone: "America/New_York",
-    }
-  );
-  return response.data.addressesDetailed;
-};
+/*
+ * The immediate plan dropdown (PUT …/subscription) and the "Cancel on day"
+ * date (PUT …/cancellation-date) were removed with the Customers redesign:
+ * plan changes go through a confirmed preview and cancellations through an
+ * explicit confirm (lib/admin/customers.ts, audit C-01 / F1 / F10).
+ */
 
 export const repairUserSubscriptionFromStripe = async (
   data: SubscriptionRepairRequest
