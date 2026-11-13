@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ErrorState, SkeletonRows } from "@/app/components/admin/ui";
 import WorkPhotoUploadSheet from "@/app/components/workPhotos/WorkPhotoUploadSheet";
 import {
   describeJob,
@@ -57,11 +58,11 @@ function formatDay(iso: string | null): string {
  * workflow the Fixter cannot act on.
  */
 const SUBMISSION_LABEL: Record<string, { text: string; tone: string }> = {
-  pending_review: { text: "With the team", tone: "bg-[#FFF6E9] text-[#8A5A1B]" },
-  library: { text: "With the team", tone: "bg-[#FFF6E9] text-[#8A5A1B]" },
-  scheduled: { text: "With the team", tone: "bg-[#FFF6E9] text-[#8A5A1B]" },
-  published: { text: "On the website", tone: "bg-[#F0FDF4] text-[#166534]" },
-  rejected: { text: "Not used", tone: "bg-[#F4F5F7] text-[#6A6D71]" },
+  pending_review: { text: "With the team", tone: "bg-adm-attn-bg text-adm-attn" },
+  library: { text: "With the team", tone: "bg-adm-attn-bg text-adm-attn" },
+  scheduled: { text: "With the team", tone: "bg-adm-attn-bg text-adm-attn" },
+  published: { text: "On the website", tone: "bg-adm-ok-bg text-adm-ok" },
+  rejected: { text: "Not used", tone: "bg-adm-sunk text-adm-text-2" },
 };
 
 export default function FixterWorkPhotos() {
@@ -108,28 +109,19 @@ export default function FixterWorkPhotos() {
   return (
     <div className="pb-8">
       <div className="mb-5">
-        <h2 className="text-[22px] font-black leading-tight text-slate-900 sm:text-[26px]">
-          Work Photos
-        </h2>
-        <p className="mt-1.5 max-w-[560px] text-[14px] leading-relaxed text-slate-600">
+        <p className="max-w-[560px] text-[14px] leading-relaxed text-adm-text-2">
           Finished a job? Send a few photos. The office decides what goes on the
           Profixter website &mdash; nothing you upload appears there on its own.
         </p>
       </div>
 
       {error ? (
-        <p className="mb-4 rounded-[10px] bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-          {error}
-        </p>
+        <ErrorState className="mb-4" message={error} onRetry={() => load()} />
       ) : null}
 
       {/* ------------------------------- jobs ------------------------------- */}
       {jobs === null ? (
-        <div className="space-y-2.5">
-          {[1, 2, 3].map((n) => (
-            <div key={n} className="h-[68px] animate-pulse rounded-[12px] bg-slate-100" />
-          ))}
-        </div>
+        <SkeletonRows count={3} label="Loading your jobs" />
       ) : (
         <>
           <ul className="space-y-2.5">
@@ -142,18 +134,18 @@ export default function FixterWorkPhotos() {
                 <button
                   type="button"
                   onClick={() => setSheetFor(job)}
-                  className="flex w-full items-center justify-between gap-3 rounded-[12px] border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-[#C7D9FF] hover:bg-[#F8FAFF] active:bg-[#EFF5FF]"
+                  className="flex w-full items-center justify-between gap-3 rounded-adm-md border border-adm-line bg-adm-surface px-4 py-3.5 text-left min-h-[64px] transition hover:border-adm-accent hover:bg-adm-sunk active:bg-adm-sunk"
                 >
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-bold text-slate-900">
+                    <span className="block text-[15px] font-bold text-adm-ink">
                       {job.service || "Visit"}
                     </span>
-                    <span className="mt-0.5 block truncate text-[13px] text-slate-500">
+                    <span className="mt-0.5 block truncate text-[13px] text-adm-text-3">
                       {formatDay(job.date)}
                       {job.city ? ` · ${job.city}` : ""} · #{job.bookingNumber}
                     </span>
                   </span>
-                  <span className="flex-shrink-0 rounded-[8px] bg-[#306EEC] px-3.5 py-2 text-[13px] font-black text-white">
+                  <span className="flex-shrink-0 rounded-adm-sm bg-adm-accent px-3.5 py-2 text-[13px] font-semibold text-white">
                     Add photos
                   </span>
                 </button>
@@ -162,9 +154,9 @@ export default function FixterWorkPhotos() {
           </ul>
 
           {!recent.length && !error ? (
-            <div className="rounded-[12px] border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
-              <p className="font-semibold text-slate-900">No recent jobs assigned to you</p>
-              <p className="mt-1 text-sm text-slate-500">
+            <div className="rounded-adm-md border border-dashed border-adm-line-2 bg-adm-sunk px-5 py-8 text-center">
+              <p className="font-semibold text-adm-ink">No recent jobs assigned to you</p>
+              <p className="mt-1 text-sm text-adm-text-3">
                 Jobs you are assigned to appear here for 120 days.
               </p>
             </div>
@@ -181,7 +173,7 @@ export default function FixterWorkPhotos() {
           <button
             type="button"
             onClick={() => setSheetFor("none")}
-            className="mt-4 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[13.5px] font-semibold text-slate-600 transition hover:bg-slate-50"
+            className="mt-4 min-h-[48px] w-full rounded-adm-md border border-adm-line bg-adm-surface px-4 py-3 text-[14px] font-semibold text-adm-text-2 transition hover:bg-adm-sunk"
           >
             Send photos without picking a job
           </button>
@@ -191,7 +183,7 @@ export default function FixterWorkPhotos() {
       {/* --------------------------- own submissions ------------------------ */}
       {mine.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-[13px] font-bold uppercase tracking-[0.14em] text-slate-500">
+          <h3 className="text-[13px] font-bold uppercase tracking-[0.06em] text-adm-text-3">
             Photos you sent
           </h3>
           <ul className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-5 lg:grid-cols-6">
@@ -204,10 +196,10 @@ export default function FixterWorkPhotos() {
                     src={photo.thumbUrl}
                     alt=""
                     loading="lazy"
-                    className="aspect-square w-full rounded-[10px] border border-slate-200 object-cover"
+                    className="aspect-square w-full rounded-adm-sm border border-adm-line object-cover"
                   />
                   <span
-                    className={`absolute inset-x-1 bottom-1 rounded-[6px] px-1.5 py-1 text-center text-[10.5px] font-bold ${label.tone}`}
+                    className={`absolute inset-x-1 bottom-1 rounded-adm-xs px-1.5 py-1 text-center text-[12px] font-bold ${label.tone}`}
                   >
                     {label.text}
                   </span>

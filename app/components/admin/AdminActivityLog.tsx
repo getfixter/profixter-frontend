@@ -7,6 +7,7 @@ import {
   type AdminActivityLogItem,
   type AdminActivitySummary,
 } from "@/lib/admin-service";
+import { Button, EmptyState, ErrorState, Field, SearchField, Select, SkeletonRows, TextInput } from "@/app/components/admin/ui";
 
 function formatTime(value: string) {
   const date = new Date(value);
@@ -33,6 +34,16 @@ function detailsText(details?: Record<string, unknown>) {
 
 const ENTITY_TYPES = ["", "User", "Lead", "Project", "Subscription", "Booking", "Blacklist"];
 
+/** Typing waits this long before asking the server, so a word is one request, not one per letter. */
+function useDebounced<T>(value: T, ms = 300) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(timer);
+  }, [value, ms]);
+  return debounced;
+}
+
 export default function AdminActivityLog() {
   const [items, setItems] = useState<AdminActivityLogItem[]>([]);
   const [summary, setSummary] = useState<AdminActivitySummary | null>(null);
@@ -44,6 +55,9 @@ export default function AdminActivityLog() {
   const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const debouncedSearch = useDebounced(search);
+  const debouncedAction = useDebounced(action);
 
   const adminOptions = useMemo(() => {
     const seen = new Map<string, string>();
@@ -59,8 +73,8 @@ export default function AdminActivityLog() {
     void Promise.all([
       getAdminActivityLogs({
         limit: 100,
-        search: search || undefined,
-        action: action || undefined,
+        search: debouncedSearch || undefined,
+        action: debouncedAction || undefined,
         entityType: entityType || undefined,
         actorUserId: actor || undefined,
         dateFrom: dateFrom || undefined,
@@ -70,8 +84,8 @@ export default function AdminActivityLog() {
     ])
       .then(([logs, nextSummary]) => {
         if (cancelled) return;
-        setItems(logs.items || []);
-        setSummary(nextSummary);
+        setItems(Array.isArray(logs?.items) ? logs.items : []);
+        setSummary(nextSummary || null);
         setError("");
       })
       .catch((loadError) => {
@@ -85,126 +99,103 @@ export default function AdminActivityLog() {
     return () => {
       cancelled = true;
     };
-  }, [action, actor, dateFrom, dateTo, entityType, search]);
+  }, [debouncedAction, actor, dateFrom, dateTo, entityType, debouncedSearch, attempt]);
+
+  const filtered = Boolean(search || action || entityType || actor || dateFrom || dateTo);
+  const clearFilters = () => {
+    setSearch("");
+    setAction("");
+    setEntityType("");
+    setActor("");
+    setDateFrom("");
+    setDateTo("");
+  };
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-[26px] bg-slate-950 p-5 text-white shadow-lg md:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-300">Security audit</p>
-            <h2 className="mt-2 text-2xl font-black md:text-3xl">Admin Activity Log</h2>
-            <p className="mt-2 max-w-2xl text-sm text-slate-300">
-              Permanent audit history for high-risk admin actions and secure deletions.
-            </p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {[
-              ["Users deleted", summary?.usersDeleted ?? 0],
-              ["Leads deleted", summary?.leadsDeleted ?? 0],
-              ["Projects deleted", summary?.projectsDeleted ?? 0],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                <div className="text-2xl font-black">{value}</div>
-                <div className="text-xs text-slate-300">Last 24h · {label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+    <div className="space-y-4" data-activity-log>
+      <p className="text-[14px] text-adm-text-2">Permanent audit history for high-risk admin actions and secure deletions.</p>
 
-      <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+      <dl className="grid grid-cols-3 gap-2" aria-label="Last 24 hours">
+        {(
+          [
+            ["Users deleted", summary?.usersDeleted ?? 0],
+            ["Leads deleted", summary?.leadsDeleted ?? 0],
+            ["Projects deleted", summary?.projectsDeleted ?? 0],
+          ] as Array<[string, number]>
+        ).map(([label, value]) => (
+          <div key={label} className="min-w-0 rounded-adm-md border border-adm-line bg-adm-surface px-3 py-2.5">
+            <dd className="adm-num text-[20px] font-semibold text-adm-ink">{value}</dd>
+            <dt className="text-[12px] leading-tight text-adm-text-3">Last 24h · {label}</dt>
+          </div>
+        ))}
+      </dl>
+
+      <section className="rounded-adm-md border border-adm-line bg-adm-surface p-4" aria-label="Filters">
         <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search user, lead, project number, email..."
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-          />
-          <input
-            value={action}
-            onChange={(event) => setAction(event.target.value)}
-            placeholder="Action"
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-          />
-          <select
-            value={entityType}
-            onChange={(event) => setEntityType(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-          >
-            {ENTITY_TYPES.map((type) => (
-              <option key={type} value={type}>{type || "All entity types"}</option>
-            ))}
-          </select>
-          <select
-            value={actor}
-            onChange={(event) => setActor(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-          >
-            <option value="">All admins</option>
-            {adminOptions.map(([id, name]) => (
-              <option key={id} value={id}>{name}</option>
-            ))}
-          </select>
+          <SearchField label="Search activity" value={search} onChange={setSearch} placeholder="Search user, lead, project number, email..." />
+          <Field label="Action">
+            <TextInput value={action} onChange={(event) => setAction(event.target.value)} placeholder="Action" autoCapitalize="none" />
+          </Field>
+          <Field label="Entity type">
+            <Select
+              value={entityType}
+              onChange={(event) => setEntityType(event.target.value)}
+              options={ENTITY_TYPES.map((type) => ({ value: type, label: type || "All entity types" }))}
+            />
+          </Field>
+          <Field label="Admin">
+            <Select
+              value={actor}
+              onChange={(event) => setActor(event.target.value)}
+              options={[{ value: "", label: "All admins" }, ...adminOptions.map(([id, name]) => ({ value: id, label: name }))]}
+            />
+          </Field>
         </div>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:max-w-xl">
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(event) => setDateFrom(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-          />
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(event) => setDateTo(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-          />
+          <Field label="From">
+            <TextInput type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+          </Field>
+          <Field label="To">
+            <TextInput type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+          </Field>
         </div>
+        {filtered ? (
+          <div className="mt-3">
+            <Button variant="tertiary" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          </div>
+        ) : null}
       </section>
 
-      {error && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-          {error}
-        </div>
-      )}
-
-      <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 px-5 py-4">
-          <div className="text-sm font-bold text-slate-950">Newest activity first</div>
-        </div>
+      <section className="overflow-hidden rounded-adm-md border border-adm-line bg-adm-surface" aria-label="Activity">
+        <h3 className="border-b border-adm-line px-4 py-3 text-[15px] font-semibold text-adm-ink">Newest activity first</h3>
         {loading ? (
-          <div className="space-y-3 p-5">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="h-20 animate-pulse rounded-2xl bg-slate-100" />
-            ))}
-          </div>
+          <SkeletonRows count={4} leading={false} label="Loading activity" />
+        ) : error ? (
+          <ErrorState message={error} onRetry={() => setAttempt((n) => n + 1)} />
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">No activity found.</div>
+          <EmptyState message="No activity found." detail={filtered ? "Try fewer filters." : undefined} />
         ) : (
-          <div className="divide-y divide-slate-100">
+          <ul role="list" className="divide-y divide-adm-line">
             {items.map((item) => (
-              <article key={item._id} className="grid gap-3 px-5 py-4 lg:grid-cols-[170px_180px_160px_1fr]">
-                <div className="text-sm font-semibold text-slate-600">{formatTime(item.createdAt)}</div>
-                <div>
-                  <div className="text-sm font-bold text-slate-950">{item.actorName || "Admin"}</div>
-                  <div className="text-xs text-slate-500">{item.actorRole || "admin"}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-950">{item.action}</div>
-                  <div className="text-xs text-slate-500">{item.entityType}</div>
+              <li key={item._id} className="grid gap-1.5 px-4 py-3 lg:grid-cols-[170px_180px_180px_1fr] lg:gap-3">
+                <div className="adm-num text-[13px] text-adm-text-2">{formatTime(item.createdAt)}</div>
+                <div className="min-w-0">
+                  <div className="text-[14px] font-semibold text-adm-ink">{item.actorName || "Admin"}</div>
+                  <div className="text-[12px] text-adm-text-3">{item.actorRole || "admin"}</div>
                 </div>
                 <div className="min-w-0">
-                  <div className="break-words text-sm font-semibold text-slate-800">
-                    {item.entityName || item.entityId || "-"}
-                  </div>
-                  <div className="mt-1 break-words text-xs leading-relaxed text-slate-500">
-                    {detailsText(item.details)}
-                  </div>
+                  <div className="break-words text-[14px] font-semibold text-adm-ink">{item.action}</div>
+                  <div className="text-[12px] text-adm-text-3">{item.entityType}</div>
                 </div>
-              </article>
+                <div className="min-w-0">
+                  <div className="break-words text-[14px] text-adm-ink">{item.entityName || item.entityId || "-"}</div>
+                  <div className="mt-0.5 break-words text-[12px] leading-relaxed text-adm-text-3">{detailsText(item.details)}</div>
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </section>
     </div>

@@ -37,13 +37,13 @@ import PlaybooksPanel from "./PlaybooksPanel";
 import ConversationsPanel from "./ConversationsPanel";
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-[22px] border border-slate-200/70 bg-white p-5 md:p-6 ${className}`}>{children}</section>;
+  return <section className={`rounded-adm-lg border border-adm-line bg-adm-surface p-5 md:p-6 ${className}`}>{children}</section>;
 }
 
 function Title({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h2 className="text-[18px] font-bold tracking-[-0.02em] text-slate-900 md:text-[20px]">{children}</h2>
+      <h2 className="text-[18px] font-bold tracking-[-0.02em] text-adm-ink md:text-[20px]">{children}</h2>
       {aside}
     </div>
   );
@@ -51,11 +51,11 @@ function Title({ children, aside }: { children: ReactNode; aside?: ReactNode }) 
 
 function Pill({ tone, children }: { tone: "slate" | "blue" | "green" | "amber" | "rose"; children: ReactNode }) {
   const tones = {
-    slate: "bg-slate-100 text-slate-700",
-    blue: "bg-blue-50 text-blue-700",
-    green: "bg-emerald-50 text-emerald-700",
-    amber: "bg-amber-50 text-amber-800",
-    rose: "bg-rose-50 text-rose-700",
+    slate: "bg-adm-sunk text-adm-text-2",
+    blue: "bg-adm-info-bg text-adm-accent-ink",
+    green: "bg-adm-ok-bg text-adm-ok",
+    amber: "bg-adm-attn-bg text-adm-attn",
+    rose: "bg-adm-problem-bg text-adm-problem",
   } as const;
   return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-semibold ${tones[tone]}`}>{children}</span>;
 }
@@ -109,11 +109,11 @@ function FunnelBars({ rows }: { rows: Array<{ key: string; label: string; n: num
     <div className="mt-3 space-y-2">
       {rows.map((r) => (
         <div key={r.key} className="flex items-center gap-3 text-[13px]">
-          <span className="w-40 flex-none text-slate-600">{r.label}</span>
-          <span className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-            <span className="absolute inset-y-0 left-0 rounded-full bg-blue-600" style={{ width: `${r.n ? Math.max(2, Math.round((r.n / top) * 100)) : 0}%` }} />
+          <span className="w-40 flex-none text-adm-text-2">{r.label}</span>
+          <span className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-adm-sunk">
+            <span className="absolute inset-y-0 left-0 rounded-full bg-adm-accent" style={{ width: `${r.n ? Math.max(2, Math.round((r.n / top) * 100)) : 0}%` }} />
           </span>
-          <span className="w-12 flex-none text-right font-semibold text-slate-700">{r.n ?? "—"}</span>
+          <span className="w-12 flex-none text-right font-semibold text-adm-text-2">{r.n ?? "—"}</span>
         </div>
       ))}
     </div>
@@ -149,43 +149,43 @@ function AcquisitionCard({ data }: { data: Acquisition | null | undefined }) {
             { label: "Last 7 days", v: f.last7, c: c7, pending: n?.last7Pending, confirmed: n?.last7Confirmed },
             { label: "Last 30 days", v: f.last30, c: c30, pending: n?.last30Pending, confirmed: n?.last30Confirmed },
           ].map((t) => (
-            <div key={t.label} className="rounded-[14px] bg-slate-50 p-4">
-              <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">{t.label}</div>
-              <div className="mt-2 text-[40px] font-bold leading-none tracking-[-0.03em] text-slate-900">{t.v ?? "—"}</div>
-              {t.c ? <div className={`mt-1 text-[12px] font-semibold ${t.c.d > 0 ? "text-emerald-700" : t.c.d < 0 ? "text-rose-700" : "text-slate-500"}`}>{t.c.text}</div> : null}
+            <div key={t.label} className="rounded-adm-md bg-adm-sunk p-4">
+              <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3">{t.label}</div>
+              <div className="mt-2 text-[40px] font-bold leading-none tracking-[-0.03em] text-adm-ink">{t.v ?? "—"}</div>
+              {t.c ? <div className={`mt-1 text-[12px] font-semibold ${t.c.d > 0 ? "text-adm-ok" : t.c.d < 0 ? "text-adm-problem" : "text-adm-text-3"}`}>{t.c.text}</div> : null}
               {n ? (
-                <div className="mt-2 space-y-0.5 text-[12px] text-slate-600" data-testid="free-visit-split">
+                <div className="mt-2 space-y-0.5 text-[12px] text-adm-text-2" data-testid="free-visit-split">
                   <div>
-                    <span className="font-semibold text-amber-700">{t.pending ?? "—"}</span> Pending Confirmation
+                    <span className="font-semibold text-adm-attn">{t.pending ?? "—"}</span> Pending Confirmation
                   </div>
                   <div>
-                    <span className="font-semibold text-emerald-700">{t.confirmed ?? "—"}</span> Confirmed
+                    <span className="font-semibold text-adm-ok">{t.confirmed ?? "—"}</span> Confirmed
                   </div>
                 </div>
               ) : null}
             </div>
           ))}
-          <div className="col-span-2 text-[12px] text-slate-500">
+          <div className="col-span-2 text-[12px] text-adm-text-3">
             {n ? `Booked from an account and sent as a request from the website, each visit counted once (30d: ${n.fromAccounts30 ?? "—"} from accounts, ${n.fromRequests30 ?? "—"} requests). ` : ""}
             {sources.length ? `Account bookings by source (30d): ${sources.map((s) => `${s.label} ${s.freeVisits}`).join(" · ")}` : "No account bookings in the last 30 days."}
           </div>
         </div>
         <div>
-          <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3">
             Booking funnel{data.funnel30.since ? ` since ${shortDate(data.funnel30.since)}` : ", last 30 days"}
           </div>
           <FunnelBars rows={FUNNEL_STEPS.map((s) => ({ key: s.key, label: s.label, n: num(data.funnel30[s.key]) }))} />
-          <p className="mt-2 text-[12px] text-slate-400">
+          <p className="mt-2 text-[12px] text-adm-text-3">
             The one-step booking: pick a time, leave name, mobile and email, send. Counted once per browser per day
             {data.funnel30.flowSince ? `, from ${shortDate(data.funnel30.flowSince)}` : ""}.
           </p>
           {old ? (
-            <details className="mt-3 rounded-[12px] bg-slate-50 px-3 py-2" data-testid="old-funnel">
-              <summary className="cursor-pointer text-[12px] font-semibold text-slate-500">
+            <details className="mt-3 rounded-adm-md bg-adm-sunk px-3 py-2" data-testid="old-funnel">
+              <summary className="cursor-pointer text-[12px] font-semibold text-adm-text-3">
                 Before {shortDate(data.funnel30.flowSince)}: the old sign-up flow ({shortDate(old.since)} – {shortDate(old.through)})
               </summary>
               <FunnelBars rows={OLD_FUNNEL_STEPS.map((s) => ({ key: s.key, label: s.label, n: num(old[s.key]) }))} />
-              <p className="mt-2 text-[12px] text-slate-400">History only. That flow sent visitors to sign up before booking; it is not comparable with the funnel above.</p>
+              <p className="mt-2 text-[12px] text-adm-text-3">History only. That flow sent visitors to sign up before booking; it is not comparable with the funnel above.</p>
             </details>
           ) : null}
         </div>
@@ -208,8 +208,8 @@ function CapacityCard({ data }: { data: CommandCenter["capacity"] }) {
     <Card>
       <Title aside={<Pill tone={signal.tone}>{signal.text}</Pill>}>Capacity, next {data.days || 21} days</Title>
       <div className="flex items-end gap-3">
-        <div className="text-[40px] font-bold leading-none tracking-[-0.03em] text-slate-900">{pct(u)}</div>
-        <div className="pb-1 text-[13px] text-slate-500">
+        <div className="text-[40px] font-bold leading-none tracking-[-0.03em] text-adm-ink">{pct(u)}</div>
+        <div className="pb-1 text-[13px] text-adm-text-3">
           {data.booked ?? 0} of {data.capacity ?? 0} visit slots booked
         </div>
       </div>
@@ -217,14 +217,14 @@ function CapacityCard({ data }: { data: CommandCenter["capacity"] }) {
         <div className="mt-5 space-y-2">
           {data.weeks.map((w) => (
             <div key={w.from} className="flex items-center gap-3 text-[13px]">
-              <span className="w-24 flex-none text-slate-500">Week of {w.from.slice(5).replace("-", "/")}</span>
-              <span className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+              <span className="w-24 flex-none text-adm-text-3">Week of {w.from.slice(5).replace("-", "/")}</span>
+              <span className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-adm-sunk">
                 <span
-                  className="absolute inset-y-0 left-0 rounded-full bg-blue-600"
+                  className="absolute inset-y-0 left-0 rounded-full bg-adm-accent"
                   style={{ width: `${Math.min(100, Math.round((w.utilization || 0) * 100))}%` }}
                 />
               </span>
-              <span className="w-10 flex-none text-right font-semibold text-slate-700">{pct(w.utilization)}</span>
+              <span className="w-10 flex-none text-right font-semibold text-adm-text-2">{pct(w.utilization)}</span>
             </div>
           ))}
         </div>
@@ -238,17 +238,17 @@ function PendingCard({ items, owner, onDecide, busy }: { items: GrowthActionView
     <Card>
       <Title aside={items.length ? <Pill tone="amber">{items.length} waiting</Pill> : <Pill tone="green">Nothing waiting</Pill>}>Needs you</Title>
       {items.length === 0 ? (
-        <p className="text-[14px] text-slate-500">Nothing needs a decision. Automations that are trusted run on their own.</p>
+        <p className="text-[14px] text-adm-text-3">Nothing needs a decision. Automations that are trusted run on their own.</p>
       ) : (
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-adm-line">
           {items.map((a) => (
             <li key={a.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <div className="text-[15px] font-semibold text-slate-900">{a.summary}</div>
+                <div className="text-[15px] font-semibold text-adm-ink">{a.summary}</div>
                 {a.preview ? (
-                  <div className="mt-2 whitespace-pre-wrap rounded-[12px] bg-slate-50 px-3 py-2 text-[13px] text-slate-800 ring-1 ring-slate-200">{a.preview}</div>
+                  <div className="mt-2 whitespace-pre-wrap rounded-adm-md bg-adm-sunk px-3 py-2 text-[13px] text-adm-ink ring-1 ring-adm-line">{a.preview}</div>
                 ) : null}
-                <div className="mt-0.5 text-[13px] text-slate-500">
+                <div className="mt-0.5 text-[13px] text-adm-text-3">
                   {a.rationale}
                   {a.heldReason === "daily_limit" ? " Held: today's limit for this automation was reached." : ""}
                   {a.heldReason === "interrupted" ? " The last run was interrupted - it may already have gone out." : ""}
@@ -262,7 +262,7 @@ function PendingCard({ items, owner, onDecide, busy }: { items: GrowthActionView
                     type="button"
                     disabled={busy === a.id}
                     onClick={() => onDecide(a.id, "approve")}
-                    className="h-9 rounded-[10px] bg-slate-900 px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+                    className="min-h-[44px] rounded-adm-sm bg-adm-ink px-4 text-[13px] font-semibold text-white disabled:opacity-50"
                   >
                     Approve
                   </button>
@@ -270,7 +270,7 @@ function PendingCard({ items, owner, onDecide, busy }: { items: GrowthActionView
                     type="button"
                     disabled={busy === a.id}
                     onClick={() => onDecide(a.id, "reject")}
-                    className="h-9 rounded-[10px] bg-slate-100 px-4 text-[13px] font-semibold text-slate-700 disabled:opacity-50"
+                    className="min-h-[44px] rounded-adm-sm bg-adm-sunk px-4 text-[13px] font-semibold text-adm-text-2 disabled:opacity-50"
                   >
                     Decline
                   </button>
@@ -293,25 +293,20 @@ function PoliciesCard({ policies, owner, onMode, busy }: { policies: GrowthPolic
       <ul className="space-y-4">
         {policies.map((p) => {
           const allowed = MODE_ORDER.slice(0, MODE_ORDER.indexOf(p.maxMode) + 1);
-          const toGo = p.promoteAfter && p.mode === "supervised" ? Math.max(0, p.promoteAfter - p.streak) : null;
           return (
-            <li key={p.type} className="rounded-[16px] bg-slate-50 p-4">
+            <li key={p.type} className="rounded-adm-md bg-adm-sunk p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-[15px] font-semibold text-slate-900">{p.label}</div>
+                <div className="text-[15px] font-semibold text-adm-ink">{p.label}</div>
                 <Pill tone={MODE_TONE[p.mode]}>{MODE_LABEL[p.mode]}</Pill>
               </div>
-              <p className="mt-1 text-[13px] text-slate-500">{p.description}</p>
-              <div className="mt-2 text-[12px] text-slate-500">
-                {toGo !== null
-                  ? toGo === 0
-                    ? "Will run on its own after the next verified run."
-                    : `${toGo} more approved, verified run${toGo === 1 ? "" : "s"} until it runs on its own.`
-                  : p.mode === "autonomous"
+              <p className="mt-1 text-[13px] text-adm-text-3">{p.description}</p>
+              <div className="mt-2 text-[12px] text-adm-text-3">
+                {p.mode === "autonomous"
                   ? `Runs on its own${p.perDay ? `, up to ${p.perDay} a day` : ""}. Any failure sends it back to needing approval.`
                   : p.maxMode === "supervised"
                   ? "Always needs approval."
                   : ""}
-                {p.setBy === "auto_promotion" ? ` Trusted automatically ${when(p.promotedAt)}.` : ""}
+                {p.setBy === "auto_promotion" ? ` Was trusted automatically ${when(p.promotedAt)} (automatic promotion is now off).` : ""}
                 {p.setBy === "auto_demotion" ? ` Sent back to approval ${when(p.demotedAt)}: ${p.setNote}` : ""}
               </div>
               {owner ? (
@@ -323,8 +318,8 @@ function PoliciesCard({ policies, owner, onMode, busy }: { policies: GrowthPolic
                       aria-pressed={p.mode === m}
                       disabled={busy === p.type}
                       onClick={() => p.mode !== m && onMode(p.type, m)}
-                      className={`h-8 rounded-[9px] px-3 text-[12px] font-semibold ${
-                        p.mode === m ? "bg-slate-900 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"
+                      className={`min-h-[44px] rounded-adm-sm px-3 text-[12px] font-semibold ${
+                        p.mode === m ? "bg-adm-ink text-white" : "bg-adm-surface text-adm-text-2 ring-1 ring-adm-line"
                       }`}
                     >
                       {MODE_LABEL[m]}
@@ -346,14 +341,14 @@ function ActivityCard({ recent, shadow }: { recent: GrowthActionView[]; shadow: 
     <Card>
       <Title>What the system did</Title>
       {rows.length === 0 ? (
-        <p className="text-[14px] text-slate-500">Nothing yet.</p>
+        <p className="text-[14px] text-adm-text-3">Nothing yet.</p>
       ) : (
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-adm-line">
           {rows.map((a) => (
             <li key={a.id} className="flex items-start justify-between gap-3 py-2.5">
               <div className="min-w-0">
-                <div className="text-[14px] font-medium text-slate-800">{a.summary}</div>
-                <div className="text-[12px] text-slate-500">
+                <div className="text-[14px] font-medium text-adm-ink">{a.summary}</div>
+                <div className="text-[12px] text-adm-text-3">
                   {when(a.executedAt || a.createdAt)}
                   {actionOutcome(a) ? ` · ${actionOutcome(a)}` : ""}
                   {a.decidedBy ? ` · approved by ${a.decidedBy}` : ""}
@@ -374,20 +369,20 @@ function OutcomesCard({ data }: { data: CommandCenter }) {
     <Card>
       <Title>Results</Title>
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-[14px] bg-slate-50 p-4">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">Checkout reminders</div>
-          <div className="mt-2 text-[28px] font-bold leading-none text-slate-900">
+        <div className="rounded-adm-md bg-adm-sunk p-4">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3">Checkout reminders</div>
+          <div className="mt-2 text-[28px] font-bold leading-none text-adm-ink">
             {r.recovered}
-            <span className="text-[16px] font-semibold text-slate-400"> / {r.sent}</span>
+            <span className="text-[16px] font-semibold text-adm-text-3"> / {r.sent}</span>
           </div>
-          <div className="mt-1 text-[12px] text-slate-500">
+          <div className="mt-1 text-[12px] text-adm-text-3">
             joined within {r.windowDays} days of the email (90 days){r.stillInWindow ? `; ${r.stillInWindow} still within the window` : ""}
           </div>
         </div>
-        <div className="rounded-[14px] bg-slate-50 p-4">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">Out-of-area waitlist</div>
-          <div className="mt-2 text-[28px] font-bold leading-none text-slate-900">{data.waitlist.waiting}</div>
-          <div className="mt-1 text-[12px] text-slate-500">
+        <div className="rounded-adm-md bg-adm-sunk p-4">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3">Out-of-area waitlist</div>
+          <div className="mt-2 text-[28px] font-bold leading-none text-adm-ink">{data.waitlist.waiting}</div>
+          <div className="mt-1 text-[12px] text-adm-text-3">
             {data.waitlist.last30Days} in the last 30 days
             {data.waitlist.topZips.length
               ? ` · top: ${data.waitlist.topZips
@@ -398,7 +393,7 @@ function OutcomesCard({ data }: { data: CommandCenter }) {
           </div>
         </div>
       </div>
-      <p className="mt-3 text-[12px] text-slate-400">Joined after a reminder is not proof the reminder caused it; some would have come back anyway.</p>
+      <p className="mt-3 text-[12px] text-adm-text-3">Joined after a reminder is not proof the reminder caused it; some would have come back anyway.</p>
     </Card>
   );
 }
@@ -453,14 +448,14 @@ function VisibilityCard({ data }: { data: CommandCenter["visibility"] }) {
       <Title>Visibility</Title>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {tiles.map((t) => (
-          <div key={t.label} className="rounded-[14px] bg-slate-50 p-4">
-            <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">{t.label}</div>
-            <div className="mt-2 text-[26px] font-bold leading-none text-slate-900">{t.value}</div>
-            <div className="mt-1 text-[12px] text-slate-500">{t.sub}</div>
+          <div key={t.label} className="rounded-adm-md bg-adm-sunk p-4">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3">{t.label}</div>
+            <div className="mt-2 text-[26px] font-bold leading-none text-adm-ink">{t.value}</div>
+            <div className="mt-1 text-[12px] text-adm-text-3">{t.sub}</div>
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[12px] text-slate-400">AI answers are sampled through the AI providers&rsquo; APIs, which can differ from what the consumer apps show.</p>
+      <p className="mt-3 text-[12px] text-adm-text-3">AI answers are sampled through the AI providers&rsquo; APIs, which can differ from what the consumer apps show.</p>
     </Card>
   );
 }
@@ -516,10 +511,10 @@ export default function GrowthModule() {
   if (!data && !error) {
     return (
       <div className="space-y-4" aria-busy="true">
-        <div className="h-10 w-48 animate-pulse rounded-[12px] bg-slate-100" />
+        <div className="h-10 w-48 animate-pulse rounded-adm-md bg-adm-sunk" />
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="h-[220px] animate-pulse rounded-[22px] bg-slate-100" />
-          <div className="h-[220px] animate-pulse rounded-[22px] bg-slate-100" />
+          <div className="h-[220px] animate-pulse rounded-adm-lg bg-adm-sunk" />
+          <div className="h-[220px] animate-pulse rounded-adm-lg bg-adm-sunk" />
         </div>
       </div>
     );
@@ -528,7 +523,7 @@ export default function GrowthModule() {
   return (
     <div className="space-y-4 pb-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[26px] font-bold tracking-[-0.03em] text-slate-900">Growth</h1>
+        <h1 className="text-[26px] font-bold tracking-[-0.03em] text-adm-ink">Growth</h1>
         {data ? (
           data.engineEnabled ? (
             <Pill tone="green">Automations live</Pill>
@@ -538,7 +533,7 @@ export default function GrowthModule() {
         ) : null}
       </div>
 
-      {error ? <div className="rounded-[14px] bg-rose-50 px-4 py-3 text-[14px] text-rose-700">{error}</div> : null}
+      {error ? <div className="rounded-adm-md bg-adm-problem-bg px-4 py-3 text-[14px] text-adm-problem">{error}</div> : null}
 
       <HealthStrip capacity={data?.capacity || null} />
 
@@ -547,7 +542,7 @@ export default function GrowthModule() {
           {data.alerts.map((a) => (
             <div
               key={a.key}
-              className={`rounded-[14px] px-4 py-3 text-[14px] ${a.level === "warning" ? "bg-amber-50 text-amber-900" : "bg-blue-50 text-blue-900"}`}
+              className={`rounded-adm-md px-4 py-3 text-[14px] ${a.level === "warning" ? "bg-adm-attn-bg text-adm-attn" : "bg-adm-info-bg text-adm-accent-ink"}`}
             >
               {a.text}
             </div>

@@ -20,12 +20,12 @@ import { can, PERM } from "@/lib/admin-access";
 import { useAuth } from "@/lib/useAuth";
 
 function Tile({ label, value, sub, tone = "slate" }: { label: string; value: string; sub: string; tone?: "slate" | "green" | "amber" }) {
-  const ring = tone === "green" ? "ring-emerald-200" : tone === "amber" ? "ring-amber-200" : "ring-slate-200/70";
+  const ring = tone === "green" ? "ring-adm-ok-bg" : tone === "amber" ? "ring-adm-attn-bg" : "ring-adm-line";
   return (
-    <div className={`rounded-[18px] bg-white p-4 ring-1 ${ring}`}>
-      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</div>
-      <div className="mt-1.5 text-[26px] font-bold leading-none tracking-[-0.02em] text-slate-900">{value}</div>
-      <div className="mt-1.5 text-[12px] leading-snug text-slate-500">{sub}</div>
+    <div className={`rounded-adm-md bg-adm-surface p-4 ring-1 ${ring}`}>
+      <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3">{label}</div>
+      <div className="mt-1.5 text-[26px] font-bold leading-none tracking-[-0.02em] text-adm-ink">{value}</div>
+      <div className="mt-1.5 text-[12px] leading-snug text-adm-text-3">{sub}</div>
     </div>
   );
 }

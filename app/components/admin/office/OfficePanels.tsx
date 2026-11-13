@@ -402,10 +402,28 @@ function RobotWork({ d, owner, onChanged }: { d: RobotDetail; owner: boolean; on
 
 const CAP_WORDS: Record<string, string> = { on: "On", approval: "Asks you first", off: "Off", never: "Never" };
 
+function InlineConfirm({ question, confirmLabel, onConfirm, onCancel }: { question: string; confirmLabel: string; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div role="group" aria-label="Confirm" className={styles.card} style={{ marginTop: 8 }} data-inline-confirm="">
+      <div style={{ fontWeight: 700 }}>{question}</div>
+      <div className={styles.btnRow}>
+        <button type="button" className={styles.btn} onClick={onConfirm}>
+          {confirmLabel}
+        </button>
+        <button type="button" className={`${styles.btn} ${styles.btnSoft}`} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function RobotSettings({ d, owner, onChanged }: { d: RobotDetail; owner: boolean; onChanged: () => void }) {
   const s = d.state;
   const name = d.robot.name;
   const [busy, setBusy] = useState(false);
+  /* An inline "are you sure" step instead of window.confirm: the office panel is already a dialog. */
+  const [asking, setAsking] = useState<null | { kind: "run" } | { kind: "restore"; v: number }>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [text, setText] = useState(d.teach.guidance);
   const [note, setNote] = useState("");
@@ -429,7 +447,7 @@ function RobotSettings({ d, owner, onChanged }: { d: RobotDetail; owner: boolean
   };
   const runNow = async () => {
     if (!agentToRun) return;
-    if (!window.confirm(`Start ${name}'s shift now? It uses a little of the AI budget (each shift has a limit).`)) return;
+    setAsking(null);
     setBusy(true);
     try {
       await runShiftNow(agentToRun);
@@ -458,7 +476,7 @@ function RobotSettings({ d, owner, onChanged }: { d: RobotDetail; owner: boolean
     }
   };
   const restore = async (v: number) => {
-    if (!window.confirm(`Go back to version ${v}? You can undo this later.`)) return;
+    setAsking(null);
     try {
       const r = await restoreGuidance(d.robot.key, v);
       setText(r.guidance);
@@ -479,16 +497,26 @@ function RobotSettings({ d, owner, onChanged }: { d: RobotDetail; owner: boolean
             {d.robot.key === "conversation" ? " Pausing Marcus also stops him drafting replies." : ""}
           </div>
           {owner ? (
+            <>
             <div className={styles.btnRow}>
               <button type="button" className={`${styles.btn} ${s.paused ? styles.btnGood : styles.btnSoft}`} disabled={busy} onClick={pause}>
                 {s.paused ? "Wake up" : "Pause"}
               </button>
               {agentToRun ? (
-                <button type="button" className={`${styles.btn} ${styles.btnSoft}`} disabled={busy || s.status === "working"} onClick={runNow}>
+                <button type="button" className={`${styles.btn} ${styles.btnSoft}`} disabled={busy || s.status === "working"} onClick={() => setAsking({ kind: "run" })}>
                   Start a shift now
                 </button>
               ) : null}
             </div>
+            {asking?.kind === "run" ? (
+              <InlineConfirm
+                question={`Start ${name}'s shift now? It uses a little of the AI budget (each shift has a limit).`}
+                confirmLabel="Start the shift"
+                onConfirm={runNow}
+                onCancel={() => setAsking(null)}
+              />
+            ) : null}
+            </>
           ) : (
             <div className={styles.muted} style={{ marginTop: 6 }}>
               Only the owner can change this.
@@ -598,9 +626,17 @@ function RobotSettings({ d, owner, onChanged }: { d: RobotDetail; owner: boolean
               {h.note ? <div className={styles.muted}>{h.note}</div> : null}
               <Pre>{h.guidance || "(empty - no guidance)"}</Pre>
               {owner && h.version !== d.teach.version ? (
-                <button type="button" className={`${styles.btn} ${styles.btnSoft}`} style={{ marginTop: 8 }} onClick={() => restore(h.version)}>
+                <button type="button" className={`${styles.btn} ${styles.btnSoft}`} style={{ marginTop: 8 }} onClick={() => setAsking({ kind: "restore", v: h.version })}>
                   Use this version again
                 </button>
+              ) : null}
+              {asking?.kind === "restore" && asking.v === h.version ? (
+                <InlineConfirm
+                  question={`Go back to version ${h.version}? You can undo this later.`}
+                  confirmLabel={`Go back to version ${h.version}`}
+                  onConfirm={() => restore(h.version)}
+                  onCancel={() => setAsking(null)}
+                />
               ) : null}
             </div>
           ))}

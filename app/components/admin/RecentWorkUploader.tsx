@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Sheet } from "@/app/components/admin/ui";
 import {
   GALLERY_GROUPS,
   uploadPair,
@@ -130,24 +131,43 @@ export default function RecentWorkUploader({
   const count = selections.length;
 
   return (
-    <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-slate-950/50 backdrop-blur-sm sm:items-center sm:p-6">
-      <div className="flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white sm:max-w-2xl sm:rounded-2xl">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-          <h2 className="text-base font-semibold text-slate-900">Add work photos</h2>
+    <Sheet
+      open
+      onClose={onClose}
+      title="Add work photos"
+      width="wide"
+      busy={uploading}
+      dirty={count > 0}
+      footer={
+        <div className="w-full">
+          {uploading && (
+            <div className="mb-2.5">
+              <div className="h-1.5 overflow-hidden rounded-full bg-adm-line">
+                <div
+                  className="h-full rounded-full bg-adm-ink transition-[width] duration-200"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="mt-1.5 text-[12px] text-adm-text-3">
+                {progress < 100 ? `Uploading ${count} photo${count === 1 ? "" : "s"}…` : "Finishing up…"}
+              </div>
+            </div>
+          )}
           <button
             type="button"
-            onClick={onClose}
-            disabled={uploading}
-            aria-label="Close"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:opacity-40"
+            onClick={submit}
+            disabled={!count || uploading}
+            className="flex min-h-[48px] w-full items-center justify-center rounded-adm-md bg-adm-ink px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-adm-line-2"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            {uploading
+              ? "Uploading…"
+              : count
+                ? `Upload ${count} photo${count === 1 ? "" : "s"}`
+                : "Choose photos to continue"}
+          </button>        </div>
+      }
+    >
+      <div className="">
           {/*
             * accept="image/*" with no capture attribute is what gives a phone
             * both options - take a photo now, or pick what is already there -
@@ -169,15 +189,15 @@ export default function RecentWorkUploader({
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center transition hover:border-slate-400 hover:bg-slate-100"
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-adm-md border-2 border-dashed border-adm-line-2 bg-adm-sunk px-6 py-12 text-center transition hover:border-adm-line-2 hover:bg-adm-sunk"
             >
-              <svg className="h-9 w-9 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="h-9 w-9 text-adm-text-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="5" width="18" height="14" rx="2" />
                 <circle cx="8.5" cy="10.5" r="1.5" />
                 <path d="m21 15-5-5-9 9" />
               </svg>
-              <span className="text-sm font-semibold text-slate-900">Choose photos</span>
-              <span className="text-xs text-slate-500">Up to {MAX_FILES} at a time, 25 MB each</span>
+              <span className="text-sm font-semibold text-adm-ink">Choose photos</span>
+              <span className="text-[12px] text-adm-text-3">Up to {MAX_FILES} at a time, 25 MB each</span>
             </button>
           ) : (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -188,14 +208,14 @@ export default function RecentWorkUploader({
                     src={selection.preview}
                     alt=""
                     style={{ height: "100%", width: "100%" }}
-                    className="absolute inset-0 rounded-lg border border-slate-200 object-cover"
+                    className="absolute inset-0 rounded-adm-sm border border-adm-line object-cover"
                   />
                   {!uploading && (
                     <button
                       type="button"
                       onClick={() => removeAt(selection.id)}
                       aria-label="Remove this photo"
-                      className="absolute -right-1.5 -top-1.5 flex h-7 w-7 items-center justify-center rounded-full border border-white bg-slate-900 text-white shadow-sm"
+                      className="absolute -right-2 -top-2 flex h-10 w-10 items-center justify-center rounded-full border border-white bg-adm-ink text-white"
                     >
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                         <path d="M6 6l12 12M18 6L6 18" />
@@ -208,12 +228,12 @@ export default function RecentWorkUploader({
                 <button
                   type="button"
                   onClick={() => inputRef.current?.click()}
-                  className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 transition hover:border-slate-400 hover:text-slate-600"
+                  className="flex aspect-square flex-col items-center justify-center gap-1 rounded-adm-sm border-2 border-dashed border-adm-line-2 text-adm-text-3 transition hover:border-adm-line-2 hover:text-adm-text-2"
                 >
                   <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <path d="M12 5v14M5 12h14" />
                   </svg>
-                  <span className="text-[11px] font-semibold">Add</span>
+                  <span className="text-[12px] font-semibold">Add</span>
                 </button>
               )}
             </div>
@@ -222,7 +242,7 @@ export default function RecentWorkUploader({
           {count > 0 && (
             <div className="mt-4 space-y-3">
               <label className="block">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3">
                   Title
                 </span>
                 <input
@@ -230,18 +250,18 @@ export default function RecentWorkUploader({
                   onChange={(event) => setTitle(event.target.value)}
                   placeholder="Kitchen cabinet install"
                   maxLength={120}
-                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                  className="mt-1 w-full rounded-adm-sm border border-adm-line px-3 py-2.5 text-sm text-adm-ink outline-none transition focus:border-adm-accent"
                 />
               </label>
 
               <label className="block">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3">
                   Category
                 </span>
                 <select
                   value={category}
                   onChange={(event) => setCategory(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                  className="mt-1 w-full rounded-adm-sm border border-adm-line bg-adm-surface px-3 py-2.5 text-sm text-adm-ink outline-none transition focus:border-adm-accent"
                 >
                   {categories.map((option) => (
                     <option key={option.slug} value={option.slug}>
@@ -254,7 +274,7 @@ export default function RecentWorkUploader({
               {showDetails ? (
                 <div className="space-y-3">
                   <label className="block">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3">
                       Caption
                     </span>
                     <textarea
@@ -263,11 +283,11 @@ export default function RecentWorkUploader({
                       rows={3}
                       maxLength={400}
                       placeholder="What was done, in a sentence."
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                      className="mt-1 w-full rounded-adm-sm border border-adm-line px-3 py-2 text-sm text-adm-ink outline-none transition focus:border-adm-accent"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3">
                       Town / City (public)
                     </span>
                     <input
@@ -275,9 +295,9 @@ export default function RecentWorkUploader({
                       onChange={(event) => setPublicLocation(event.target.value)}
                       placeholder="Babylon, NY"
                       maxLength={80}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                      className="mt-1 w-full rounded-adm-sm border border-adm-line px-3 py-2.5 text-sm text-adm-ink outline-none transition focus:border-adm-accent"
                     />
-                    <span className="mt-1 block text-xs text-slate-500">
+                    <span className="mt-1 block text-[12px] text-adm-text-3">
                       Shown on the public gallery. Town and state only, never a street address.
                     </span>
                   </label>
@@ -286,18 +306,18 @@ export default function RecentWorkUploader({
                 <button
                   type="button"
                   onClick={() => setShowDetails(true)}
-                  className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"
+                  className="min-h-[44px] text-[13px] font-semibold text-adm-accent-ink underline-offset-2 hover:underline"
                 >
                   Add caption and town
                 </button>
               )}
 
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <div className="flex items-center justify-between gap-3 rounded-adm-md border border-adm-line bg-adm-sunk px-3 py-3">
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-900">
+                  <div className="text-sm font-semibold text-adm-ink">
                     {publishNow ? "Publish now" : "Save to Library"}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-[12px] text-adm-text-3">
                     {publishNow
                       ? "Visible on the public gallery straight away."
                       : "Kept for later. Nobody outside sees it."}
@@ -310,11 +330,11 @@ export default function RecentWorkUploader({
                   aria-label="Publish now"
                   onClick={() => setPublishNow((current) => !current)}
                   className={`relative h-7 w-12 shrink-0 rounded-full transition ${
-                    publishNow ? "bg-emerald-600" : "bg-slate-300"
+                    publishNow ? "bg-adm-ok" : "bg-adm-line-2"
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${
+                    className={`absolute top-0.5 h-6 w-6 rounded-full bg-adm-surface shadow transition-all ${
                       publishNow ? "left-[22px]" : "left-0.5"
                     }`}
                   />
@@ -322,40 +342,8 @@ export default function RecentWorkUploader({
               </div>
             </div>
           )}
-        </div>
-
-        <div
-          className="border-t border-slate-200 px-4 py-3"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-        >
-          {uploading && (
-            <div className="mb-2.5">
-              <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className="h-full rounded-full bg-slate-900 transition-[width] duration-200"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="mt-1.5 text-xs text-slate-500">
-                {progress < 100 ? `Uploading ${count} photo${count === 1 ? "" : "s"}…` : "Finishing up…"}
-              </div>
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!count || uploading}
-            className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {uploading
-              ? "Uploading…"
-              : count
-                ? `Upload ${count} photo${count === 1 ? "" : "s"}`
-                : "Choose photos to continue"}
-          </button>
-        </div>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -447,30 +435,30 @@ export function RecentWorkPairUploader({
     }
   };
 
-  const labelClass = "text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500";
+  const labelClass = "text-[12px] font-semibold uppercase tracking-[0.06em] text-adm-text-3";
   const fieldClass =
-    "mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400";
+    "mt-1 w-full rounded-adm-sm border border-adm-line bg-adm-surface px-3 py-2.5 text-sm text-adm-ink outline-none transition focus:border-adm-accent";
 
   const picker = (label: "Before" | "After", value: Selection | null, set: (value: Selection | null) => void) => (
     <label className="block">
       <span className={labelClass}>{label} photo</span>
-      <span className="relative mt-1 flex aspect-[4/3] w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center transition hover:border-slate-400">
+      <span className="relative mt-1 flex aspect-[4/3] w-full cursor-pointer items-center justify-center overflow-hidden rounded-adm-md border-2 border-dashed border-adm-line-2 bg-adm-sunk text-center transition hover:border-adm-line-2">
         {value ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={value.preview} alt="" style={{ height: "100%", width: "100%" }} className="absolute inset-0 object-cover" />
         ) : (
-          <span className="flex flex-col items-center gap-1 px-2 text-slate-400">
+          <span className="flex flex-col items-center gap-1 px-2 text-adm-text-3">
             <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="5" width="18" height="14" rx="2" />
               <circle cx="8.5" cy="10.5" r="1.5" />
               <path d="m21 15-5-5-9 9" />
             </svg>
-            <span className="text-xs font-semibold text-slate-700">Choose {label.toLowerCase()}</span>
+            <span className="text-[12px] font-semibold text-adm-text-2">Choose {label.toLowerCase()}</span>
           </span>
         )}
         <span
-          className={`absolute left-1.5 top-1.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white ${
-            label === "Before" ? "bg-slate-900/75" : "bg-blue-600/90"
+          className={`absolute left-1.5 top-1.5 rounded-md px-1.5 py-0.5 text-[12px] font-bold uppercase tracking-wider text-white ${
+            label === "Before" ? "bg-adm-ink/75" : "bg-adm-accent"
           }`}
         >
           {label}
@@ -491,34 +479,50 @@ export function RecentWorkPairUploader({
   );
 
   return (
-    <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-slate-950/50 backdrop-blur-sm sm:items-center sm:p-6">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Add before and after"
-        className="flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white sm:max-w-2xl sm:rounded-2xl"
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-          <h2 className="text-base font-semibold text-slate-900">Add before &amp; after</h2>
+    <Sheet
+      open
+      onClose={onClose}
+      title="Add before &amp; after"
+      width="wide"
+      busy={uploading}
+      dirty={Boolean(before || after || title.trim() || caption.trim())}
+      footer={
+        <div className="w-full">
+          {uploading && (
+            <div className="mb-2.5">
+              <div className="h-1.5 overflow-hidden rounded-full bg-adm-line">
+                <div
+                  className="h-full rounded-full bg-adm-ink transition-[width] duration-200"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="mt-1.5 text-[12px] text-adm-text-3">{progress < 100 ? "Uploading the pair…" : "Finishing up…"}</div>
+            </div>
+          )}
           <button
             type="button"
-            onClick={onClose}
-            disabled={uploading}
-            aria-label="Close"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:opacity-40"
+            onClick={submit}
+            disabled={!ready || uploading}
+            className="flex min-h-[48px] w-full items-center justify-center rounded-adm-md bg-adm-ink px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-adm-line-2"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
+            {uploading
+              ? "Uploading…"
+              : !before || !after
+                ? "Choose both photos to continue"
+                : !title.trim()
+                  ? "Add a title to continue"
+                  : publishNow
+                    ? "Upload and publish"
+                    : "Upload to Library"}
+          </button>        </div>
+      }
+    >
+      <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2.5">
             {picker("Before", before, setBefore)}
             {picker("After", after, setAfter)}
           </div>
-          <p className="text-xs text-slate-500">Two photos of the same view, ideally the same shape.</p>
+          <p className="text-[12px] text-adm-text-3">Two photos of the same view, ideally the same shape.</p>
 
           <label className="block">
             <span className={labelClass}>Title</span>
@@ -566,71 +570,37 @@ export function RecentWorkPairUploader({
             </label>
           </div>
 
-          <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+          <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-adm-md border border-adm-line bg-adm-sunk px-3 py-3">
             <input
               type="checkbox"
               checked={illustrative}
               onChange={(event) => setIllustrative(event.target.checked)}
-              className="mt-0.5 h-5 w-5 shrink-0 accent-slate-900"
+              className="mt-0.5 h-5 w-5 shrink-0 accent-adm-accent"
             />
             <span className="min-w-0">
-              <span className="block text-sm font-semibold text-slate-900">Illustrative example</span>
-              <span className="block text-xs text-slate-500">
+              <span className="block text-sm font-semibold text-adm-ink">Illustrative example</span>
+              <span className="block text-[12px] text-adm-text-3">
                 Generated or staged, not a real customer job. Labelled as an example on the site and kept out of the
                 service-page photos.
               </span>
             </span>
           </label>
 
-          <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+          <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-adm-md border border-adm-line bg-adm-sunk px-3 py-3">
             <input
               type="checkbox"
               checked={publishNow}
               onChange={(event) => setPublishNow(event.target.checked)}
-              className="mt-0.5 h-5 w-5 shrink-0 accent-slate-900"
+              className="mt-0.5 h-5 w-5 shrink-0 accent-adm-accent"
             />
             <span className="min-w-0">
-              <span className="block text-sm font-semibold text-slate-900">Publish now</span>
-              <span className="block text-xs text-slate-500">
+              <span className="block text-sm font-semibold text-adm-ink">Publish now</span>
+              <span className="block text-[12px] text-adm-text-3">
                 {publishNow ? "Shows in What’s Included straight away." : "Saved to the Library. Nobody outside sees it."}
               </span>
             </span>
           </label>
-        </div>
-
-        <div
-          className="border-t border-slate-200 px-4 py-3"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-        >
-          {uploading && (
-            <div className="mb-2.5">
-              <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className="h-full rounded-full bg-slate-900 transition-[width] duration-200"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="mt-1.5 text-xs text-slate-500">{progress < 100 ? "Uploading the pair…" : "Finishing up…"}</div>
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!ready || uploading}
-            className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {uploading
-              ? "Uploading…"
-              : !before || !after
-                ? "Choose both photos to continue"
-                : !title.trim()
-                  ? "Add a title to continue"
-                  : publishNow
-                    ? "Upload and publish"
-                    : "Upload to Library"}
-          </button>
-        </div>
       </div>
-    </div>
+    </Sheet>
   );
 }
