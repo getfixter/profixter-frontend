@@ -5,7 +5,7 @@
  * computed by BackEnd utils/adminAccess.js). This file only decides what to
  * SHOW; every API behind a section checks the same permission on the server,
  * so hiding is never the protection. It reuses lib/admin-access (PERM, can,
- * doesFieldWork) exactly as the old tab strip (admin-tabs-config.ts) did.
+ * doesFieldWork) with the same rules the old tab strip used.
  *
  * Plain module (no React), so the old-link redirects and the tests can use it.
  */
@@ -93,7 +93,7 @@ export function isFieldFixter(user: User | null | undefined): boolean {
   return user.role === "employee" && user.employeePosition === "Fixter" && !can(user, PERM.BOOKINGS_ASSIGN);
 }
 
-/** May this person open the section? Mirrors admin-tabs-config's rules. */
+/** May this person open the section? The old tab strip's rules, unchanged. */
 export function canOpen(user: User | null | undefined, id: SectionId): boolean {
   if (!hasWorkspace(user)) return false;
   const owner = isAdminUser(user);

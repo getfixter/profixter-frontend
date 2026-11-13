@@ -7,8 +7,7 @@
  * text looks copied until it is pasted. The textarea fallback covers the http
  * case an admin hits opening Admin on the office LAN by IP, and older iOS.
  *
- * Same behaviour as the helper inside BookingsTable, kept here so other Admin
- * screens can share it.
+ * One helper for every Admin screen (it began inside the old Jobs cards).
  */
 export async function writeToClipboard(text: string): Promise<boolean> {
   try {

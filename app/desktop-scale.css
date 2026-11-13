@@ -47,12 +47,6 @@
   :root[data-surface="site"] .sm\:py-32 { padding-bottom: clamp(54px, 10vh, 90px); }
 }
 
-/* md: and up */
-@media (min-width: 768px) {
-  :root[data-surface="site"] .md\:text-3xl { font-size: 27px; }
-  :root[data-surface="site"] .md\:text-\[38px\] { font-size: clamp(28px, calc(28px + (100vw - 640px) * 0.0075), 34px); }
-}
-
 /* lg: and up */
 @media (min-width: 1024px) {
   :root[data-surface="site"] .lg\:text-\[31px\] { font-size: 28px; }

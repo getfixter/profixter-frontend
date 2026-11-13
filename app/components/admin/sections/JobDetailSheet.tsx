@@ -195,7 +195,6 @@ export function JobDetailSheet({ id, backHref = "/admin/jobs" }: { id: string; b
       ) : !job || !stepProps ? null : step === "review" ? (
         <FreeVisitReviewPanel
           bookingId={job.id}
-          onClose={leaveStep}
           onChanged={(message) => {
             toast.show(message);
             if (/declined|confirmed|approved/i.test(message)) {
