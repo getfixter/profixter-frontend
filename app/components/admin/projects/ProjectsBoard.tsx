@@ -133,7 +133,8 @@ export function ProjectsBoard({ hidden = false }: { hidden?: boolean }) {
   const attention = attentionQ.data || {};
 
   /* Old invoice links: /admin/projects?invoiceId=X (or ?invoice=X) open the invoice in its project. */
-  const invoiceParam = params.get("invoiceId") || params.get("invoice");
+  /* Only on the list itself: a project page's own ?invoice= belongs to that project. */
+  const invoiceParam = hidden ? null : params.get("invoiceId") || params.get("invoice");
   const locating = useRef("");
   const navRef = useRef({ router, toast });
   useEffect(() => {

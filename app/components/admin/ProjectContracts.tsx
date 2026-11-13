@@ -1883,7 +1883,9 @@ export default function ProjectContracts({ project, onChanged }: { project: Proj
       {(() => {
         const who = selectedContract?.customerSnapshot.fullName || project.customerName || "the customer";
         const email = selectedContract?.customerSnapshot.email || "";
-        const label = selectedContract ? `${contractDisplayLabel(selectedContract.contractNumber)} v${selectedContract.version}` : "this agreement";
+        const label = selectedContract
+          ? `Agreement ${contractDisplayLabel(selectedContract.contractNumber).replace(/^Contract\s*/, "")} v${selectedContract.version}`
+          : "this agreement";
         const close = () => {
           setConfirming(null);
           setPendingUpload(null);

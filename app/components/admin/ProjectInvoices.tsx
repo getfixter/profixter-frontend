@@ -555,7 +555,7 @@ function InvoiceEditor({
       <section className="rounded-2xl bg-slate-950 p-5 text-white shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <button type="button" onClick={onCancel} className="text-sm font-semibold text-blue-300">
+            <button type="button" onClick={onCancel} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-blue-300">
               Back to invoices
             </button>
             <h3 className="mt-3 text-2xl font-bold">{invoiceDisplay(invoice)}</h3>
@@ -1256,7 +1256,7 @@ export default function ProjectInvoices({
         <section className="rounded-2xl bg-slate-950 p-5 text-white shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <button type="button" onClick={() => setView("list")} className="text-sm font-semibold text-blue-300">Back to invoices</button>
+              <button type="button" onClick={() => setView("list")} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-blue-300">Back to invoices</button>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <h3 className="text-2xl font-bold">Invoice #{selected.invoiceNumber}</h3>
                 <span className={`rounded-full border px-3 py-1 text-xs font-bold ${STATUS_STYLES[selected.status]}`}>{selected.status}</span>

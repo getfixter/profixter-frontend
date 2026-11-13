@@ -8,6 +8,7 @@
 const { chromium } = require("playwright");
 
 const BASE = process.argv[2] || "http://localhost:3000";
+const LEAD_ID = "0000000000000000000000c1";
 const results = [];
 function check(name, pass, detail = "") {
   results.push({ name, pass: !!pass });
@@ -91,6 +92,12 @@ async function open(browser, { width = 390, height = 844, eligibility } = {}) {
     }
     if (p === "/api/admin/requests") {
       return json([{ _id: "rq1", name: "Jane Doe", email: "jane.doe@example.com", phone: "+16315550142", serviceType: "free_visit_request", status: state.booking.status === "Confirmed" ? "confirmed" : "pending_confirmation", bookingId: "gb1", requestedDate: DAY, requestedTime: "10:30", message: state.booking.note, createdAt: new Date().toISOString() }]);
+    }
+    // The redesigned Leads (FE-PROJ) read /api/admin/leads; this lead follows its visit gb1.
+    if (p === "/api/admin/leads/search" || p === `/api/admin/leads/request/${LEAD_ID}`) {
+      const lead = { key: `request-${LEAD_ID}`, legacyId: LEAD_ID, model: "request", id: LEAD_ID, name: "Jane Doe", email: "jane.doe@example.com", phone: "+16315550142", address: "40 Elm St", service: "free_visit_request", serviceLabel: "Free visit request", sourcePage: "", status: state.booking.status === "Confirmed" ? "confirmed" : "pending_confirmation", createdAt: new Date().toISOString(), projectId: null, bookingId: "gb1", budgetRange: "", timeline: "", estimateLow: null, estimateHigh: null, href: `/admin/leads/request-${LEAD_ID}` };
+      if (p === "/api/admin/leads/search") return json({ leads: [lead], total: 1, page: 1, limit: 30 });
+      return json({ lead: { ...lead, contactPref: "", bestTime: "", message: state.booking.note, requestedDate: DAY, requestedTime: "10:30", qualification: null, allowedActions: { setStatus: false, statuses: [], convertToProject: false, openProject: false, delete: true } } });
     }
     if (p === "/api/admin/free-visits/gb1" && req.method() === "GET") return json(detail(state));
     if (p === "/api/admin/free-visits/ob1" && req.method() === "GET") return json(onlineDetail(state));
@@ -255,11 +262,16 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `$
   {
     const { ctx, page, state } = await open(browser);
     await page.goto(`${BASE}/admin?tab=requests`, { waitUntil: "networkidle" });
-    await page.waitForSelector("[data-review-free-visit-lead]", { timeout: 15000 });
-    const leadCard = page.locator("div.rounded-2xl").filter({ hasText: "Jane Doe" }).first();
-    check("the lead says Pending confirmation, slot reserved", /Pending confirmation/.test(await leadCard.innerText()) && /slot reserved/.test(await leadCard.innerText()));
-    check("its status follows the visit: no hand-set dropdown", (await leadCard.locator("select").count()) === 0);
-    await page.locator("[data-review-free-visit-lead]").click();
+    await page.waitForSelector(`[data-lead-row="request-${LEAD_ID}"]`, { timeout: 15000 });
+    const row = await page.locator(`[data-lead-row="request-${LEAD_ID}"]`).innerText();
+    check("the lead says Pending confirmation and that it has a visit", /Pending confirmation/.test(row) && /Has a visit/.test(row), row);
+    await page.locator(`[data-lead-row="request-${LEAD_ID}"] a`).click();
+    await page.waitForSelector("[data-status-locked]", { timeout: 10000 });
+    check("its status follows the visit: no hand-set status", (await page.locator('[data-action="save-lead-status"]').count()) === 0);
+    check("it links to the same visit", (await page.locator('[data-action="open-visit"]').getAttribute("href")) === "/admin/jobs/gb1");
+    await page.locator('[data-action="open-visit"]').click();
+    await page.waitForSelector("[data-review-free-visit]", { timeout: 15000 });
+    await page.locator("[data-review-free-visit]").first().click();
     await page.waitForSelector("[data-free-visit-panel] [data-free-visit-eligibility]", { timeout: 10000 });
     check("it opens the same visit", state.calls.some((c) => c.method === "GET" && c.path === "/api/admin/free-visits/gb1"));
     await page.locator("[data-free-visit-decline]").click();

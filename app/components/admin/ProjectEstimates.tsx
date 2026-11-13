@@ -160,7 +160,7 @@ function EstimateEditor({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="flex flex-col gap-4 rounded-2xl bg-slate-950 p-5 text-white sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <button type="button" onClick={onCancel} className="text-sm font-semibold text-blue-300">
+          <button type="button" onClick={onCancel} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-blue-300">
             ← Back to estimates
           </button>
           <h3 className="mt-3 text-2xl font-bold">
@@ -445,7 +445,7 @@ export default function ProjectEstimates({ project }: { project: Project }) {
         <section className="rounded-2xl bg-slate-950 p-5 text-white shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <button type="button" onClick={() => setView("list")} className="text-sm font-semibold text-blue-300">← Back to estimates</button>
+              <button type="button" onClick={() => setView("list")} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-blue-300">← Back to estimates</button>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <h3 className="text-2xl font-bold">{selected.estimateNumber}</h3>
                 <span className={`rounded-full border px-3 py-1 text-xs font-bold ${ESTIMATE_STATUS_STYLES[selected.status]}`}>{selected.status}</span>
