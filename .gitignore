@@ -29,8 +29,10 @@ pnpm-debug.log*
 !.yarn/releases
 !.yarn/versions
 
-# Environment files
-.env*
+# Environment files (an example file may be committed)
+.env
+.env.*
+!.env.example
 
 # never commit zips
 *.zip
@@ -55,6 +57,8 @@ lib.zip
 *.pem
 *.key
 *.p8
+*.p12
+*.pfx
 *.sql
 *.bak
 *.dump
