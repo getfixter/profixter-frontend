@@ -296,20 +296,20 @@ function JobBody({
         <p className="text-[17px] font-semibold text-adm-ink" data-job-when="">
           {whenText(job)}
         </p>
-        <p className="flex flex-wrap items-center gap-x-1 text-[13px] text-adm-text-2">
-          Job {job.bookingNumber ? `#${String(job.bookingNumber).replace(/^#/, "")}` : ""}
+        {/* No " · " before the customer link: at 320px the 44px link wraps and the dot was left dangling. */}
+        <p className="flex flex-wrap items-center gap-x-3 text-[13px] text-adm-text-2">
+          <span>Job {job.bookingNumber ? `#${String(job.bookingNumber).replace(/^#/, "")}` : ""}</span>
           {job.customer.id && canCustomers && !field ? (
             <>
-              {" · "}
               <Link href={`/admin/customers/${encodeURIComponent(job.customer.id)}`} className="inline-flex min-h-[44px] items-center text-[14px] font-semibold text-adm-accent-ink underline-offset-4 hover:underline" data-customer-link="">
                 {job.customer.name || "Customer"}
                 {typeof job.customer.visitsCompleted === "number" ? ` · ${job.customer.visitsCompleted} completed ${job.customer.visitsCompleted === 1 ? "visit" : "visits"}` : ""}
               </Link>
             </>
           ) : job.customer.guest ? (
-            " · Guest (no account)"
+            <span>Guest (no account)</span>
           ) : null}
-          {refreshing ? " · Updating…" : ""}
+          {refreshing ? <span>Updating…</span> : null}
         </p>
         {job.reservationIssue && (
           <p className="flex items-start gap-2 rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] text-adm-problem" data-reservation-issue="">
@@ -481,7 +481,11 @@ function TaskBlock({ job }: { job: JobDetail }) {
   const lib = libraryLabel(job.libraryReference);
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[15px] font-semibold text-adm-ink">{[job.service, job.selectedTask].filter(Boolean).join(" · ") || "Handyman visit"}</p>
+      <p className="text-[15px] font-semibold text-adm-ink">
+        {[job.service, job.selectedTask]
+          .filter((v, i, list) => Boolean(v) && list.findIndex((x) => String(x || "").trim().toLowerCase() === String(v).trim().toLowerCase()) === i)
+          .join(" · ") || "Handyman visit"}
+      </p>
       {text ? (
         <div>
           <p className="text-[13px] font-semibold text-adm-text-2">Customer&apos;s description</p>
