@@ -1,5 +1,5 @@
 /**
- * Charge customer (owner only): type the final total, press "Charge $X".
+ * Charge customer (Owner or General Fixter; enforced by the server): type the final total, press "Charge $X".
  *
  * Two entry points, one flow: from a job (who pays = the booking's stored
  * owner) and from the customer profile with no booking (who pays = that

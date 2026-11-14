@@ -498,7 +498,7 @@ export function BillingTab({
 }: {
   profile: CustomerProfileSummary;
   onAction: (action: MembershipAction, addressId?: string) => void;
-  /** Open Charge customer (no booking). Offered to the owner only. */
+  /** Open Charge customer (no booking). Offered to the Owner and General Fixters (server-decided). */
   onCharge?: () => void;
 }) {
   const id = profile.customer.id;

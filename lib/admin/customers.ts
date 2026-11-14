@@ -119,7 +119,7 @@ export type AllowedActions = {
   changeCommunication: boolean;
   /** Resend sign-in details: only while the account still waits for its first password. */
   resendAccess: boolean;
-  /** Charge customer from the profile, no booking needed (owner only; the server enforces it again). */
+  /** Charge customer from the profile, no booking needed (Owner or General Fixter; the server enforces it again). */
   chargeCustomer: boolean;
 };
 

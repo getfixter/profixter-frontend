@@ -22,7 +22,8 @@ fs.mkdirSync(SHOTS, { recursive: true });
 
 const OWNER = { _id: "owner1", userId: "PF-OWNER", name: "Owner Test", email: "owner@example.test", phone: "5550100", role: "admin", addresses: [] };
 const MANAGER = { _id: "mg1", userId: "PF-MG", name: "Mia Manager", email: "mia@example.test", phone: "5550103", role: "employee", employeeTitle: "Manager", isActive: true, permissions: ["customers.manage", "members.read", "bookings.read", "bookings.write"], adminSections: ["customers", "members", "jobs"], addresses: [] };
-const GENERAL = { _id: "gf1", userId: "PF-GF", name: "Gina General", email: "gina@example.test", phone: "5550102", role: "employee", employeePosition: "General Fixter", isActive: true, permissions: ["bookings.read", "bookings.write", "bookings.assign"], addresses: [] };
+const GENERAL = { _id: "gf1", userId: "PF-GF", name: "Gina General", email: "gina@example.test", phone: "5550102", role: "employee", employeePosition: "General Fixter", isActive: true, permissions: ["bookings.read", "bookings.write", "bookings.assign", "members.read", "schedule.read", "schedule.write", "tips.read"], addresses: [] };
+const FIELD = { _id: "fx2", userId: "PF-FX", name: "Fred Field", email: "fred@example.test", phone: "5550104", role: "employee", employeePosition: "Fixter", isActive: true, permissions: ["bookings.read", "bookings.write", "tips.read"], addresses: [] };
 const iso = (h) => new Date(Date.now() + h * 3600_000).toISOString();
 const money2 = (c) => `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -40,9 +41,11 @@ function baseJob(id, o = {}) {
 
 function makeServer(user, scenario = {}) {
   const owner = user.role === "admin";
+  const manage = owner || (user.permissions || []).includes("customers.manage"); // as the server: customers.manage
+  const canCharge = owner || (user.role === "employee" && user.employeePosition === "General Fixter");
   const state = { charges: [], calls: [], keys: new Map(), behavior: scenario.behavior || "ok", failOnceNetwork: Boolean(scenario.failOnceNetwork), card: scenario.card === undefined ? { brand: "visa", last4: "4242", expMonth: 12, expYear: 2030 } : scenario.card, fp: "fp-1" };
   const j = baseJob("j1", scenario.job || {});
-  const detail = () => ({ ...j, allowedActions: ["addInternalNote", "addPhotos", ...(owner ? ["chargeExtra"] : [])], ...(owner ? { extraCharges: { count: state.charges.filter((c) => c.bookingId === j.id).length, paidCents: 0, open: 0 } } : {}), history: { href: `/api/admin/bookings/${j.id}/history` } });
+  const detail = () => ({ ...j, allowedActions: ["addInternalNote", "addPhotos", ...(canCharge ? ["chargeExtra"] : [])], ...(canCharge ? { extraCharges: { count: state.charges.filter((c) => c.bookingId === j.id).length, paidCents: 0, open: 0 } } : {}), history: { href: `/api/admin/bookings/${j.id}/history` } });
   const toCents = (a) => {
     const m = String(a || "").replace(/[$,\s]/g, "").match(/^(\d{1,6})(?:\.(\d{1,2}))?$/);
     return m ? Number(m[1]) * 100 + Number((m[2] || "").padEnd(2, "0")) : null;
@@ -87,7 +90,7 @@ function makeServer(user, scenario = {}) {
     if (p === "/api/admin/jobs/j1" && method === "GET") return [200, { job: detail() }];
     const cm = /^\/api\/admin\/(jobs\/j1\/extra-charges|customers\/u-j1\/charges)(\/.*)?$/.exec(p);
     if (cm) {
-      if (!owner) return [403, { code: "OWNER_ONLY", message: "Only the owner can charge customers." }];
+      if (!canCharge) return [403, { code: "CHARGE_NOT_ALLOWED", message: "Only the owner or a General Fixter can charge customers." }];
       state.calls.push({ method, p, body });
       const kind = cm[1].startsWith("customers") ? "customer" : "job";
       const rest = cm[2] || "";
@@ -142,6 +145,7 @@ function makeServer(user, scenario = {}) {
       return [200, { charge: c }];
     }
     const pm = /^\/api\/admin\/customers\/u-j1(\/[a-z-]+)?$/.exec(p);
+    if (pm && !owner && !(user.permissions || []).some((x) => x === "customers.manage" || x === "members.read")) return [403, { message: "Access denied" }];
     if (pm) {
       const rest = pm[1] || "";
       if (!rest) {
@@ -151,7 +155,7 @@ function makeServer(user, scenario = {}) {
           visits: { completed: 4, next: null, last: null },
           flags: { blocked: false, phoneVerified: true, emailVerified: true, textsOk: true, offersByTextOk: false, archived: false, hasStripeCustomer: true },
           notesCount: 0,
-          allowedActions: { editProfile: true, editContact: owner, changePlan: true, scheduleCancellation: true, grantComplimentary: owner, sellMembership: true, createVisit: true, addNote: true, block: false, unblock: false, archive: owner, unarchive: false, viewBilling: true, changeCommunication: true, resendAccess: false, chargeCustomer: owner },
+          allowedActions: { editProfile: manage, editContact: owner, changePlan: manage, scheduleCancellation: manage, grantComplimentary: owner, sellMembership: manage, createVisit: true, addNote: manage, block: false, unblock: false, archive: owner, unarchive: false, viewBilling: true, changeCommunication: true, resendAccess: false, chargeCustomer: canCharge },
         }];
       }
       if (rest === "/billing") {
@@ -415,14 +419,42 @@ async function overflow(page, which = "job") {
       await ctx.close();
     }
 
-    /* 6. a General Fixter has no Charge customer anywhere */
+    /* 6. roles: a General Fixter charges from both entry points; a field Fixter has nothing anywhere */
     {
-      const { ctx, page, server } = await open(browser, GENERAL);
+      const { ctx, page, server, errors } = await open(browser, GENERAL);
       await openJob(page);
-      check("General Fixter: no Charges section, no Charge customer", (await page.locator("[data-extra-block]").count()) === 0 && (await page.locator("[data-extra-open]").count()) === 0);
+      check("General Fixter (job): Charges section with Charge customer", (await page.locator("[data-extra-block=job] [data-extra-open]").count()) === 1);
+      await startCharge(page, "55");
+      check("General Fixter (job): the customer and card last four", /Visa •••• 4242/.test(await page.locator("[data-extra-identity]").innerText()));
+      await page.locator("[data-extra-charge]").click();
+      await page.locator("[data-stage=result][data-extra-status=paid]").waitFor();
+      check("General Fixter (job): Charge $55.00 goes through on the server's answer", posts(server).length === 1);
+      await page.locator("[data-extra-done]").click();
+      await openCustomer(page, "billing");
+      await page.locator("[data-extra-block=customer]").waitFor();
+      await startDirect(page, "56");
+      check("General Fixter (profile): Direct charge · no booking, with the card", /Direct charge · no booking/.test(await chargeSheet(page).locator("[data-extra-identity]").innerText()));
+      await page.locator("[data-extra-charge]").click();
+      await chargeSheet(page).locator("[data-stage=result][data-extra-status=paid]").waitFor();
+      check("General Fixter (profile): charged through this customer's charges", customerPosts(server).length === 1);
+      await page.locator("[data-extra-done]").click();
+      await chargeSheet(page).waitFor({ state: "detached" });
+      await page.locator("[data-action=more]").click();
+      check("General Fixter (profile): Charge customer in More; no membership selling or editing added", (await page.locator("[role=menuitem]:has-text('Charge customer')").count()) === 1 && (await page.locator("[role=menuitem]:has-text('Sell a membership')").count()) === 0 && (await page.locator("[role=menuitem]:has-text('Edit details')").count()) === 0);
+      check("General Fixter: no page errors", errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
+    {
+      const { ctx, page, server } = await open(browser, FIELD);
+      await openJob(page);
+      check("field Fixter (job): no Charges section, no Charge customer", (await page.locator("[data-extra-block]").count()) === 0 && (await page.locator("[data-extra-open]").count()) === 0);
       await page.locator("[data-job-more]").click().catch(() => {});
-      check("General Fixter: not in the More menu either", (await page.locator("[role=menuitem]:has-text('Charge customer')").count()) === 0);
-      check("General Fixter: no charge request made", server.state.calls.length === 0);
+      check("field Fixter (job): not in the More menu either", (await page.locator("[role=menuitem]:has-text('Charge customer')").count()) === 0);
+      await page.keyboard.press("Escape").catch(() => {});
+      await page.goto(`${BASE}/admin/customers/u-j1?tab=billing`, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(2500);
+      check("field Fixter (old profile link): no profile, no Charges, no Charge customer", (await page.locator("[data-customer-profile=u-j1]").count()) === 0 && (await page.locator("[data-extra-block], [data-extra-open]").count()) === 0);
+      check("field Fixter: no charge request made", server.state.calls.length === 0, JSON.stringify(server.state.calls.map((c) => c.p)));
       await ctx.close();
     }
 

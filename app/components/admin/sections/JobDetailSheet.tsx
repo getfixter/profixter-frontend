@@ -362,7 +362,7 @@ function JobBody({
       {/* Money (not for field Fixters: K.1) */}
       {!field && job.money && <MoneyView job={job} />}
 
-      {/* Additional charges (owner only: the server sends extraCharges to the owner alone) */}
+      {/* Additional charges (Owner and General Fixter: the server sends extraCharges to them alone) */}
       {!field && job.extraCharges && <ExtraChargesBlock scope={jobScope(job.id)} canCharge={allowed.has("chargeExtra")} onCharge={() => onOpen("chargeExtra")} />}
 
       {/* Internal notes */}
