@@ -406,12 +406,21 @@ function makeServer(user) {
         s.lastAdjustment = body;
         return [created ? 201 : 200, { entry: e }];
       }
-      if (q === "/payouts") return [200, { payouts: Object.values(s.payouts).sort((a, b) => b.week.localeCompare(a.week)).map((w) => ({ week: w.week, lastDay: w.lastDay, payday: w.payday, status: w.status, totalCents: w.lines.reduce((t, l) => t + l.totalCents, 0), employees: w.lines.length, unpaid: w.status === "approved" ? w.lines.filter((l) => l.payment?.status !== "paid").length : null })), integrity: s.integrityBad ? { ok: false, approvedWeeks: 1, problems: ["open entry en9 is on week 2026-10-16, on or before the approved week 2026-10-30: it would never be paid"] } : { ok: true, approvedWeeks: 1, problems: [] } }];
+      if (q === "/payouts") return [200, { payouts: Object.values(s.payouts).sort((a, b) => b.week.localeCompare(a.week)).map((w) => ({ week: w.week, lastDay: w.lastDay, payday: w.payday, status: w.status, totalCents: w.lines.reduce((t, l) => t + l.totalCents, 0), employees: w.lines.length, unpaid: w.status === "approved" ? w.lines.filter((l) => l.payment?.status !== "paid").length : null })), integrity: integrityOf(s) }];
+      if (q === "/payouts/check") {
+        s.rechecks = (s.rechecks || 0) + 1;
+        if (s.integrityRepaired) s.integrityBad = false;
+        return [200, { integrity: integrityOf(s) }];
+      }
       const pm = /^\/payouts\/(\d{4}-\d{2}-\d{2})(\/approve|\/csv|\/lines\/([^/]+)\/paid)?$/.exec(q);
       if (pm) {
         const w = s.payouts[pm[1]];
         if (!w) return [404, { code: "BAD_WEEK", message: "Unknown week." }];
         if (!pm[2]) return [200, { payout: weekView(pm[1]) }];
+        if (s.integrityBad) {
+          s.refusedWhilePaused = (s.refusedWhilePaused || 0) + 1;
+          return [409, { code: "LEDGER_CHECK_FAILED", message: "Payouts are paused: the ledger check found a problem.", paused: true, problems: [] }];
+        }
         if (pm[2] === "/approve") {
           if (w.status !== "ready") return [409, { code: "WEEK_NOT_FINISHED", message: "Not finished." }];
           w.status = "approved";
@@ -434,7 +443,7 @@ function makeServer(user) {
         s.paid = body;
         return [200, { payout: w }];
       }
-      if (q === "/ghl") return [200, { ghl: { enabled: false, signatureKeyConfigured: true, locationConfigured: true, liveVerified: false, liveNote: "Live GHL delivery has not been verified. The account, the webhook subscription and the public key must be confirmed before enabling.", counts: { processed: 14, unmapped: 3, failed: 1 }, lastReceivedAt: iso(-2), failures: [{ _id: "g1", eventId: "evt_1", type: "OutboundMessage", contactId: "abcDEF123456", attempts: 5, lastError: "contact lookup timed out", nextAttemptAt: null, receivedAt: iso(-3) }], unmapped: [{ contactId: "zzzYYY987654", events: 3, lastAt: iso(-4) }] } }];
+      if (q === "/ghl") return [200, { ghl: { enabled: Boolean(s.ghlEnabled), signatureKeyConfigured: true, locationConfigured: true, liveVerified: false, liveNote: "Live GHL delivery has not been verified. The account, the webhook subscription and the public key must be confirmed before enabling.", counts: { processed: 14, unmapped: 3, failed: 1 }, lastReceivedAt: iso(-2), failures: [{ _id: "g1", eventId: "evt_1", type: "OutboundMessage", contactId: "abcDEF123456", attempts: 5, lastError: "contact lookup timed out", nextAttemptAt: null, receivedAt: iso(-3) }], unmapped: [{ contactId: "zzzYYY987654", events: 3, lastAt: iso(-4) }] } }];
       const gm = /^\/ghl\/events\/([^/]+)\/retry$/.exec(q);
       if (gm) return (s.retried = gm[1]), [200, { event: { id: gm[1], status: "processed", outcome: "ok", lastError: "" } }];
       return [404, { code: "NOT_FOUND", message: `no fake for ${method} ${p}` }];
@@ -459,6 +468,13 @@ const results = [];
 function check(name, pass, detailText = "") {
   results.push({ name, pass: !!pass });
   console.log(`${pass ? "PASS" : "FAIL"}  ${name}${detailText && !pass ? "  :: " + detailText : ""}`);
+}
+
+/** Mirrors utils/sales/ledger.js payoutGate(). */
+function integrityOf(s) {
+  return s.integrityBad
+    ? { ok: false, paused: true, blocked: true, approvedWeeks: 1, problems: ["open entry en9 is on week 2026-10-16, on or before the approved week 2026-10-30: it would never be paid"], checkedAt: "2026-11-14T10:10:00.000Z", failedSince: "2026-11-14T10:10:00.000Z", source: "nightly" }
+    : { ok: true, paused: false, blocked: false, approvedWeeks: 1, problems: [], checkedAt: "2026-11-14T10:10:00.000Z", failedSince: null, source: "nightly" };
 }
 
 async function open(browser, user, { width = 390, height = 844 } = {}) {
@@ -1069,10 +1085,42 @@ const sizes = [
       check(`${size.tag}: payouts show the ledger check passed`, /Ledger check passed/.test(await page.locator("[data-ledger-check=ok]").innerText()));
       server.s.integrityBad = true;
       await page.reload();
-      await page.locator("[data-sales-error=ledger_check]").waitFor();
-      check(`${size.tag}: a ledger problem is shown and says not to record payments`, /Do not record payments until it is fixed/.test(await page.locator("[data-sales-error=ledger_check]").innerText()));
+      await page.locator("[data-payouts-paused] [data-sales-error=ledger_check]").waitFor();
+      check(`${size.tag}: a ledger problem says payouts are paused and the actions are turned off`, /Payouts are paused/.test(await page.locator("[data-payouts-paused]").innerText()) && /turned off until it passes/.test(await page.locator("[data-payouts-paused]").innerText()));
       await shot(page, `owner-ledger-check-problem-${size.tag}.png`);
+      const before = server.s.calls.filter((c) => /\/payouts\/\d{4}-\d{2}-\d{2}\/(approve|csv|lines\/)/.test(c.p)).length;
+      // An approved week: CSV and every Record payment are disabled.
+      await page.goto(`${BASE}/admin/sales-desk?tab=payouts&week=2026-10-23`, { waitUntil: "domcontentloaded" });
+      let pdlg = page.locator("[role=dialog][data-sheet=desk-payout]");
+      await pdlg.locator("[data-payout-locked]", { hasText: "Payouts are paused" }).waitFor();
+      check(`${size.tag}: paused: the payroll export button is disabled`, await pdlg.locator("[data-payout-csv]").isDisabled());
+      const payBtns = pdlg.locator("[data-record-payment]");
+      let allPayDisabled = true;
+      for (let i = 0; i < (await payBtns.count()); i++) if (!(await payBtns.nth(i).isDisabled())) allPayDisabled = false;
+      check(`${size.tag}: paused: every Record payment button is disabled`, allPayDisabled);
+      // A ready week: Approve is disabled.
+      await page.goto(`${BASE}/admin/sales-desk?tab=payouts&week=2026-11-06`, { waitUntil: "domcontentloaded" });
+      pdlg = page.locator("[role=dialog][data-sheet=desk-payout]");
+      await pdlg.locator("[data-payout-locked]", { hasText: "Payouts are paused" }).waitFor();
+      const ready = (await pdlg.getAttribute("data-payout-status")) === "ready" || (await pdlg.locator("[data-payout]").getAttribute("data-payout-status")) === "ready";
+      if (ready) check(`${size.tag}: paused: Approve week is disabled`, await pdlg.locator("[data-approve-open]").isDisabled());
+      await shot(page, `owner-payouts-paused-sheet-${size.tag}.png`);
+      check(`${size.tag}: paused: no approve, payment or export request was sent`, server.s.calls.filter((c) => /\/payouts\/\d{4}-\d{2}-\d{2}\/(approve|csv|lines\/)/.test(c.p)).length === before);
+      // Check again while the problem is real: still paused.
+      await page.goto(`${BASE}/admin/sales-desk?tab=payouts`, { waitUntil: "domcontentloaded" });
+      await page.locator("[data-ledger-recheck]").click();
+      await page.locator("text=The ledger check still finds a problem. Payouts stay paused.").waitFor();
+      check(`${size.tag}: Check again with the problem still there keeps payouts paused`, server.s.rechecks === 1 && (await page.locator("[data-payouts-paused]").count()) === 1);
+      // Repaired: Check again lifts the pause and the buttons work again.
+      server.s.integrityRepaired = true;
+      await page.locator("[data-ledger-recheck]").click();
+      await page.locator("[data-ledger-check=ok]").waitFor();
+      await page.goto(`${BASE}/admin/sales-desk?tab=payouts&week=2026-10-23`, { waitUntil: "domcontentloaded" });
+      pdlg = page.locator("[role=dialog][data-sheet=desk-payout]");
+      await pdlg.locator("[data-payout-csv]").waitFor();
+      check(`${size.tag}: after a passing check the export is enabled again and the lock note is gone`, !(await pdlg.locator("[data-payout-csv]").isDisabled()) && (await pdlg.locator("[data-payout-locked]").count()) === 0);
       server.s.integrityBad = false;
+      server.s.integrityRepaired = false;
       track(o);
       await o.ctx.close();
     }
@@ -1086,9 +1134,14 @@ const sizes = [
       check(`GHL ${size.tag}: prominent Live verification pending`, (await page.locator("[data-ghl-live=pending]").count()) === 1 && /Live verification pending/.test(t));
       if (size.width === 390) {
         check("GHL: enabled / signature key / location, failures and unmapped contacts", /Sync enabled\s*No/.test(t) && /Signature key configured\s*Yes/.test(t) && /contact lookup timed out/.test(t) && /zzzYYY987654/.test(t), t);
+        check("GHL: while sync is off, Retry is disabled and nothing is posted", (await page.locator("[data-ghl-retry=g1]").isDisabled()) && !server.s.retried);
+        server.s.ghlEnabled = true;
+        await page.reload();
+        await page.locator("[data-ghl-retry=g1]").waitFor();
         await page.locator("[data-ghl-retry=g1]").click();
         await page.locator("text=Retried: processed.").waitFor();
-        check("GHL: Retry posts for the failed event", server.s.retried === "g1");
+        check("GHL: with sync on, Retry posts for the failed event", server.s.retried === "g1");
+        server.s.ghlEnabled = false;
       }
       const ov = await overflow(page);
       check(`GHL ${size.tag}: no horizontal overflow`, !ov.scroll && !ov.bad.length, JSON.stringify(ov));

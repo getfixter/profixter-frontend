@@ -131,6 +131,46 @@ const api = (token, p, init = {}) => fetch(`${API}${p}`, { ...init, headers: { "
     await page.locator("[data-ledger-check=ok]").waitFor({ timeout: 20000 });
     check("The real ledger check passes after the seeded weeks were approved oldest first", (await api(owner, "/api/admin/sales-desk/payouts")).body.integrity.ok === true);
     await page.screenshot({ path: path.join(SHOTS, "owner-payouts-ledger-check-real-1440x900.png") });
+
+    // A broken ledger BLOCKS on the real server (not just a warning). The fault is planted
+    // straight into the preview database (bypassing the ledger), then removed again.
+    const { MongoClient, ObjectId } = require(require.resolve("mongoose", { paths: [path.join(__dirname, "..", "..", "BackEnd")] })).mongo;
+    const mongo = new MongoClient(process.env.PREVIEW_MONGO_URI || "mongodb://127.0.0.1:27566/?directConnection=true");
+    await mongo.connect();
+    const db = mongo.db(process.env.PREVIEW_DB || (await mongo.db().admin().listDatabases()).databases.map((d) => d.name).find((n) => !["admin", "local", "config"].includes(n)));
+    const batches = await db.collection("payoutbatches").find({ status: "approved" }).sort({ week: 1 }).toArray();
+    // Any line of an approved week. Normally a paid line answers ALREADY_PAID and its CSV exports (200), so a
+    // LEDGER_CHECK_FAILED / 409 here can only come from the gate.
+    const target = batches.flatMap((b) => b.lines.map((l) => ({ week: b.week, employee: String(l.employee), paid: l.payment?.status === "paid" })))[0];
+    check("Preview data has an approved payout line to test against", Boolean(target));
+    const plantedId = new ObjectId();
+    await db.collection("commissionentries").insertOne({ _id: plantedId, sourceKey: "smoke:planted", employee: batches[0].lines[0].employee, kind: "adjustment", product: "adjustment", amountCents: 1, earnedWeek: batches[0].week, statementWeek: batches[0].week, status: "open", late: false, batch: null });
+    try {
+      const gate = (await api(owner, "/api/admin/sales-desk/payouts")).body.integrity;
+      check("Real server: a stranded entry pauses payouts", gate.ok === false && gate.blocked === true && gate.paused === true && gate.problems.some((p) => /would never be paid/.test(p)), JSON.stringify(gate).slice(0, 300));
+      if (target) {
+        const pay = await api(owner, `/api/admin/sales-desk/payouts/${target.week}/lines/${target.employee}/paid`, { method: "POST", body: JSON.stringify({ paidOn: "2026-11-13", method: "payroll" }) });
+        check("Real server: recording a payment is refused by the gate (409 LEDGER_CHECK_FAILED, before any other rule)", pay.status === 409 && pay.body.code === "LEDGER_CHECK_FAILED", JSON.stringify(pay.body).slice(0, 200));
+        const csv = await fetch(`${API}/api/admin/sales-desk/payouts/${target.week}/csv`, { headers: { authorization: `Bearer ${owner}` } });
+        check("Real server: the payroll export is refused", csv.status === 409);
+        const still = await db.collection("payoutbatches").findOne({ week: target.week });
+        check("Real server: the line is unchanged", (still.lines.find((l) => String(l.employee) === target.employee).payment?.status === "paid") === target.paid);
+        await page.goto(`${WEB}/admin/sales-desk?tab=payouts&week=${target.week}`, { waitUntil: "domcontentloaded" });
+        const dlg = page.locator("[role=dialog][data-sheet=desk-payout]");
+        await dlg.locator("[data-payout-locked]", { hasText: "Payouts are paused" }).waitFor({ timeout: 30000 });
+        const payBtn = dlg.locator(`[data-record-payment="${target.employee}"]`);
+        check("Real screen: the export (and Record payment, if shown) are disabled while paused", (await dlg.locator("[data-payout-csv]").isDisabled()) && (target.paid || (await payBtn.isDisabled())));
+        await page.screenshot({ path: path.join(SHOTS, "owner-payouts-paused-real-1440x900.png") });
+      }
+    } finally {
+      await db.collection("commissionentries").deleteOne({ _id: plantedId });
+    }
+    // Repaired data does not reopen payouts by itself; a passing check does.
+    const held = (await api(owner, "/api/admin/sales-desk/payouts")).body.integrity;
+    check("Real server: after the repair, payouts stay paused until a check passes", held.ok === true && held.paused === true && held.blocked === true);
+    const again = await api(owner, "/api/admin/sales-desk/payouts/check", { method: "POST", body: "{}" });
+    check("Real server: Check again passes and reopens payouts", again.status === 200 && again.body.integrity.blocked === false, JSON.stringify(again.body).slice(0, 200));
+    await mongo.close();
     check("Self-referral and payouts pages: no page errors", errors.length === 0, errors.join(" | "));
     await ctx.close();
   }

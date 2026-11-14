@@ -703,8 +703,23 @@ export const decideRequest = async (id: string, body: { action: "approved" | "re
 export const fetchCommissions = async (employee: string, week: string, signal: AbortSignal): Promise<OwnerEntry[]> =>
   (await API.get(`${D}/commissions`, { signal, params: { ...(employee ? { employee } : {}), ...(week ? { week } : {}) } })).data?.entries || [];
 export const addAdjustment = async (body: { employeeId: string; amountCents: number; reason: string; idempotencyKey: string }) => (await API.post(`${D}/adjustments`, body)).data.entry;
-/** The ledger self-check the server runs on every payouts load (nothing omitted, nothing paid twice). */
-export type LedgerIntegrity = { ok: boolean; problems: string[]; approvedWeeks: number };
+/**
+ * The ledger self-check (nothing omitted, nothing paid twice). `ok` is the live
+ * check; `paused` is a stored failure (nightly job or a refused write) that only
+ * a passing full check lifts. While `blocked`, the SERVER refuses approving,
+ * recording payments and the payroll export; the screen only mirrors that.
+ */
+export type LedgerIntegrity = {
+  ok: boolean;
+  paused: boolean;
+  blocked: boolean;
+  problems: string[];
+  approvedWeeks: number;
+  checkedAt: string | null;
+  failedSince: string | null;
+  source: string | null;
+};
+export const recheckLedger = async (): Promise<LedgerIntegrity> => (await API.post(`${D}/payouts/check`, {})).data.integrity;
 export const fetchPayouts = async (signal: AbortSignal): Promise<PayoutWeekRow[]> => (await API.get(`${D}/payouts`, { signal })).data?.payouts || [];
 export const fetchPayoutsWithCheck = async (signal: AbortSignal): Promise<{ payouts: PayoutWeekRow[]; integrity: LedgerIntegrity | null }> => {
   const data = (await API.get(`${D}/payouts`, { signal })).data || {};

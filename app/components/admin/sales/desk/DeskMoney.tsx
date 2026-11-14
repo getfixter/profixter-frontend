@@ -28,6 +28,8 @@ import {
   fetchPayout,
   fetchPayouts,
   fetchPayoutsWithCheck,
+  recheckLedger,
+  type LedgerIntegrity,
   fetchRequestDetail,
   fetchReviews,
   money,
@@ -606,10 +608,8 @@ export function DeskPayouts() {
   return (
     <div className="space-y-3" data-desk-tab="payouts">
       <Notice>Weeks run Friday to Thursday. Approve a finished week to freeze its statements, pay people the way you normally do, then record each payment here. Weeks are approved oldest first, so no earnings are skipped. Profixter does not move money.</Notice>
-      {integrity && !integrity.ok ? (
-        <Problem code="ledger_check">
-          The ledger check found {integrity.problems.length} problem{integrity.problems.length === 1 ? "" : "s"}. Do not record payments until it is fixed: {integrity.problems.slice(0, 3).join("; ")}
-        </Problem>
+      {integrity?.blocked ? (
+        <LedgerPaused integrity={integrity} />
       ) : integrity?.ok && integrity.approvedWeeks > 0 ? (
         <p className="text-[13px] text-adm-text-2" data-ledger-check="ok">
           Ledger check passed: every approved week holds each of its earnings exactly once, and no earnings are stranded on an older week.
@@ -643,8 +643,40 @@ export function DeskPayouts() {
   );
 }
 
+/** Payouts paused: the server refuses approving, paying and exporting; only a passing full check lifts it. */
+function LedgerPaused({ integrity }: { integrity: LedgerIntegrity }) {
+  const toast = useToast();
+  const again = useAdminMutation(() => recheckLedger(), {
+    onSuccess: (r) => toast.show(r.blocked ? "The ledger check still finds a problem. Payouts stay paused." : "Ledger check passed. Payouts are open again."),
+    invalidates: [deskKeys.all],
+  });
+  const n = integrity.problems.length;
+  return (
+    <div className="space-y-2" data-payouts-paused="">
+      <Problem code="ledger_check">
+        Payouts are paused. The ledger check found {n} problem{n === 1 ? "" : "s"}
+        {integrity.failedSince ? ` (since ${dateTimeText(integrity.failedSince)})` : ""}, so approving weeks, recording payments and the payroll export are turned off until it passes: {integrity.problems.slice(0, 3).join("; ")}
+      </Problem>
+      <Button variant="secondary" busy={again.busy} onClick={() => again.mutate(undefined)} data-ledger-recheck="">
+        Check again
+      </Button>
+      {again.error ? <Problem code={errorCode(again.error)}>{errorMessage(again.error)}</Problem> : null}
+    </div>
+  );
+}
+
+/** Fail closed: payout buttons are usable only once the ledger check has loaded and is clear. */
+function usePayoutsLocked(): { locked: boolean; why: string } {
+  const check = useAdminQuery(deskKeys.payoutsCheck, fetchPayoutsWithCheck, { staleTime: 15_000 });
+  const integrity = check.data?.integrity;
+  if (integrity?.blocked) return { locked: true, why: "Payouts are paused: the ledger check found a problem (see Payouts). Nothing can be approved, paid or exported until it passes." };
+  if (!integrity) return { locked: true, why: check.error ? "The ledger check could not be loaded, so payouts stay locked." : "Checking the ledger…" };
+  return { locked: false, why: "" };
+}
+
 function PayoutSheet({ week, onClose }: { week: string; onClose: () => void }) {
   const toast = useToast();
+  const lock = usePayoutsLocked();
   const q = useAdminQuery(deskKeys.payout(week), (signal) => fetchPayout(week, signal), { staleTime: 10_000 });
   const [step, setStep] = useState<{ kind: "view" } | { kind: "approve" } | { kind: "pay"; line: PayoutLine }>({ kind: "view" });
   const p = q.data;
@@ -654,6 +686,7 @@ function PayoutSheet({ week, onClose }: { week: string; onClose: () => void }) {
     setStep({ kind: "view" });
   };
   const csv = async () => {
+    if (lock.locked) return;
     try {
       await downloadAuthed(deskPaths.payoutCsv(week), `payout-${week}.csv`);
     } catch (e) {
@@ -680,14 +713,19 @@ function PayoutSheet({ week, onClose }: { week: string; onClose: () => void }) {
                 {p.approvedAt ? ` · approved ${dateTimeText(p.approvedAt)}${p.approvedByName ? ` by ${p.approvedByName}` : ""}` : ""}
               </span>
             </div>
+            {lock.locked && p.status !== "accruing" && (
+              <p className="text-[13px] font-semibold text-adm-attn" data-payout-locked="">
+                {lock.why}
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
               {p.status === "ready" && (
-                <Button onClick={() => setStep({ kind: "approve" })} data-approve-open="">
+                <Button disabled={lock.locked} onClick={() => setStep({ kind: "approve" })} data-approve-open="">
                   Approve week
                 </Button>
               )}
               {p.status === "approved" && (
-                <Button variant="secondary" icon={<ArrowDownTrayIcon className="h-5 w-5" />} onClick={csv} data-payout-csv="">
+                <Button variant="secondary" disabled={lock.locked} icon={<ArrowDownTrayIcon className="h-5 w-5" />} onClick={csv} data-payout-csv="">
                   Export CSV for payroll
                 </Button>
               )}
@@ -714,7 +752,7 @@ function PayoutSheet({ week, onClose }: { week: string; onClose: () => void }) {
                             {l.payment.recordedByName ? ` · recorded by ${l.payment.recordedByName}` : ""}
                           </p>
                         ) : (
-                          <Button className="mt-2" variant="secondary" onClick={() => setStep({ kind: "pay", line: l })} data-record-payment={l.employee}>
+                          <Button className="mt-2" variant="secondary" disabled={lock.locked} onClick={() => setStep({ kind: "pay", line: l })} data-record-payment={l.employee}>
                             Record payment
                           </Button>
                         ))}
@@ -745,10 +783,14 @@ function PayoutSheet({ week, onClose }: { week: string; onClose: () => void }) {
 function ApproveStep({ p, onBack, onDone }: { p: PayoutWeek; onBack: () => void; onDone: () => void }) {
   const toast = useToast();
   const total = p.lines.reduce((s, l) => s + l.totalCents, 0);
+  const lock = usePayoutsLocked();
   const go = useAdminMutation(() => approvePayout(p.week), {
     onSuccess: () => {
       toast.show("Week approved. Statements are frozen.");
       onDone();
+    },
+    onError: (e) => {
+      if (errorCode(e) === "LEDGER_CHECK_FAILED") invalidateQueries(deskKeys.all);
     },
   });
   return (
@@ -757,9 +799,10 @@ function ApproveStep({ p, onBack, onDone }: { p: PayoutWeek; onBack: () => void;
         Approve {weekText(p.week, p.lastDay)}: {money(total)} for {p.lines.length} employee{p.lines.length === 1 ? "" : "s"}.
       </p>
       <Notice tone="attention">Approving freezes these statements: their lines and totals never change afterwards. Anything earned for this week later goes on the next open week, marked late. Approving does not pay anyone.</Notice>
+      {lock.locked && !go.error ? <Problem code="ledger_check">{lock.why}</Problem> : null}
       {go.error ? <Problem code={errorCode(go.error)}>{errorMessage(go.error)}</Problem> : null}
       <div className="flex flex-wrap gap-2">
-        <Button large busy={go.busy} onClick={() => go.mutate(undefined)} data-approve-confirm="">
+        <Button large busy={go.busy} disabled={lock.locked} onClick={() => go.mutate(undefined)} data-approve-confirm="">
           Approve and freeze
         </Button>
         <Button large variant="secondary" onClick={onBack}>
@@ -775,10 +818,14 @@ function PayStep({ week, line, onBack, onDone }: { week: string; line: PayoutLin
   const [paidOn, setPaidOn] = useState(nyToday);
   const [method, setMethod] = useState("");
   const [reference, setReference] = useState("");
+  const lock = usePayoutsLocked();
   const go = useAdminMutation(() => recordPayout(week, line.employee, { paidOn, method: method.trim(), reference: reference.trim() }), {
     onSuccess: () => {
       toast.show(`Payment to ${line.employeeName} recorded.`);
       onDone();
+    },
+    onError: (e) => {
+      if (errorCode(e) === "LEDGER_CHECK_FAILED") invalidateQueries(deskKeys.all);
     },
   });
   return (
@@ -802,9 +849,10 @@ function PayStep({ week, line, onBack, onDone }: { week: string; line: PayoutLin
       <Field label="Reference (optional)">
         <TextInput name="paid-reference" value={reference} onChange={(e) => setReference(e.target.value)} />
       </Field>
+      {lock.locked && !go.error ? <Problem code="ledger_check">{lock.why}</Problem> : null}
       {go.error ? <Problem code={errorCode(go.error)}>{errorMessage(go.error)}</Problem> : null}
       <div className="flex flex-wrap gap-2">
-        <Button large busy={go.busy} disabled={!/^\d{4}-\d{2}-\d{2}$/.test(paidOn) || !method.trim()} onClick={() => go.mutate(undefined)} data-pay-submit="">
+        <Button large busy={go.busy} disabled={lock.locked || !/^\d{4}-\d{2}-\d{2}$/.test(paidOn) || !method.trim()} onClick={() => go.mutate(undefined)} data-pay-submit="">
           Record payment
         </Button>
         <Button large variant="secondary" onClick={onBack}>
@@ -874,7 +922,7 @@ export function DeskGhl() {
                         {f.attempts} attempts · {f.lastError} · received {dateTimeText(f.receivedAt)}
                       </p>
                     </div>
-                    <Button variant="secondary" busy={retry.busy} onClick={() => retry.mutate(f._id)} data-ghl-retry={f._id}>
+                    <Button variant="secondary" busy={retry.busy} disabled={!g.enabled} title={g.enabled ? undefined : "Sync is off: events wait until the live setup is verified"} onClick={() => retry.mutate(f._id)} data-ghl-retry={f._id}>
                       Retry
                     </Button>
                   </li>
