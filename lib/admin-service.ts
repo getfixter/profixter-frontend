@@ -401,8 +401,8 @@ export interface BookingHistoryEntry {
   createdAt: string;
 }
 
-export type EmployeePosition = "Fixter" | "General Fixter";
-/* null: no field work (office, marketing, sales...). */
+export type EmployeePosition = "Fixter" | "General Fixter" | "Telemarketer";
+/* null: no field work (office, marketing, sales...). "Telemarketer" is a sealed office role: the sales workspace only. */
 export type FieldWork = EmployeePosition | null;
 export type EmployeeAvailabilityStatus =
   | "Available"
@@ -1554,6 +1554,8 @@ export interface AccessRegistry {
   groups: Array<{ id: string; label: string }>;
   sections: Array<{ id: string; group: string; label: string; description: string; requires: string | null }>;
   positions: EmployeePosition[];
+  /** Sealed office roles (BackEnd utils/adminAccess OFFICE_POSITIONS): no Admin sections can be added. */
+  officePositions?: string[];
   includedByPosition: Record<string, string[]>;
 }
 

@@ -29,6 +29,8 @@ export const PERM = {
   PROMOTION_MANAGE: "promotion.manage",
   BLACKLIST_MANAGE: "blacklist.manage",
   ACTIVITY_READ: "activity.read",
+  /* The Telemarketer workspace (/api/sales): their own leads and earnings only. Never a section. */
+  SALES_OWN: "sales.own",
 } as const;
 
 export type Permission = (typeof PERM)[keyof typeof PERM];

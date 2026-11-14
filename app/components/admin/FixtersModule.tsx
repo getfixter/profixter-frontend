@@ -74,6 +74,9 @@ const FIELD_WORK: Array<{ value: FieldWork; label: string; hint: string }> = [
   { value: "Fixter", label: "Fixter", hint: "Does jobs: their own jobs, tips and work photos" },
   { value: "General Fixter", label: "General Fixter", hint: "Runs all jobs, assigns Fixters, members and schedule" },
 ];
+/* A sealed office role: the sales workspace only; the server ignores Admin sections for it. */
+const TELEMARKETER_OPTION = { value: "Telemarketer" as FieldWork, label: "Telemarketer", hint: "Calls assigned leads in the sales workspace; no other Admin access" };
+const isField = (p: FieldWork | undefined) => p === "Fixter" || p === "General Fixter";
 
 /* Older accounts may have only a full name, or only an email. */
 const displayName = (row: FixterAccount) => `${row.firstName || ""} ${row.lastName || ""}`.trim() || row.name || row.email;
@@ -404,6 +407,8 @@ export default function FixtersModule() {
 
   const sectionLabel = useMemo(() => new Map((registry?.sections || []).map((s) => [s.id, s.label])), [registry]);
   const included = useMemo(() => new Set(form.employeePosition ? registry?.includedByPosition?.[form.employeePosition] || [] : []), [registry, form.employeePosition]);
+  const sealed = form.employeePosition === "Telemarketer";
+  const roleOptions = useMemo(() => (registry?.officePositions?.includes("Telemarketer") || form.employeePosition === "Telemarketer" ? [...FIELD_WORK, TELEMARKETER_OPTION] : FIELD_WORK), [registry, form.employeePosition]);
 
   /* ------------------------------ editor ------------------------------ */
   const openNew = () => {
@@ -451,8 +456,8 @@ export default function FixtersModule() {
   const submit = async (event?: React.FormEvent) => {
     event?.preventDefault();
     if (saving) return;
-    if (!form.firstName.trim() || !form.lastName.trim() || (!editing && !form.email.trim()) || (form.employeePosition && !form.phone.trim())) {
-      setFormError(form.employeePosition && !form.phone.trim() ? "Field staff need a phone number." : "First name, last name and email are required.");
+    if (!form.firstName.trim() || !form.lastName.trim() || (!editing && !form.email.trim()) || (isField(form.employeePosition) && !form.phone.trim())) {
+      setFormError(isField(form.employeePosition) && !form.phone.trim() ? "Field staff need a phone number." : "First name, last name and email are required.");
       return;
     }
     setSaving(true);
@@ -464,7 +469,8 @@ export default function FixtersModule() {
         phone: form.phone,
         employeePosition: form.employeePosition,
         employeeTitle: form.employeeTitle,
-        adminSections: form.adminSections,
+        // A Telemarketer never has Admin sections (the server ignores them anyway).
+        adminSections: form.employeePosition === "Telemarketer" ? [] : form.adminSections,
       };
       if (editing) {
         await updateFixter(editing.id, payload);
@@ -554,6 +560,7 @@ export default function FixtersModule() {
   const accessSummary = (row: FixterAccount) => {
     const names = (row.adminSections || []).map((id) => sectionLabel.get(id) || id);
     const parts = [] as string[];
+    if (row.employeePosition === "Telemarketer") return "Telemarketer · sales workspace only";
     if (row.employeePosition) parts.push(`${row.employeePosition} jobs`);
     if (names.length) parts.push(names.length <= 3 ? names.join(", ") : `${names.length} sections`);
     return parts.length ? parts.join(" · ") : "No Admin sections";
@@ -626,7 +633,7 @@ export default function FixtersModule() {
               </div>
 
               {/* Field work only: availability, default assignee and off days, as before. */}
-              {row.employeePosition ? (
+              {isField(row.employeePosition) ? (
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-adm-line bg-adm-sunk px-4 py-2 text-[13px] text-adm-text-2">
                   <label className="flex items-center gap-2">
                     <span className="font-semibold">Status</span>
@@ -698,8 +705,8 @@ export default function FixtersModule() {
               <Field label="Email (their login)" required={!editing}>
                 <TextInput required type="email" inputMode="email" autoCapitalize="none" disabled={!!editing} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="off" />
               </Field>
-              <Field label={form.employeePosition ? "Phone" : "Phone (optional)"} required={!!form.employeePosition}>
-                <TextInput type="tel" inputMode="tel" required={!!form.employeePosition} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} autoComplete="off" />
+              <Field label={isField(form.employeePosition) ? "Phone" : "Phone (optional)"} required={isField(form.employeePosition)}>
+                <TextInput type="tel" inputMode="tel" required={isField(form.employeePosition)} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} autoComplete="off" />
               </Field>
               <Field label="Title" help="Only a label, e.g. Marketing Manager. Access is set below." className="sm:col-span-2">
                 <TextInput value={form.employeeTitle} maxLength={80} onChange={(e) => setForm({ ...form, employeeTitle: e.target.value })} />
@@ -708,9 +715,9 @@ export default function FixtersModule() {
           </fieldset>
 
           <fieldset>
-            <legend className="text-[13px] font-semibold text-adm-text-2">Field work</legend>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {FIELD_WORK.map((option) => {
+            <legend className="text-[13px] font-semibold text-adm-text-2">{roleOptions.length > FIELD_WORK.length ? "Role" : "Field work"}</legend>
+            <div className={cx("mt-2 grid grid-cols-1 gap-2", roleOptions.length > FIELD_WORK.length ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
+              {roleOptions.map((option) => {
                 const selected = (form.employeePosition || null) === option.value;
                 return (
                   <button
@@ -718,6 +725,7 @@ export default function FixtersModule() {
                     type="button"
                     aria-pressed={selected}
                     onClick={() => setForm({ ...form, employeePosition: option.value })}
+                    data-role={option.value || "none"}
                     className={cx("min-h-11 rounded-adm-sm border px-3 py-2.5 text-left", selected ? "border-adm-accent bg-adm-accent-soft" : "border-adm-line hover:border-adm-line-2")}
                   >
                     <span className={cx("block text-[14px] font-semibold", selected ? "text-adm-accent-ink" : "text-adm-ink")}>{option.label}</span>
@@ -728,6 +736,12 @@ export default function FixtersModule() {
             </div>
           </fieldset>
 
+          {sealed ? (
+            <div className="rounded-adm-md border border-adm-line bg-adm-sunk px-3 py-3" data-sealed-access="">
+              <p className="text-[13px] font-semibold text-adm-text-2">Admin access</p>
+              <p className="mt-1 text-[14px] text-adm-ink">A Telemarketer sees only their own sales workspace: assigned leads, follow-ups, credit requests and earnings. Admin sections can&apos;t be added to this role. A phone is optional.</p>
+            </div>
+          ) : (
           <fieldset>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <legend className="text-[13px] font-semibold text-adm-text-2">Admin access</legend>
@@ -775,6 +789,7 @@ export default function FixtersModule() {
               </div>
             )}
           </fieldset>
+          )}
 
           {editing ? (
             <div className="rounded-adm-md border border-adm-line px-3 py-3">

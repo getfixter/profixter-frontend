@@ -2,6 +2,11 @@ import {
   BanknotesIcon,
   BriefcaseIcon,
   CalendarDaysIcon,
+  CurrencyDollarIcon,
+  DocumentCheckIcon,
+  PhoneIcon,
+  PresentationChartLineIcon,
+  UserPlusIcon,
   ChartBarIcon,
   EllipsisHorizontalIcon,
   EnvelopeIcon,
@@ -32,6 +37,11 @@ const ICONS: Record<SectionIcon, typeof BriefcaseIcon> = {
   promotion: MegaphoneIcon,
   activity: ListBulletIcon,
   assistant: SparklesIcon,
+  phone: PhoneIcon,
+  earnings: CurrencyDollarIcon,
+  requests: DocumentCheckIcon,
+  intake: UserPlusIcon,
+  salesdesk: PresentationChartLineIcon,
   more: EllipsisHorizontalIcon,
 };
 

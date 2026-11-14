@@ -47,7 +47,7 @@ export interface User {
   updatedAt?: string;
   role?: "customer" | "employee" | "admin";
   /* Field work: "Fixter" / "General Fixter" do jobs; null is office staff. */
-  employeePosition?: "Fixter" | "General Fixter" | null;
+  employeePosition?: "Fixter" | "General Fixter" | "Telemarketer" | null;
   /* Free text the owner typed ("Marketing Manager"). Display only. */
   employeeTitle?: string;
   /* Admin sections the owner switched on (employees only). */

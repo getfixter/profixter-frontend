@@ -29,6 +29,12 @@ export type SectionId =
   | "promotion"
   | "activity"
   | "assistant"
+  | "sales-today"
+  | "sales-leads"
+  | "sales-earnings"
+  | "sales-requests"
+  | "sales-intake"
+  | "sales-desk"
   | "more";
 
 export type SectionIcon =
@@ -46,6 +52,11 @@ export type SectionIcon =
   | "promotion"
   | "activity"
   | "assistant"
+  | "phone"
+  | "earnings"
+  | "requests"
+  | "intake"
+  | "salesdesk"
   | "more";
 
 export type Section = {
@@ -73,8 +84,23 @@ export const SECTIONS: Record<SectionId, Section> = {
   promotion: { id: "promotion", href: "/admin/promotion", label: "Promotion Popup", description: "The visitor promotion", icon: "promotion" },
   activity: { id: "activity", href: "/admin/activity", label: "Activity Log", description: "Who changed what", icon: "activity" },
   assistant: { id: "assistant", href: "/admin/assistant", label: "Assistant", description: "Growth agents, approvals and capacity", icon: "assistant" },
+  "sales-today": { id: "sales-today", href: "/admin/sales-today", label: "Today", description: "Follow-ups, new leads and your bonus", icon: "day" },
+  "sales-leads": { id: "sales-leads", href: "/admin/sales-leads", label: "Leads", description: "Your assigned leads", icon: "phone" },
+  "sales-earnings": { id: "sales-earnings", href: "/admin/sales-earnings", label: "Earnings", description: "Sales, bonus and weekly statements", icon: "earnings" },
+  "sales-requests": { id: "sales-requests", href: "/admin/sales-requests", label: "Credit requests", description: "Sales credit you asked for", icon: "requests" },
+  "sales-intake": { id: "sales-intake", href: "/admin/sales-intake", label: "Submitted leads", description: "Leads you added, waiting for the owner", icon: "intake" },
+  "sales-desk": { id: "sales-desk", href: "/admin/sales-desk", label: "Sales desk", description: "Telemarketers, leads, credit and payouts", icon: "salesdesk" },
   more: { id: "more", href: "/admin/more", label: "More", description: "Everything else", icon: "more" },
 };
+
+/** The sealed office role: only the sales workspace, nothing else in Admin (BackEnd utils/adminAccess.js). */
+export function isTelemarketer(user: User | null | undefined): boolean {
+  if (!user || isAdminUser(user)) return false;
+  return user.role === "employee" && user.isActive !== false && user.employeePosition === "Telemarketer" && (user.permissions || []).includes(PERM.SALES_OWN);
+}
+
+const TELEMARKETER_PRIMARY: SectionId[] = ["sales-today", "sales-leads", "sales-earnings"];
+const TELEMARKETER_MORE: SectionId[] = ["sales-requests", "sales-intake"];
 
 /** Has a seat in Admin at all: the owner, or an active employee. */
 export function hasWorkspace(user: User | null | undefined): boolean {
@@ -97,6 +123,8 @@ export function isFieldFixter(user: User | null | undefined): boolean {
 export function canOpen(user: User | null | undefined, id: SectionId): boolean {
   if (!hasWorkspace(user)) return false;
   const owner = isAdminUser(user);
+  // A Telemarketer opens the sales workspace and More, nothing else, whatever else the user object says.
+  if (isTelemarketer(user)) return TELEMARKETER_PRIMARY.includes(id) || TELEMARKETER_MORE.includes(id) || id === "more";
   switch (id) {
     case "jobs":
       return can(user, PERM.BOOKINGS_READ);
@@ -128,6 +156,14 @@ export function canOpen(user: User | null | undefined, id: SectionId): boolean {
       return can(user, PERM.ACTIVITY_READ);
     case "assistant":
       return can(user, PERM.GROWTH_READ);
+    case "sales-today":
+    case "sales-leads":
+    case "sales-earnings":
+    case "sales-requests":
+    case "sales-intake":
+      return false;
+    case "sales-desk":
+      return owner;
     case "more":
       return true;
     default:
@@ -155,6 +191,7 @@ const MORE_ORDER: SectionId[] = [
   "promotion",
   "activity",
   "assistant",
+  "sales-desk",
 ];
 
 export type Navigation = {
@@ -166,6 +203,8 @@ export type Navigation = {
 
 export function navigationFor(user: User | null | undefined): Navigation {
   if (!hasWorkspace(user)) return { primary: [], more: [] };
+  // Telemarketers: Today · Leads · Earnings · More, always (More holds requests and submitted leads).
+  if (isTelemarketer(user)) return { primary: TELEMARKETER_PRIMARY.map((id) => SECTIONS[id]), more: TELEMARKETER_MORE.map((id) => SECTIONS[id]) };
   const field = isFieldFixter(user);
   const order = field ? FIELD_PRIMARY_ORDER : PRIMARY_ORDER;
   const primary = order.filter((id) => canOpen(user, id)).map((id) => SECTIONS[id]);
