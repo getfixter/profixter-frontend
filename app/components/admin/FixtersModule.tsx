@@ -33,7 +33,9 @@ import {
   type EmployeeAvailabilityStatus,
   type FieldWork,
   type FixterAccount,
+  type StaffSetupLink,
 } from "@/lib/admin-service";
+import StaffSetupSheet, { needsSetup, setupBadge } from "@/app/components/admin/StaffSetupSheet";
 import {
   getFixterFutureJobs,
   reassignFixterFutureJobs,
@@ -387,6 +389,7 @@ export default function FixtersModule() {
   const [deleteError, setDeleteError] = useState("");
   const [historyFixter, setHistoryFixter] = useState<FixterAccount | null>(null);
   const [flow, setFlow] = useState<Flow | null>(null);
+  const [setupFor, setSetupFor] = useState<{ row: FixterAccount; link: StaffSetupLink | null; justCreated: boolean } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -476,8 +479,13 @@ export default function FixtersModule() {
         await updateFixter(editing.id, payload);
         toast.show(`${form.firstName}'s access is saved. It applies from their next action.`);
       } else {
-        await createFixter({ ...payload, email: form.email });
-        toast.show(`${form.firstName} can sign in with the temporary password 11111111 and will be asked to change it.`, { duration: 8000 });
+        const created = await createFixter({ ...payload, email: form.email });
+        if (created.setupLink) {
+          // A Telemarketer: no password, a setup link to copy or send (nothing sent yet).
+          setSetupFor({ row: created.fixter, link: created.setupLink, justCreated: true });
+        } else {
+          toast.show(`${form.firstName} can sign in with the temporary password 11111111 and will be asked to change it.`, { duration: 8000 });
+        }
       }
       setEditorOpen(false);
       setEditing(null);
@@ -611,6 +619,7 @@ export default function FixtersModule() {
                     {row.isActive ? <StatusBadge tone="success">Active</StatusBadge> : <StatusBadge tone="neutral">Disabled</StatusBadge>}
                     {row.isDefaultFixter ? <StatusBadge tone="info">Default</StatusBadge> : null}
                     {row.mustChangePassword ? <StatusBadge tone="attention">Temporary password</StatusBadge> : null}
+                    {setupBadge(row)}
                   </span>
                   <span className="mt-0.5 block break-words text-[14px] text-adm-text-2">{row.employeeTitle || row.employeePosition || "No title"}</span>
                   <span className="mt-0.5 block truncate text-[13px] text-adm-text-2">{accessSummary(row)}</span>
@@ -620,6 +629,11 @@ export default function FixtersModule() {
                   </span>
                 </button>
                 <div className="flex shrink-0 flex-col items-end gap-1">
+                  {needsSetup(row) && row.isActive ? (
+                    <Button variant="secondary" onClick={() => setSetupFor({ row, link: null, justCreated: false })} data-setup-open={row.id}>
+                      Setup link
+                    </Button>
+                  ) : null}
                   {row.isActive ? (
                     <Button variant="secondary" onClick={() => startDisable(row)} data-disable={row.id}>
                       Disable
@@ -740,6 +754,7 @@ export default function FixtersModule() {
             <div className="rounded-adm-md border border-adm-line bg-adm-sunk px-3 py-3" data-sealed-access="">
               <p className="text-[13px] font-semibold text-adm-text-2">Admin access</p>
               <p className="mt-1 text-[14px] text-adm-ink">A Telemarketer sees only their own sales workspace: assigned leads, follow-ups, credit requests and earnings. Admin sections can&apos;t be added to this role. A phone is optional.</p>
+              {!editing ? <p className="mt-1 text-[14px] text-adm-ink" data-setup-explainer>No password is created. After you save, you copy or email a one-time setup link and they choose their own password.</p> : null}
             </div>
           ) : (
           <fieldset>
@@ -874,6 +889,16 @@ export default function FixtersModule() {
       </Sheet>
 
       {flow ? <DisableFlow key={flow.row.id} flow={flow} setFlow={setFlow} targets={rows || []} onChanged={load} /> : null}
+      {setupFor ? (
+        <StaffSetupSheet
+          key={setupFor.row.id}
+          row={setupFor.row}
+          initialLink={setupFor.link}
+          justCreated={setupFor.justCreated}
+          onClose={() => setSetupFor(null)}
+          onChanged={load}
+        />
+      ) : null}
     </div>
   );
 }

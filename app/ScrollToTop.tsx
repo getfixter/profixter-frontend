@@ -39,6 +39,8 @@ export default function ScrollToTop() {
       !pathname.startsWith("/admin/lab") &&
       !pathname.startsWith("/admin/event-display");
     if (adminShell) return;
+    // The invitation page's fragment is a setup token, not an anchor (app/team-setup).
+    if (pathname === "/team-setup") return;
 
     const hash = window.location.hash;
 
@@ -59,7 +61,16 @@ export default function ScrollToTop() {
 
       const settle = () => {
         if (cancelled) return;
-        const target = document.querySelector(hash);
+        /*
+         * By id, not querySelector(hash): a fragment that is not a valid CSS
+         * selector ("#2abc", "#a.b") made querySelector throw and crashed the page.
+         */
+        let target: HTMLElement | null = null;
+        try {
+          target = document.getElementById(decodeURIComponent(hash.slice(1)));
+        } catch {
+          target = null;
+        }
         if (!target) return;
         const top = Math.round(target.getBoundingClientRect().top);
         if (lastTop !== null && Math.abs(top - lastTop) < 2) return;

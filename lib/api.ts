@@ -33,6 +33,8 @@ const AUTH_CHALLENGE_ROUTES = [
   // Wrong codes are 400s, but a 401 from a code endpoint is still an answer.
   '/api/auth/otp/',
   '/api/password-reset',
+  // Invitation-link setup for a new Telemarketer (no session yet).
+  '/api/staff-setup/',
 ];
 
 // Handle 401 errors (unauthorized)

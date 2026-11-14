@@ -412,6 +412,23 @@ export type EmployeeAvailabilityStatus =
   | "Training"
   | "Inactive";
 
+export type StaffSetupStatus =
+  | { state: "complete"; completedAt: string }
+  | {
+      state: "needs_link" | "link_active" | "expired";
+      expiresAt: string | null;
+      issuedAt: string | null;
+      lastSentAt: string | null;
+      lastSentTo: string;
+      sendCount: number;
+    };
+
+/** A setup link, shown once. The server keeps only its hash. */
+export interface StaffSetupLink {
+  link: string;
+  expiresAt: string;
+}
+
 export interface FixterAccount {
   id: string;
   /* The account's full name; firstName/lastName can be empty on older accounts. */
@@ -428,6 +445,8 @@ export interface FixterAccount {
   adminSections: string[];
   isActive: boolean;
   mustChangePassword: boolean;
+  /* Invitation-link setup (Telemarketers). null for everyone else. Never carries the link. */
+  setup?: StaffSetupStatus | null;
   isDefaultFixter: boolean;
   employeeAvailabilityStatus: EmployeeAvailabilityStatus;
   completedBookingsCount: number;
@@ -1665,9 +1684,35 @@ export type EmployeeInput = {
   adminSections: string[];
 };
 
-export const createFixter = async (data: EmployeeInput & { email: string }): Promise<FixterAccount> => {
+export const createFixter = async (
+  data: EmployeeInput & { email: string }
+): Promise<{ fixter: FixterAccount; setupLink: StaffSetupLink | null }> => {
   const response = await API.post("/api/admin/fixters", data);
-  return response.data.fixter;
+  return { fixter: response.data.fixter, setupLink: response.data.setupLink || null };
+};
+
+/** A new setup link to copy. Replaces (kills) any earlier link. Sends nothing. */
+export const newStaffSetupLink = async (id: string): Promise<{ fixter: FixterAccount; setupLink: StaffSetupLink }> => {
+  const response = await API.post(`/api/admin/fixters/${id}/setup-link`, {});
+  return response.data;
+};
+
+/**
+ * Email a new setup link to the employee. Replaces (kills) any earlier link.
+ * When the email fails the server answers 502 with the new, working link, so
+ * the owner can still copy it: that case resolves with sent: false.
+ */
+export const sendStaffSetupInvite = async (
+  id: string
+): Promise<{ sent: boolean; sentTo?: string; fixter: FixterAccount; setupLink: StaffSetupLink; message?: string }> => {
+  try {
+    const response = await API.post(`/api/admin/fixters/${id}/setup-invite`, {});
+    return response.data;
+  } catch (error) {
+    const data = (error as { response?: { status?: number; data?: { sent?: boolean; setupLink?: StaffSetupLink } } })?.response;
+    if (data?.status === 502 && data.data?.setupLink) return data.data as { sent: boolean; fixter: FixterAccount; setupLink: StaffSetupLink; message?: string };
+    throw error;
+  }
 };
 
 export const updateFixter = async (
