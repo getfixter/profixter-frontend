@@ -23,6 +23,7 @@ import {
   pct,
   prize,
   saveGoals,
+  saveHomeAddress,
   stageLabel,
   weekText,
   type Bonus,
@@ -314,6 +315,7 @@ function EmployeeSheet({ id, from, to, onClose }: { id: string; from: string; to
             <EarningsSnapshot e={d.earnings} />
           </Panel>
           <GoalsForm id={d.employee.id} goals={d.goals} coaching={d.coaching} />
+          <HomeAddressForm id={d.employee.id} initial={d.employee.homeAddress} />
           <Panel title="Statements">
             {d.statements.length ? (
               <ul role="list" className="-mx-4 -my-4">
@@ -359,6 +361,42 @@ function EmployeeSheet({ id, from, to, onClose }: { id: string; from: string; to
         </div>
       ) : null}
     </Sheet>
+  );
+}
+
+/** Optional; only for the self-referral check. Owner-only: never shown to the telemarketer or other staff. */
+function HomeAddressForm({ id, initial }: { id: string; initial?: { line1: string; unit: string; city: string; zip: string } }) {
+  const toast = useToast();
+  const [line1, setLine1] = useState(initial?.line1 || "");
+  const [unit, setUnit] = useState(initial?.unit || "");
+  const [city, setCity] = useState(initial?.city || "");
+  const [zip, setZip] = useState(initial?.zip || "");
+  const save = useAdminMutation(() => saveHomeAddress(id, { line1: line1.trim(), unit: unit.trim(), city: city.trim(), zip: zip.trim() }), {
+    onSuccess: () => toast.show("Home address saved."),
+    invalidates: [deskKeys.all],
+  });
+  return (
+    <Panel title="Home address (self-referral check)" data-home-address-form="">
+      <p className="mb-2 text-[13px] text-adm-text-2">Optional. A customer at this address is flagged for your review (never refused): it may be a household member. Only you can see it.</p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Street address">
+          <TextInput name="home-line1" autoComplete="off" value={line1} onChange={(e) => setLine1(e.target.value)} />
+        </Field>
+        <Field label="Apt / unit">
+          <TextInput name="home-unit" autoComplete="off" value={unit} onChange={(e) => setUnit(e.target.value)} />
+        </Field>
+        <Field label="Town">
+          <TextInput name="home-city" autoComplete="off" value={city} onChange={(e) => setCity(e.target.value)} />
+        </Field>
+        <Field label="ZIP">
+          <TextInput name="home-zip" inputMode="numeric" autoComplete="off" value={zip} onChange={(e) => setZip(e.target.value)} />
+        </Field>
+      </div>
+      {save.error ? <div className="mt-2"><Problem>{errorMessage(save.error)}</Problem></div> : null}
+      <Button className="mt-3" busy={save.busy} onClick={() => save.mutate(undefined)} data-home-address-save="">
+        Save address
+      </Button>
+    </Panel>
   );
 }
 

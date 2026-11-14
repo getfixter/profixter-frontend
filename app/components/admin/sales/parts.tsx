@@ -156,11 +156,24 @@ export function SuppressionBanner({ s }: { s: Suppression }) {
 
 const sourceLabel = (s: string) => ({ telemarketer: "recorded by a telemarketer", owner: "recorded by the owner", ghl: "from GHL", customer: "the customer" })[s] || s;
 
-/** Where a timeline row came from: verified by the system, logged by a person, from GHL, or estimated. */
+/**
+ * "Unknown": the outcome was never recorded (Profixter does not record no-shows).
+ * Deliberately a plain chip with no icon: a cross would read as canceled and a
+ * check as verified, and neither is known.
+ */
+export function UnknownBadge() {
+  return (
+    <span className="inline-flex h-6 flex-none items-center rounded-adm-xs border border-dashed border-adm-line-2 px-1.5 text-[12px] font-semibold text-adm-text-2" data-unknown="">
+      Unknown
+    </span>
+  );
+}
+
+/** Where a timeline row came from: verified by the system, logged by a person, from GHL, or unknown (no outcome recorded; never guessed). */
 export function OriginBadge({ origin, by }: { origin: TimelineItem["origin"]; by?: string }) {
   if (origin === "system") return <StatusBadge tone="info">System</StatusBadge>;
   if (origin === "ghl") return <StatusBadge tone="neutral">From GHL</StatusBadge>;
-  if (origin === "estimated") return <StatusBadge tone="attention">Estimated</StatusBadge>;
+  if (origin === "unknown") return <UnknownBadge />;
   return (
     <span className="inline-flex h-6 flex-none items-center rounded-adm-xs border border-adm-line-2 px-1.5 text-[12px] font-semibold text-adm-text-2">
       Logged by {by || "an employee"}

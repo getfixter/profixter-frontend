@@ -64,7 +64,7 @@ import {
   Textarea,
   useToast,
 } from "@/app/components/admin/ui";
-import { BonusSummary, CalcBreakdown, EarningsSnapshot, EntryRow, Notice, Panel, Problem, StageBadge, SuppressionBadges } from "./parts";
+import { BonusSummary, CalcBreakdown, EarningsSnapshot, EntryRow, Notice, Panel, Problem, StageBadge, SuppressionBadges, UnknownBadge } from "./parts";
 import { EvidenceUpload } from "./LeadDetail";
 
 function Loading({ label }: { label: string }) {
@@ -134,7 +134,7 @@ export function SalesToday() {
                     title={v.name || "Customer"}
                     subtitle={v.label}
                     meta={dateTimeText(v.date)}
-                    trailing={v.verified ? <StatusBadge tone="info">System</StatusBadge> : <StatusBadge tone="attention">Estimated</StatusBadge>}
+                    trailing={v.verified ? <StatusBadge tone="info">System</StatusBadge> : <UnknownBadge />}
                   />
                 ))}
               </ul>

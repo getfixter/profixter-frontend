@@ -315,9 +315,15 @@ export type LeadCard = {
 export type Suppression = { call: boolean; sms: boolean; reasons: { channel: string; source: string; reason: string; at: string }[] };
 export type GhlLinks = { contact: string | null; conversation: string | null; note?: string; contactId: string | null };
 
-export type TimelineItem = { at: string; kind: string; text: string; by?: string; origin: "employee" | "system" | "ghl" | "estimated"; visibility?: string; id?: string; corrects?: string | null };
+export type TimelineItem = { at: string; kind: string; text: string; by?: string; origin: "employee" | "system" | "ghl" | "unknown"; visibility?: string; id?: string; corrects?: string | null };
 
-export type FreeVisit = { date: string | null; requestedAt: string; status: string; label: string; verified: boolean };
+/** status "unknown": the date passed and no outcome was recorded (Profixter does not record no-shows). Never an estimate. */
+export type FreeVisit = { date: string | null; requestedAt: string; status: string; label: string; detail?: string; verified: boolean };
+
+/** One self-referral signal (owner only). A flag for review, never a verdict. */
+export type SelfReferralSignal = { code: string; strength: "same_person" | "payment" | "household" | string; text: string };
+export type IntakeFlag = { code: string; text: string };
+export type HomeAddress = { line1: string; unit: string; city: string; zip: string };
 export type MembershipState = { plan: string; cycle: string; state: string; startDate: string; endsOn: string | null; endedOn: string | null };
 
 export type LeadSale = { id: string; kind: string; label: string; plan: string | null; cycle: string | null; paidAt: string; paidPreTaxCents: number; status: string; claimable: boolean };
@@ -499,7 +505,7 @@ export type Queues = { unassigned: number; intake: number; reviews: number; requ
 export type TeamOverview = { from: string; to: string; rows: TeamRow[]; queues: Queues; definitions: Record<string, string> };
 
 export type EmployeeDetail = {
-  employee: { id: string; name: string; active: boolean; email: string };
+  employee: { id: string; name: string; active: boolean; email: string; homeAddress?: HomeAddress };
   metrics: Metrics;
   from: string;
   to: string;
@@ -523,6 +529,7 @@ export type OwnerLeadRow = {
   source: string;
   sourcedBy: string;
   linked: boolean;
+  intakeFlags?: IntakeFlag[];
   assignee: { id: string; name: string; since: string } | null;
   creditHolder: { id: string; name: string } | null;
   doNotCall: boolean;
@@ -557,6 +564,7 @@ export type OwnerLeadDetail = {
   source: string;
   sourceNote: string;
   sourcedBy: string | null;
+  intakeFlags?: IntakeFlag[];
   ghl: GhlLinks;
   link: { method: string | null; at: string | null; reason: string } | null;
   linkedAccount: { id: string; name: string; userId: string; since: string } | null;
@@ -582,6 +590,7 @@ export type Review = {
     commissions?: { id: string; employee: string; amountCents: number; status: string; statementWeek: string }[];
     bonuses?: { id: string; employee: string; amountCents: number; status: string; periodIndex: number }[];
     note?: string;
+    selfReferral?: { employee: string; employeeName: string; signals: SelfReferralSignal[] }[];
   };
   status: string;
   resolution?: unknown;
@@ -591,7 +600,7 @@ export type Review = {
 export type Reviews = { reviews: Review[]; requests: (CreditRequest & { employee: { id: string; name: string } })[] };
 
 export type CreditRequestDetail = {
-  request: CreditRequest & { employee: { id: string; name: string } };
+  request: CreditRequest & { employee: { id: string; name: string }; selfReferral?: SelfReferralSignal[] };
   customer: { id: string; name: string; userId: string; since: string } | null;
   sale: { id: string; kind: string; label: string; plan: string; cycle: string; paidAt: string; identity: string; amounts: OwnerSale["amounts"]; discount: OwnerSale["discount"]; returningCustomer: boolean; stripe: { invoiceId: string; billingReason: string } } | null;
   currentCredit: { status: string; reason: string } | null;
@@ -658,6 +667,7 @@ export const deskKeys = {
   request: (id: string) => ["desk", "request", id] as const,
   commissions: (employee: string, week: string) => ["desk", "commissions", employee, week] as const,
   payouts: ["desk", "payouts"] as const,
+  payoutsCheck: ["desk", "payouts", "check"] as const,
   payout: (week: string) => ["desk", "payout", week] as const,
   ghl: ["desk", "ghl"] as const,
 };
@@ -667,6 +677,7 @@ export const fetchOverview = async (from: string, to: string, signal: AbortSigna
 export const fetchTelemarketers = async (signal: AbortSignal): Promise<{ id: string; name: string; active: boolean }[]> => (await API.get(`${D}/employees`, { signal })).data?.employees || [];
 export const fetchEmployee = async (id: string, from: string, to: string, signal: AbortSignal): Promise<EmployeeDetail> => (await API.get(`${D}/employees/${enc(id)}`, { signal, params: range(from, to) })).data;
 export const saveGoals = async (id: string, body: Goals) => (await API.put(`${D}/employees/${enc(id)}/goals`, body)).data.goals;
+export const saveHomeAddress = async (id: string, body: HomeAddress): Promise<HomeAddress> => (await API.put(`${D}/employees/${enc(id)}/home-address`, body)).data.homeAddress;
 export const fetchDeskLeads = async (view: string, q: string, employee: string, signal: AbortSignal): Promise<OwnerLeadRow[]> =>
   (await API.get(`${D}/leads`, { signal, params: { view, ...(q ? { q } : {}), ...(employee ? { employee } : {}) } })).data?.leads || [];
 export const createDeskLead = async (body: { name: string; phone?: string; email?: string; town?: string; zip?: string; note?: string; userId?: string; assignTo?: string; reason?: string }) =>
@@ -687,12 +698,18 @@ export const liftSuppression = async (body: { phone: string; channel: "call" | "
 export const fetchReviews = async (status: string, signal: AbortSignal): Promise<Reviews> => (await API.get(`${D}/reviews`, { signal, params: status === "resolved" ? { status } : {} })).data;
 export const resolveReview = async (id: string, body: Record<string, unknown>) => (await API.post(`${D}/reviews/${enc(id)}/resolve`, body)).data;
 export const fetchRequestDetail = async (id: string, signal: AbortSignal): Promise<CreditRequestDetail> => (await API.get(`${D}/credit-requests/${enc(id)}`, { signal })).data;
-export const decideRequest = async (id: string, body: { action: "approved" | "rejected" | "needs_info"; reason: string; amountCents?: number; countsForBonus?: boolean }) =>
+export const decideRequest = async (id: string, body: { action: "approved" | "rejected" | "needs_info"; reason: string; amountCents?: number; countsForBonus?: boolean; selfReferralCleared?: boolean }) =>
   (await API.post(`${D}/credit-requests/${enc(id)}/decide`, body)).data;
 export const fetchCommissions = async (employee: string, week: string, signal: AbortSignal): Promise<OwnerEntry[]> =>
   (await API.get(`${D}/commissions`, { signal, params: { ...(employee ? { employee } : {}), ...(week ? { week } : {}) } })).data?.entries || [];
 export const addAdjustment = async (body: { employeeId: string; amountCents: number; reason: string; idempotencyKey: string }) => (await API.post(`${D}/adjustments`, body)).data.entry;
+/** The ledger self-check the server runs on every payouts load (nothing omitted, nothing paid twice). */
+export type LedgerIntegrity = { ok: boolean; problems: string[]; approvedWeeks: number };
 export const fetchPayouts = async (signal: AbortSignal): Promise<PayoutWeekRow[]> => (await API.get(`${D}/payouts`, { signal })).data?.payouts || [];
+export const fetchPayoutsWithCheck = async (signal: AbortSignal): Promise<{ payouts: PayoutWeekRow[]; integrity: LedgerIntegrity | null }> => {
+  const data = (await API.get(`${D}/payouts`, { signal })).data || {};
+  return { payouts: data.payouts || [], integrity: data.integrity || null };
+};
 export const fetchPayout = async (week: string, signal: AbortSignal): Promise<PayoutWeek> => (await API.get(`${D}/payouts/${enc(week)}`, { signal })).data.payout;
 export const approvePayout = async (week: string) => (await API.post(`${D}/payouts/${enc(week)}/approve`, {})).data.payout;
 export const recordPayout = async (week: string, employeeId: string, body: { paidOn: string; method: string; reference: string }) =>

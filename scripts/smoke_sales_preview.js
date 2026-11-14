@@ -111,6 +111,29 @@ const api = (token, p, init = {}) => fetch(`${API}${p}`, { ...init, headers: { "
     check("Owner pages: no page errors", errors.length === 0, errors.join(" | "));
     await ctx.close();
   }
+  // Self-referral (seeded: Theo lives at one customer's address) and the ledger check, on the real server.
+  {
+    const theo = await login("tele2@preview.test", "preview-tele-2");
+    const reviews = (await api(owner, "/api/admin/sales-desk/reviews")).body.reviews;
+    const flagged = reviews.find((r) => r.kind === "credit_hold" && r.effects?.selfReferral?.length);
+    check("The real server held the household sale for review (not refused)", Boolean(flagged) && flagged.effects.selfReferral[0].signals.some((x) => x.code === "same_home_address" && x.strength === "household"), JSON.stringify(reviews.map((r) => r.summary)).slice(0, 300));
+    const mine = (await api(theo, "/api/sales/earnings")).body;
+    check("The employee sees only a neutral reason, never the word self-referral", !/self.?referral/i.test(JSON.stringify(mine)) && /routine owner check/.test(JSON.stringify(mine)), JSON.stringify(mine).slice(0, 300));
+    const { ctx, page, errors } = await open(owner, { width: 1440, height: 900 });
+    if (flagged) {
+      await page.goto(`${WEB}/admin/sales-desk?tab=reviews&review=${flagged.id}`, { waitUntil: "domcontentloaded" });
+      await page.locator("[data-self-referral]").waitFor({ timeout: 20000 });
+      await settle(page);
+      check("The owner review shows the household signal as a flag", /Possible household member/.test(await page.locator("[data-self-referral]").innerText()));
+      await page.screenshot({ path: path.join(SHOTS, "owner-self-referral-real-1440x900.png") });
+    }
+    await page.goto(`${WEB}/admin/sales-desk?tab=payouts`, { waitUntil: "domcontentloaded" });
+    await page.locator("[data-ledger-check=ok]").waitFor({ timeout: 20000 });
+    check("The real ledger check passes after the seeded weeks were approved oldest first", (await api(owner, "/api/admin/sales-desk/payouts")).body.integrity.ok === true);
+    await page.screenshot({ path: path.join(SHOTS, "owner-payouts-ledger-check-real-1440x900.png") });
+    check("Self-referral and payouts pages: no page errors", errors.length === 0, errors.join(" | "));
+    await ctx.close();
+  }
   await browser.close();
   check("Nothing outside the two local origins was requested", blocked.length === 0, blocked.slice(0, 5).join(" "));
   console.log(`\n${passed}/${passed + failed} passed`);

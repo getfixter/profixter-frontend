@@ -40,7 +40,7 @@ import {
   type OwnerLeadRow,
 } from "@/lib/admin/sales";
 import { Button, ButtonLink, Chip, EmptyState, ErrorState, Field, FilterBar, SearchField, Select, Sheet, SkeletonRows, StatusBadge, TextInput, Textarea, cx, formatPhone, useToast } from "@/app/components/admin/ui";
-import { Facts, Notice, Panel, Problem, StageBadge, SuppressionBadges, SuppressionBanner, Timeline } from "../parts";
+import { Facts, Notice, Panel, Problem, StageBadge, SuppressionBadges, SuppressionBanner, Timeline, UnknownBadge } from "../parts";
 import { useDeskParams } from "./SalesDesk";
 
 const VIEWS = [
@@ -127,6 +127,7 @@ export function DeskLeads() {
                   <span className="text-[15px] font-semibold text-adm-ink">{l.name}</span>
                   <StageBadge stage={l.stage} />
                   {l.linked && <StatusBadge tone="info">Account linked</StatusBadge>}
+                  {l.intakeFlags?.length ? <span data-intake-flag=""><StatusBadge tone="attention">Self-referral check</StatusBadge></span> : null}
                   <SuppressionBadges call={l.doNotCall} sms={l.doNotText} />
                 </span>
                 <span className="mt-0.5 block break-words text-[13px] text-adm-text-2">
@@ -448,7 +449,7 @@ function OwnerLeadBody({ lead, go }: { lead: OwnerLeadDetail; go: (s: Step) => v
             </li>
             {lead.journey.freeVisits.map((v) => (
               <li key={v.id}>
-                {v.verified ? <StatusBadge tone="info">System</StatusBadge> : <StatusBadge tone="attention">Estimated</StatusBadge>} Free visit {v.date ? dateTimeText(v.date) : ""}: {v.label}
+                {v.verified ? <StatusBadge tone="info">System</StatusBadge> : <UnknownBadge />} Free visit {v.date ? dateTimeText(v.date) : ""}: {v.label}{v.detail ? <span className="text-adm-text-2"> · {v.detail}</span> : null}
               </li>
             ))}
             {lead.journey.memberships.map((m, i) => (
@@ -501,6 +502,11 @@ function IntakeDecision({ lead }: { lead: OwnerLeadDetail }) {
   return (
     <Panel title="Intake decision" data-intake-decision="">
       <p className="mb-2 text-[13px] text-adm-text-2">Added by {lead.sourcedBy || "a telemarketer"}. Approving makes it a working lead; without a choice it goes to whoever added it.</p>
+      {lead.intakeFlags?.length ? (
+        <Notice tone="attention" data-intake-flags="">
+          {lead.intakeFlags.map((f) => f.text).join(" ")} This may be the employee, or someone they live with. It is a flag to check, not a reason to reject: you can still approve it.
+        </Notice>
+      ) : null}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Reason">
           <TextInput name="intake-reason" value={reason} onChange={(e) => setReason(e.target.value)} />

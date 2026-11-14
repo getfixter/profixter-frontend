@@ -27,6 +27,7 @@ import {
   fetchGhl,
   fetchPayout,
   fetchPayouts,
+  fetchPayoutsWithCheck,
   fetchRequestDetail,
   fetchReviews,
   money,
@@ -40,6 +41,7 @@ import {
   type PayoutLine,
   type PayoutWeek,
   type Review,
+  type SelfReferralSignal,
 } from "@/lib/admin/sales";
 import { Button, Chip, EmptyState, ErrorState, Field, FilterBar, ListRow, Select, Sheet, SkeletonRows, StatusBadge, TextInput, Textarea, cx, useToast } from "@/app/components/admin/ui";
 import { CalcBreakdown, EntryRow, Facts, Notice, Panel, Problem } from "../parts";
@@ -130,7 +132,9 @@ function RequestSheet({ id, onClose }: { id: string; onClose: () => void }) {
   const [reason, setReason] = useState("");
   const [amount, setAmount] = useState<string | null>(null);
   const [bonus, setBonus] = useState<"yes" | "no" | "">("");
+  const [checked, setChecked] = useState(false);
   const isChange = d?.sale?.kind === "membership_change_paid";
+  const flags = d?.request.selfReferral || [];
   const proposed = d?.request.proposed.amountCents ?? 0;
   const amountText = amount ?? (proposed / 100).toFixed(2);
   const cents = dollarsToCents(amountText);
@@ -139,7 +143,7 @@ function RequestSheet({ id, onClose }: { id: string; onClose: () => void }) {
       decideRequest(id, {
         action: action as "approved" | "rejected" | "needs_info",
         reason: reason.trim(),
-        ...(action === "approved" ? { amountCents: cents ?? undefined, ...(isChange ? { countsForBonus: bonus === "yes" } : {}) } : {}),
+        ...(action === "approved" ? { amountCents: cents ?? undefined, ...(isChange ? { countsForBonus: bonus === "yes" } : {}), ...(flags.length ? { selfReferralCleared: checked } : {}) } : {}),
       }),
     {
       onSuccess: () => {
@@ -150,7 +154,7 @@ function RequestSheet({ id, onClose }: { id: string; onClose: () => void }) {
     }
   );
   const open = d && (d.request.status === "pending" || d.request.status === "needs_info");
-  const can = Boolean(action) && reason.trim().length > 0 && (action !== "approved" || (cents !== null && cents > 0 && (!isChange || Boolean(bonus))));
+  const can = Boolean(action) && reason.trim().length > 0 && (action !== "approved" || (cents !== null && cents > 0 && (!isChange || Boolean(bonus)) && (!flags.length || checked)));
   const file = async (fileId: string, name: string) => {
     try {
       await downloadAuthed(deskPaths.requestFile(id, fileId), name || "evidence");
@@ -182,6 +186,7 @@ function RequestSheet({ id, onClose }: { id: string; onClose: () => void }) {
         <ErrorState message={errorMessage(q.error)} onRetry={q.refetch} />
       ) : d ? (
         <div className="space-y-4" data-request-detail={d.request.id}>
+          {flags.length ? <SelfReferralPanel signals={flags} employeeName={d.request.employee.name} /> : null}
           <Panel title={`${requestKindLabel(d.request.kind)} · claim by ${d.request.employee.name}`}>
             <p className="break-words text-[14px] text-adm-ink">{d.request.explanation}</p>
             {d.request.evidence.length > 0 && (
@@ -303,6 +308,12 @@ function RequestSheet({ id, onClose }: { id: string; onClose: () => void }) {
                   <Field label="Commission (dollars)" help="Prefilled with the proposal; change it if needed." error={cents === null ? "Enter an amount like 45.00" : undefined}>
                     <TextInput name="decide-amount" inputMode="decimal" value={amountText} onChange={(e) => setAmount(e.target.value)} />
                   </Field>
+                  {flags.length ? (
+                    <label className="flex min-h-[44px] cursor-pointer items-start gap-2 rounded-adm-md border border-adm-attn bg-adm-attn-bg p-3" data-self-referral-confirm="">
+                      <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} className="mt-0.5 h-5 w-5 flex-none accent-[var(--adm-accent)]" />
+                      <span className="text-[14px] text-adm-ink">I checked the self-referral signals above and this is a genuine sale.</span>
+                    </label>
+                  ) : null}
                   {isChange && (
                     <fieldset className="rounded-adm-md border border-adm-attn bg-adm-attn-bg p-3" data-bonus-choice="">
                       <legend className="px-1 text-[14px] font-semibold text-adm-ink">Does this plan change count toward the 20-membership bonus?</legend>
@@ -336,6 +347,27 @@ function RequestSheet({ id, onClose }: { id: string; onClose: () => void }) {
         </div>
       ) : null}
     </Sheet>
+  );
+}
+
+const STRENGTH: Record<string, string> = { same_person: "May be the employee", payment: "Shared card", household: "Possible household member" };
+
+/** The self-referral signals for the owner: flags to check, never a verdict. */
+function SelfReferralPanel({ signals, employeeName }: { signals: SelfReferralSignal[]; employeeName: string }) {
+  return (
+    <Panel title="Self-referral check" data-self-referral="">
+      <ul className="space-y-2 text-[14px]">
+        {signals.map((s) => (
+          <li key={s.code} className="flex flex-wrap items-start gap-2" data-self-referral-signal={s.code}>
+            <StatusBadge tone="attention">{STRENGTH[s.strength] || "Check"}</StatusBadge>
+            <span className="min-w-0 flex-1 break-words text-adm-ink">{s.text}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[13px] text-adm-text-2">
+        Compared with {employeeName}'s own details. A relative, a housemate or a neighbour can be a genuine customer: check, then credit it or not with a reason. Nothing was refused automatically.
+      </p>
+    </Panel>
   );
 }
 
@@ -388,6 +420,9 @@ function ReviewSheet({ review, onClose }: { review: Review | null; onClose: () =
     >
       <div className="space-y-4" data-review-detail={review.id}>
         <p className="break-words text-[14px] text-adm-ink">{review.summary}</p>
+        {hold && e.selfReferral?.length
+          ? e.selfReferral.map((x) => <SelfReferralPanel key={x.employee} signals={x.signals} employeeName={x.employeeName || names.get(x.employee) || "the employee"} />)
+          : null}
         {hold ? (
           <Panel title="Who gets credit?">
             <div className="space-y-2" role="radiogroup" aria-label="Credit decision">
@@ -426,7 +461,7 @@ function ReviewSheet({ review, onClose }: { review: Review | null; onClose: () =
                 <ul className="space-y-1 text-[13px]">
                   {e.bonuses.map((b) => (
                     <li key={b.id}>
-                      {names.get(b.employee) || "Employee"}: {money(b.amountCents)} · {b.status} · bonus month {(b.periodIndex ?? 0) + 1}
+                      {names.get(b.employee) || "Employee"}: {money(b.amountCents)} · {b.status} · {(b.periodIndex ?? 0) >= 0 ? `bonus month ${(b.periodIndex ?? 0) + 1}` : "a bonus month before their first counted sale"}
                     </li>
                   ))}
                 </ul>
@@ -566,9 +601,20 @@ export function DeskPayouts() {
   const { get, set } = useDeskParams();
   const week = get("week");
   const q = useAdminQuery(deskKeys.payouts, fetchPayouts, { staleTime: 15_000 });
+  const check = useAdminQuery(deskKeys.payoutsCheck, fetchPayoutsWithCheck, { staleTime: 15_000 });
+  const integrity = check.data?.integrity;
   return (
     <div className="space-y-3" data-desk-tab="payouts">
-      <Notice>Weeks run Friday to Thursday. Approve a finished week to freeze its statements, pay people the way you normally do, then record each payment here. Profixter does not move money.</Notice>
+      <Notice>Weeks run Friday to Thursday. Approve a finished week to freeze its statements, pay people the way you normally do, then record each payment here. Weeks are approved oldest first, so no earnings are skipped. Profixter does not move money.</Notice>
+      {integrity && !integrity.ok ? (
+        <Problem code="ledger_check">
+          The ledger check found {integrity.problems.length} problem{integrity.problems.length === 1 ? "" : "s"}. Do not record payments until it is fixed: {integrity.problems.slice(0, 3).join("; ")}
+        </Problem>
+      ) : integrity?.ok && integrity.approvedWeeks > 0 ? (
+        <p className="text-[13px] text-adm-text-2" data-ledger-check="ok">
+          Ledger check passed: every approved week holds each of its earnings exactly once, and no earnings are stranded on an older week.
+        </p>
+      ) : null}
       {q.isLoading ? (
         <SkeletonRows count={4} label="Loading payouts" />
       ) : q.error && !q.data ? (

@@ -46,7 +46,7 @@ import {
 } from "@/lib/admin/sales";
 import { Button, ButtonLink, EmptyState, ErrorState, Field, Select, Sheet, SkeletonRows, StatusBadge, TextInput, Textarea, cx, useToast } from "@/app/components/admin/ui";
 import { formatPhone } from "@/app/components/admin/ui";
-import { Notice, Problem, StageBadge, SuppressionBanner, Timeline, useNow } from "./parts";
+import { Notice, Problem, StageBadge, SuppressionBanner, Timeline, useNow, UnknownBadge } from "./parts";
 
 function H({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-[0.02em] text-adm-text-2">{children}</h3>;
@@ -160,7 +160,7 @@ function LeadBody({ lead, onDirty, onRequestCredit }: { lead: LeadDetail; onDirt
             </li>
             {lead.journey.freeVisits.map((v, i) => (
               <li key={i} className="flex flex-wrap items-center gap-1.5" data-free-visit={v.status}>
-                {v.verified ? <StatusBadge tone="info">System</StatusBadge> : <StatusBadge tone="attention">Estimated</StatusBadge>} Free visit {v.date ? dateTimeText(v.date) : `requested ${dateText(v.requestedAt)}`}: {v.label}
+                {v.verified ? <StatusBadge tone="info">System</StatusBadge> : <UnknownBadge />} Free visit {v.date ? dateTimeText(v.date) : `requested ${dateText(v.requestedAt)}`}: {v.label}{v.detail ? <span className="text-adm-text-2"> · {v.detail}</span> : null}
               </li>
             ))}
             <li className="flex flex-wrap items-center gap-1.5" data-membership="">
