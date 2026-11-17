@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { trackPurchase } from "@/lib/meta";
+import { confirmPaidConversion } from "@/lib/chatgpt-ads";
 import { getAllBookings, getFullDayConfig, getOneTimeVisitConfig } from "@/lib/booking-service";
 
 export default function BookConfirmationTracker({
@@ -112,6 +113,26 @@ export default function BookConfirmationTracker({
       );
     })();
   }, [sessionId, bookingId, value, currency]);
+
+  /*
+   * ChatGPT Ads order_created. Stricter than the Meta event above: it fires
+   * only once the server confirms THIS Stripe session is a paid purchase of
+   * the signed-in customer (GET /api/track/paid-visit-by-session: our webhook
+   * marked it paid AND Stripe reports it complete and paid), with Stripe's
+   * amount in cents. A URL with a made-up, unpaid, refunded or someone else's
+   * session sends nothing. event_id is the session id, so a refresh, a second
+   * tab or a late retry is still one order. Returned signed out: the session is
+   * parked and proven after the next sign-in on this browser (see
+   * confirmPaidConversion).
+   */
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+    void confirmPaidConversion("order", sessionId, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   return null;
 }

@@ -46,7 +46,7 @@ export default function PrivacyPage() {
         </h1>
 
         <p className="text-[15px] sm:text-base text-[color:var(--ui-text-2)] text-center mb-8 leading-relaxed">
-          Effective Date: January 22, 2026 · Company:{" "}
+          Effective Date: January 22, 2026 · Last updated: November 17, 2026 · Company:{" "}
           <span className="font-semibold">Premium Island Homes Inc.</span>, doing
           business as{" "}
           <span className="font-semibold">“Profixter”</span> and/or{" "}
@@ -90,8 +90,9 @@ export default function PrivacyPage() {
                 you provide them)
               </li>
               <li>
-                Technical data (IP address, browser/device info, cookies for
-                basic functionality/security, and usage analytics)
+                Technical data (IP address, browser/device info, and cookies and
+                similar technologies for site functionality, security, usage
+                analytics and advertising measurement, described in Section 5)
               </li>
             </ul>
           </section>
@@ -105,6 +106,7 @@ export default function PrivacyPage() {
               <li>Send appointment confirmations, reminders, and service updates</li>
               <li>Process payments and help prevent fraud</li>
               <li>Customer support and service improvement</li>
+              <li>Measure and improve our advertising (see Section 5)</li>
               <li>
                 Send marketing messages{" "}
                 <span className="font-semibold">only if you opt in</span>
@@ -232,7 +234,9 @@ export default function PrivacyPage() {
               us operate (for example, payment processing, messaging delivery,
               hosting, analytics) under confidentiality and security obligations,
               and with contractors/specialists when you request or approve
-              additional work.
+              additional work. We also allow the analytics and advertising
+              partners described in Section 5 to collect information through our
+              website.
             </p>
 
             <p className="mt-3">
@@ -256,17 +260,58 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-  <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">5. Cookies</h2>
+  <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">
+    5. Cookies, Analytics and Advertising
+  </h2>
   <p>
-    We may use cookies and similar technologies for basic site
-    functionality, security, and to understand site usage. You can
-    control cookies through your browser settings. Disabling cookies may
-    limit certain site features.
+    We use cookies, pixels and similar technologies to run the site, keep it
+    secure, understand how it is used, and measure and improve our
+    advertising. These tools are not loaded on our staff tools or on
+    single-use links such as payment, tip and document-signing pages.
   </p>
   <p className="mt-3">
-    We may use cookies, analytics tools, and similar tracking
-    technologies to understand website usage, improve performance, and
-    support website security.
+    <span className="font-semibold">Analytics.</span> We use Google Analytics
+    and Microsoft Clarity to understand how visitors use the site. They
+    collect information such as the pages you view, how you scroll and click,
+    your browser and device, and your approximate location from your IP
+    address. Microsoft Clarity may record sessions on the site so we can see
+    how pages work in practice. We also keep our own record of how a browser
+    first found us (the landing page, referring site and ad tags on the link),
+    tied to a random identifier.
+  </p>
+  <p className="mt-3">
+    <span className="font-semibold">Advertising and measurement partners.</span>{" "}
+    We work with Meta (Facebook and Instagram), Google and OpenAI (ChatGPT Ads)
+    to measure the results of our advertising and to show ads to people who
+    may be interested in our services. These partners collect information
+    through cookies or similar identifiers on our website, such as the pages
+    you view and actions you take: requesting a visit, creating an account,
+    starting a membership, or paying for a visit, with the amount paid.
+  </p>
+  <ul className="mt-3 list-disc list-inside space-y-2">
+    <li>
+      <span className="font-semibold">Meta:</span> to match these actions to
+      Meta accounts, we and Meta&apos;s pixel send Meta your email address, phone
+      number, name, city, state and ZIP code in hashed (encoded) form, along
+      with your IP address and browser information.
+    </li>
+    <li>
+      <span className="font-semibold">Google:</span> Google&apos;s tag may detect
+      the email address, phone number and address you enter in forms on our
+      website and send them to Google in hashed form.
+    </li>
+    <li>
+      <span className="font-semibold">OpenAI:</span> OpenAI&apos;s pixel may
+      detect the email address, phone number and first and last name you enter
+      in forms on our website and send them to OpenAI in hashed form, together
+      with the country, city, state and ZIP code you enter. It sets its own
+      first-party cookies to recognize a visit that came from a ChatGPT ad.
+    </li>
+  </ul>
+  <p className="mt-3">
+    Each partner uses this information under its own privacy policy. Text
+    messaging originator opt-in data and SMS consent records are never shared
+    with these partners.
   </p>
 </section>
 
@@ -294,6 +339,20 @@ export default function PrivacyPage() {
               <li>
                 You can request updates or deletion of certain information by
                 contacting us (subject to legal/operational requirements).
+              </li>
+              <li>
+                You can block or delete cookies in your browser settings. Some
+                site features may not work without them.
+              </li>
+              <li>
+                If your browser sends a Global Privacy Control (GPC) signal, we
+                do not load the ChatGPT Ads (OpenAI) pixel. Our other analytics
+                and advertising tools (Meta, Google and Microsoft Clarity) do not
+                currently respond to GPC. You can limit them with your
+                browser&apos;s tracking protection or in each company&apos;s own ad
+                settings: Meta (facebook.com/adpreferences), Google
+                (adssettings.google.com, and the Google Analytics opt-out
+                browser add-on) and Microsoft (account.microsoft.com/privacy).
               </li>
             </ul>
           </section>

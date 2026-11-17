@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/useAuth";
 import { safeReturnPath } from "@/lib/auth-routing";
 import { trackEvent } from "@/lib/analytics";
 import { newEventId, trackLead, trackStartSignup } from "@/lib/meta";
+import { oaiqRegistration } from "@/lib/chatgpt-ads";
 import {
   appleSignIn,
   choosePhoneAccount,
@@ -237,11 +238,17 @@ export default function SignUpPage() {
        * carries the matching identifiers. relay: false - the server already
        * sent this to the Conversions API with the same event id.
        */
-      onCreated: () =>
-        trackLead(
+      onCreated: (user) => {
+        const id = trackLead(
           { content_name: "account_created", status: "new_account", lead_type: "account" },
           { eventId, relay: false }
-        ),
+        );
+        /*
+         * ChatGPT Ads: registration_completed, once per account. Keyed to the
+         * account itself so a second device or a replayed sign-in cannot add one.
+         */
+        oaiqRegistration(user?._id ? `reg_${user._id}` : id);
+      },
     });
   };
 

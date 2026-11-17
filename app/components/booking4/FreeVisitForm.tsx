@@ -8,6 +8,7 @@ import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/co
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/analytics";
 import { getAttribution, getFbCookies, newEventId, trackLead } from "@/lib/meta";
+import { oaiqLead } from "@/lib/chatgpt-ads";
 import { BUSINESS_PHONE_DISPLAY } from "@/lib/seo";
 import { saveHandymanDraft, saveHandymanPhotos } from "@/lib/handyman-draft";
 import SlotPicker, { formatWhen } from "./SlotPicker";
@@ -102,6 +103,8 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
   const rootRef = useRef<HTMLDivElement>(null);
   const draftReady = useRef(false);
   const eventId = useRef("");
+  /* One ChatGPT Ads lead per callback request, however often the button is pressed. */
+  const callbackEventId = useRef("");
   const submitting = useRef(false);
   const started = useRef(false);
 
@@ -214,6 +217,7 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
       if (res.ok && body.success) {
         // Once, after the server saved it, with the event id the server used for its own Lead.
         trackLead({ content_name: "free_first_visit", status: "free_visit_requested", lead_type: "free_visit_request" }, { eventId: eventId.current, relay: false });
+        oaiqLead(eventId.current);
         eventId.current = "";
         writeDraft(null);
         setSheet(false);
@@ -291,6 +295,12 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
       });
       if (res.ok) {
         trackEvent("free_visit_callback_requested", {});
+        /* A saved callback request is a lead; the server's repeat answer (duplicate) is not a new one. */
+        const saved = (await res.json().catch(() => ({}))) as { duplicate?: boolean };
+        if (!saved.duplicate) {
+          if (!callbackEventId.current) callbackEventId.current = `callback_${newEventId()}`;
+          oaiqLead(callbackEventId.current);
+        }
         setCallback("sent");
       } else setCallback("asking");
     } catch {

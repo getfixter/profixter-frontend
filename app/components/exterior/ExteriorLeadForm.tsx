@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { trackLead } from "@/lib/meta";
+import { oaiqLead } from "@/lib/chatgpt-ads";
 
 type ProjectType = "roofing" | "siding" | "both";
 
@@ -108,10 +109,12 @@ export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props)
         return;
       }
 
-      // Meta Lead: only after the server accepted the request.
-      trackLead(
-        { content_name: "exterior_estimate", content_category: form.projectType, lead_type: "renovation_estimate" },
-        { dataLayerEvent: null }
+      // Meta Lead and ChatGPT Ads lead_created: only after the server accepted the request.
+      oaiqLead(
+        trackLead(
+          { content_name: "exterior_estimate", content_category: form.projectType, lead_type: "renovation_estimate" },
+          { dataLayerEvent: null }
+        )
       );
       setStatus("success");
       setMessage("Thanks - your request was sent. A real person will review it and follow up shortly.");

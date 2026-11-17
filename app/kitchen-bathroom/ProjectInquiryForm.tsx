@@ -4,6 +4,7 @@ import { FormEvent, useRef, useState } from "react";
 import { CUSTOMER_CARE } from "@/lib/fixter";
 import { trackEvent } from "@/lib/analytics";
 import { trackLead } from "@/lib/meta";
+import { oaiqLead } from "@/lib/chatgpt-ads";
 import { extractUSNationalPhoneDigits, isValidUSNationalPhoneDigits } from "@/lib/phone";
 import { PAGE_ID, trackPhoneCta } from "./ctas";
 
@@ -136,10 +137,12 @@ export default function ProjectInquiryForm() {
       }
 
       trackEvent("project_inquiry_submitted", { service: form.scope, page: PAGE_ID });
-      // Meta Lead: only after the server accepted the request.
-      trackLead(
-        { content_name: "kitchen_bathroom_inquiry", content_category: form.scope, lead_type: "renovation_estimate" },
-        { dataLayerEvent: null }
+      // Meta Lead and ChatGPT Ads lead_created: only after the server accepted the request.
+      oaiqLead(
+        trackLead(
+          { content_name: "kitchen_bathroom_inquiry", content_category: form.scope, lead_type: "renovation_estimate" },
+          { dataLayerEvent: null }
+        )
       );
       setStatus("success");
       setForm(EMPTY);

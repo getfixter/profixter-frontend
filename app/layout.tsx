@@ -26,6 +26,8 @@ import { META_PIXEL_ID } from "@/lib/meta-config";
 import AttributionCapture from "./components/AttributionCapture";
 import PhoneClickTracker from "./components/PhoneClickTracker";
 import MetaPageView from "./components/MetaPageView";
+import ChatGPTPageView from "./components/ChatGPTPageView";
+import { OAIQ_LOADER_SCRIPT } from "@/lib/chatgpt-ads-config";
 import SurfaceMarker from "./components/SurfaceMarker";
 import TrackerBoundary from "./components/TrackerBoundary";
 import { TRACKER_GUARD } from "@/lib/tracking-scope";
@@ -274,6 +276,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             alt=""
           />
         </noscript>
+
+        {/*
+          ChatGPT Ads measurement pixel (lib/chatgpt-ads-config.ts). A plain head
+          script like GTM and Meta above, with its own guard so it never loads on
+          /admin, the token pages, the kiosk or the setup/password pages. It
+          sends the first page_viewed; ChatGPTPageView sends the rest, and the
+          conversions come from lib/chatgpt-ads.ts. Debug only in `next dev`.
+        */}
+        <script id="oaiq-pixel" dangerouslySetInnerHTML={{ __html: OAIQ_LOADER_SCRIPT }} />
       </head>
 
       <body className="antialiased">
@@ -302,6 +313,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </Suspense>
         <PhoneClickTracker />
         <MetaPageView />
+        <ChatGPTPageView />
 
         <Providers>
           {children}

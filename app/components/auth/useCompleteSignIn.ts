@@ -41,7 +41,7 @@ export function useCompleteSignIn() {
       eventId: string;
       method: AuthMethod;
       /* Fires the browser Lead (relay:false) - kept at the call site, see signup/page.tsx. */
-      onCreated?: () => void;
+      onCreated?: (user: User) => void;
     }): Promise<User> => {
       const user = await login(input.token);
       if (!user) throw new Error("We couldn't open your account. Please try again.");
@@ -50,7 +50,7 @@ export function useCompleteSignIn() {
 
       if (input.created) {
         trackEvent("signup_completed", { source: "website_signup", method: input.method });
-        input.onCreated?.();
+        input.onCreated?.(user);
       } else {
         trackEvent("login_completed", { method: input.method });
       }

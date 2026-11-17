@@ -9,6 +9,7 @@ import Footer from "@/app/components/sections/Footer";
 import { useAuth } from "@/lib/useAuth";
 import { hasActiveMembership } from "@/lib/auth-routing";
 import { trackLead } from "@/lib/meta";
+import { oaiqLead } from "@/lib/chatgpt-ads";
 
 type ProjectType =
   | "roofing"
@@ -313,10 +314,12 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
         );
         return;
       }
-      // Meta Lead: only after the server accepted the request.
-      trackLead(
-        { content_name: "project_estimate", content_category: form.service, lead_type: "renovation_estimate" },
-        { dataLayerEvent: null }
+      // Meta Lead and ChatGPT Ads lead_created: only after the server accepted the request.
+      oaiqLead(
+        trackLead(
+          { content_name: "project_estimate", content_category: form.service, lead_type: "renovation_estimate" },
+          { dataLayerEvent: null }
+        )
       );
       setStatus("success");
       setMessage(

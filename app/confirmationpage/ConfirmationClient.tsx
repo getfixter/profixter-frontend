@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { trackSubscribe } from "@/lib/meta";
+import { confirmPaidConversion } from "@/lib/chatgpt-ads";
 import YourFixter from "@/app/components/fixter/YourFixter";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { getMySubscriptions, type ManagedSubscription } from "@/lib/subscription-service";
@@ -220,6 +221,27 @@ export default function ConfirmationClient() {
         // no fake purchase
       }
     })();
+  }, [sessionId]);
+
+  /*
+   * ChatGPT Ads subscription_created. Not from the checkout record above: the
+   * webhook writes that as soon as Stripe reports the checkout completed. This
+   * fires only on the server's proof (GET /api/track/membership-by-session)
+   * that the signed-in customer has an ACTIVE membership created by THIS
+   * checkout, which Stripe reports complete and paid with an amount above
+   * zero - so a $0 start (a gift or trial covering the period), an unpaid or
+   * failed checkout, or a second bill for an already-covered home never
+   * counts. Keyed to the Stripe session: a refresh, a second tab or a late
+   * retry is still one subscription. Returned signed out: parked and proven
+   * after the next sign-in on this browser (see confirmPaidConversion).
+   */
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+    void confirmPaidConversion("subscription", sessionId, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
   }, [sessionId]);
 
   const planLabel = subscription

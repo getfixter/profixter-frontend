@@ -21,6 +21,7 @@ import {
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
 import { trackSchedule } from "@/lib/meta";
+import { oaiqLead } from "@/lib/chatgpt-ads";
 import { getRoleLandingPath } from "@/lib/auth-routing";
 import {
   buildAvailabilityCacheKey,
@@ -1235,11 +1236,14 @@ if (next?.date) {
        * identity from their session rather than from anything sent here.
        */
       if (freeFirstVisitAvailable) {
-        trackSchedule({
+        const reference = String(bookingResult.booking.bookingNumber || "");
+        const scheduleId = trackSchedule({
           content_name: "free_first_visit",
           status: "free_visit_booked",
-          booking_reference: String(bookingResult.booking.bookingNumber || ""),
+          booking_reference: reference,
         });
+        /* ChatGPT Ads: the booked free visit is the lead, keyed to the booking itself. */
+        oaiqLead(reference ? `free_visit_${reference}` : scheduleId);
       }
 
       setBookingConfirmation({

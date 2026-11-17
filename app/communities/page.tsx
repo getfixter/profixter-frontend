@@ -5,6 +5,7 @@ import Footer from "@/app/components/sections/Footer";
 import Header from "@/app/components/sections/Header";
 import { PUBLIC_CONTACT_EMAIL as CONTACT_EMAIL } from "@/lib/contact";
 import { trackLead } from "@/lib/meta";
+import { oaiqLead } from "@/lib/chatgpt-ads";
 
 const CONTACT_PHONE_DISPLAY = "631-599-1363";
 const CONTACT_PHONE_TEL = "tel:6315991363";
@@ -240,10 +241,12 @@ export default function CommunitiesPage() {
         return;
       }
 
-      // Meta Lead: only after the server accepted the request.
-      trackLead(
-        { content_name: "community_partnership", lead_type: "community_partnership" },
-        { dataLayerEvent: null }
+      // Meta Lead and ChatGPT Ads lead_created: only after the server accepted the request.
+      oaiqLead(
+        trackLead(
+          { content_name: "community_partnership", lead_type: "community_partnership" },
+          { dataLayerEvent: null }
+        )
       );
       setStatus("success");
       setMessage("Thank you - we received your request. We’ll reach out shortly.");
