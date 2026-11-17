@@ -194,7 +194,28 @@ export type CustomerHit = {
 
 /* ------------------------------ payment links ----------------------------- */
 
-export type PayLinkState = { status: "open" | "paid" | "expired" | "canceled" | "not_found" | "unavailable"; kind?: string; itemLabel?: string; expiresAt?: string; message?: string };
+/* A free visit being paid for as a membership or One-Time visit (kind "visit_conversion"). */
+export type PayLinkConversion = {
+  kind: "membership" | "one_time";
+  offerLabel: string;
+  priceCents: number | null;
+  billingCycle: string;
+  firstName: string;
+  whenLabel: string;
+  street: string;
+  task: string;
+  terms?: { version: string; text: string };
+  convertedStatus: "" | "Pending" | "Confirmed";
+};
+
+export type PayLinkState = {
+  status: "open" | "paid" | "expired" | "canceled" | "not_found" | "unavailable" | "processing" | "converted" | "paid_attention";
+  kind?: string;
+  itemLabel?: string;
+  expiresAt?: string;
+  message?: string;
+  conversion?: PayLinkConversion;
+};
 
 export const getPayLink = async (token: string) => {
   try {
@@ -205,4 +226,5 @@ export const getPayLink = async (token: string) => {
   }
 };
 
-export const openPayLink = async (token: string) => (await API.post(`/api/pay/${token}/checkout`)).data as { url: string };
+export const openPayLink = async (token: string, body?: { acceptTerms: boolean; termsVersion: string }) =>
+  (await API.post(`/api/pay/${token}/checkout`, body || {})).data as { url: string };

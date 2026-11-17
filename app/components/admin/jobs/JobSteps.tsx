@@ -384,7 +384,8 @@ export function CancelStep({ job, footer, onBack, onDone, onRefresh, setBusy, se
   const s = useSubmit(setBusy);
   const request = job.status === "Pending Confirmation";
   useEffect(() => setDirty?.(Boolean(reason || detail)), [reason, detail, setDirty]);
-  const paid = job.money?.kind === "paid";
+  const converted = job.conversion?.converted || null;
+  const paid = job.money?.kind === "paid" && !converted;
   const fullDayBenefit = job.money?.kind === "full_day_included" || job.money?.kind === "full_day_loyalty";
   const text = [reason, detail.trim()].filter(Boolean).join(": ");
   const submit = () =>
@@ -392,7 +393,8 @@ export function CancelStep({ job, footer, onBack, onDone, onRefresh, setBusy, se
       const r = await transitionJob(job.id, { action: "cancel", expectedStatus: job.status, expectedUpdatedAt: job.updatedAt, reason: text, idempotencyKey: key });
       const extra: { text: string; tone: "ok" | "muted" | "problem" }[] = [];
       if (r.routedTo === "free_visit_decline") extra.push({ text: "The free-visit request was declined; their free visit is not used up.", tone: "muted" });
-      if (r.payment?.paid) extra.push({ text: `Paid ${r.payment.paidCents != null ? formatCents(r.payment.paidCents) : "(amount in Stripe)"}: not refunded. Refund in Stripe if needed.`, tone: "problem" });
+      if (r.conversionPayment) extra.push({ text: `${r.conversionPayment.message} It is listed under Needs action until you record it on the job.`, tone: "problem" });
+      else if (r.payment?.paid) extra.push({ text: `Paid ${r.payment.paidCents != null ? formatCents(r.payment.paidCents) : "(amount in Stripe)"}: not refunded. Refund in Stripe if needed.`, tone: "problem" });
       if (r.fullDayRestore) {
         extra.push(
           r.fullDayRestore.restored
@@ -425,6 +427,17 @@ export function CancelStep({ job, footer, onBack, onDone, onRefresh, setBusy, se
             Refund in Stripe
             <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden="true" />
           </a>
+        </div>
+      )}
+      {converted && (
+        <div className="mt-3 rounded-adm-sm border border-adm-line bg-adm-attn-bg px-3 py-2.5 text-[14px] text-adm-ink" data-cancel-converted={converted.kind}>
+          <p className="font-semibold">Paid upgrade from a free visit: {converted.kind === "membership" ? "a membership" : "a One-Time Visit"}.</p>
+          <p className="mt-1">
+            {converted.kind === "membership"
+              ? "Canceling this visit does not cancel the membership or refund its first payment. The membership keeps billing until you cancel it on the customer's profile; a refund in Stripe alone does not stop it."
+              : "Canceling this visit does not refund the payment. Refund it in Stripe if needed."}{" "}
+            After canceling, it stays under Needs action until you record what you did.
+          </p>
         </div>
       )}
       {fullDayBenefit && <p className="mt-3 rounded-adm-sm bg-adm-info-bg px-3 py-2 text-[14px] text-adm-info">{job.money.label}: the Full Day goes back to the customer when it is cancelled.</p>}

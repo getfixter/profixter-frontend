@@ -646,6 +646,14 @@ export default function AccountOverview({
                     {/^pending confirmation$/i.test(String(upcoming.status || "")) ? (
                       <p className="ui-small mt-1 font-semibold text-amber-700" data-acct="awaiting">Awaiting confirmation from Profixter</p>
                     ) : null}
+                    {upcoming.freeVisit ? (
+                      <p className="ui-small mt-1">
+                        <Link href={`/book?upgradeVisit=${encodeURIComponent(upcoming._id)}#your-visits`} className="ui-link" data-acct="upgrade-visit">
+                          Upgrade to a handyman visit
+                        </Link>{" "}
+                        and keep this time.
+                      </p>
+                    ) : null}
                   </div>
                   <Link href="/book#your-visits" className={buttonClass({ variant: "secondary", size: "sm" })}>
                     View or change

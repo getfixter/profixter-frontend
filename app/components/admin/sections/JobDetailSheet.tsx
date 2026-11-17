@@ -54,12 +54,13 @@ import { useAdmin } from "@/app/components/admin/shell/AdminContext";
 import { FlagBadge } from "@/app/components/admin/jobs/JobRows";
 import { CancelStep, ConfirmStep, DoneStep, EditStep, ReassignStep, ReinstateStep, RescheduleStep, type StepResult } from "@/app/components/admin/jobs/JobSteps";
 import { ChargeExtraStep, ExtraChargesBlock } from "@/app/components/admin/jobs/ChargeExtra";
+import { ConvertToPaidStep } from "@/app/components/admin/jobs/ConvertToPaidStep";
 import { jobScope } from "@/lib/admin/extraCharges";
 import { peekOpenedFromList, takeOpenedFromList } from "@/app/components/admin/jobs/openedFrom";
 import { badgeTypeOf } from "@/lib/admin/jobs";
 import "@/app/components/admin/jobs/jobs.css";
 
-type Step = "confirm" | "done" | "reinstate" | "cancel" | "reschedule" | "reassign" | "edit" | "review" | "chargeExtra";
+type Step = "confirm" | "done" | "reinstate" | "cancel" | "reschedule" | "reassign" | "edit" | "review" | "chargeExtra" | "convert";
 
 const STEP_TITLE: Record<Step, string> = {
   confirm: "Confirm & assign",
@@ -71,6 +72,7 @@ const STEP_TITLE: Record<Step, string> = {
   edit: "Edit description",
   review: "Review request",
   chargeExtra: "Charge customer",
+  convert: "Convert to paid visit",
 };
 
 const MAX_PHOTOS = 10;
@@ -157,6 +159,7 @@ export function JobDetailSheet({ id, backHref = "/admin/jobs" }: { id: string; b
     if (allowed.has("edit")) menuItems.push({ label: "Edit description", icon: <PencilSquareIcon />, onSelect: () => open("edit") });
     if (allowed.has("complete") && primary?.step !== "done") menuItems.push({ label: "Mark done", icon: <CheckCircleIcon />, onSelect: () => open("done") });
     if (allowed.has("chargeExtra")) menuItems.push({ label: "Charge customer", icon: <CreditCardIcon />, onSelect: () => open("chargeExtra") });
+    if (allowed.has("convertToPaid")) menuItems.push({ label: job.conversion?.live ? "Paid visit link" : job.conversion?.converted?.followUp ? "Resolve payment" : "Convert to paid visit", icon: <CreditCardIcon />, onSelect: () => open("convert") });
     if (job.customer.id && canOpen("customers")) menuItems.push({ label: "Open customer", icon: <UserCircleIcon />, href: `/admin/customers/${encodeURIComponent(job.customer.id)}` });
     if (job.customer.email && !field) menuItems.push({ label: "Email the customer", hint: job.customer.email, icon: <EnvelopeIcon />, href: `mailto:${job.customer.email}` });
     menuItems.push({
@@ -227,6 +230,8 @@ export function JobDetailSheet({ id, backHref = "/admin/jobs" }: { id: string; b
         <EditStep {...stepProps} />
       ) : step === "chargeExtra" ? (
         <ChargeExtraStep scope={jobScope(job.id)} footer={footerEl} onBack={leaveStep} setBusy={setStepBusy} setDirty={setStepDirty} />
+      ) : step === "convert" ? (
+        <ConvertToPaidStep job={job} footer={footerEl} onBack={leaveStep} setBusy={setStepBusy} setDirty={setStepDirty} canCreateAccounts={can(user, PERM.CUSTOMERS_MANAGE)} />
       ) : (
         <JobBody job={job} field={field} result={result} onDismissResult={() => setResult(null)} onOpen={open} canCustomers={canOpen("customers")} canComms={can(user, PERM.COMMUNICATIONS_MANAGE)} refreshing={q.isFetching} onRefresh={() => void q.refetch()} />
       )}
@@ -325,6 +330,7 @@ function JobBody({
           </p>
         )}
         {job.status === "Canceled" && job.cancellationReason && <p className="text-[14px] text-adm-text-2">Canceled: {job.cancellationReason}</p>}
+        <ConversionNotice job={job} canOpen={allowed.has("convertToPaid")} onOpen={() => onOpen("convert")} />
       </div>
 
       {/* Contact */}
@@ -665,3 +671,70 @@ function MoneyView({ job }: { job: JobDetail }) {
   return <MoneyBlock title="Money" rows={rows} footer={footer} className="!p-3" />;
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Convert to paid visit: what the job sheet says about it              */
+/* ------------------------------------------------------------------ */
+
+const PLAN_NAME: Record<string, string> = { basic: "Basic", plus: "Plus", premium: "Premium", elite: "Elite" };
+
+function ConversionNotice({ job, canOpen, onOpen }: { job: JobDetail; canOpen: boolean; onOpen: () => void }) {
+  const c = job.conversion;
+  if (!c) return null;
+  if (c.live) {
+    const l = c.live;
+    const offer = l.kind === "one_time" ? "One-Time Visit" : `${PLAN_NAME[l.plan] || l.plan} membership (${l.billingCycle})`;
+    const text =
+      l.status === "needs_attention"
+        ? `Paid for ${offer}, but not converted: ${l.attention?.message || "needs your attention"}.`
+        : l.status === "open"
+          ? `${l.checkoutOpen ? "Checkout pending" : "Payment link ready"} for ${offer}${l.sent.length ? ` · sent by ${l.sent.map((s) => (s === "sms" ? "text" : "email")).join(" and ")}` : " · not sent"}. The visit is unchanged until paid.`
+          : `Paid for ${offer}: converting the visit.`;
+    return (
+      <div
+        className={cx("flex flex-wrap items-center justify-between gap-2 rounded-adm-sm px-3 py-2 text-[14px]", l.status === "needs_attention" ? "bg-adm-problem-bg text-adm-problem" : "bg-adm-info-bg text-adm-ink")}
+        data-conversion-notice={l.status}
+      >
+        <span className="flex items-start gap-2">
+          <CreditCardIcon className="mt-0.5 h-5 w-5 flex-none" aria-hidden="true" />
+          {text}
+        </span>
+        {canOpen && (
+          <Button variant="secondary" onClick={onOpen} data-conversion-open="">
+            {l.status === "needs_attention" ? "Resolve" : "Open"}
+          </Button>
+        )}
+      </div>
+    );
+  }
+  if (c.converted) {
+    const k = c.converted;
+    const offer = k.kind === "one_time" ? "a One-Time Visit" : `a ${PLAN_NAME[k.plan] || k.plan} membership visit`;
+    /* Canceled after it was paid: the payment, and a membership's subscription, wait for a decision. */
+    if (k.followUp === "after_cancel") {
+      return (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] text-adm-problem" data-conversion-notice="after_cancel">
+          <span className="flex items-start gap-2">
+            <CreditCardIcon className="mt-0.5 h-5 w-5 flex-none" aria-hidden="true" />
+            {k.kind === "membership"
+              ? `Canceled after it was paid as ${offer}. The membership still bills until it is canceled on the customer's profile; a refund alone does not stop it.`
+              : `Canceled after it was paid as ${offer}. Canceling did not refund it.`}
+          </span>
+          {canOpen && (
+            <Button variant="secondary" onClick={onOpen} data-conversion-open="">
+              Resolve payment
+            </Button>
+          )}
+        </div>
+      );
+    }
+    return (
+      <p className="flex items-start gap-2 text-[14px] text-adm-text-2" data-conversion-notice="converted">
+        <CheckCircleIcon className="mt-0.5 h-5 w-5 flex-none text-adm-ok" aria-hidden="true" />
+        Converted from a free visit ({k.fromChannel === "online" ? "booked online" : "callback request"}, was {k.fromStatus}) to {offer} on {dayLabel(nyYMD(k.convertedAt), { year: true })}
+        {k.leadTimeRule === "admin_override" ? " · seven-day rule overridden" : ""}.
+      </p>
+    );
+  }
+  return null;
+}

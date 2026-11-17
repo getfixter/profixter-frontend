@@ -16,6 +16,20 @@ const GROUPS: Group[] = [
   { id: "unassigned", title: "No Fixter assigned", reason: "Upcoming jobs with nobody to do them.", kinds: ["job_unassigned"], section: "bookings" },
   { id: "not-closed", title: "Not closed", reason: "Confirmed jobs more than 2 hours past their start that nobody marked done.", kinds: ["job_not_closed"], section: "bookings" },
   { id: "problems", title: "Payment or slot problems", reason: "A payment failed or expired, or the reservation needs a look.", kinds: ["job_payment_problem", "job_reservation_issue"], section: "bookings" },
+  {
+    id: "conversions",
+    title: "Paid, not converted",
+    reason: "A customer paid to turn their free visit into a paid visit, but the visit could not be converted. Retry it, or settle the payment and record how.",
+    kinds: ["conversion_needs_attention"],
+    section: "visit_conversions",
+  },
+  {
+    id: "conversions-canceled",
+    title: "Paid, then canceled",
+    reason: "A visit upgraded from a free visit was canceled after it was paid. Canceling refunded nothing, and a membership it started still bills. Refund or cancel it yourself, then record what you did.",
+    kinds: ["conversion_canceled_after_payment"],
+    section: "visit_conversions",
+  },
   { id: "inquiries", title: "New inquiries", reason: "Estimate and renovation requests nobody has answered.", kinds: ["estimate_lead_new", "renovation_request_new"], section: "project_leads", seeAll: { href: "/admin/leads", label: "All leads" } },
   {
     id: "projects",

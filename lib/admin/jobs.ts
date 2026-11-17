@@ -45,7 +45,34 @@ export type JobRow = {
   conflictReason?: string;
 };
 
-export type JobAction = "addInternalNote" | "addPhotos" | "complete" | "confirm" | "reviewFreeVisit" | "cancel" | "reschedule" | "reassign" | "edit" | "reinstate" | "chargeExtra";
+export type JobAction = "addInternalNote" | "addPhotos" | "complete" | "confirm" | "reviewFreeVisit" | "cancel" | "reschedule" | "reassign" | "edit" | "reinstate" | "chargeExtra" | "convertToPaid";
+
+export type JobConversion = {
+  converted: {
+    conversionId: string | null;
+    /* "after_cancel": canceled after it was paid; the payment (and a membership's subscription) wait for a decision. */
+    followUp: "after_cancel" | null;
+    resolution: { kind: string; at: string; byName: string } | null;
+    kind: "membership" | "one_time";
+    plan: string;
+    billingCycle: string;
+    convertedAt: string;
+    leadTimeRule: string;
+    fromStatus: string;
+    fromChannel: string;
+  } | null;
+  live: {
+    id: string;
+    status: "open" | "paid" | "converting" | "needs_attention";
+    kind: "membership" | "one_time";
+    plan: string;
+    billingCycle: string;
+    linkExpiresAt: string | null;
+    checkoutOpen: boolean;
+    sent: ("email" | "sms")[];
+    attention: { reason: string; message: string } | null;
+  } | null;
+};
 
 export type JobMoney = {
   kind: "membership_included" | "paid" | "payment_pending" | "payment_failed" | "refunded" | "free" | "admin_free" | "full_day_included" | "full_day_loyalty" | string;
@@ -79,6 +106,8 @@ export type JobDetail = Omit<JobRow, "customer"> & {
   money: JobMoney;
   staffNotes: StaffNote[];
   freeVisit: { channel: string; purpose: string; reviewRequired: boolean } | null;
+  /** Convert to paid visit (Jobs section only): where a converted visit came from, and any payment link in progress. */
+  conversion?: JobConversion | null;
   reservationIssue: { status: string; message: string } | null;
   cancellationReason: string;
   completedAt: string | null;
@@ -137,6 +166,15 @@ export type TransitionResult = {
   payment?: PaymentInfo;
   fullDayRestore?: { restored: boolean; kind: "included" | "loyalty" | null; reason: string } | null;
   routedTo?: string;
+  /* A converted free visit canceled: its payment and any membership were left as they are (BackEnd paymentResolution.js). */
+  conversionPayment?: {
+    conversionId: string;
+    followUp: "after_cancel";
+    kind: "membership" | "one_time";
+    amountCents: number | null;
+    message: string;
+    membership?: { billsAgain: boolean | null; status: string; nextPaymentAt: string | null };
+  };
   replayed: boolean;
 };
 

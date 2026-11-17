@@ -192,6 +192,8 @@ export interface NextBookingResponse {
     service?: string;
     bookingNumber?: string;
     addressId?: string;
+    /** A free visit not yet upgraded: My Account links to "Upgrade to a handyman visit". */
+    freeVisit?: boolean;
   } | null;
 }
 

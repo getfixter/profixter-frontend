@@ -8,6 +8,8 @@ import { compressImage } from "@/lib/compressImage";
 import { libraryLabel } from "@/lib/booking-library";
 import { LibraryThumb } from "@/app/components/booking/PhotoLibraryPicker";
 import { reviewHref } from "@/lib/google-review";
+import UpgradeVisitSheet from "@/app/components/account/UpgradeVisitSheet";
+import { fetchPaymentStatus, paymentNotice, paymentStateSettles, type BookingUpgrade, type PaymentNotice, type PaymentStatus } from "@/lib/visit-upgrade";
 
 type Booking = {
   _id: string;
@@ -31,6 +33,10 @@ type Booking = {
   images?: string[];
   /** A Profixter Library example chosen at booking (not a photo of the home). */
   libraryReference?: string;
+  /** A free visit (or one upgraded from it): whether it can be upgraded, and how an upgrade stands. */
+  upgrade?: BookingUpgrade;
+  /** Set once, on the load that joined this guest visit to the account (BackEnd utils/freeVisit/guestLink). */
+  linkedJustNow?: boolean;
 };
 
 type MeResponse = {
@@ -485,17 +491,61 @@ function AddDetailsModal({
   );
 }
 
+/*
+ * "Upgrade to a handyman visit": a free visit that has not happened yet, with
+ * no payment for it under way. The server has the last word when the sheet
+ * opens (it may still say no, and why).
+ */
+function canOfferUpgrade(booking: Booking) {
+  if (!booking.upgrade?.freeVisit) return false;
+  const s = normalizeStatus(booking.status);
+  if (s !== "pending" && s !== AWAITING && s !== "confirmed") return false;
+  const hours = hoursUntilVisit(booking);
+  if (hours === null || hours <= 2) return false;
+  const current = booking.upgrade.current?.status;
+  return current !== "processing" && current !== "paid_attention";
+}
+
+function upgradedTo(current: NonNullable<BookingUpgrade["current"]>) {
+  if (current.kind === "one_time") return "a paid One-Time Visit";
+  return `a ${current.offerLabel.replace(/\s*\((monthly|annual)\)$/, "")} visit`;
+}
+
+function UpgradeStatus({ upgrade }: { upgrade?: BookingUpgrade }) {
+  const current = upgrade?.current;
+  if (!current) return null;
+  const text =
+    current.status === "processing"
+      ? "Payment received. We're updating your visit; this takes a moment."
+      : current.status === "paid_attention"
+        ? "We received your payment, but couldn't update your visit automatically, so nothing about it has changed yet. We'll call you to sort it out."
+        : current.status === "converted"
+          ? `Upgraded from your free visit: now ${upgradedTo(current)}.`
+          : "";
+  if (!text) return null;
+  return (
+    <div
+      className={`rounded-[8px] border px-3 py-2.5 text-[12.5px] font-semibold leading-[1.45] ${current.status === "converted" ? "border-[#BBF7D0] bg-[#F0FDF4] text-[#166534]" : "border-amber-200 bg-amber-50 text-amber-800"}`}
+      data-upgrade-status={current.status}
+    >
+      {text}
+    </div>
+  );
+}
+
 function BookingCard({
   booking,
   me,
   onCancelClick,
   onDetailsSaved,
+  onUpgradeClick,
   cancelLoading,
 }: {
   booking: Booking;
   me: MeResponse | null;
   onCancelClick: (b: Booking) => void;
   onDetailsSaved: (booking: Booking) => void;
+  onUpgradeClick: (b: Booking) => void;
   cancelLoading: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -532,6 +582,10 @@ function BookingCard({
           ) : isOneTime ? (
             <span className="rounded-[6px] border border-[#D9E4FF] bg-[#F0F7FF] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8]">
               One-Time Visit
+            </span>
+          ) : booking.upgrade?.freeVisit ? (
+            <span className="rounded-[6px] border border-[#D9E4FF] bg-[#F0F7FF] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8]" data-badge="free-visit">
+              Free Visit
             </span>
           ) : null}
           <span className={`px-2.5 py-1 rounded-[6px] text-[11px] font-bold border ${statusBadge(booking.status)}`}>
@@ -619,6 +673,24 @@ function BookingCard({
               {booking.libraryReference ? "Your photos" : "Photos"} ({booking.images.length})
             </div>
             <Gallery images={booking.images} />
+          </div>
+        )}
+
+        <UpgradeStatus upgrade={booking.upgrade} />
+
+        {canOfferUpgrade(booking) && (
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => onUpgradeClick(booking)}
+              className="min-h-[max(44px,var(--tap,44px))] w-full rounded-[8px] bg-[#0B1628] px-3 py-2.5 text-[13px] font-semibold text-white transition hover:bg-[#1B2A44]"
+              data-action="upgrade-visit"
+            >
+              Upgrade to a handyman visit
+            </button>
+            <div className="mt-1.5 text-center text-[12px] text-[#6A6D71]">
+              Keep this time and get the work done: a membership or a One-Time Visit.
+            </div>
           </div>
         )}
 
@@ -758,6 +830,14 @@ export default function BookingsSection() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState("");
   const [fullDayCancelNotice, setFullDayCancelNotice] = useState("");
+  /* "Upgrade to a handyman visit": the sheet, and the way back from Stripe. */
+  const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null);
+  const [upgradeReturnedUnpaid, setUpgradeReturnedUnpaid] = useState(false);
+  /* After Stripe: the payment's verified state, for this visit. */
+  const [paymentFor, setPaymentFor] = useState<{ bookingId: string; notice: PaymentNotice; status: PaymentStatus | null } | null>(null);
+  const [paymentCheck, setPaymentCheck] = useState(0);
+  const [linkedNotice, setLinkedNotice] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -802,6 +882,15 @@ export default function BookingsSection() {
           return bTime - aTime;
         });
         setBookings(sorted);
+        /* A visit booked as a guest, just joined to this account on the phone or email it proved. */
+        const linked = sorted.filter((b) => b.linkedJustNow);
+        if (linked.length) {
+          setLinkedNotice(
+            linked.length === 1
+              ? `We found the free visit you booked for ${formatNY(linked[0].date)} with your verified phone or email, and added it here.`
+              : `We found ${linked.length} free visits you booked with your verified phone or email, and added them here.`
+          );
+        }
       } catch (e) {
         console.error("Bookings load failed:", e);
         setError("Could not load your visits. Please try again.");
@@ -809,7 +898,72 @@ export default function BookingsSection() {
         setLoading(false);
       }
     })();
-  }, [apiBase]);
+  }, [apiBase, reloadKey]);
+
+  /*
+   * Back from the upgrade's Stripe page, either way: ?upgraded=<visit> (Stripe's
+   * success page) or ?upgrade=<visit> (backed out). Neither proves anything -
+   * a slow webhook, a paid page and an abandoned one can all come back here -
+   * so the server is asked, and it asks Stripe (customerPaymentStatus). Only a
+   * verified "unpaid" says nothing was charged, and only then is the sheet
+   * offered again. Payment received, pending or unknown: asked again for a
+   * while, and never an invitation to pay twice.
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const returnedFor = params.get("upgraded") || params.get("upgrade");
+    /* From My Account's "Next visit": open the sheet, nothing more. */
+    const openFor = params.get("upgradeVisit");
+    if (!returnedFor && !openFor) return;
+    params.delete("upgraded");
+    params.delete("upgrade");
+    params.delete("upgradeVisit");
+    const rest = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`);
+    const timer = window.setTimeout(() => {
+      if (returnedFor) setPaymentFor({ bookingId: String(returnedFor), notice: paymentNotice(null), status: null });
+      else setUpgradeTarget(String(openFor));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const checkingFor = paymentFor?.bookingId || "";
+  useEffect(() => {
+    if (!checkingFor) return;
+    let alive = true;
+    let timer = 0;
+    let tries = 0;
+    let failures = 0;
+    const MAX_TRIES = 36; /* about three minutes of "processing" */
+    const poll = async () => {
+      tries += 1;
+      let status: PaymentStatus | null = null;
+      try {
+        status = await fetchPaymentStatus(checkingFor);
+      } catch {
+        failures += 1;
+      }
+      if (!alive) return;
+      const notice = status ? paymentNotice(status, { slow: tries >= MAX_TRIES }) : paymentNotice(null, { error: true });
+      setPaymentFor({ bookingId: checkingFor, notice, status });
+      if (status && !paymentStateSettles(status.state)) {
+        setReloadKey((k) => k + 1);
+        return;
+      }
+      const gaveUp = status ? tries >= MAX_TRIES : failures >= 4;
+      if (gaveUp) {
+        setReloadKey((k) => k + 1);
+        return;
+      }
+      timer = window.setTimeout(poll, status ? 5000 : 3000);
+    };
+    poll();
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, [checkingFor, paymentCheck]);
 
   const filtered = useMemo(() => {
     if (filter === "active") return bookings.filter((b) => isActiveStatus(b.status));
@@ -906,6 +1060,45 @@ export default function BookingsSection() {
         <h2 className="text-[21px] font-bold text-[#313234]">My Visits</h2>
         <p className="text-[13px] text-[#6A6D71] mt-0.5">Upcoming and past home visits</p>
       </div>
+
+      {paymentFor ? (
+        <div
+          className={`mb-5 rounded-[8px] border px-4 py-3 ${paymentFor.notice.tone === "ok" ? "border-[#D9E7D2] bg-[#F4F9F1]" : paymentFor.notice.tone === "attention" ? "border-amber-200 bg-amber-50" : "border-[#E0E6F5] bg-white"}`}
+          role="status"
+          aria-live="polite"
+          data-upgrade-notice={paymentFor.notice.tone}
+          data-payment-state={paymentFor.notice.state}
+        >
+          <p className={`text-[13.5px] font-semibold ${paymentFor.notice.tone === "ok" ? "text-[#1E4620]" : paymentFor.notice.tone === "attention" ? "text-amber-800" : "text-[#313234]"}`}>
+            {paymentFor.notice.text}
+          </p>
+          {paymentFor.notice.action ? (
+            <button
+              type="button"
+              className="mt-2.5 inline-flex min-h-[max(44px,var(--tap,44px))] items-center rounded-[8px] border border-[#D5DDF0] bg-white px-4 text-[13.5px] font-semibold text-[#2F55D4] hover:bg-[#F5F8FF]"
+              data-action={paymentFor.notice.action === "retry" ? "payment-check-again" : "payment-reopen"}
+              onClick={() => {
+                if (paymentFor.notice.action === "retry") {
+                  setPaymentFor({ bookingId: paymentFor.bookingId, notice: paymentNotice(null), status: null });
+                  setPaymentCheck((n) => n + 1);
+                  return;
+                }
+                setUpgradeReturnedUnpaid(true);
+                setUpgradeTarget(paymentFor.bookingId);
+                setPaymentFor(null);
+              }}
+            >
+              {paymentFor.notice.actionLabel}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {linkedNotice ? (
+        <div className="mb-5 rounded-[8px] border border-[#E0E6F5] bg-white px-4 py-3" role="status" data-guest-linked="">
+          <p className="text-[13.5px] font-semibold text-[#313234]">{linkedNotice}</p>
+        </div>
+      ) : null}
 
       {fullDayCancelNotice ? (
         <div className="mb-5 rounded-[8px] border border-[#D9E7D2] bg-[#F4F9F1] px-4 py-3">
@@ -1005,6 +1198,10 @@ export default function BookingsSection() {
               me={me}
               onCancelClick={openCancel}
               onDetailsSaved={handleDetailsSaved}
+              onUpgradeClick={(target) => {
+                setUpgradeReturnedUnpaid(false);
+                setUpgradeTarget(target._id);
+              }}
               cancelLoading={cancelLoading && cancelTarget?._id === b._id}
             />
           ))}
@@ -1040,6 +1237,18 @@ export default function BookingsSection() {
           </a>
         </div>
       )}
+
+      {upgradeTarget ? (
+        <UpgradeVisitSheet
+          bookingId={upgradeTarget}
+          open
+          returnedUnpaid={upgradeReturnedUnpaid}
+          onClose={() => {
+            setUpgradeTarget(null);
+            setUpgradeReturnedUnpaid(false);
+          }}
+        />
+      ) : null}
 
       <CancelModal
         open={!!cancelTarget}
