@@ -9,7 +9,7 @@ import { checkoutTracking } from "@/lib/meta";
 import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
 import { useAuth } from "@/lib/useAuth";
-import { addHome } from "@/lib/auth2";
+import { addHome, missingContact } from "@/lib/auth2";
 import { createBooking, createOneTimeVisitCheckout, getOneTimeVisitConfig } from "@/lib/booking-service";
 import { PLAN_DETAILS } from "@/lib/stripe-links";
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
@@ -208,6 +208,20 @@ export default function HandymanBooker({
     if (ready) void saveHandymanPhotos(photos);
     if (ready) saveHandymanDraft({ photoCount: photos.length });
   }, [photos, ready]);
+
+  /*
+   * The option, plan and billing they chose live in the draft too. They are
+   * their own state, and every update() saves the whole draft, so a draft that
+   * did not carry them wrote an empty choice over the plan picked on the plans
+   * page (Choose Plus, then a time, then sign-up came back to "Choose an
+   * option" with no plan). Kept in step here, the next save (holding the
+   * time, going to sign up) carries them. Only the working copy: writing
+   * storage from here would bring back a draft just cleared after booking.
+   */
+  useEffect(() => {
+    if (!ready) return;
+    setDraft((prev) => (prev.choice === choice && prev.plan === plan && prev.cycle === cycle ? prev : { ...prev, choice, plan, cycle }));
+  }, [ready, choice, plan, cycle]);
 
   const homes = useMemo(() => user?.addresses || [], [user]);
   const selectedHome = homes.find((h) => h._id === draft.addressId) || null;
@@ -731,6 +745,21 @@ export default function HandymanBooker({
         {[1, 2, 3, 4].map((n) => <span key={n} data-on={step >= n ? "1" : "0"} />)}
       </div>
       {banner && <div className={`bk-banner bk-banner--${banner.tone}`} role="status">{banner.text}</div>}
+      {/*
+        Came from a plan button ("Choose Plus"): say, on every step before the
+        choice, that this is the membership they picked and when they pay.
+        Without it the page read as an unrelated "Book a Handyman" form.
+      */}
+      {choice === "membership" && step < 4 && !done ? (() => {
+        const chosen = PLAN_DETAILS.find((p) => p.id === plan) || PLAN_DETAILS[0];
+        return (
+          <div className="bk-banner bk-banner--info" data-chosen-plan={chosen.id}>
+            {chosen.name} membership · {formatCents(cycleCents(chosen.id, chosen.price))}
+            {cycle === "annual" ? "/yr" : "/mo"}. First, your first visit; you pay on the last step.{" "}
+            <Link href="/membership/plans" data-link="change-plan">Change plan</Link>
+          </div>
+        );
+      })() : null}
 
       {step === 1 && (
         <section className="bk-card">
@@ -932,6 +961,18 @@ export default function HandymanBooker({
             </p>
           </section>
           {serviceTextsOptIn ? <div className="bk-texts">{serviceTextsOptIn}</div> : null}
+          {/*
+            An account made with a phone code has no name or email yet, and a
+            booking needs both: the press below asks for them (the email with a
+            code) before Stripe. Said here, so it is not a surprise after a
+            button showing a price.
+          */}
+          {user && choice && choice !== "member" && (missingContact(user).name || missingContact(user).email) ? (
+            <p className="bk-note" style={{ marginTop: 12 }} data-contact-next>
+              Next: {missingContact(user).name && missingContact(user).email ? "your name and an email for receipts" : missingContact(user).name ? "your name" : "an email for receipts"}
+              {missingContact(user).email ? " (we'll email you a code)" : ""}, then secure payment.
+            </p>
+          ) : null}
           <div className="bk-actions">
             <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={submit} disabled={!choice || busy} data-action="book-handyman">
               {busy ? <span className="bk-spinner" aria-hidden="true" /> : null}

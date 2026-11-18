@@ -53,6 +53,7 @@ import {
 import type { AppleCredential } from "@/app/components/auth/AppleAuth";
 import { useCompleteSignIn, type AuthMethod } from "@/app/components/auth/useCompleteSignIn";
 import { hasBookableDraft, loadDraft } from "@/lib/booking-draft";
+import { loadHandymanDraft } from "@/lib/handyman-draft";
 import { afterLayout, revealFirstError } from "@/lib/form-guide";
 
 /*
@@ -143,6 +144,17 @@ export default function SignUpPage() {
         const [hh, mm] = draft.requestedTime.split(":").map(Number);
         const time = `${hh % 12 === 0 ? 12 : hh % 12}:${String(mm).padStart(2, "0")} ${hh >= 12 ? "PM" : "AM"}`;
         nextCarry = { kind: "free-visit", when: `${day} · ${time}` };
+      }
+    } else if (next.startsWith("/book/handyman")) {
+      /*
+       * Book a Handyman with a membership chosen (a plan button sends them
+       * there): the plan they picked, so the page is plainly about that, not
+       * a free visit.
+       */
+      const handyman = loadHandymanDraft();
+      if (handyman?.choice === "membership" && handyman.plan) {
+        const name = `${handyman.plan.charAt(0).toUpperCase()}${handyman.plan.slice(1)}`;
+        nextCarry = { kind: "plan", label: `${name} membership, ${handyman.cycle === "annual" ? "annual" : "monthly"}` };
       }
     } else if (next.startsWith("/membership/plans") || next.startsWith("/book?visit=membership")) {
       try {
@@ -798,7 +810,8 @@ export default function SignUpPage() {
           </p>
         ) : null}
 
-        {screen === "methods" && carry?.kind !== "plan" && mode === "signup" ? (
+        {/* Not to somebody in the middle of a paid booking (Book a Handyman): it is not what they are doing. */}
+        {screen === "methods" && carry?.kind !== "plan" && mode === "signup" && !returnTo.startsWith("/book/handyman") ? (
           <p className="auth-reassure">
             <b>Free visit available.</b> No card required.
           </p>
