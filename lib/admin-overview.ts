@@ -57,7 +57,63 @@ export type SourceRow = {
   /* Spend / first-time paying customers (members or paid visits) in the period. */
   cacCents?: number | null;
   newPayingCustomers?: number;
+} & InquiryFields;
+
+/*
+ * The inquiry funnel per source (BackEnd overview.buildSources). inquiries =
+ * first free visits booked by accounts + guest free-visit requests created in
+ * the period; confirmed / completedVisits are those inquiries as they stand now.
+ */
+export type InquiryFields = {
+  firstFreeVisits: number;
+  freeVisitRequests: number;
+  inquiries: number;
+  confirmed: number;
+  completedVisits: number;
+  /* Revenue from customers whose first payment is in the period; repeat = the rest (renewals). */
+  firstPaymentRevenueCents: number;
+  repeatRevenueCents: number;
 };
+
+export type FunnelStepCount = { all: number | null; meta: number | null; measuredFromYmd: string | null; measured: boolean; partial: boolean };
+
+export type MetaReported = {
+  impressions: number;
+  clicks: number;
+  outboundClicks: number | null;
+  landingPageViews: number;
+  websiteLeads: number;
+  leads: number;
+  websitePurchases: number;
+  websiteSubscribes: number;
+  websiteSchedules: number;
+};
+
+export type AgencyFee = {
+  known: boolean;
+  cents: number | null;
+  missingMonths: string[];
+  unavailable?: boolean;
+  breakdown?: Array<{ month: string; monthCents: number; days: number; daysInMonth: number; cents: number }>;
+};
+
+export type MetaEfficiency = {
+  spendCents: number | null;
+  inquiries: number;
+  confirmed: number;
+  newPayingCustomers: number;
+  firstPaymentRevenueCents: number;
+  costPerInquiryCents: number | null;
+  costPerConfirmedBookingCents: number | null;
+  costPerNewPayingCustomerCents: number | null;
+  firstPaymentRoas: number | null;
+  agencyFee: AgencyFee;
+  allInCostCents: number | null;
+  allInCostPerNewPayingCustomerCents: number | null;
+};
+
+export type MetaEventKind = { eventName: string; leadType: string | null; sent: number; failed: number; fromServer: number; fromBrowserRelay: number; distinctEventIds: number };
+export type MetaEvents = { measuredFrom: string | null; measured: boolean; partial?: boolean; events: MetaEventKind[]; error?: boolean };
 
 /*
  * A Meta campaign, ad set or ad. `id` and `name` are separate: name is null
@@ -99,7 +155,7 @@ export type SourceGroup = {
   cacCents?: number | null;
   roas?: number | null;
   newPayingCustomers?: number;
-};
+} & InquiryFields;
 
 export type ActivityItem = { at: string; type: string; text: string; who: string; userId: string; ref?: string };
 export type AttentionItem = { key: string; count: number; tone: "info" | "warning" | "critical"; text: string };
@@ -176,7 +232,26 @@ export type Overview = {
   plans: PlanRow[];
   growth: { period: Series<GrowthPoint>; year: Series<GrowthPoint> };
   revenueSeries: { period: Series<RevenuePoint>; year: Series<RevenuePoint> } | null;
-  funnel: { visitors: number; prevVisitors: number; visitorsTrackingSince: string | null; registered: number; freeVisitBooked: number; freeVisitCompleted: number; members: number };
+  funnel: {
+    /* null: the period is wholly before the first recorded visitor (not measured, not zero). */
+    visitors: number | null;
+    prevVisitors: number | null;
+    prevVisitorsPartial: boolean;
+    visitorsTrackingSince: string | null;
+    visitorsPartial: boolean;
+    staffPagesExcluded: number;
+    registered: number;
+    freeVisitBooked: number;
+    freeVisitRequests: number;
+    inquiries: number;
+    confirmed: number;
+    completed: number;
+    freeVisitCompleted: number;
+    members: number;
+    newPayingCustomers: number;
+    requestOutcomes: Record<string, number> | null;
+    steps: Record<string, FunnelStepCount> | null;
+  };
   sources: SourceRow[];
   sourceGroups: SourceGroup[];
   /* What "Other" is made of: referring sites and unknown utm_source values. */
@@ -193,14 +268,24 @@ export type Overview = {
     stale?: boolean;
     partial?: boolean;
     newPayingCustomers?: number;
+    coverageFromYmd?: string | null;
+    accountTimezone?: string | null;
+    accountName?: string | null;
+    attributionSettings?: string[];
+    /* Meta's own figures for the period; null when not connected or nothing synced. */
+    reported?: MetaReported | null;
   };
+  metaEfficiency: MetaEfficiency | null;
+  metaEvents: MetaEvents | null;
+  definitions: Record<string, string>;
   topAreas: Array<{ city: string; customers: number; members: number; newInPeriod: number }>;
   activity: ActivityItem[];
   attention: AttentionItem[];
 };
 
 export type ListRow = {
-  userId: string;
+  /* null for a free-visit request sent without an account. */
+  userId: string | null;
   name: string;
   email: string;
   city: string;
@@ -214,6 +299,7 @@ export type ListRow = {
   date?: string;
   status?: string;
   converted?: boolean;
+  visitDate?: string | null;
 };
 
 export type OverviewList = { title: string; period: { label: string; fromYmd: string; toYmd: string }; rows: ListRow[] };
@@ -289,6 +375,7 @@ const GROWTH_SERIES: Shape = { granularity: "day", points: [{ key: "", from: "",
 const REVENUE_SERIES: Shape = { granularity: "day", points: [{ key: "", from: "", membershipCents: 0, visitCents: 0 }] };
 const SOURCE_SHAPE: Shape = {
   key: "other", label: "Other", group: null, visitors: 0, registrations: 0, freeVisits: 0, members: 0, revenueCents: 0,
+  firstFreeVisits: 0, freeVisitRequests: 0, inquiries: 0, confirmed: 0, completedVisits: 0, firstPaymentRevenueCents: 0, repeatRevenueCents: 0, newPayingCustomers: 0,
   spendCents: null, conversion: null, share: null, costPerRegistrationCents: null, costPerMemberCents: null, roas: null,
 };
 const OVERVIEW_SHAPE: Shape = {
@@ -317,13 +404,20 @@ const OVERVIEW_SHAPE: Shape = {
   plans: [{ plan: "basic", active: 0, paying: 0, comped: 0, gifts: 0, newInPeriod: 0, canceledInPeriod: 0, mrrCents: 0, fullPriceCents: 0, share: null }],
   growth: { period: GROWTH_SERIES, year: GROWTH_SERIES },
   revenueSeries: null,
-  funnel: { visitors: 0, prevVisitors: 0, visitorsTrackingSince: null, registered: 0, freeVisitBooked: 0, freeVisitCompleted: 0, members: 0 },
+  funnel: {
+    visitors: null, prevVisitors: null, prevVisitorsPartial: false, visitorsTrackingSince: null, visitorsPartial: false, staffPagesExcluded: 0,
+    registered: 0, freeVisitBooked: 0, freeVisitRequests: 0, inquiries: 0, confirmed: 0, completed: 0, freeVisitCompleted: 0, members: 0,
+    newPayingCustomers: 0, requestOutcomes: null, steps: null,
+  },
   sources: [SOURCE_SHAPE],
-  sourceGroups: [{ key: "", label: "", sources: [], visitors: 0, registrations: 0, freeVisits: 0, members: 0, revenueCents: 0, conversion: null, share: null }],
+  sourceGroups: [{ key: "", label: "", sources: [], visitors: 0, registrations: 0, freeVisits: 0, members: 0, revenueCents: 0, conversion: null, share: null, firstFreeVisits: 0, freeVisitRequests: 0, inquiries: 0, confirmed: 0, completedVisits: 0, firstPaymentRevenueCents: 0, repeatRevenueCents: 0, newPayingCustomers: 0, }],
   otherDetail: [{ origin: "", visitors: 0, registrations: 0 }],
   unmatchedRevenueCents: 0,
   campaigns: [],
-  spend: { connected: false },
+  spend: { connected: false, reported: null, attributionSettings: [], accountTimezone: null },
+  metaEfficiency: null,
+  metaEvents: null,
+  definitions: {},
   topAreas: [{ city: "", customers: 0, members: 0, newInPeriod: 0 }],
   activity: [{ at: "", type: "", text: "", who: "", userId: "" }],
   attention: [{ key: "", count: 0, tone: "info", text: "" }],
@@ -418,6 +512,16 @@ export async function getOverview(q: RangeQuery): Promise<Overview> {
 export async function getOverviewList(q: RangeQuery & { metric: string; param?: string }): Promise<OverviewList> {
   const res = await API.get<unknown>("/api/admin/overview/list", { params: q, timeout: REQUEST_TIMEOUT_MS });
   return normalizeList(res.data);
+}
+
+/* The agency's fee per calendar month (owner sets; everyone with the Overview reads). */
+export async function getAgencyFees(): Promise<Record<string, { cents: number; note: string; setAt: string | null }>> {
+  const res = await API.get<{ months?: Record<string, { cents: number; note: string; setAt: string | null }> }>("/api/admin/overview/agency-fees", { timeout: REQUEST_TIMEOUT_MS });
+  return res.data?.months || {};
+}
+
+export async function setAgencyFee(month: string, cents: number | null, note = ""): Promise<void> {
+  await API.put(`/api/admin/overview/agency-fees/${encodeURIComponent(month)}`, { cents, note }, { timeout: REQUEST_TIMEOUT_MS });
 }
 
 export async function getOverviewMap(): Promise<OverviewMap> {

@@ -71,7 +71,7 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
     check("growth and revenue charts drawn", (await page.locator("svg[role=img]").count()) >= 2);
     check("map rendered with pins", (await page.locator("svg[aria-label$='customers on the map'] circle.ov-pin").count()) > 10);
     check("customer funnel and acquisition present", (await page.getByText("Customer funnel").count()) === 1 && (await page.getByText("Customer acquisition").count()) === 1);
-    check("unconnected spend is explained, not hidden", (await page.getByText("Connect Meta Ads to add spend").count()) === 1);
+    check("unconnected Meta reporting is explained, not hidden", (await page.locator("[data-meta-reported=disconnected]").count()) === 1 && /nothing here is estimated/.test(await page.locator("[data-meta-reported]").innerText()));
     /* Acquisition: a Meta Ads total with Facebook / Instagram / Other Meta under it, and what Other is. */
     const metaTotal = await page.locator("tr[data-source-group=meta] td").nth(2).innerText();
     const fbIg = await Promise.all(["meta_facebook", "meta_instagram"].map((k) => page.locator(`tr[data-source=${k}] td`).nth(2).innerText()));
@@ -242,6 +242,81 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
     check("?tab=overview does not open it for a Fixter", (await page.locator("h2", { hasText: /^Overview$/ }).count()) === 0);
     check("a Fixter never calls the analytics API", calls.length === 0, calls.join(", "));
     await ctx.close();
+  }
+
+  /* ---------------- Customer acquisition (2026-11-17 audit) ---------------- */
+  {
+    console.log("\n--- acquisition: Meta reported vs Profixter recorded ---");
+    const base = JSON.parse(JSON.stringify(FIX.overview));
+    const inq = { firstFreeVisits: 0, freeVisitRequests: 0, inquiries: 0, confirmed: 0, completedVisits: 0, firstPaymentRevenueCents: 0, repeatRevenueCents: 0, newPayingCustomers: 0 };
+    base.sources = base.sources.map((r) => ({ ...inq, ...r }));
+    const meta = base.sourceGroups.find((g) => g.key === "meta");
+    Object.assign(meta, { visitors: 876, inquiries: 4, freeVisitRequests: 2, confirmed: 2, completedVisits: 2, newPayingCustomers: 0 });
+    base.sources.push({ ...inq, key: "before_tracking", label: "Before tracking began", group: null, visitors: 0, registrations: 2, freeVisits: 0, members: 6, revenueCents: 606500, firstPaymentRevenueCents: 14900, repeatRevenueCents: 591600, spendCents: null, conversion: null, share: null, costPerRegistrationCents: null, costPerMemberCents: null, roas: null, newPayingCustomers: 1 });
+    base.funnel = {
+      ...base.funnel, visitors: 1548, visitorsPartial: true, visitorsTrackingSince: "2026-10-08T00:41:55.208Z", staffPagesExcluded: 42, inquiries: 10, freeVisitRequests: 4, confirmed: 7, completed: 4, newPayingCustomers: 1,
+      requestOutcomes: { confirmed: 2, completed: 1, declined: 1 },
+      steps: {
+        booking_page_view: { all: 1038, meta: 585, measuredFromYmd: "2026-10-10", measured: true, partial: true },
+        booker_started: { all: 61, meta: 13, measuredFromYmd: "2026-10-10", measured: true, partial: true },
+        slot_selected: { all: 30, meta: 5, measuredFromYmd: "2026-10-10", measured: true, partial: true },
+        signup_view: { all: 6, meta: 2, measuredFromYmd: "2026-10-10", measured: true, partial: true },
+        request_submitted: { all: null, meta: null, measuredFromYmd: null, measured: false, partial: false },
+        request_failed: { all: null, meta: null, measuredFromYmd: null, measured: false, partial: false },
+      },
+    };
+    base.metaEfficiency = { spendCents: null, inquiries: 4, confirmed: 2, newPayingCustomers: 0, firstPaymentRevenueCents: 0, costPerInquiryCents: null, costPerConfirmedBookingCents: null, costPerNewPayingCustomerCents: null, firstPaymentRoas: null, agencyFee: { known: false, cents: null, missingMonths: ["2026-10"] }, allInCostCents: null, allInCostPerNewPayingCustomerCents: null };
+    base.metaEvents = { measuredFrom: null, measured: false, events: [] };
+    base.definitions = { visitors: "Profixter: browsers seen for the first time", inquiries: "real requests for a visit", source: "First touch." };
+    const connected = JSON.parse(JSON.stringify(base));
+    connected.spend = { connected: true, status: "ok", lastSuccessAt: new Date(Date.now() - 2 * 86400000).toISOString(), stale: true, partial: false, totalCents: 76300, accountTimezone: "America/Los_Angeles", attributionSettings: ["7-day click or 1-day view"], reported: { impressions: 50000, clicks: 1400, outboundClicks: null, landingPageViews: 610, websiteLeads: 7, leads: 7, websitePurchases: 0, websiteSubscribes: 0, websiteSchedules: 2 } };
+    connected.metaEfficiency = { ...base.metaEfficiency, spendCents: 76300, costPerInquiryCents: 19075, costPerConfirmedBookingCents: 38150, costPerNewPayingCustomerCents: null, firstPaymentRoas: 0 };
+    connected.metaEvents = { measuredFrom: "2026-10-01T04:00:00.000Z", measured: true, partial: false, events: [{ eventName: "Lead", leadType: "account", sent: 3, failed: 0, fromServer: 3, fromBrowserRelay: 0, distinctEventIds: 3 }] };
+    const fees = [];
+    for (const [label, payload, width] of [["disconnected", base, 1440], ["connected", connected, 390]]) {
+      const { ctx, page, errors } = await open(browser, OWNER, {
+        width,
+        height: 900,
+        answer: (u) => (u.pathname.endsWith("/map") ? FIX.map : u.pathname.endsWith("/list") ? FIX.list : payload),
+      });
+      await ctx.route(/\/api\/admin\/overview\/agency-fees\//, (route) => {
+        fees.push({ url: route.request().url(), body: JSON.parse(route.request().postData() || "{}") });
+        return route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: "{}" });
+      });
+      await page.goto(`${BASE}/admin/overview`, { waitUntil: "networkidle" });
+      await page.locator("[data-acquisition-funnel]").waitFor({ timeout: 20000 }).catch(() => {});
+      const funnel = (await page.locator("[data-acquisition-funnel]").innerText().catch(() => "")).replace(/\s+/g, " ");
+      const reported = (await page.locator("[data-meta-reported]").innerText().catch(() => "")).replace(/\s+/g, " ");
+      const cost = (await page.locator("[data-acquisition-cost]").innerText().catch(() => "")).replace(/\s+/g, " ");
+      const events = (await page.locator("[data-meta-events]").innerText().catch(() => "")).replace(/\s+/g, " ");
+      check(`${label}: every funnel rate names numerator and denominator`, /2\.2% of form started|of booking form shown \(13 of 585\)/.test(funnel) && /\(13 of 585\)/.test(funnel), funnel.slice(0, 200));
+      check(`${label}: an unmeasured step says Not measured, not 0`, /Submitted Not measured in this period/.test(funnel));
+      check(`${label}: a partly measured step says from when`, /measured from Oct 10, 2026/.test(funnel));
+      check(`${label}: inquiries are explained (requests + account bookings)`, /guest free-visit requests \(4 in all\)/.test(funnel));
+      check(`${label}: source table has Inquiries / Confirmed / Completed / New paying / First payments`, (await page.locator("th").allInnerTexts()).map((t) => t.trim().toUpperCase()).filter((t) => ["INQUIRIES", "CONFIRMED", "COMPLETED", "NEW PAYING", "FIRST PAYMENTS", "ALL REVENUE"].includes(t)).length >= 6);
+      check(`${label}: Before tracking began is its own row`, (await page.locator("tr[data-source=before_tracking]").count()) === 1);
+      if (label === "disconnected") {
+        check("disconnected: Meta shows Not connected, no numbers", /Not connected/.test(reported) && !/\$763/.test(reported));
+        check("disconnected: every cost needs Meta spend", (cost.match(/needs Meta spend/g) || []).length >= 4, cost.slice(0, 200));
+        check("disconnected: event log says Not measured", /Not measured/.test(events));
+        check("disconnected: the owner sees the agency fee form for the missing month", (await page.locator("[data-acquisition-cost] select option[value='2026-10']").count()) === 1);
+        await page.locator("[data-acquisition-cost] input").fill("1500");
+        await page.locator("[data-acquisition-cost] button", { hasText: "Save fee" }).click();
+        await page.waitForTimeout(800);
+        check("owner saving a fee PUTs cents to the month", fees.length === 1 && /agency-fees\/2026-10$/.test(fees[0].url) && fees[0].body.cents === 150000, JSON.stringify(fees));
+      } else {
+        check("connected: Meta's spend, website leads and landing page views are shown as Meta's", /Reported by Meta Ads Manager/.test(reported) && /\$763/.test(reported) && /Website leads 7/i.test(reported) && /Landing page views 610/i.test(reported), reported.slice(0, 240));
+        check("connected: outbound clicks missing from old rows read Not reported, not 0", /Outbound clicks Not reported/i.test(reported));
+        check("connected: a stale sync is flagged", /Stale/.test(reported));
+        check("connected: time zone and attribution setting are stated", /America\/Los_Angeles/.test(reported) && /7-day click or 1-day view/.test(reported));
+        check("connected: cost per inquiry is spend over inquiries", /Per inquiry \$190\.75/i.test(cost) && /Meta spend ÷ 4 inquiries/.test(cost), cost.slice(0, 200));
+        check("connected: no new paying customer means no cost per customer", /Per new paying customer — none in this period/i.test(cost), cost.slice(0, 260));
+        check("connected: sent Lead events are listed", /Lead · account created 3/.test(events), events);
+        check("connected: nothing overflows sideways on a phone", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+      }
+      check(`${label}: no page errors`, errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
   }
 
   await browser.close();

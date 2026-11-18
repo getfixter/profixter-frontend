@@ -255,7 +255,8 @@ export default function AddressField({ value, onChange, onServiceArea, placehold
   const inputBase = "auth-input";
 
   return (
-    <div ref={boxRef} className="w-full" onFocusCapture={warmPlaces} onPointerDownCapture={warmPlaces}>
+    /* data-clarity-mask: a session recording never shows a home address (Microsoft Clarity, via GTM). */
+    <div ref={boxRef} className="w-full" onFocusCapture={warmPlaces} onPointerDownCapture={warmPlaces} data-clarity-mask="true">
       {!manual ? (
         <>
           <label htmlFor="pf-address" className="sr-only">Home address</label>

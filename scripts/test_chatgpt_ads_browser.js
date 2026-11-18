@@ -201,7 +201,13 @@ const field = (body, name) => (body.match(new RegExp(`name="${name}"\\r\\n\\r\\n
       api: { [`GET /api/track/paid-visit-by-session`]: () => [200, { ok: true, product: "one_time_visit", amountCents: 9900, currency: "USD" }] },
     });
     await go(page, `/book/confirmation?booking_id=b1&session_id=${SESSION}`, 4000);
-    check("GPC: no order_created and no proof request", (await page.evaluate(() => typeof window.oaiq)) === "undefined" && !(state.posts["GET /api/track/paid-visit-by-session"] || []).length);
+    /*
+     * 2026-11-17: the Meta Purchase now waits for the same server proof, and
+     * the Meta pixel does not honor GPC (owner decision; only ChatGPT Ads
+     * does), so a proof request to OUR API can happen here. Nothing reaches OpenAI.
+     */
+    check("GPC: no ChatGPT Ads SDK and no order_created", (await page.evaluate(() => typeof window.oaiq)) === "undefined" && (await measures(page, "order_created")).length === 0);
+    check("GPC: any proof request is to Profixter's own API only", (state.posts["GET /api/track/paid-visit-by-session"] || []).every((c) => /\/api\/track\/paid-visit-by-session/.test(c.url)));
     await ctx.close();
   }
 
@@ -216,9 +222,14 @@ const field = (body, name) => (body.match(new RegExp(`name="${name}"\\r\\n\\r\\n
     check("order_created: cents, USD, contents shape, session event_id", o[2]?.type === "contents" && o[2]?.amount === 9900 && o[2]?.currency === "USD" && o[2]?.contents?.[0]?.quantity === 1 && o[3]?.event_id === `sess_${SESSION}`, JSON.stringify(o));
     const proofCalls = state.posts["GET /api/track/paid-visit-by-session"] || [];
     check("the proof request carries the customer's sign-in", proofCalls.length >= 1 && proofCalls[0].auth === `Bearer ${TOKEN}`);
-    check("Meta Purchase still fires on the same page", (await metaTrack(page, "Purchase")).length === 1);
+    const purchases = await metaTrack(page, "Purchase");
+    check("Meta Purchase fires once on the same page, after the proof", purchases.length === 1, JSON.stringify(purchases));
+    /* 2026-11-17: the browser Purchase carries Stripe's amount from the proof and the webhook's event id; no relay. */
+    check("Meta Purchase: Stripe's amount, the session event id", purchases[0]?.[2]?.value === 99 && purchases[0]?.[2]?.currency === "USD" && purchases[0]?.[3]?.eventID === `sess_${SESSION}`, JSON.stringify(purchases[0]));
+    check("Meta Purchase is never relayed to the server", !(state.posts["POST /api/track/meta"] || []).length);
     await go(page, `/book/confirmation?booking_id=b1&session_id=${SESSION}`, 4000);
     check("refresh after delivery: no second order_created", (await measures(page, "order_created")).length === 0);
+    check("refresh after delivery: no second Meta Purchase", (await metaTrack(page, "Purchase")).length === 0);
     const tab = await ctx.newPage();
     await go(tab, `/book/confirmation?booking_id=b1&session_id=${SESSION}`, 4000);
     check("second tab after delivery: no second order_created", (await measures(tab, "order_created")).length === 0);
@@ -228,12 +239,14 @@ const field = (body, name) => (body.match(new RegExp(`name="${name}"\\r\\n\\r\\n
     const { ctx, page } = await context(browser, { signedIn: true, api: visitProof(404, { ok: false }) });
     await go(page, `/book/confirmation?booking_id=b1&session_id=${SESSION}`, 25000);
     check("unpaid / refunded / someone else's session: no order_created", (await measures(page, "order_created")).length === 0);
+    check("unpaid / refunded / someone else's session: no Meta Purchase either", (await metaTrack(page, "Purchase")).length === 0);
     await ctx.close();
   }
   {
     const { ctx, page, state } = await context(browser, { signedIn: false, api: visitProof() });
     await go(page, `/book/confirmation?booking_id=b1&session_id=${SESSION}`, 4000);
     check("signed out: no proof request, no order_created", !(state.posts["GET /api/track/paid-visit-by-session"] || []).length && (await measures(page, "order_created")).length === 0);
+    check("signed out: no unproven Meta Purchase (the webhook's server event stands alone)", (await metaTrack(page, "Purchase")).length === 0);
     const parked = await page.evaluate(() => localStorage.getItem("pf_oaiq_pending") || "");
     check("signed out: the Stripe session is parked for after sign-in", parked.includes(SESSION) && parked.includes('"order"'), parked);
     // The owner signs in on this browser and moves on to another page.
@@ -274,6 +287,7 @@ const field = (body, name) => (body.match(new RegExp(`name="${name}"\\r\\n\\r\\n
     const calls = (state.posts["GET /api/track/paid-visit-by-session"] || []).length;
     const parkedNow = await page.evaluate(() => JSON.parse(localStorage.getItem("pf_oaiq_pending") || "[]"));
     check("server failing for the whole check: no order_created", calls >= 8 && (await measures(page, "order_created")).length === 0, `calls=${calls}`);
+    check("server failing: no Meta Purchase on a guess", (await metaTrack(page, "Purchase")).length === 0);
     check("server failing: the session stays parked, with no refusal counted", parkedNow.length === 1 && parkedNow[0].sessionId === SESSION && !parkedNow[0].misses, JSON.stringify(parkedNow));
     status = 429;
     await go(page, "/about", 7000);

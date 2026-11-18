@@ -315,6 +315,8 @@ function recordFirstVisit(touch: Attribution) {
   try {
     if (!API_BASE || window.localStorage.getItem(VISIT_SENT_KEY)) return;
     if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;
+    // A staff tool or token page is not a visit (the server refuses these too); try again on a public page.
+    if (isTrackerFree(touch.landingPath || window.location.pathname)) return;
     const id = visitorId();
     if (!id) return;
     window.localStorage.setItem(VISIT_SENT_KEY, "1");
@@ -662,11 +664,18 @@ export function trackPhoneClick(params: Params = {}): string {
   return send("Contact", params, { dataLayerEvent: "phone_click" });
 }
 
-export type FunnelStepName = "booking_page_view" | "booker_started" | "slot_selected" | "signup_view";
+export type FunnelStepName =
+  | "booking_page_view"
+  | "booker_started"
+  | "slot_selected"
+  | "signup_view"
+  /* The server accepted a free-visit request / refused it or never got it (from 2026-11-17). */
+  | "request_submitted"
+  | "request_failed";
 
 /**
- * One anonymous step of the free-visit funnel (booking page -> started -> slot
- * chosen -> sign-up), counted once per browser per step per day on the server.
+ * One anonymous step of the free-visit funnel (booker shown -> started -> time
+ * chosen -> submitted or failed), counted once per browser per step per day on the server.
  * Fire-and-forget; skipped for automation and when storage is blocked.
  */
 export function trackStep(step: FunnelStepName): void {

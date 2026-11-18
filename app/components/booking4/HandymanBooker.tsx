@@ -747,7 +747,7 @@ export default function HandymanBooker({
                 );
               })}
             </div>
-            <textarea id="bk-task" className="bk-textarea" name="task" aria-invalid={errors.task ? "true" : undefined} value={draft.task} onChange={(e) => update({ task: e.target.value })} placeholder="Tap a job above, or describe it in a few words" maxLength={1200} />
+            <textarea data-clarity-mask="true" id="bk-task" className="bk-textarea" name="task" aria-invalid={errors.task ? "true" : undefined} value={draft.task} onChange={(e) => update({ task: e.target.value })} placeholder="Tap a job above, or describe it in a few words" maxLength={1200} />
             {err("task")}
           </div>
           <div className="bk-field" data-error={errors.address ? "1" : undefined}>

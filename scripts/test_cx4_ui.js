@@ -64,7 +64,27 @@ async function open(browser, { width, height, me = null }) {
       localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
     } catch {}
   }, Boolean(me));
-  const state = { me, freeVisits: [], callbacks: [], oneTime: [], memberships: [], bookings: [], abandons: [], homes: [], holds: [], releases: [], takenTimes: [], offer: null, offerAsks: 0, membershipRefusal: null };
+  const state = { me, freeVisits: [], callbacks: [], oneTime: [], memberships: [], bookings: [], abandons: [], homes: [], holds: [], releases: [], takenTimes: [], offer: null, offerAsks: 0, membershipRefusal: null, steps: [], rejectFreeVisit: 0 };
+  /*
+   * 2026-11-17 acquisition audit: the Meta Pixel is a recorder (no request
+   * reaches Meta), and navigator.webdriver reads false so the funnel steps
+   * (lib/meta trackStep, skipped for automation) are sent to the mock below.
+   */
+  await ctx.route(/connect\.facebook\.net|facebook\.com\/tr/, (r) => r.abort());
+  await ctx.addInitScript(() => {
+    try {
+      Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false });
+    } catch {}
+    const calls = [];
+    window.__fbqCalls = calls;
+    window.fbq = function (...args) {
+      calls.push(args);
+    };
+    window._fbq = window.fbq;
+    window.fbq.queue = [];
+    window.fbq.loaded = true;
+    window.fbq.version = "2.0";
+  });
   // Google Places is real on the live site; blocking it makes the address field use its manual form, as it does without a key.
   await ctx.route(/maps\.googleapis\.com|places\.googleapis\.com/, (r) => r.abort());
   await ctx.route("https://checkout.stripe.test/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<h1>Stripe test checkout</h1>" }));
@@ -113,6 +133,14 @@ async function open(browser, { width, height, me = null }) {
       return json({ eligible: true, serverNow: serverNow.toISOString(), expiresAt: o.expiresAt.toISOString(), percentOff: 20, plans: WELCOME_PLANS });
     }
     if (p === "/api/service-area/check") return json({ serviceable: u.searchParams.get("zip") !== "10118" });
+    if (p === "/api/track/step" && m === "POST") {
+      state.steps.push(JSON.parse(req.postData() || "{}").step);
+      return route.fulfill({ status: 204, headers: cors });
+    }
+    if (p === "/api/free-visit-requests" && m === "POST" && state.rejectFreeVisit > 0) {
+      state.rejectFreeVisit -= 1;
+      return json({ success: false, code: "TRANSACTIONS_UNAVAILABLE", message: "Booking is temporarily unavailable. Please try again, or call or text 631-599-1363." }, 503);
+    }
     if (p === "/api/free-visit-requests" && m === "POST") {
       const t = text();
       state.freeVisits.push({ formVersion: field(t, "formVersion"), name: field(t, "name"), line1: field(t, "line1"), zip: field(t, "zip"), date: field(t, "requestedDate"), time: field(t, "requestedTime"), note: field(t, "note"), consent: field(t, "consentText") });
@@ -259,9 +287,18 @@ async function fillAddress(scope, { line1, city, zip }) {
       await page.locator("[data-action='review-free-visit']").click();
       check(`${tag}: required fields are named`, (await form.locator(".bk-error").count()) >= 4);
       check(`${tag}: no sheet until the form is complete`, (await page.locator("[data-free-visit-sheet]").count()) === 0);
-      await form.locator("input[name=name]").fill("Dana Lopez");
-      await form.locator("input[name=phone]").fill("(516) 555-0123");
-      await form.locator("input[name=email]").fill("dana@mailbox.org");
+      /*
+       * Each field clicked, then filled, then read back (2026-11-17): filling
+       * straight after the keyboard-Next check above sent the phone into the
+       * name field, so the form refused it and the suite stopped here.
+       */
+      for (const [n, v] of [["name", "Dana Lopez"], ["phone", "(516) 555-0123"], ["email", "dana@mailbox.org"]]) {
+        const input = form.locator(`input[name=${n}]`);
+        await input.click();
+        await input.fill(v);
+        if ((await input.inputValue()) !== v) await input.fill(v);
+      }
+      check(`${tag}: name, phone and email hold what was typed`, (await form.locator("input[name=name]").inputValue()) === "Dana Lopez" && (await form.locator("input[name=phone]").inputValue()).replace(/\D/g, "") === "5165550123");
       await fillAddress(form, { line1: "12 Elm St", city: "Farmingdale", zip: "11735" });
       /* CX 4.2: only bookable days; the earliest opening is already chosen. */
       await page.locator(".bk-day[data-day]").first().waitFor({ timeout: 10000 });
@@ -302,6 +339,18 @@ async function fillAddress(scope, { line1, city, zip }) {
       await sheet.locator("[data-callback-sent]").waitFor({ timeout: 5000 });
       check(`${tag}: callback request uses what was typed, once`, state.callbacks.length === 1 && state.callbacks[0].phone === "5165550123" && /12 Elm St/.test(state.callbacks[0].address));
       check(`${tag}: callback booked nothing`, state.freeVisits.length === 0);
+      /* 2026-11-17: a refused submission is a failed step, never a Lead; the retry is the one Lead. */
+      const leads = () => page.evaluate(() => (window.__fbqCalls || []).filter((c) => c[0] === "track" && c[1] === "Lead"));
+      state.rejectFreeVisit = 1;
+      await sheet.locator("[data-action='confirm-free-visit']").click();
+      await page.locator(".bk-banner--warn").first().waitFor({ timeout: 8000 });
+      check(`${tag}: a refused submission says so and keeps the form`, /temporarily unavailable/.test(await page.locator(".bk-banner--warn").first().innerText()) && (await form.locator("input[name=name]").inputValue()) === "Dana Lopez");
+      await page.waitForTimeout(300);
+      check(`${tag}: a refused submission fires no Lead`, (await leads()).length === 0);
+      check(`${tag}: a refused submission is recorded as request_failed`, state.steps.includes("request_failed"), state.steps.join(","));
+      await page.locator("[data-action='review-free-visit']").click();
+      await sheet.waitFor({ timeout: 5000 });
+      await page.waitForTimeout(500);
       await sheet.locator("[data-action='confirm-free-visit']").dblclick();
       await page.locator("[data-free-visit-done]").waitFor({ timeout: 8000 });
       check(`${tag}: Confirm submits once, even on a double tap`, state.freeVisits.length === 1);
@@ -310,6 +359,13 @@ async function fillAddress(scope, { line1, city, zip }) {
       check(`${tag}: the request carries exactly the consent line it showed`, sent.consent === GUEST_LINE, sent.consent);
       const doneText = await page.locator("[data-free-visit-done]").innerText();
       check(`${tag}: success says reserved and pending - never confirmed`, /reserved/.test(doneText) && /confirm it with you shortly/.test(doneText) && !/is confirmed/i.test(doneText));
+      const sentLeads = await leads();
+      check(`${tag}: exactly one browser Lead after the accepted retry, lead_type free_visit_request`, sentLeads.length === 1 && sentLeads[0][2]?.lead_type === "free_visit_request", JSON.stringify(sentLeads));
+      check(`${tag}: no Schedule and no second Lead for a guest request`, !(await page.evaluate(() => (window.__fbqCalls || []).some((c) => c[0] === "track" && c[1] === "Schedule"))));
+      await page.reload({ waitUntil: "networkidle" });
+      await page.waitForTimeout(600);
+      check(`${tag}: a reload after success sends no Lead`, (await leads()).length === 0);
+      for (const step of ["booking_page_view", "booker_started", "slot_selected", "request_submitted"]) check(`${tag}: funnel step ${step} sent`, state.steps.includes(step), state.steps.join(","));
       check(`${tag}: free visit has no page errors`, errors.length === 0, errors.join(" | "));
       await shot(page, `${tag}-free-04-done`);
       await ctx.close();

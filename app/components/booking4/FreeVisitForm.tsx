@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/analytics";
-import { getAttribution, getFbCookies, newEventId, trackLead } from "@/lib/meta";
+import { getAttribution, getFbCookies, newEventId, trackLead, trackStep } from "@/lib/meta";
 import { oaiqLead } from "@/lib/chatgpt-ads";
 import { BUSINESS_PHONE_DISPLAY } from "@/lib/seo";
 import { saveHandymanDraft, saveHandymanPhotos } from "@/lib/handyman-draft";
@@ -107,6 +107,21 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
   const callbackEventId = useRef("");
   const submitting = useRef(false);
   const started = useRef(false);
+  const timeChosen = useRef(false);
+
+  /*
+   * The booking funnel (server: one count per browser, step and day). The
+   * homepage panel replaced the old booker on 2026-11-03 without these, so
+   * from then until 2026-11-17 starts and chosen times were not measured.
+   */
+  useEffect(() => {
+    trackStep("booking_page_view");
+  }, []);
+  useEffect(() => {
+    if (!when.time || timeChosen.current) return;
+    timeChosen.current = true;
+    trackStep("slot_selected");
+  }, [when.time]);
 
   // Signed in: what we already know is filled in, never asked again.
   useEffect(() => {
@@ -153,6 +168,7 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
     if (started.current) return;
     started.current = true;
     trackEvent("free_visit_flow_started", { placement: embedded ? "home_booking_panel" : "free_visit_form" });
+    trackStep("booker_started");
   };
 
   const validate = (): Errors => {
@@ -218,6 +234,7 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
         // Once, after the server saved it, with the event id the server used for its own Lead.
         trackLead({ content_name: "free_first_visit", status: "free_visit_requested", lead_type: "free_visit_request" }, { eventId: eventId.current, relay: false });
         oaiqLead(eventId.current);
+        trackStep("request_submitted");
         eventId.current = "";
         writeDraft(null);
         setSheet(false);
@@ -226,6 +243,7 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
         else window.scrollTo({ top: 0, behavior: scrollBehavior() });
         return;
       }
+      trackStep("request_failed");
       setSheet(false);
       setPhase("edit");
       if (body.code === "SLOT_UNAVAILABLE" || body.code === "DATE_UNAVAILABLE") {
@@ -239,6 +257,7 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
         setErrors({ form: body.message || "Something went wrong. Please try again, or call us." });
       }
     } catch {
+      trackStep("request_failed");
       setSheet(false);
       setPhase("edit");
       setErrors({ form: "We couldn't reach Profixter. Check your connection and try again." });
@@ -355,18 +374,18 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
       {/* Enter never submits by surprise: only the Request button opens the review. */}
       <form className="bk-card" aria-label="Free Visit request" noValidate onSubmit={(e) => e.preventDefault()}>
         <div className="bk-row bk-row--pair">
-          <label className="bk-field bk-float" data-error={errors.name ? "1" : undefined}>
+          <label className="bk-field bk-float" data-error={errors.name ? "1" : undefined} data-clarity-mask="true">
             <input {...fieldProps("name")} autoComplete="name" autoCapitalize="words" value={name} onChange={(e) => setName(e.target.value)} />
             <span className="bk-float-label">Full name</span>
             {err("name")}
           </label>
-          <label className="bk-field bk-float" data-error={errors.phone ? "1" : undefined}>
+          <label className="bk-field bk-float" data-error={errors.phone ? "1" : undefined} data-clarity-mask="true">
             <input {...fieldProps("phone")} type="tel" inputMode="tel" autoComplete="tel-national" value={phone} onChange={(e) => setPhone(e.target.value)} />
             <span className="bk-float-label">Mobile phone</span>
             {err("phone")}
           </label>
         </div>
-        <label className="bk-field bk-float" data-error={errors.email ? "1" : undefined}>
+        <label className="bk-field bk-float" data-error={errors.email ? "1" : undefined} data-clarity-mask="true">
           <input {...fieldProps("email")} type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} />
           <span className="bk-float-label">Email</span>
           {err("email")}
@@ -388,7 +407,7 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
               <span className="bk-label">
                 What&apos;s on your list? <small>(optional)</small>
               </span>
-              <textarea className="bk-textarea" name="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. a dripping faucet, a door that sticks, shelves to hang" maxLength={1200} />
+              <textarea data-clarity-mask="true" className="bk-textarea" name="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. a dripping faucet, a door that sticks, shelves to hang" maxLength={1200} />
             </label>
             <PhotoPicker photos={photos} onChange={setPhotos} />
           </div>
@@ -438,7 +457,7 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
                 <div role="status" data-callback-sent>We&apos;ll call you shortly.</div>
               ) : callback === "asking" ? (
                 <div style={{ flexDirection: "column", alignItems: "stretch" }}>
-                  <input className="bk-input" type="tel" inputMode="tel" placeholder="Your phone number" value={callbackPhone} onChange={(e) => setCallbackPhone(e.target.value)} data-input="callback-phone" />
+                  <input className="bk-input" type="tel" inputMode="tel" placeholder="Your phone number" value={callbackPhone} onChange={(e) => setCallbackPhone(e.target.value)} data-input="callback-phone" data-clarity-mask="true" />
                   <button type="button" className="bk-btn" onClick={requestCallback}>Call me back</button>
                 </div>
               ) : (
