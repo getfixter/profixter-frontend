@@ -174,7 +174,7 @@ export default function ForgotPasswordPage() {
       {step === 'email' && (
         <>
           <AuthHeading sub="We'll email you a code.">Reset your password</AuthHeading>
-          <form onSubmit={handleEmailSubmit} className="auth-fields" noValidate>
+          <form onSubmit={handleEmailSubmit} className="auth-fields" data-clarity-mask="true" noValidate>
             <AuthInput
               id="email"
               label="Email address"
@@ -197,7 +197,7 @@ export default function ForgotPasswordPage() {
       {step === 'otp' && (
         <>
           <AuthHeading sub={`Sent to ${email}.`}>Enter your code</AuthHeading>
-          <form onSubmit={handleVerifyOtp} className="auth-fields" noValidate>
+          <form onSubmit={handleVerifyOtp} className="auth-fields" data-clarity-mask="true" noValidate>
             <div className="flex justify-between gap-2">
               {otp.map((digit, index) => (
                 <input
@@ -239,7 +239,7 @@ export default function ForgotPasswordPage() {
       {step === 'newPassword' && (
         <>
           <AuthHeading sub="At least 8 characters.">Choose a new password</AuthHeading>
-          <form onSubmit={handleNewPasswordSubmit} className="auth-fields" noValidate>
+          <form onSubmit={handleNewPasswordSubmit} className="auth-fields" data-clarity-mask="true" noValidate>
             <AuthPassword
               id="new-password"
               label="New password"

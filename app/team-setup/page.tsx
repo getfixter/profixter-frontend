@@ -98,7 +98,7 @@ export default function TeamSetupPage() {
       <AuthHeading sub={`Choose a password for ${phase.email}. You'll use it with this email to sign in.`}>
         {phase.firstName ? `Welcome, ${phase.firstName}` : "Welcome"}
       </AuthHeading>
-      <form onSubmit={submit} className="auth-fields" data-team-setup>
+      <form onSubmit={submit} className="auth-fields" data-clarity-mask="true" data-team-setup>
         <input type="email" name="username" autoComplete="username" value={phase.email} readOnly hidden />
         <AuthPassword
           id="team-setup-password"

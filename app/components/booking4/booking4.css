@@ -394,3 +394,13 @@
 .bk-option-price--offer .wo-was { font-size: 14px; font-weight: 600; color: var(--ui-text-3); }
 .bk-option-price--offer .wo-now { font-size: 18px; font-weight: 800; }
 .bk-option-note { color: var(--ui-text-2); font-weight: 600; }
+
+/* 2026-11-17: the address field says how it works before anyone fails at it. */
+.bk-hint { display: block; margin: -2px 0 6px; font-size: 13px; line-height: 1.4; color: var(--ui-text-3); }
+
+/* 2026-11-17: the success screen states what was booked, when, and where it stands. */
+.bk-done-facts { margin: var(--ui-s4) auto 0; max-width: 420px; text-align: left; border-top: 1px solid var(--ui-line); }
+.bk-done-facts > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--ui-line); font-size: 15px; }
+.bk-done-facts dt { color: var(--ui-text-3); flex: none; }
+.bk-done-facts dd { margin: 0; text-align: right; font-weight: 600; color: var(--ui-ink); }
+.bk-done [data-done-next] { max-width: 420px; margin: var(--ui-s3) auto 0; }

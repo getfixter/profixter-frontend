@@ -25,6 +25,7 @@ import { Suspense, useRef, useState } from "react";
 import FreeVisitForm from "@/app/components/booking4/FreeVisitForm";
 import HandymanBooker from "@/app/components/booking4/HandymanBooker";
 import { trackEvent } from "@/lib/analytics";
+import { useBookingSucceeded } from "@/lib/booking-events";
 
 type Tab = "free" | "handyman";
 const TABS: Array<{ key: Tab; name: string; hint: string }> = [
@@ -50,6 +51,13 @@ export default function HomeBookingPanel() {
   const [enter, setEnter] = useState<"left" | "right" | "">("");
   const rootRef = useRef<HTMLDivElement>(null);
   const touch = useRef<{ x: number; y: number; t: number } | null>(null);
+  /*
+   * A booking just succeeded here: its confirmation stays alone on screen - no
+   * tab offering another way to book beside it. A refreshed Free Visit
+   * success (FreeVisitForm keeps it for 30 minutes) counts too.
+   */
+  const success = useBookingSucceeded();
+  const booked = Boolean(success.now || success.recent === "free_visit");
 
   const choose = (next: Tab, via: "tap" | "swipe" | "key" | "handover") => {
     if (next === tab) return;
@@ -76,7 +84,7 @@ export default function HomeBookingPanel() {
   const onTouchEnd = (e: React.TouchEvent) => {
     const start = touch.current;
     touch.current = null;
-    if (!start || e.changedTouches.length !== 1) return;
+    if (!start || e.changedTouches.length !== 1 || booked) return;
     const dx = e.changedTouches[0].clientX - start.x;
     const dy = e.changedTouches[0].clientY - start.y;
     if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 2 || Date.now() - start.t > 900) return;
@@ -93,7 +101,7 @@ export default function HomeBookingPanel() {
 
   return (
     <div className="hb" ref={rootRef} data-home-booking data-tab={tab} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={() => (touch.current = null)}>
-      <div className="hb-tabs" role="tablist" aria-label="How would you like to start?" onKeyDown={onTabKey}>
+      <div className="hb-tabs" role="tablist" aria-label="How would you like to start?" onKeyDown={onTabKey} hidden={booked}>
         {TABS.map((t) => (
           <button
             key={t.key}

@@ -830,3 +830,6 @@
 html[data-auth-pending="1"] .hm-gate {
   visibility: hidden;
 }
+
+/* 2026-11-17: after a booking succeeds the other ways to book are removed (HomeLanding, HomeBookingPanel). */
+.hm-ways[hidden], .hm-paths[hidden], .hb-tabs[hidden] { display: none !important; }

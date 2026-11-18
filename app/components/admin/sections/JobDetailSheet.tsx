@@ -319,7 +319,7 @@ function JobBody({
               </Link>
             </>
           ) : job.customer.guest ? (
-            <span>Guest (no account)</span>
+            <span>{job.guestCheckout ? "Guest (no account) · paid online" : "Guest (no account)"}</span>
           ) : null}
           {refreshing ? <span>Updating…</span> : null}
         </p>
@@ -327,6 +327,14 @@ function JobBody({
           <p className="flex items-start gap-2 rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] text-adm-problem" data-reservation-issue="">
             <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 flex-none" aria-hidden="true" />
             {job.reservationIssue.message || "The reservation needs review."}
+          </p>
+        )}
+        {job.cancellationRequest && job.status !== "Canceled" && (
+          <p className="flex items-start gap-2 rounded-adm-sm bg-adm-problem-bg px-3 py-2 text-[14px] text-adm-problem" data-cancel-request="">
+            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 flex-none" aria-hidden="true" />
+            <span>
+              The customer asked to cancel{job.cancellationRequest.reason ? `: “${job.cancellationRequest.reason}”` : "."} Cancel the job to free the time, then refund in Stripe if one is due.
+            </span>
           </p>
         )}
         {job.status === "Canceled" && job.cancellationReason && <p className="text-[14px] text-adm-text-2">Canceled: {job.cancellationReason}</p>}
@@ -338,6 +346,12 @@ function JobBody({
         <p className="text-[15px] text-adm-ink" data-job-address="">
           {job.address.full || "No address on the job"}
         </p>
+        {/* A guest has no customer record to look the email up in: it is shown here. */}
+        {job.customer.guest && job.customer.email ? (
+          <p className="text-[14px] text-adm-text-2" data-job-email="">
+            <a href={`mailto:${job.customer.email}`} className="underline-offset-2 hover:underline">{job.customer.email}</a>
+          </p>
+        ) : null}
         <ContactActions phone={job.customer.phone || null} email={job.customer.email || null} address={job.address.full || null} />
       </div>
 

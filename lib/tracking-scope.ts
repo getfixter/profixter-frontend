@@ -15,7 +15,7 @@
  * simply never load them. Plain module (no "use client"): the root layout
  * inlines TRACKER_GUARD into <head>.
  */
-export const TRACKER_FREE_PREFIXES = ["/admin", "/sign", "/pay", "/tip"] as const;
+export const TRACKER_FREE_PREFIXES = ["/admin", "/sign", "/pay", "/tip", "/visit"] as const;
 
 export function isTrackerFree(pathname: string | null | undefined): boolean {
   const p = String(pathname || "");

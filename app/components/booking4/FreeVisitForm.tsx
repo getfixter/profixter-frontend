@@ -7,13 +7,15 @@ import { useRouter } from "next/navigation";
 import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/analytics";
-import { getAttribution, getFbCookies, newEventId, trackLead } from "@/lib/meta";
+import { getAttribution, getFbCookies, newEventId, trackLead, trackStep } from "@/lib/meta";
 import { oaiqLead } from "@/lib/chatgpt-ads";
 import { BUSINESS_PHONE_DISPLAY } from "@/lib/seo";
 import { saveHandymanDraft, saveHandymanPhotos } from "@/lib/handyman-draft";
 import SlotPicker, { formatWhen } from "./SlotPicker";
 import PhotoPicker from "./PhotoPicker";
 import { afterLayout, revealFirstError, scrollBehavior } from "@/lib/form-guide";
+import { clarityBookingEvent } from "@/lib/clarity";
+import { announceBookingSucceeded } from "@/lib/booking-events";
 
 /*
  * The Free Visit (from 2026-10-30): a free visit to go over the customer's
@@ -42,7 +44,31 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 const CONTACT_CONSENT_TEXT = "By requesting a visit, you agree that ProFixter may call or text you about this visit. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out or HELP for help.";
 const PHONE_HREF = `tel:+1${BUSINESS_PHONE_DISPLAY.replace(/\D/g, "")}`;
 
-type Errors = Partial<Record<"name" | "phone" | "email" | "address" | "when" | "form", string>>;
+type Errors = Partial<Record<"name" | "phone" | "email" | "address" | "when" | "photos" | "form", string>>;
+
+/*
+ * The request the server accepted, kept for half an hour in this tab: a
+ * refresh or Back to this page shows that success again instead of an empty
+ * form inviting a second request. Day and time only - nothing personal.
+ */
+const DONE_KEY = "pf_free_visit_done";
+const DONE_TTL_MS = 30 * 60 * 1000;
+function readDone(): { date: string; time: string } | null {
+  try {
+    const v = JSON.parse(window.sessionStorage.getItem(DONE_KEY) || "null");
+    return v && Date.now() - Number(v.at) < DONE_TTL_MS && v.date ? { date: String(v.date), time: String(v.time || "") } : null;
+  } catch {
+    return null;
+  }
+}
+function writeDone(when: { date: string; time: string } | null) {
+  try {
+    if (when) window.sessionStorage.setItem(DONE_KEY, JSON.stringify({ ...when, at: Date.now() }));
+    else window.sessionStorage.removeItem(DONE_KEY);
+  } catch {
+    /* private mode */
+  }
+}
 
 /* What was typed survives Back, a reload or a detour (photos do not: they stay in memory). */
 const DRAFT_KEY = "pf_free_visit_draft";
@@ -107,6 +133,21 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
   const callbackEventId = useRef("");
   const submitting = useRef(false);
   const started = useRef(false);
+  const timeChosen = useRef(false);
+
+  /*
+   * The booking funnel (server: one count per browser, step and day). The
+   * homepage panel replaced the old booker on 2026-11-03 without these, so
+   * from then until 2026-11-17 starts and chosen times were not measured.
+   */
+  useEffect(() => {
+    trackStep("booking_page_view");
+  }, []);
+  useEffect(() => {
+    if (!when.time || timeChosen.current) return;
+    timeChosen.current = true;
+    trackStep("slot_selected");
+  }, [when.time]);
 
   // Signed in: what we already know is filled in, never asked again.
   useEffect(() => {
@@ -116,8 +157,15 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
     setPhone((v) => v || String(user.phone || "").replace(/^\+1/, ""));
   }, [user]);
 
-  // Bring back what was typed before (Back, reload, a detour to sign in).
+  // Bring back what was typed before (Back, reload, a detour to sign in) - or the success just shown.
   useEffect(() => {
+    const recent = readDone();
+    if (recent) {
+      setWhen(recent);
+      setPhase("done");
+      draftReady.current = true;
+      return;
+    }
     const d = readDraft();
     if (d) {
       if (d.name) setName((v) => v || d.name || "");
@@ -153,6 +201,8 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
     if (started.current) return;
     started.current = true;
     trackEvent("free_visit_flow_started", { placement: embedded ? "home_booking_panel" : "free_visit_form" });
+    trackStep("booker_started");
+    clarityBookingEvent("booking_started", "free_visit");
   };
 
   const validate = (): Errors => {
@@ -175,6 +225,7 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
       return;
     }
     trackEvent("free_visit_review_opened", {});
+    clarityBookingEvent("booking_details_completed", "free_visit");
     setSheet(true);
   };
 
@@ -218,14 +269,19 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
         // Once, after the server saved it, with the event id the server used for its own Lead.
         trackLead({ content_name: "free_first_visit", status: "free_visit_requested", lead_type: "free_visit_request" }, { eventId: eventId.current, relay: false });
         oaiqLead(eventId.current);
+        trackStep("request_submitted");
+        clarityBookingEvent("booking_request_submitted", "free_visit", eventId.current);
         eventId.current = "";
         writeDraft(null);
+        writeDone({ date: when.date, time: when.time });
+        announceBookingSucceeded("free_visit");
         setSheet(false);
         setPhase("done");
         if (embedded) rootRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
         else window.scrollTo({ top: 0, behavior: scrollBehavior() });
         return;
       }
+      trackStep("request_failed");
       setSheet(false);
       setPhase("edit");
       if (body.code === "SLOT_UNAVAILABLE" || body.code === "DATE_UNAVAILABLE") {
@@ -235,10 +291,15 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
         setErrors({ address: body.message });
       } else if (body.field === "name" || body.field === "phone" || body.field === "email") {
         setErrors({ [body.field]: body.message } as Errors);
+      } else if (body.field === "photos" || body.code === "PHOTO_REJECTED" || body.code === "PHOTO_UPLOAD_FAILED") {
+        // Everything else is kept; the photos can be changed or left out.
+        setMore(true);
+        setErrors({ photos: body.message || "We couldn't use those photos. Remove them and try again, or send without photos." });
       } else {
         setErrors({ form: body.message || "Something went wrong. Please try again, or call us." });
       }
     } catch {
+      trackStep("request_failed");
       setSheet(false);
       setPhase("edit");
       setErrors({ form: "We couldn't reach Profixter. Check your connection and try again." });
@@ -318,7 +379,24 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
           <p className="bk-lede">
             We&apos;ve reserved <b>{formatWhen(when.date, when.time)}</b> for your Free Visit. A Profixter team member will confirm it with you shortly.
           </p>
-          <p className="bk-note" style={{ marginTop: 12 }}>The details are on their way to your email and phone.</p>
+          <dl className="bk-done-facts" data-done-facts>
+            <div>
+              <dt>Visit</dt>
+              <dd>Free Visit (we go over your to-do list; repairs and labor aren&apos;t included)</dd>
+            </div>
+            <div>
+              <dt>When</dt>
+              <dd>{formatWhen(when.date, when.time)}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd data-done-status>Reserved - waiting for our confirmation</dd>
+            </div>
+          </dl>
+          <p className="bk-note" style={{ marginTop: 12 }} data-done-next>
+            Next: we call or text you to confirm. The details are on their way to your email and phone. To change or cancel, call or text{" "}
+            <a href={PHONE_HREF}>{BUSINESS_PHONE_DISPLAY}</a>.
+          </p>
           {!embedded && (
             <div className="bk-actions">
               <Link className="bk-btn" href="/">Back to home</Link>
@@ -355,18 +433,18 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
       {/* Enter never submits by surprise: only the Request button opens the review. */}
       <form className="bk-card" aria-label="Free Visit request" noValidate onSubmit={(e) => e.preventDefault()}>
         <div className="bk-row bk-row--pair">
-          <label className="bk-field bk-float" data-error={errors.name ? "1" : undefined}>
+          <label className="bk-field bk-float" data-error={errors.name ? "1" : undefined} data-clarity-mask="true">
             <input {...fieldProps("name")} autoComplete="name" autoCapitalize="words" value={name} onChange={(e) => setName(e.target.value)} />
             <span className="bk-float-label">Full name</span>
             {err("name")}
           </label>
-          <label className="bk-field bk-float" data-error={errors.phone ? "1" : undefined}>
+          <label className="bk-field bk-float" data-error={errors.phone ? "1" : undefined} data-clarity-mask="true">
             <input {...fieldProps("phone")} type="tel" inputMode="tel" autoComplete="tel-national" value={phone} onChange={(e) => setPhone(e.target.value)} />
             <span className="bk-float-label">Mobile phone</span>
             {err("phone")}
           </label>
         </div>
-        <label className="bk-field bk-float" data-error={errors.email ? "1" : undefined}>
+        <label className="bk-field bk-float" data-error={errors.email ? "1" : undefined} data-clarity-mask="true">
           <input {...fieldProps("email")} type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} />
           <span className="bk-float-label">Email</span>
           {err("email")}
@@ -388,9 +466,25 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
               <span className="bk-label">
                 What&apos;s on your list? <small>(optional)</small>
               </span>
-              <textarea className="bk-textarea" name="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. a dripping faucet, a door that sticks, shelves to hang" maxLength={1200} />
+              <textarea data-clarity-mask="true" className="bk-textarea" name="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. a dripping faucet, a door that sticks, shelves to hang" maxLength={1200} />
             </label>
             <PhotoPicker photos={photos} onChange={setPhotos} />
+            {errors.photos ? (
+              <div data-error="1" data-photo-error>
+                <p className="bk-error">{errors.photos}</p>
+                <button
+                  type="button"
+                  className="bk-link"
+                  data-action="send-without-photos"
+                  onClick={() => {
+                    setPhotos([]);
+                    setErrors({});
+                  }}
+                >
+                  Remove photos and continue
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : (
           <button type="button" className="bk-more" onClick={() => setMore(true)} aria-expanded={false} data-action="add-details">
@@ -438,7 +532,7 @@ export default function FreeVisitForm({ embedded = false, onNeedHandyman }: { em
                 <div role="status" data-callback-sent>We&apos;ll call you shortly.</div>
               ) : callback === "asking" ? (
                 <div style={{ flexDirection: "column", alignItems: "stretch" }}>
-                  <input className="bk-input" type="tel" inputMode="tel" placeholder="Your phone number" value={callbackPhone} onChange={(e) => setCallbackPhone(e.target.value)} data-input="callback-phone" />
+                  <input className="bk-input" type="tel" inputMode="tel" placeholder="Your phone number" value={callbackPhone} onChange={(e) => setCallbackPhone(e.target.value)} data-input="callback-phone" data-clarity-mask="true" />
                   <button type="button" className="bk-btn" onClick={requestCallback}>Call me back</button>
                 </div>
               ) : (

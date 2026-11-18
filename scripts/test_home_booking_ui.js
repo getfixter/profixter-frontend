@@ -59,6 +59,8 @@ async function open(browser, { width, height, me = null }) {
     } catch {}
   }, Boolean(me));
   const state = { me, freeVisits: [], callbacks: [], oneTime: [], memberships: [], holds: [], configAsks: 0, unexpected: [] };
+  // Never the agency GTM / real Clarity / Meta from a test run (2026-11-17).
+  await ctx.route(/googletagmanager\.com|clarity\.ms|connect\.facebook\.net|facebook\.com\/tr|google-analytics\.com/, (r) => r.abort());
   await ctx.route(/maps\.googleapis\.com|places\.googleapis\.com/, (r) => r.abort());
   await ctx.route("https://checkout.stripe.test/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<h1>Stripe test checkout</h1>" }));
   await ctx.route(/\/api\//, async (route) => {
@@ -347,7 +349,8 @@ async function ready(page) {
     const booker = page.locator("[data-home-booking] [data-handyman-booker]");
     check("Need a Handyman: the other tab opens on the homepage", (await tabOf(page)) === "handyman" && new URL(page.url()).pathname === "/" && (await page.locator("[data-free-visit-sheet]").count()) === 0);
     check("Need a Handyman: the details came with them", /details came with you/i.test(await booker.innerText()) && state.freeVisits.length === 0);
-    check("Need a Handyman: the reviewed time is held, ready to sign in", (await booker.getAttribute("data-step")) === "3" && state.holds.length === 1, `step ${await booker.getAttribute("data-step")}, holds ${state.holds.length}`);
+    // 2026-11-17: no account wall - the job, address, time and contact came along, so it opens on how to book (a guest can pay).
+    check("Need a Handyman: the reviewed time is held, ready to book as a guest", (await booker.getAttribute("data-step")) === "4" && state.holds.length === 1 && (await booker.locator("[data-option='one_time'][aria-pressed=true]").count()) === 1, `step ${await booker.getAttribute("data-step")}, holds ${state.holds.length}`);
     await shot(page, "need-handyman");
     await ctx.close();
   }
@@ -373,14 +376,16 @@ async function ready(page) {
     await shot(page, "handyman-2");
     await booker.locator("[data-time='13:00']").tap();
     await page.locator("[data-action='to-step-3']").tap();
-    await booker.locator("[data-auth-step]").waitFor({ timeout: 5000 });
+    // 2026-11-17: the details step (no account needed); signing in stays one tap away.
+    await booker.locator("[data-guest-details]").waitFor({ timeout: 5000 });
+    check("Handyman guest: asks for contact details, not an account", (await booker.locator("[data-guest-details] input[name=phone]").count()) === 1 && (await page.locator("[data-action='create-account']").count()) === 0);
     check("Continue holds the time (30-minute countdown)", state.holds.length === 1 && state.holds[0].requestedTime === "13:00" && /Held for you · \d+:\d\d/.test(await booker.innerText()), (await booker.locator("[data-hold-note]").innerText().catch(() => "none")));
     await shot(page, "handyman-3");
-    await page.locator("[data-action='create-account']").tap();
-    await page.waitForURL(/\/signup\?/, { timeout: 10000 });
+    await booker.locator("[data-guest-details] [data-action='sign-in']").tap();
+    await page.waitForURL(/\/signin\?/, { timeout: 10000 });
     const url = new URL(page.url());
     const draft = await page.evaluate(() => Object.entries(localStorage).concat(Object.entries(sessionStorage)).find(([k]) => /handyman/i.test(k))?.[1] || "");
-    check("Create account: Registration 2.0 with next=/book/handyman", url.pathname === "/signup" && url.searchParams.get("next") === "/book/handyman" && url.searchParams.get("intent") === "handyman");
+    check("I have an account: sign-in with next=/book/handyman", url.pathname === "/signin" && url.searchParams.get("next") === "/book/handyman" && url.searchParams.get("intent") === "handyman");
     check("the draft (job, address, held time) is saved for the trip", /Replace an existing faucet/.test(draft) && /21 Pine Rd/.test(draft) && /13:00/.test(draft));
     check("Handyman guest: no page errors", errors.length === 0, errors.join(" | "));
     await ctx.close();

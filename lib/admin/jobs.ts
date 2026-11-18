@@ -110,6 +110,10 @@ export type JobDetail = Omit<JobRow, "customer"> & {
   conversion?: JobConversion | null;
   reservationIssue: { status: string; message: string } | null;
   cancellationReason: string;
+  /* The customer asked (from a guest visit link) to cancel; staff cancel it and settle any refund in Stripe. */
+  cancellationRequest?: { at: string; reason: string; via: string } | null;
+  /* Booked and paid on the website with no account. */
+  guestCheckout?: boolean;
   completedAt: string | null;
   createdAt: string | null;
   allowedActions: JobAction[];

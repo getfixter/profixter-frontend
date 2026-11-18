@@ -34,6 +34,8 @@ import { useAuth } from "@/lib/useAuth";
 import { can, PERM } from "@/lib/admin-access";
 import MaybeLink from "./MaybeLink";
 import OverviewDrawer, { type DrawerState } from "./OverviewDrawer";
+import { AcquisitionCostPanel, AcquisitionFunnelPanel, MetaEventsPanel, MetaReportedPanel } from "./AcquisitionPanels";
+import { isAdminUser } from "@/lib/auth-routing";
 import CustomerMap from "./CustomerMap";
 
 const RANGES: Array<{ key: RangeKey; label: string }> = [
@@ -432,7 +434,7 @@ export default function OverviewModule() {
         <VisitsCard o={data} onOpen={openList} />
 
         {/* ====================== Acquisition ============================= */}
-        <AcquisitionCard o={data} onOpen={openList} setDrawer={setDrawer} />
+        <AcquisitionCard o={data} onOpen={openList} setDrawer={setDrawer} canSetFee={isAdminUser(user)} onReload={() => void load(query)} />
 
         {/* ======================== Map ================================== */}
         <Card>
@@ -692,46 +694,56 @@ function RevenueBreakdown({ o }: { o: Overview }) {
   );
 }
 
+/*
+ * Each step is a subset of the one above it, so each rate is "of the step
+ * above" and says both numbers. Registrations are not a step: a guest
+ * free-visit request needs no account, so they are shown beside the funnel.
+ */
 function FunnelCard({ o, onOpen }: { o: Overview; onOpen: OpenList }) {
   const f = o.funnel;
   const trackedSince = f.visitorsTrackingSince ? new Date(f.visitorsTrackingSince) : null;
-  const visitorsPartial = !trackedSince || trackedSince > new Date(o.period.from);
-  const steps = [
-    { label: "Visitors", value: f.visitors, note: visitorsPartial ? (trackedSince ? `counting since ${shortDate(f.visitorsTrackingSince)}` : "counting starts with this release") : "", metric: "" },
-    { label: "Registered", value: f.registered, metric: "newCustomers" },
-    { label: "Free Visit booked", value: f.freeVisitBooked, metric: "freeVisits" },
-    { label: "Free Visit completed", value: f.freeVisitCompleted, metric: "conversions" },
-    { label: "Became members", value: f.members, metric: "newMembers" },
+  const visitorsNote =
+    f.visitors === null
+      ? "not measured: this period is before visitor tracking began"
+      : f.visitorsPartial && trackedSince
+        ? `counting since ${shortDate(f.visitorsTrackingSince)}`
+        : "";
+  const steps: Array<{ label: string; value: number | null; note?: string; metric: string }> = [
+    { label: "Visitors", value: f.visitors, note: visitorsNote, metric: "" },
+    { label: "Inquiries", value: f.inquiries, note: `${num(f.freeVisitRequests)} requests without an account + ${num(f.inquiries - f.freeVisitRequests)} first free visits booked by accounts`, metric: "freeVisitRequests" },
+    { label: "Confirmed", value: f.confirmed, metric: "" },
+    { label: "Completed", value: f.completed, metric: "" },
+    { label: "New paying", value: f.newPayingCustomers, note: "first-ever payment in the period, any source (not only these inquiries)", metric: "" },
   ];
-  const top = Math.max(1, ...steps.map((s) => s.value));
+  const top = Math.max(1, ...steps.map((s) => s.value || 0));
   return (
     <Card>
-      <SectionTitle>Customer funnel</SectionTitle>
+      <SectionTitle aside={<span className="text-[12px] text-adm-text-3">Registered: {num(f.registered)}</span>}>Customer funnel</SectionTitle>
       <ol className="space-y-1">
         {steps.map((s, i) => {
-          const prev = i > 0 ? steps[i - 1].value : null;
-          const rate = prev ? Math.round((s.value / prev) * 1000) / 10 : null;
+          const prev = i > 0 ? steps[i - 1] : null;
+          const rate = prev && prev.value && s.value !== null && i < 4 ? Math.round((s.value / prev.value) * 1000) / 10 : null;
           return (
             <li key={s.label}>
-              {i > 0 ? (
+              {prev ? (
                 <div className="py-0.5 pl-3 text-[12px] font-semibold text-adm-text-3">
-                  ↓ {rate === null || (i === 1 && visitorsPartial) ? "—" : `${rate}%`}
+                  ↓ {rate === null ? "—" : `${rate}% of ${prev.label.toLowerCase()} (${num(s.value)} of ${num(prev.value)})`}
                 </div>
               ) : null}
               <button
                 type="button"
                 disabled={!s.metric}
-                onClick={() => s.metric && onOpen(s.metric, s.label, { showConverted: s.metric === "conversions" || s.metric === "freeVisits" })}
+                onClick={() => s.metric && onOpen(s.metric, s.label)}
                 className="group flex min-h-11 w-full items-center gap-3 rounded-adm-md px-1 py-1 text-left enabled:hover:bg-adm-sunk"
               >
                 <span className="w-[112px] flex-none text-[13px] font-semibold text-adm-text-2 sm:w-[132px] md:w-[160px]">{s.label}</span>
                 <span className="relative h-8 flex-1 overflow-hidden rounded-adm-sm bg-adm-sunk">
                   <span
                     className="ov-bar absolute inset-y-0 left-0 rounded-adm-sm"
-                    style={{ width: `${Math.max(2, (s.value / top) * 100)}%`, background: ["#b7d3f6", "#86b6ef", "#3987e5", "#256abf", "#104281"][i] }}
+                    style={{ width: `${s.value === null ? 0 : Math.max(2, ((s.value || 0) / top) * 100)}%`, background: ["#b7d3f6", "#86b6ef", "#3987e5", "#256abf", "#104281"][i] }}
                   />
                 </span>
-                <span className="w-[64px] flex-none text-right text-[16px] font-semibold tabular-nums text-adm-ink">{num(s.value)}</span>
+                <span className={`w-[64px] flex-none text-right text-[16px] font-semibold tabular-nums ${s.value === null ? "text-adm-text-3" : "text-adm-ink"}`}>{s.value === null ? "—" : num(s.value)}</span>
               </button>
               {s.note ? <div className="pl-1 text-[12px] text-adm-text-3">{s.note}</div> : null}
             </li>
@@ -828,15 +840,32 @@ function VisitsCard({ o, onOpen }: { o: Overview; onOpen: OpenList }) {
   );
 }
 
-function SourceCells({ r, revenue }: { r: { visitors: number; registrations: number; freeVisits: number; members: number; conversion: number | null; revenueCents: number }; revenue: boolean }) {
+type SourceCellFields = {
+  visitors: number;
+  registrations: number;
+  inquiries: number;
+  confirmed: number;
+  completedVisits: number;
+  members: number;
+  newPayingCustomers?: number;
+  revenueCents: number;
+  firstPaymentRevenueCents: number;
+};
+
+/* Visitors are null for a period wholly before visitor tracking: not measured, never 0. */
+function SourceCells({ r, revenue, visitorsMeasured }: { r: SourceCellFields; revenue: boolean; visitorsMeasured: boolean }) {
+  const c = "px-2 py-2.5 text-right text-[14px] tabular-nums";
   return (
     <>
-      <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-adm-text-2">{num(r.visitors)}</td>
-      <td className="px-2 py-2.5 text-right text-[14px] font-semibold tabular-nums text-adm-ink">{num(r.registrations)}</td>
-      <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-adm-text-2">{num(r.freeVisits)}</td>
-      <td className="px-2 py-2.5 text-right text-[14px] font-semibold tabular-nums text-adm-ink">{num(r.members)}</td>
-      <td className="px-2 py-2.5 text-right text-[13px] tabular-nums text-adm-text-3">{r.conversion === null ? "—" : `${r.conversion}%`}</td>
-      <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-adm-ink">{revenue ? money(r.revenueCents) : "—"}</td>
+      <td className={`${c} text-adm-text-2`}>{visitorsMeasured ? num(r.visitors) : "—"}</td>
+      <td className={`${c} font-semibold text-adm-ink`}>{num(r.registrations)}</td>
+      <td className={`${c} font-semibold text-adm-ink`}>{num(r.inquiries)}</td>
+      <td className={`${c} text-adm-text-2`}>{num(r.confirmed)}</td>
+      <td className={`${c} text-adm-text-2`}>{num(r.completedVisits)}</td>
+      <td className={`${c} text-adm-text-2`}>{num(r.members)}</td>
+      <td className={`${c} font-semibold text-adm-ink`}>{num(r.newPayingCustomers ?? 0)}</td>
+      <td className={`${c} text-adm-ink`}>{revenue ? money(r.firstPaymentRevenueCents) : "—"}</td>
+      <td className={`${c} text-adm-text-2`}>{revenue ? money(r.revenueCents) : "—"}</td>
     </>
   );
 }
@@ -846,7 +875,8 @@ function SourceCells({ r, revenue }: { r: { visitors: number; registrations: num
  * with Facebook, Instagram and Other Meta under it: the split comes from the
  * placement Meta writes into utm_source, never from fbclid alone.
  */
-function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenList; setDrawer: (d: DrawerState) => void }) {
+function AcquisitionCard({ o, onOpen, setDrawer, canSetFee, onReload }: { o: Overview; onOpen: OpenList; setDrawer: (d: DrawerState) => void; canSetFee: boolean; onReload: () => void }) {
+  const visitorsMeasured = o.funnel.visitors !== null;
   const groups = o.sourceGroups || [];
   const rows = [...o.sources];
   const maxRegs = Math.max(1, ...rows.map((r) => r.registrations), ...groups.map((g) => g.registrations));
@@ -870,33 +900,37 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
   );
   return (
     <Card>
-      <SectionTitle aside={<span className="text-[12px] text-adm-text-3">First touch · {o.period.label}</span>}>Customer acquisition</SectionTitle>
-      {!o.spend.connected ? (
-        <p className="mb-4 rounded-adm-md bg-adm-info-bg px-4 py-3 text-[13px] text-adm-accent-ink">
-          {SPEND_STATUS_TEXT[o.spend.status || "not_configured"] || SPEND_STATUS_TEXT.not_configured}
-        </p>
-      ) : o.spend.partial || o.spend.stale ? (
-        <p className="mb-4 rounded-adm-md bg-adm-attn-bg px-4 py-3 text-[13px] text-adm-attn">
-          {o.spend.partial ? "Spend history starts partway through this period, so cost figures here are understated. " : ""}
-          {o.spend.stale ? "Spend has not refreshed recently; the last few days may be missing." : ""}
-        </p>
-      ) : null}
+      <SectionTitle aside={<span className="text-[12px] text-adm-text-3">{o.period.fromYmd} to {o.period.toYmd} · New York</span>}>Customer acquisition</SectionTitle>
+      <div className="mb-4 grid grid-cols-[minmax(0,1fr)] gap-3">
+        <MetaReportedPanel o={o} />
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+          <AcquisitionFunnelPanel o={o} />
+          <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-3">
+            <AcquisitionCostPanel o={o} canSetFee={canSetFee} onSaved={onReload} />
+            <MetaEventsPanel o={o} />
+          </div>
+        </div>
+      </div>
+      <h3 className="mb-1 text-[14px] font-semibold text-adm-ink">By source (recorded by Profixter)</h3>
       <div className="-mx-2 overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left">
+        <table className="w-full min-w-[860px] text-left">
           <thead>
             <tr className="text-[12px] font-semibold uppercase tracking-[0.1em] text-adm-text-3">
               <th className="px-2 pb-2">Source</th>
-              <th className="px-2 pb-2 text-right">Visitors</th>
-              <th className="px-2 pb-2 text-right">Registered</th>
-              <th className="px-2 pb-2 text-right">Free Visits</th>
-              <th className="px-2 pb-2 text-right">Members</th>
-              <th className="px-2 pb-2 text-right">Conv.</th>
-              <th className="px-2 pb-2 text-right">Revenue</th>
-              <th className="px-2 pb-2 text-right">Spend</th>
+              <th className="px-2 pb-2 text-right" title={o.definitions?.visitors}>Visitors</th>
+              <th className="px-2 pb-2 text-right" title={o.definitions?.registrations}>Registered</th>
+              <th className="px-2 pb-2 text-right" title={o.definitions?.inquiries}>Inquiries</th>
+              <th className="px-2 pb-2 text-right" title={o.definitions?.confirmed}>Confirmed</th>
+              <th className="px-2 pb-2 text-right" title={o.definitions?.completedVisits}>Completed</th>
+              <th className="px-2 pb-2 text-right" title="Memberships started in the period (paid or gift)">Members</th>
+              <th className="px-2 pb-2 text-right" title={o.definitions?.newPayingCustomers}>New paying</th>
+              <th className="px-2 pb-2 text-right" title={o.definitions?.firstPaymentRevenue}>First payments</th>
+              <th className="px-2 pb-2 text-right" title={o.definitions?.revenue}>All revenue</th>
+              <th className="px-2 pb-2 text-right" title="Meta spend for the period; unknown (—) for every other source">Spend</th>
               {o.spend.connected ? (
                 <>
-                  <th className="px-2 pb-2 text-right" title="Spend divided by first-time paying customers (members or paid visits)">CAC</th>
-                  <th className="px-2 pb-2 text-right" title="Attributed revenue divided by spend">ROAS</th>
+                  <th className="px-2 pb-2 text-right" title="Spend ÷ new paying customers (first paid membership or paid visit in the period)">CAC</th>
+                  <th className="px-2 pb-2 text-right" title="All revenue from this source in the period ÷ spend">ROAS</th>
                 </>
               ) : null}
             </tr>
@@ -912,7 +946,7 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
                       {line.g.share !== null ? <span className="text-[12px] text-adm-text-3">{Math.round(line.g.share)}%</span> : null}
                     </button>
                   </td>
-                  <SourceCells r={line.g} revenue={revenue} />
+                  <SourceCells r={line.g} revenue={revenue} visitorsMeasured={visitorsMeasured} />
                   <SpendCells r={line.g} connected={o.spend.connected} strong />
                 </tr>
               ) : (
@@ -928,7 +962,7 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
                       {!line.child && line.r.share !== null ? <span className="text-[12px] text-adm-text-3">{Math.round(line.r.share)}%</span> : null}
                     </button>
                   </td>
-                  <SourceCells r={line.r} revenue={revenue} />
+                  <SourceCells r={line.r} revenue={revenue} visitorsMeasured={visitorsMeasured} />
                   <SpendCells r={line.r} connected={o.spend.connected} />
                 </tr>
               )
@@ -943,21 +977,15 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
         </p>
       ) : null}
       <p className="mt-2 text-[12px] leading-5 text-adm-text-3">
-        First touch: how each browser first found the site, kept through sign-up. Click Meta Ads for campaigns, ad sets and ads. Direct / Unknown is shown, never hidden.
+        {o.definitions?.source || "First touch: how each browser first found the site, kept through sign-up."} Click Meta Ads for campaigns, ad sets and ads.
+        Inquiries, Confirmed and Completed follow the inquiries made in the period to where they stand today. First payments is revenue from customers
+        whose first payment is in the period; All revenue includes renewals, which is why long-standing members put most money under Before tracking began.
         {o.unmatchedRevenueCents ? ` ${money(o.unmatchedRevenueCents)} of revenue couldn't be matched to a customer.` : ""}
       </p>
     </Card>
   );
 }
 
-const SPEND_STATUS_TEXT: Record<string, string> = {
-  not_configured: "Customer attribution is active. Connect Meta Ads to add spend, cost per customer and ROAS.",
-  token_missing: "Meta Ads spend is switched on but no access token is configured.",
-  token_invalid: "Meta Ads spend could not be read: the access token is no longer valid. Generate a new one in Business Settings.",
-  token_missing_ads_read: "Meta Ads spend could not be read: the token lacks the ads_read permission on the ad account.",
-  rate_limited: "Meta is rate-limiting spend reads; the next sync will retry.",
-  meta_unavailable: "Meta's API was unavailable at the last sync; it will retry.",
-};
 
 type SpendFields = { spendCents?: number | null; cacCents?: number | null; roas?: number | null };
 

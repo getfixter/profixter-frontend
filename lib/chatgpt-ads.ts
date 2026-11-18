@@ -296,6 +296,16 @@ const inFlight = new Set<string>();
  *  - signed out, offline, rate-limited, server or Stripe down, page closed:
  *    stays parked, and recoverPendingPaidConversions asks again later.
  */
+/**
+ * Proof that this Stripe session is a paid One-Time / Full Day visit of the
+ * signed-in customer (GET /api/track/paid-visit-by-session), with the amount
+ * Stripe charged. Shared with the Meta Purchase on /book/confirmation, which
+ * must not fire on an unpaid, made-up or someone else's session either.
+ */
+export function provePaidVisit(sessionId: string, isCancelled: () => boolean) {
+  return fetchPaymentProof<VisitProof>("paid-visit-by-session", sessionId, isCancelled, 8);
+}
+
 export async function confirmPaidConversion(
   kind: PaidKind,
   sessionId: string,

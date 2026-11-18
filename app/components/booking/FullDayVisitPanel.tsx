@@ -2,6 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
+import { checkoutTracking } from "@/lib/meta";
+import { GUEST_CHECKOUT_CONSENT_TEXT, GuestCheckoutError, abandonGuestCheckout, guestFullDayCheckout } from "@/lib/guest-checkout";
+import { newClientRequestId } from "@/lib/handyman-draft";
+import { clarityBookingEvent } from "@/lib/clarity";
+import { afterLayout, revealFirstError } from "@/lib/form-guide";
 import { useAuth } from "@/lib/useAuth";
 import { useAddHome } from "@/app/components/address/AddHomeSheet";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
@@ -44,6 +51,34 @@ const FALLBACK_CONFIG: FullDayConfig = {
 
 /** Where a visitor comes back to after signing in. */
 const RETURN_PATH = "/book?visit=full-day";
+
+/*
+ * A guest's Full Day (2026-11-17): no account needed to pay. What was entered
+ * waits in this tab through a canceled checkout or a reload - the day, the
+ * list, the contact, the address, the press id - and is cleared once Stripe
+ * has the booking. Photos stay in memory only.
+ */
+const GUEST_DRAFT_KEY = "pf_full_day_guest";
+type GuestDraft = { date: string; note: string; name: string; phone: string; email: string; address: AddressValue | null; clientRequestId: string; pendingBookingId: string };
+function readGuestDraft(): Partial<GuestDraft> {
+  try {
+    return JSON.parse(window.sessionStorage.getItem(GUEST_DRAFT_KEY) || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+function writeGuestDraft(patch: Partial<GuestDraft> | null) {
+  try {
+    if (!patch) window.sessionStorage.removeItem(GUEST_DRAFT_KEY);
+    else window.sessionStorage.setItem(GUEST_DRAFT_KEY, JSON.stringify({ ...readGuestDraft(), ...patch }));
+  } catch {
+    /* private mode */
+  }
+}
+const phoneDigits = (value: string) => {
+  const d = String(value || "").replace(/\D/g, "");
+  return d.length === 11 && d.startsWith("1") ? d.slice(1) : d;
+};
 
 const BIGGER_JOBS = [
   "Kitchen remodeling",
@@ -141,6 +176,21 @@ export default function FullDayVisitPanel() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [booked, setBooked] = useState<{ bookingNumber: string; date: string } | null>(null);
+  // Guests (no account): who, where, and what the field rules found.
+  const [guest, setGuest] = useState({ name: "", phone: "", email: "" });
+  const [guestAddress, setGuestAddress] = useState<AddressValue | null>(null);
+  const [addressText, setAddressText] = useState("");
+  const [addressMode, setAddressMode] = useState<"lookup" | "manual">("lookup");
+  const [area, setArea] = useState<ServiceAreaState>("unknown");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [restoredAddress, setRestoredAddress] = useState(0);
+  const params = useSearchParams();
+  const startedRef = useRef(false);
+  const markStarted = () => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    clarityBookingEvent("booking_started", "full_day");
+  };
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const loadedMonths = useRef<Set<string>>(new Set());
@@ -148,6 +198,35 @@ export default function FullDayVisitPanel() {
   useEffect(() => {
     trackEvent("book_started", { page: "/book", visit: "full-day" });
   }, []);
+
+  useEffect(() => {
+    if (isLoading || isAuthenticated) return;
+    const d = readGuestDraft();
+    if (d.date) setSelectedDate(d.date);
+    if (d.note) setNote(d.note);
+    setGuest({ name: d.name || "", phone: d.phone || "", email: d.email || "" });
+    if (d.address?.line1) {
+      setGuestAddress(d.address);
+      setRestoredAddress((n) => n + 1);
+    }
+    if (params.get("canceled") === "true" && d.pendingBookingId && d.clientRequestId) {
+      void abandonGuestCheckout(d.pendingBookingId, d.clientRequestId);
+      writeGuestDraft({ pendingBookingId: "", clientRequestId: "" });
+      setError("Checkout canceled. Nothing was charged, and your details are saved.");
+    }
+    // Once, when we know they are signed out.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated || isLoading) return;
+    writeGuestDraft({ date: selectedDate, note, ...guest, address: guestAddress });
+  }, [isAuthenticated, isLoading, selectedDate, note, guest, guestAddress]);
+
+  useEffect(() => {
+    if (!Object.keys(fieldErrors).length) return;
+    afterLayout(() => revealFirstError(document.querySelector("[data-full-day-panel]") as HTMLElement | null));
+  }, [fieldErrors]);
 
   useEffect(() => {
     let cancelled = false;
@@ -237,10 +316,69 @@ export default function FullDayVisitPanel() {
     setPhotos((current) => [...current, ...next].slice(0, 10));
   }
 
+  async function submitGuest() {
+    const found: Record<string, string> = {};
+    if (!selectedDate) found.date = "Choose an available day.";
+    if (wordCount < 3) found.note = "Tell us what you would like done, in at least a few words.";
+    if (guest.name.trim().length < 2 || !/\s/.test(guest.name.trim())) found.name = "Enter your first and last name.";
+    if (phoneDigits(guest.phone).length !== 10) found.phone = "Enter a 10-digit mobile number.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(guest.email.trim())) found.email = "Enter a valid email.";
+    if (!guestAddress?.line1 || !guestAddress.city || !guestAddress.zip) {
+      found.address = addressText
+        ? addressMode === "manual"
+          ? "Finish the address: street, city and a 5-digit ZIP."
+          : "Choose your address from the list under the box, or tap \u201cCan\u2019t find your address?\u201d to type it in."
+        : "Enter the address for the day: start typing, then choose it from the list.";
+    } else if (area === "outside") found.address = "We serve Nassau and Suffolk counties. That address is outside our area for now.";
+    setFieldErrors(found);
+    if (Object.keys(found).length) {
+      setError("Please check the highlighted details - everything you entered is kept.");
+      return;
+    }
+    clarityBookingEvent("booking_details_completed", "full_day");
+    const draft = readGuestDraft();
+    const clientRequestId = draft.clientRequestId || newClientRequestId();
+    writeGuestDraft({ clientRequestId });
+    setSubmitting(true);
+    try {
+      trackInitiateCheckout({ product: "full_day_visit", selectedTask: "Full Day Fixter", price: config.priceCents / 100 });
+      trackEvent("full_day_checkout_started", { date: selectedDate, guest: true });
+      const res = await guestFullDayCheckout({
+        contact: { name: guest.name.trim(), phone: phoneDigits(guest.phone), email: guest.email.trim() },
+        address: { line1: guestAddress!.line1, unit: guestAddress!.unit, city: guestAddress!.city, state: guestAddress!.state || "NY", zip: guestAddress!.zip, lat: guestAddress!.lat, lng: guestAddress!.lng },
+        note: note.trim(),
+        date: selectedDate,
+        libraryReference: libraryReference || undefined,
+        photos,
+        clientRequestId,
+        tracking: checkoutTracking(),
+      });
+      if ("alreadyPaid" in res) {
+        window.location.href = res.sessionId ? `/book/confirmation?booking_id=${res.bookingId}&session_id=${res.sessionId}` : "/book/confirmation";
+        return;
+      }
+      writeGuestDraft({ pendingBookingId: res.bookingId });
+      clarityBookingEvent("booking_request_submitted", "full_day", res.bookingId);
+      window.location.href = res.url;
+    } catch (err) {
+      const e = err instanceof GuestCheckoutError ? err : null;
+      if (e?.field) setFieldErrors({ [e.field === "task" ? "note" : e.field]: e.message });
+      if (e?.code === "FULL_DAY_UNAVAILABLE") setFieldErrors({ date: e.message });
+      if (e && e.code !== "NETWORK") writeGuestDraft({ clientRequestId: "" });
+      setError(e?.message || "Unable to start the secure checkout.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function submit() {
     setError("");
     if (!config.enabled) {
       setError("Full Day booking is temporarily unavailable.");
+      return;
+    }
+    if (!isAuthenticated) {
+      await submitGuest();
       return;
     }
     if (!addressId) {
@@ -269,7 +407,9 @@ export default function FullDayVisitPanel() {
       };
       if (included) {
         trackEvent("full_day_included_booking_started", { date: selectedDate });
+        clarityBookingEvent("booking_details_completed", "full_day");
         const result = await bookIncludedFullDay(payload);
+        clarityBookingEvent("booking_request_submitted", "full_day", result.bookingNumber);
         /* Only now, with the day booked: the box is never a condition of it. */
         await applyServiceTextsOptIn();
         setBooked({ bookingNumber: result.bookingNumber, date: selectedDate });
@@ -284,7 +424,9 @@ export default function FullDayVisitPanel() {
           price: config.priceCents / 100,
         });
         trackEvent("full_day_checkout_started", { date: selectedDate });
+        clarityBookingEvent("booking_details_completed", "full_day");
         const result = await createFullDayCheckout(payload);
+        clarityBookingEvent("booking_request_submitted", "full_day", result.bookingId || "");
         await applyServiceTextsOptIn();
         window.location.href = result.url;
         return;
@@ -298,8 +440,103 @@ export default function FullDayVisitPanel() {
 
   const changeMonth = (delta: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + delta, 1));
 
+  /* The list and photos: the same panel signed in or not. */
+  const listPanel = (
+    <>
+                <div className="pg-panel" data-error={fieldErrors.note || fieldErrors.photos ? "1" : undefined}>
+                  <h2 className="pg-panel__title !mb-1">Your list</h2>
+                  <p className="pg-hint">
+                    Your Fixter works down it in the order you give, so put the important ones first.
+                  </p>
+                  <textarea
+                    data-clarity-mask="true"
+                    value={note}
+                    onChange={(event) => {
+                      setNote(event.target.value);
+                      if (fieldErrors.note) setFieldErrors((f) => ({ ...f, note: "" }));
+                    }}
+                    rows={4}
+                    placeholder={
+                      "Mount TV in the den\nReplace two light fixtures\nFix the sticking back door\nPatch and paint the hallway"
+                    }
+                    className="pg-input pg-input--grow min-h-[96px] max-h-[240px] resize-y"
+                  />
+
+                  <div className="mt-4">
+                    <p className="pg-hint">Photos help your Fixter arrive with the right parts. Optional.</p>
+                    <div className="pg-photo-row">
+                      <button type="button" onClick={() => cameraInputRef.current?.click()} className="pg-photo-btn">
+                        Take Photo
+                      </button>
+                      <button type="button" onClick={() => galleryInputRef.current?.click()} className="pg-photo-btn">
+                        Choose Photos{photos.length > 0 ? ` (${photos.length})` : ""}
+                      </button>
+                    </div>
+                    <PhotoLibraryPicker value={libraryReference} context="full_day" onChange={setLibraryReference} />
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={(event) => {
+                        handleFiles(event.target.files);
+                        event.currentTarget.value = "";
+                      }}
+                      className="hidden"
+                    />
+                    <input
+                      ref={galleryInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(event) => {
+                        handleFiles(event.target.files);
+                        event.currentTarget.value = "";
+                      }}
+                      className="hidden"
+                    />
+                    {fieldErrors.note ? <p className="pg-error mt-2">{fieldErrors.note}</p> : null}
+                    {fieldErrors.photos ? (
+                      <div className="mt-2" data-photo-error>
+                        <p className="pg-error">{fieldErrors.photos}</p>
+                        <button type="button" className="ui-link" data-action="send-without-photos" onClick={() => { setPhotos([]); setFieldErrors((f) => ({ ...f, photos: "" })); setError(""); }}>
+                          Remove photos and continue
+                        </button>
+                      </div>
+                    ) : null}
+                    {photos.length > 0 && (
+                      <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">
+                        {photos.map((photo, index) => (
+                          <div
+                            key={`${photo.name}-${index}`}
+                            className="relative overflow-hidden rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-sunk)]"
+                            style={{ aspectRatio: "1" }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={photoUrls[index] || ""} alt={`Job photo ${index + 1}`} className="h-full w-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPhotos((current) =>
+                                  current.filter((_, photoIndex) => photoIndex !== index)
+                                )
+                              }
+                              aria-label="Remove photo"
+                              className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-[14px] leading-none text-white transition hover:bg-black/75"
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+    </>
+  );
+
   return (
-    <section className="ui-container pg-book__head pb-10 sm:pb-14">
+    <section className="ui-container pg-book__head pb-10 sm:pb-14" data-full-day-panel onFocusCapture={markStarted} onPointerDownCapture={markStarted}>
       <div className="max-w-[720px]">
         <p className="ui-eyebrow ui-eyebrow--accent">Full Day Fixter</p>
         <h1 className="pg-book__title">One Fixter. Your whole list. One day.</h1>
@@ -365,7 +602,7 @@ export default function FullDayVisitPanel() {
         <div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-3 sm:mt-6 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:items-start lg:gap-6">
           <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:gap-4">
             {/* Calendar */}
-            <div className="pg-panel">
+            <div className="pg-panel" data-error={fieldErrors.date ? "1" : undefined}>
               <h2 className="pg-panel__title">Pick a day</h2>
               <div className="pg-cal__head">
                 <button type="button" aria-label="Previous month" onClick={() => changeMonth(-1)} className="pg-cal__nav">
@@ -398,6 +635,7 @@ export default function FullDayVisitPanel() {
                       title={day && !day.available ? day.reason : undefined}
                       onClick={() => {
                         setError("");
+                        setFieldErrors((f) => ({ ...f, date: "" }));
                         setSelectedDate(cell.ymd);
                       }}
                       className={[
@@ -417,40 +655,68 @@ export default function FullDayVisitPanel() {
                   ? "Checking which days are free..."
                   : "Only days where one Fixter is free from start to finish can be booked."}
               </p>
+              {fieldErrors.date ? <p className="pg-error mt-2">{fieldErrors.date}</p> : null}
             </div>
 
             {isLoading ? (
               <div className="pg-panel text-center text-[15px] text-[color:var(--ui-text-3)]">Loading your account...</div>
             ) : !isAuthenticated ? (
               /*
-                A visitor can read everything above and pick a day; this is the
-                one wall, and it is at the last step rather than the first. The
-                return path is carried so signing in lands them back here.
-              */
-              <div className="pg-panel">
-                <h2 className="ui-h3">Log in to book your Full Day</h2>
-                <p className="mt-1.5 text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
-                  We need a home profile for your address, photos, reminders and
-                  booking history. It takes a minute, and you will come straight
-                  back here.
-                </p>
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                  <Link
-                    href={`/signin?next=${encodeURIComponent(RETURN_PATH)}`}
-                    onClick={() => trackEvent("full_day_login_prompted", { action: "signin" })}
-                    className="ui-btn ui-btn--primary sm:min-w-[160px]"
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    href={`/signup?next=${encodeURIComponent(RETURN_PATH)}`}
-                    onClick={() => trackEvent("full_day_login_prompted", { action: "signup" })}
-                    className="ui-btn ui-btn--secondary sm:min-w-[160px]"
-                  >
-                    Create Account
-                  </Link>
+               * 2026-11-17: no account needed to pay for a Full Day. The
+               * sign-in wall that stood here is now one link, for people who
+               * have an account (Elite's included day, saved homes).
+               */
+              <>
+                <div className="pg-panel" data-full-day-guest>
+                  <h2 className="pg-panel__title !mb-1">Your details</h2>
+                  <p className="pg-hint">
+                    No account needed.{" "}
+                    <Link href={`/signin?next=${encodeURIComponent(RETURN_PATH)}`} className="ui-link" onClick={() => trackEvent("full_day_login_prompted", { action: "signin" })}>
+                      Have an account? Sign in
+                    </Link>
+                  </p>
+                  {(["name", "phone", "email"] as const).map((k) => (
+                    <label key={k} className="mt-3 block" data-error={fieldErrors[k] ? "1" : undefined} data-clarity-mask="true">
+                      <span className="pg-hint !mb-1 block">{k === "name" ? "Full name" : k === "phone" ? "Mobile phone" : "Email"}</span>
+                      <input
+                        name={k}
+                        className="pg-input"
+                        aria-invalid={fieldErrors[k] ? "true" : undefined}
+                        {...(k === "name"
+                          ? { autoComplete: "name", autoCapitalize: "words" }
+                          : k === "phone"
+                            ? { type: "tel", inputMode: "tel" as const, autoComplete: "tel-national" }
+                            : { type: "email", inputMode: "email" as const, autoComplete: "email", autoCapitalize: "none", spellCheck: false })}
+                        value={guest[k]}
+                        onChange={(event) => {
+                          setGuest((g) => ({ ...g, [k]: event.target.value }));
+                          if (fieldErrors[k]) setFieldErrors((f) => ({ ...f, [k]: "" }));
+                        }}
+                      />
+                      {fieldErrors[k] ? <p className="pg-error mt-1">{fieldErrors[k]}</p> : null}
+                    </label>
+                  ))}
                 </div>
-              </div>
+                <div className="pg-panel" data-error={fieldErrors.address ? "1" : undefined} data-address-field>
+                  <h2 className="pg-panel__title !mb-1">Where</h2>
+                  <p className="pg-hint">Type your street address. If suggestions appear, tap yours.</p>
+                  <AddressField
+                    key={restoredAddress}
+                    value={guestAddress}
+                    onChange={(v) => {
+                      setGuestAddress(v);
+                      if (v && fieldErrors.address) setFieldErrors((f) => ({ ...f, address: "" }));
+                    }}
+                    onServiceArea={setArea}
+                    onPendingText={(text, mode) => {
+                    setAddressText(text);
+                    setAddressMode(mode);
+                  }}
+                  />
+                  {fieldErrors.address ? <p className="pg-error mt-2">{fieldErrors.address}</p> : null}
+                </div>
+                {listPanel}
+              </>
             ) : (
               <>
                 <div className="pg-panel">
@@ -483,88 +749,13 @@ export default function FullDayVisitPanel() {
                   )}
                 </div>
 
-                <div className="pg-panel">
-                  <h2 className="pg-panel__title !mb-1">Your list</h2>
-                  <p className="pg-hint">
-                    Your Fixter works down it in the order you give, so put the important ones first.
-                  </p>
-                  <textarea
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                    rows={4}
-                    placeholder={
-                      "Mount TV in the den\nReplace two light fixtures\nFix the sticking back door\nPatch and paint the hallway"
-                    }
-                    className="pg-input pg-input--grow min-h-[96px] max-h-[240px] resize-y"
-                  />
-
-                  <div className="mt-4">
-                    <p className="pg-hint">Photos help your Fixter arrive with the right parts. Optional.</p>
-                    <div className="pg-photo-row">
-                      <button type="button" onClick={() => cameraInputRef.current?.click()} className="pg-photo-btn">
-                        Take Photo
-                      </button>
-                      <button type="button" onClick={() => galleryInputRef.current?.click()} className="pg-photo-btn">
-                        Choose Photos{photos.length > 0 ? ` (${photos.length})` : ""}
-                      </button>
-                    </div>
-                    <PhotoLibraryPicker value={libraryReference} context="full_day" onChange={setLibraryReference} />
-                    <input
-                      ref={cameraInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={(event) => {
-                        handleFiles(event.target.files);
-                        event.currentTarget.value = "";
-                      }}
-                      className="hidden"
-                    />
-                    <input
-                      ref={galleryInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(event) => {
-                        handleFiles(event.target.files);
-                        event.currentTarget.value = "";
-                      }}
-                      className="hidden"
-                    />
-                    {photos.length > 0 && (
-                      <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">
-                        {photos.map((photo, index) => (
-                          <div
-                            key={`${photo.name}-${index}`}
-                            className="relative overflow-hidden rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-sunk)]"
-                            style={{ aspectRatio: "1" }}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={photoUrls[index] || ""} alt={`Job photo ${index + 1}`} className="h-full w-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setPhotos((current) =>
-                                  current.filter((_, photoIndex) => photoIndex !== index)
-                                )
-                              }
-                              aria-label="Remove photo"
-                              className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-[14px] leading-none text-white transition hover:bg-black/75"
-                            >
-                              &times;
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {listPanel}
               </>
             )}
           </div>
 
           <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:sticky lg:top-[88px]">
-            {isAuthenticated && !isLoading && (
+            {!isLoading && (
               <div className="pg-panel">
                 <h2 className="pg-panel__title">Summary</h2>
                 <div className="pg-rows">
@@ -588,6 +779,14 @@ export default function FullDayVisitPanel() {
                       {included ? "Included with Elite" : priceLabel}
                     </strong>
                   </div>
+                  {!isAuthenticated && guestAddress?.line1 ? (
+                    <div>
+                      <span className="text-[color:var(--ui-text-3)]">Home</span>
+                      <strong className="min-w-0 truncate text-right font-medium text-[color:var(--ui-ink)]" data-clarity-mask="true">
+                        {[guestAddress.line1, guestAddress.city].filter(Boolean).join(", ")}
+                      </strong>
+                    </div>
+                  ) : null}
                   {selectedAddress && (
                     <div>
                       <span className="text-[color:var(--ui-text-3)]">Home</span>
@@ -623,6 +822,17 @@ export default function FullDayVisitPanel() {
                         ? "Book my included Full Day"
                         : `Continue to payment - ${priceLabel}`}
                 </button>
+                <p className="mt-2 text-center text-[13px] leading-5 text-[color:var(--ui-text-3)]">
+                  Secure payment by Stripe. We confirm your day after we review it.
+                </p>
+                {!isAuthenticated ? (
+                  <p className="mt-2 text-[12px] leading-[1.45] text-[color:var(--ui-text-3)]" data-contact-consent>
+                    {GUEST_CHECKOUT_CONSENT_TEXT}{" "}
+                    <a href="/communication-consent#service-texts" target="_blank" rel="noopener noreferrer" className="underline">SMS Terms</a>
+                    {" · "}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy</a>
+                  </p>
+                ) : null}
               </div>
             )}
 

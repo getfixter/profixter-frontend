@@ -660,7 +660,7 @@ export default function SignUpPage() {
         ) : null}
 
         {step === 2 ? (
-          <form onSubmit={sendPhoneCode} className="auth-fields" noValidate>
+          <form onSubmit={sendPhoneCode} className="auth-fields" data-clarity-mask="true" noValidate>
             <div>
               <FieldLabel htmlFor="phone">Mobile Phone Number</FieldLabel>
               <input

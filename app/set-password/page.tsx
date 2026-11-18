@@ -53,7 +53,7 @@ export default function SetPasswordPage() {
       <AuthHeading sub="Your account is ready. Choose a password to replace the temporary one we sent you.">
         Create your password
       </AuthHeading>
-      <form onSubmit={submit} className="auth-fields" data-set-password>
+      <form onSubmit={submit} className="auth-fields" data-clarity-mask="true" data-set-password>
         <AuthPassword
           id="new-password"
           label="New password"

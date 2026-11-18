@@ -129,7 +129,7 @@ export function EmailStep({
     onSubmit();
   };
   return (
-    <form onSubmit={handle} className="auth-fields" noValidate>
+    <form onSubmit={handle} className="auth-fields" data-clarity-mask="true" noValidate>
       {maskedHint ? (
         <p className="auth-sub !mt-0">
           Type the email on that account (<b className="font-semibold text-[color:var(--ui-ink)]">{maskedHint}</b>) and we&apos;ll send it a code.
@@ -218,7 +218,7 @@ export function PasswordStep({
     onSubmit(password);
   };
   return (
-    <form onSubmit={handle} className="auth-fields" noValidate>
+    <form onSubmit={handle} className="auth-fields" data-clarity-mask="true" noValidate>
       <AuthInput
         id="auth-email"
         label="Email address"
