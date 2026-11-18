@@ -24,7 +24,8 @@ const SHOTS = process.env.SHOTS_DIR || path.join(__dirname, "..", "..", "reports
 fs.mkdirSync(SHOTS, { recursive: true });
 
 /* The public site loads its tag manager and pixel; here they are blocked (aborted), never fetched. */
-const TAGS = /^https:\/\/(www\.googletagmanager\.com|connect\.facebook\.net|www\.google-analytics\.com)\//;
+/* bzrcdn.openai.com: the ChatGPT Ads tag, added to the site after this suite (fe 5821a96); blocked like the others. */
+const TAGS = /^https:\/\/(www\.googletagmanager\.com|connect\.facebook\.net|www\.google-analytics\.com|bzrcdn\.openai\.com)\//;
 const TZ = "America/New_York";
 const ymdNY = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(d);
 const TODAY = ymdNY(new Date());

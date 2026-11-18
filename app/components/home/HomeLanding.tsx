@@ -22,6 +22,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
+import { useBookingSucceeded } from "@/lib/booking-events";
 import { HomeExtras, MemberPromo } from "./HomePersonal";
 import HomeBookingPanel from "./HomeBookingPanel";
 import GoogleRatingCompact from "@/app/components/home/GoogleRatingCompact";
@@ -76,6 +77,14 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
     trackEvent("landing_viewed", { variant: "membership_first" });
   }, []);
 
+  /*
+   * After a booking succeeds in the panel, its confirmation is the only next
+   * step on screen: the other ways to book below it are hidden, so nobody
+   * starts a second booking thinking the first did not go through (2026-11-17).
+   */
+  const success = useBookingSucceeded();
+  const booked = Boolean(success.now || success.recent);
+
   const plansClick = (placement: string) => () => trackEvent("see_plans_clicked", { placement });
 
   return (
@@ -119,7 +128,7 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
       </section>
 
       {/* ============================ WAYS TO START =========================== */}
-      <section className="ui-section ui-section--tight hm-ways" aria-labelledby="hm-ways">
+      <section className="ui-section ui-section--tight hm-ways" aria-labelledby="hm-ways" hidden={booked} data-ways-to-book>
         <div className="ui-container">
           <h2 id="hm-ways" className="sr-only">
             Ways to book
@@ -167,7 +176,7 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
 
       {/* ============================ TWO WAYS IN ============================ */}
       {/* id="book": older links to /#book land here, on the two ways to start. */}
-      <section id="book" className="ui-section ui-section--soft hm-paths" aria-labelledby="hm-paths">
+      <section id="book" className="ui-section ui-section--soft hm-paths" aria-labelledby="hm-paths" hidden={booked}>
         <div className="ui-container">
           <Reveal className="ui-head">
             <p className="ui-eyebrow ui-eyebrow--accent">Two ways to start</p>

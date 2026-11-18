@@ -30,6 +30,9 @@ import { WELCOME_OFFER_ERROR_CODES, formatCents, offerPrice, useWelcomeOffer } f
 import HoldCountdown from "./HoldCountdown";
 import { useServiceTextsOptIn } from "@/app/components/booking/ServiceTextsOptIn";
 import { afterLayout, revealFirstError, scrollBehavior } from "@/lib/form-guide";
+import { GUEST_CHECKOUT_CONSENT_TEXT, GuestCheckoutError, abandonGuestCheckout, guestOneTimeCheckout } from "@/lib/guest-checkout";
+import { clarityBookingEvent } from "@/lib/clarity";
+import { announceBookingSucceeded } from "@/lib/booking-events";
 
 /* Annual members pay for ten months and get twelve (as on the plans page; Stripe holds the real price). */
 const ANNUAL_MONTHS_CHARGED = 10;
@@ -40,8 +43,14 @@ const PLAN_IDS: string[] = PLAN_DETAILS.map((p) => p.id);
  *
  *   1. What needs doing - the job, the address, optional photos
  *   2. When - a real open time, held for them from here (POST /api/bookings/hold)
- *   3. Account - sign in or create one (Registration 2.0); the draft and the hold wait
- *   4. How to book - the member's included visit, a One-Time Visit, or a membership
+ *   3. Your details - signed out only: name, mobile, email (2026-11-17: no
+ *      account needed to pay for a One-Time Visit; "I have an account" stays
+ *      one tap away). Signed in, this step does not exist.
+ *   4. How to book - the member's included visit, a One-Time Visit, or a
+ *      membership. A guest pays for a One-Time Visit as a guest
+ *      (lib/guest-checkout, BackEnd routes/guestBookings); a membership belongs
+ *      to an account, so choosing one asks for the account here, with
+ *      everything typed kept.
  *   5. Pay (Stripe) - then the request waits for the owner's approval
  *
  * The draft (lib/handyman-draft) survives sign-in, Stripe and back, a refresh
@@ -115,6 +124,18 @@ function addTask(task: string, text: string) {
 function words(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
+const phoneDigits = (value: string) => {
+  const d = String(value || "").replace(/\D/g, "");
+  return d.length === 11 && d.startsWith("1") ? d.slice(1) : d;
+};
+/* The guest details step, the same rules the server applies (routes/guestBookings readGuest). */
+function contactErrors(d: { name: string; phone: string; email: string }) {
+  const found: Record<string, string> = {};
+  if (d.name.trim().length < 2 || !/\s/.test(d.name.trim())) found.name = "Enter your first and last name.";
+  if (phoneDigits(d.phone).length !== 10) found.phone = "Enter a 10-digit mobile number.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email.trim())) found.email = "Enter a valid email.";
+  return found;
+}
 function sameAddress(a: { line1?: string; zip?: string }, b: { line1?: string; zip?: string }) {
   const norm = (v?: string) => String(v || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   return norm(a.line1) === norm(b.line1) && norm(a.zip) === norm(b.zip);
@@ -137,6 +158,9 @@ export default function HandymanBooker({
   const [draft, setDraft] = useState<HandymanDraft>(EMPTY_HANDYMAN_DRAFT);
   const [photos, setPhotos] = useState<File[]>([]);
   const [typedAddress, setTypedAddress] = useState<AddressValue | null>(null);
+  // Typed into the address box but not picked from the list yet (AddressField onPendingText).
+  const [addressText, setAddressText] = useState("");
+  const [addressMode, setAddressMode] = useState<"lookup" | "manual">("lookup");
   const [area, setArea] = useState<ServiceAreaState>("unknown");
   const [useNewAddress, setUseNewAddress] = useState(false);
   const [choice, setChoice] = useState<Choice>("");
@@ -146,12 +170,19 @@ export default function HandymanBooker({
   const [banner, setBanner] = useState<{ tone: "info" | "warn" | "ok"; text: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<null | { when: string; pending?: boolean; draftId?: string }>(null);
+  const [done, setDone] = useState<null | { when: string; pending?: boolean; draftId?: string; kind?: "member" | "membership_first" }>(null);
   // Still asking the server whether a paid first visit is booked (the "See my visits" button waits for the answer).
   const [checkingVisit, setCheckingVisit] = useState(false);
   const [memberLead, setMemberLead] = useState(false);
   const pressing = useRef(false);
   const resumed = useRef(false);
+  const started = useRef(false);
+  /* First touch of the booker: the start of this funnel (Clarity; counted once per page). */
+  const markStarted = () => {
+    if (started.current) return;
+    started.current = true;
+    clarityBookingEvent("booking_started", "handyman");
+  };
   const rootRef = useRef<HTMLDivElement>(null);
 
   const update = useCallback((patch: Partial<HandymanDraft>) => {
@@ -249,6 +280,8 @@ export default function HandymanBooker({
     if (canceled === "1") {
       const id = params.get("booking_id") || draft.pendingBookingId;
       if (id && user) API.post(`/api/bookings/one-time/${id}/abandon`).catch(() => undefined);
+      // A guest's checkout is released by the press's own id, which only this browser has.
+      else if (id && draft.clientRequestId) void abandonGuestCheckout(id, draft.clientRequestId);
       update({ pendingBookingId: "", clientRequestId: "" });
       setBanner({ tone: "warn", text: "Checkout canceled. Nothing was charged, and your details are saved." });
     }
@@ -265,6 +298,11 @@ export default function HandymanBooker({
       setBanner({ tone: "info", text: "Member visits are booked at least 7 days ahead, so we picked the earliest member time. Change it if you like." });
       setStep(2);
     } else if (user && hasJob && hasTime) setStep(4);
+    else if (!user && hasJob && hasTime && !Object.keys(contactErrors(draft)).length) {
+      // A guest with every detail (back from Stripe, or handed over from the Free Visit): One-Time is what they can pay for.
+      setChoice((c) => c || draft.choice || "one_time");
+      setStep(4);
+    }
     else if (hasJob) setStep(hasTime ? 3 : 2);
     // Back from signing in: keep holding their time (extends it, or holds it
     // afresh if it lapsed). Not after a checkout - their own pending booking
@@ -302,8 +340,18 @@ export default function HandymanBooker({
     if (words(draft.task) < 3) found.task = "Tell us in a few words what needs doing.";
     const typed = !user || useNewAddress || !homes.length;
     if (typed) {
-      if (!typedAddress?.line1 || !typedAddress.city || !typedAddress.zip) found.address = "Please enter the service address.";
-      else if (area === "outside") found.address = "We serve Nassau and Suffolk counties. That address is outside our area for now.";
+      /*
+       * 2026-11-17: "Please enter the service address" was shown to people who
+       * HAD typed it but not picked it from the list (the field only reports a
+       * picked or fully entered address). Say which of the two it is.
+       */
+      if (!typedAddress?.line1 || !typedAddress.city || !typedAddress.zip) {
+        found.address = addressText
+          ? addressMode === "manual"
+            ? "Finish the address: street, city and a 5-digit ZIP."
+            : "Choose your address from the list under the box, or tap \u201cCan\u2019t find your address?\u201d to type it in."
+          : "Enter the service address: start typing, then choose it from the list.";
+      } else if (area === "outside") found.address = "We serve Nassau and Suffolk counties. That address is outside our area for now.";
     } else if (!draft.addressId) found.address = "Choose the home for this visit.";
     setErrors(found);
     if (Object.keys(found).length) return;
@@ -359,7 +407,20 @@ export default function HandymanBooker({
     if (!held) return;
     update({ timeConfirmed: true });
     trackEvent("handyman_time_selected", {});
+    if (user) clarityBookingEvent("booking_details_completed", "handyman");
     setStep(user ? 4 : 3);
+  };
+
+  /* Signed out: the details a paid visit needs. Everything else is already saved. */
+  const goGuestStep4 = () => {
+    const found = contactErrors(draft);
+    setErrors(found);
+    if (Object.keys(found).length) return;
+    update({ name: draft.name.trim(), email: draft.email.trim(), phone: phoneDigits(draft.phone) });
+    trackEvent("handyman_guest_details_entered", {});
+    clarityBookingEvent("booking_details_completed", "handyman");
+    setChoice((c) => c || "one_time");
+    setStep(4);
   };
 
   const signIn = (mode: "signin" | "signup") => {
@@ -401,9 +462,11 @@ export default function HandymanBooker({
       holdToken: draft.holdToken || undefined,
     });
     trackEvent("member_visit_booked", { source: "book_a_handyman" });
+    clarityBookingEvent("booking_request_submitted", "handyman", String(res?.booking?.bookingNumber || ""));
     await applyServiceTextsOptIn();
     await clearHandymanDraft();
-    setDone({ when: formatWhen(draft.date, draft.time) });
+    setDone({ when: formatWhen(draft.date, draft.time), kind: "member" });
+    announceBookingSucceeded("handyman");
     return res;
   };
 
@@ -436,8 +499,10 @@ export default function HandymanBooker({
     await refreshUser();
     if (view?.status === "booked" || view?.status === "rebooked") {
       trackEvent("member_visit_booked", { source: "membership_first_visit" });
+      clarityBookingEvent("booking_payment_confirmed", "handyman", draftId);
       await clearHandymanDraft();
-      setDone({ when: formatWhen(view.requestedDate, view.requestedTime) });
+      setDone({ when: formatWhen(view.requestedDate, view.requestedTime), kind: "membership_first" });
+      announceBookingSucceeded("handyman");
       return;
     }
     if (view?.status === "needs_admin") {
@@ -463,7 +528,8 @@ export default function HandymanBooker({
     }
     // Paid but not finished yet (Stripe or the membership still on its way): the server books it and emails them.
     await clearHandymanDraft();
-    setDone({ when: formatWhen(view?.requestedDate || draft.date, view?.requestedTime || draft.time), pending: true, draftId });
+    setDone({ when: formatWhen(view?.requestedDate || draft.date, view?.requestedTime || draft.time), pending: true, draftId, kind: "membership_first" });
+    announceBookingSucceeded("handyman");
   };
 
   /*
@@ -557,12 +623,88 @@ export default function HandymanBooker({
     }
   };
 
+  /*
+   * A guest's One-Time Visit: straight to Stripe, no account. The server holds
+   * the time, names the booking, and keeps the owner's review; the page only
+   * opens the checkout it is given (or, for a press it has already been paid
+   * for, the status of that payment).
+   */
+  const submitGuest = async () => {
+    const clientRequestId = draft.clientRequestId || newClientRequestId();
+    update({ clientRequestId, choice: "one_time" });
+    trackEvent("handyman_option_selected", { choice: "one_time", guest: true });
+    trackInitiateCheckout({ content_name: "one_time_visit", value: price ?? undefined, currency: "USD" });
+    const address = draft.address;
+    if (!address) {
+      setStep(1);
+      setErrors({ address: "Enter the service address: start typing, then choose it from the list." });
+      return;
+    }
+    try {
+      const res = await guestOneTimeCheckout({
+        contact: { name: draft.name.trim(), phone: phoneDigits(draft.phone), email: draft.email.trim() },
+        address: { line1: address.line1, unit: address.unit, city: address.city, state: address.state || "NY", zip: address.zip, lat: address.lat, lng: address.lng },
+        note: draft.task.trim(),
+        selectedTask: draft.task.trim().slice(0, 120),
+        requestedDate: draft.date,
+        requestedTime: draft.time,
+        holdToken: draft.holdToken || undefined,
+        photos,
+        clientRequestId,
+        tracking: checkoutTracking(),
+      });
+      if ("alreadyPaid" in res) {
+        // This press was already paid for: show where it stands, never a second checkout.
+        window.location.assign(res.sessionId ? `/book/confirmation?booking_id=${res.bookingId}&session_id=${res.sessionId}` : "/book/confirmation");
+        return;
+      }
+      update({ pendingBookingId: res.bookingId, holdToken: "", holdFor: "", holdExpiresAt: "" });
+      clarityBookingEvent("booking_request_submitted", "handyman", res.bookingId);
+      window.location.assign(res.url);
+    } catch (error) {
+      const e = error instanceof GuestCheckoutError ? error : new GuestCheckoutError(0, "ERROR", "Something went wrong. Please try again.");
+      if (e.code === "SLOT_UNAVAILABLE") {
+        update({ time: "", timeConfirmed: false, clientRequestId: "", holdToken: "", holdFor: "", holdExpiresAt: "" });
+        setErrors({ when: "That time was just taken, so we picked the next opening - everything else is saved." });
+        setStep(2);
+      } else if (e.field === "address") {
+        update({ clientRequestId: "" });
+        setErrors({ address: e.message });
+        setStep(1);
+      } else if (e.field === "task") {
+        update({ clientRequestId: "" });
+        setErrors({ task: e.message });
+        setStep(1);
+      } else if (e.field === "name" || e.field === "phone" || e.field === "email") {
+        update({ clientRequestId: "" });
+        setErrors({ [e.field]: e.message });
+        setStep(3);
+      } else if (e.code === "GUEST_CHECKOUT_UNAVAILABLE") {
+        setBanner({ tone: "info", text: "Please sign in or create an account to book this visit - everything you entered is saved." });
+        setStep(3);
+      } else {
+        // A network failure keeps the press id: trying again reopens the same checkout, never a second one.
+        if (e.code !== "NETWORK") update({ clientRequestId: "" });
+        setBanner({ tone: "warn", text: e.message });
+      }
+    }
+  };
+
   const submit = async () => {
     if (pressing.current || !choice) return;
     pressing.current = true;
     setBusy(true);
     setBanner(null);
     try {
+      if (!user) {
+        if (choice === "membership") {
+          // A membership belongs to an account: ask for it now, with the draft and the hold kept.
+          signIn("signup");
+          return;
+        }
+        await submitGuest();
+        return;
+      }
       if (!(await ensureContact())) return;
       const addressId = await resolveAddressId();
       if (!addressId) {
@@ -603,6 +745,7 @@ export default function HandymanBooker({
         });
         // The booking took the time over; the hold is spent.
         update({ pendingBookingId: res.bookingId, holdToken: "", holdFor: "", holdExpiresAt: "" });
+        clarityBookingEvent("booking_request_submitted", "handyman", res.bookingId);
         await applyServiceTextsOptIn();
         window.location.assign(res.url);
         return;
@@ -632,6 +775,7 @@ export default function HandymanBooker({
       });
       // An expired hold is renewed under a new token: keep the one that now holds the time.
       if (res.data?.holdToken) update({ holdToken: res.data.holdToken, holdFor: `${draft.date} ${draft.time}`, holdExpiresAt: res.data.holdExpiresAt || draft.holdExpiresAt });
+      clarityBookingEvent("booking_request_submitted", "handyman", firstVisitDraftId);
       await applyServiceTextsOptIn();
       window.location.assign(res.data.url);
     } catch (error) {
@@ -689,6 +833,24 @@ export default function HandymanBooker({
               We have your request for <b>{done.when}</b>. We&apos;ll review it and confirm your appointment shortly.
             </p>
           )}
+          {/* What it is, where it stands, what happens next (2026-11-17). */}
+          <dl className="bk-done-facts" data-done-facts>
+            <div>
+              <dt>Visit</dt>
+              <dd>{done.kind === "membership_first" ? "First membership visit" : "Membership visit"}</dd>
+            </div>
+            <div>
+              <dt>When</dt>
+              <dd>{done.when}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd data-done-status>{done.pending ? "Payment received - booking your visit" : "Waiting for approval"}</dd>
+            </div>
+          </dl>
+          <p className="bk-note" data-done-next>
+            Next: we review the request and text or email you once it&apos;s confirmed. To change or cancel, open My Visits or call or text 631-599-1363.
+          </p>
           <div className="bk-actions">
             {done.pending && checkingVisit ? (
               <button type="button" className="bk-btn bk-btn--primary bk-btn--block" disabled aria-busy="true" data-see-visits="waiting">
@@ -715,17 +877,17 @@ export default function HandymanBooker({
       : "";
 
   return (
-    <div className={embedded ? "bk bk--embedded" : "bk"} data-handyman-booker data-step={step} ref={rootRef}>
+    <div className={embedded ? "bk bk--embedded" : "bk"} data-handyman-booker data-step={step} ref={rootRef} onFocusCapture={markStarted} onPointerDownCapture={markStarted}>
       {/* On the homepage the panel's tab names the flow, and step 1's own label says what to do. */}
       {!embedded ? (
         <header className="bk-head">
           <span className="bk-eyebrow">Book a Handyman</span>
           <h1 className="bk-title">
-            {step === 1 ? "What needs doing?" : step === 2 ? "When works for you?" : step === 3 ? "Almost there" : "How would you like to book?"}
+            {step === 1 ? "What needs doing?" : step === 2 ? "When works for you?" : step === 3 ? "Your details" : "How would you like to book?"}
           </h1>
         </header>
       ) : step > 1 ? (
-        <h2 className="bk-step-title">{step === 2 ? "When works for you?" : step === 3 ? "Almost there" : "How would you like to book?"}</h2>
+        <h2 className="bk-step-title">{step === 2 ? "When works for you?" : step === 3 ? "Your details" : "How would you like to book?"}</h2>
       ) : null}
       <div className="bk-steps" aria-hidden="true">
         {[1, 2, 3, 4].map((n) => <span key={n} data-on={step >= n ? "1" : "0"} />)}
@@ -750,8 +912,9 @@ export default function HandymanBooker({
             <textarea data-clarity-mask="true" id="bk-task" className="bk-textarea" name="task" aria-invalid={errors.task ? "true" : undefined} value={draft.task} onChange={(e) => update({ task: e.target.value })} placeholder="Tap a job above, or describe it in a few words" maxLength={1200} />
             {err("task")}
           </div>
-          <div className="bk-field" data-error={errors.address ? "1" : undefined}>
+          <div className="bk-field" data-error={errors.address ? "1" : undefined} data-address-field>
             <span className="bk-label">Service address</span>
+            {typedMode ? <span className="bk-hint" data-address-hint>Type your street address. If suggestions appear, tap yours.</span> : null}
             {!typedMode ? (
               <>
                 <select className="bk-input" value={draft.addressId} onChange={(e) => update({ addressId: e.target.value, address: null })} data-input="home">
@@ -766,7 +929,18 @@ export default function HandymanBooker({
               </>
             ) : (
               <>
-                <AddressField value={typedAddress} onChange={setTypedAddress} onServiceArea={setArea} />
+                <AddressField
+                  value={typedAddress}
+                  onChange={(v) => {
+                    setTypedAddress(v);
+                    if (v && errors.address) setErrors((e) => ({ ...e, address: "" }));
+                  }}
+                  onServiceArea={setArea}
+                  onPendingText={(text, mode) => {
+                    setAddressText(text);
+                    setAddressMode(mode);
+                  }}
+                />
                 {user && homes.length > 0 && (
                   <button type="button" className="bk-link" style={{ marginTop: 8 }} onClick={() => setUseNewAddress(false)}>Choose a saved home</button>
                 )}
@@ -795,16 +969,36 @@ export default function HandymanBooker({
       )}
 
       {step === 3 && (
-        <section className="bk-card" data-auth-step>
+        <section className="bk-card" data-guest-details>
           <div className="bk-summary" style={{ marginBottom: 16 }}>
             <span><b>{formatWhen(draft.date, draft.time)}</b></span>
             <span>{addressLine}</span>
           </div>
           {draft.holdToken && draft.holdExpiresAt ? <HoldCountdown expiresAt={draft.holdExpiresAt} style={{ marginTop: 0, marginBottom: 10 }} /> : null}
-          <p className="bk-lede" style={{ marginTop: 0 }}>Sign in or create your account to choose how to book. Your details are saved.</p>
+          <p className="bk-lede" style={{ marginTop: 0 }}>Who should we confirm with? No account needed.</p>
+          {(["name", "phone", "email"] as const).map((k) => (
+            <label key={k} className="bk-field bk-float" data-error={errors[k] ? "1" : undefined} data-clarity-mask="true">
+              <input
+                name={k}
+                className="bk-input bk-input--float"
+                placeholder=" "
+                enterKeyHint={k === "email" ? "done" : "next"}
+                aria-invalid={errors[k] ? "true" : undefined}
+                {...(k === "name"
+                  ? { autoComplete: "name", autoCapitalize: "words" }
+                  : k === "phone"
+                    ? { type: "tel", inputMode: "tel" as const, autoComplete: "tel-national" }
+                    : { type: "email", inputMode: "email" as const, autoComplete: "email", autoCapitalize: "none", spellCheck: false })}
+                value={draft[k]}
+                onChange={(e) => update({ [k]: e.target.value })}
+              />
+              <span className="bk-float-label">{k === "name" ? "Full name" : k === "phone" ? "Mobile phone" : "Email"}</span>
+              {err(k)}
+            </label>
+          ))}
           <div className="bk-actions">
-            <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={() => signIn("signup")} data-action="create-account">Create account</button>
-            <button type="button" className="bk-btn bk-btn--block" onClick={() => signIn("signin")} data-action="sign-in">I have an account</button>
+            <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={goGuestStep4} data-action="guest-continue">Continue</button>
+            <button type="button" className="bk-link" onClick={() => signIn("signin")} data-action="sign-in">I have an account - sign in</button>
             <button type="button" className="bk-link" onClick={() => setStep(2)}>Back</button>
           </div>
         </section>
@@ -817,6 +1011,11 @@ export default function HandymanBooker({
               <span><b>{formatWhen(draft.date, draft.time)}</b> · <button type="button" className="bk-link" onClick={() => setStep(2)}>Change</button></span>
               <span>{addressLine}</span>
               <span>{draft.task.length > 90 ? `${draft.task.slice(0, 90)}…` : draft.task}</span>
+              {!user ? (
+                <span data-clarity-mask="true">
+                  {draft.name} · <button type="button" className="bk-link" onClick={() => setStep(3)}>Change</button>
+                </span>
+              ) : null}
               {draft.holdToken && draft.holdExpiresAt ? <HoldCountdown expiresAt={draft.holdExpiresAt} /> : null}
             </div>
           </section>
@@ -927,6 +1126,11 @@ export default function HandymanBooker({
                 )}
               </>
             )}
+            {!user && choice === "membership" ? (
+              <p className="bk-note" style={{ marginTop: 12 }} data-membership-needs-account>
+                A membership is kept on your account, so the next step creates it. Your job, address and time are saved.
+              </p>
+            ) : null}
             <p className="bk-note" style={{ marginTop: 14 }}>
               Need a whole day? <Link href="/book?visit=full-day">Book a Full Day</Link>
             </p>
@@ -939,7 +1143,9 @@ export default function HandymanBooker({
                 ? "Book my visit"
                 : choice === "one_time"
                   ? `Continue to payment${price != null ? ` · $${price}` : ""}`
-                  : choice === "membership"
+                  : choice === "membership" && !user
+                    ? "Create account and continue"
+                    : choice === "membership"
                     ? chosenOffer
                       ? `Continue to checkout · ${formatCents(chosenOffer.firstCents)} first ${cycle === "annual" ? "year" : "month"}`
                       : "Continue to membership checkout"
@@ -950,6 +1156,14 @@ export default function HandymanBooker({
                 ? "We'll confirm your appointment after we review it."
                 : "Secure payment by Stripe. We'll confirm your appointment after we review it."}
             </p>
+            {!user && choice === "one_time" ? (
+              <p className="bk-fine" data-contact-consent>
+                {GUEST_CHECKOUT_CONSENT_TEXT}{" "}
+                <a href="/communication-consent#service-texts" target="_blank" rel="noopener noreferrer">SMS Terms</a>
+                {" · "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+              </p>
+            ) : null}
           </div>
         </>
       )}

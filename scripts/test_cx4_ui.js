@@ -35,6 +35,7 @@ const SCHEDULE = ["08:00", "10:00", "13:00", "15:30"];
 const FULL_DAY_OFFSET = 4;
 const WELCOME_PLANS = { basic: { monthlyCents: 14900, firstMonthCents: 11920 }, plus: { monthlyCents: 24900, firstMonthCents: 19920 }, premium: { monthlyCents: 34900, firstMonthCents: 27920 }, elite: { monthlyCents: 49900, firstMonthCents: 39920 } };
 // The guest consent line, word for word (BackEnd routes/freeVisitRequests.js CONTACT_CONSENT_TEXT).
+const GUEST_CHECKOUT_LINE = "By booking, you agree that ProFixter may call or text you about this visit. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out or HELP for help.";
 const GUEST_LINE = "By requesting a visit, you agree that ProFixter may call or text you about this visit. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out or HELP for help.";
 const SHOTS = process.argv[3] || "";
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
@@ -64,13 +65,16 @@ async function open(browser, { width, height, me = null }) {
       localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
     } catch {}
   }, Boolean(me));
-  const state = { me, freeVisits: [], callbacks: [], oneTime: [], memberships: [], bookings: [], abandons: [], homes: [], holds: [], releases: [], takenTimes: [], offer: null, offerAsks: 0, membershipRefusal: null, steps: [], rejectFreeVisit: 0 };
+  const state = { me, freeVisits: [], callbacks: [], oneTime: [], memberships: [], bookings: [], abandons: [], homes: [], holds: [], releases: [], takenTimes: [], offer: null, offerAsks: 0, membershipRefusal: null, steps: [], rejectFreeVisit: 0,
+    // 2026-11-17 guest checkout: what the guest endpoints were sent, queued replies, the status page's answers, Clarity calls.
+    guestCheckouts: [], guestFullDays: [], guestAbandons: [], guestReplies: [], fvReplies: [], statusQueue: [], statusAsks: 0, clarity: [] };
+  await ctx.exposeBinding("__pfClarity", (_src, args) => state.clarity.push(args));
   /*
    * 2026-11-17 acquisition audit: the Meta Pixel is a recorder (no request
    * reaches Meta), and navigator.webdriver reads false so the funnel steps
    * (lib/meta trackStep, skipped for automation) are sent to the mock below.
    */
-  await ctx.route(/connect\.facebook\.net|facebook\.com\/tr/, (r) => r.abort());
+  await ctx.route(/connect\.facebook\.net|facebook\.com\/tr|googletagmanager\.com|clarity\.ms|google-analytics\.com/, (r) => r.abort());
   await ctx.addInitScript(() => {
     try {
       Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false });
@@ -84,6 +88,13 @@ async function open(browser, { width, height, me = null }) {
     window.fbq.queue = [];
     window.fbq.loaded = true;
     window.fbq.version = "2.0";
+    // Microsoft Clarity, recorded (GTM's real one never loads here): lib/clarity calls window.clarity("set" | "event", ...).
+    window.clarity = function (...args) {
+      try {
+        window.__pfClarity(args);
+      } catch {}
+    };
+    window.clarity.q = [];
   });
   // Google Places is real on the live site; blocking it makes the address field use its manual form, as it does without a key.
   await ctx.route(/maps\.googleapis\.com|places\.googleapis\.com/, (r) => r.abort());
@@ -141,6 +152,10 @@ async function open(browser, { width, height, me = null }) {
       state.rejectFreeVisit -= 1;
       return json({ success: false, code: "TRANSACTIONS_UNAVAILABLE", message: "Booking is temporarily unavailable. Please try again, or call or text 631-599-1363." }, 503);
     }
+    if (p === "/api/free-visit-requests" && m === "POST" && state.fvReplies.length) {
+      const reply = state.fvReplies.shift();
+      return json(reply.body, reply.status);
+    }
     if (p === "/api/free-visit-requests" && m === "POST") {
       const t = text();
       state.freeVisits.push({ formVersion: field(t, "formVersion"), name: field(t, "name"), line1: field(t, "line1"), zip: field(t, "zip"), date: field(t, "requestedDate"), time: field(t, "requestedTime"), note: field(t, "note"), consent: field(t, "consentText") });
@@ -186,6 +201,42 @@ async function open(browser, { width, height, me = null }) {
       }
       state.memberships.push(body);
       return json({ url: "https://checkout.stripe.test/cs_member", sessionId: "cs_member" });
+    }
+    if (p === "/api/bookings/guest/one-time/checkout" && m === "POST") {
+      const t = text();
+      state.guestCheckouts.push({ auth: req.headers()["authorization"] || "", name: field(t, "name"), phone: field(t, "phone"), email: field(t, "email"), line1: field(t, "line1"), city: field(t, "city"), zip: field(t, "zip"), note: field(t, "note"), requestedDate: field(t, "requestedDate"), requestedTime: field(t, "requestedTime"), holdToken: field(t, "holdToken"), clientRequestId: field(t, "clientRequestId"), consentText: field(t, "consentText"), photos: (t.match(/name="images"; filename=/g) || []).length });
+      const reply = state.guestReplies.shift();
+      if (reply) return json(reply.body, reply.status);
+      await new Promise((r) => setTimeout(r, 300));
+      return json({ url: "https://checkout.stripe.test/cs_guest_1", bookingId: "g-held-1", holdExpiresAt: new Date(Date.now() + 1800000).toISOString() });
+    }
+    if (p === "/api/bookings/guest/full-day/checkout" && m === "POST") {
+      const t = text();
+      state.guestFullDays.push({ auth: req.headers()["authorization"] || "", name: field(t, "name"), phone: field(t, "phone"), email: field(t, "email"), line1: field(t, "line1"), zip: field(t, "zip"), note: field(t, "note"), date: field(t, "date"), clientRequestId: field(t, "clientRequestId"), consentText: field(t, "consentText") });
+      const reply = state.guestReplies.shift();
+      if (reply) return json(reply.body, reply.status);
+      return json({ url: "https://checkout.stripe.test/cs_guest_fd", bookingId: "g-fd-1", holdExpiresAt: new Date(Date.now() + 1800000).toISOString() });
+    }
+    if (p === "/api/bookings/guest/abandon" && m === "POST") {
+      state.guestAbandons.push(JSON.parse(req.postData() || "{}"));
+      return json({ released: true });
+    }
+    if (p === "/api/bookings/guest/status") {
+      state.statusAsks += 1;
+      const next = state.statusQueue.length > 1 ? state.statusQueue.shift() : state.statusQueue[0];
+      return next ? json(next) : json({ message: "Not found" }, 404);
+    }
+    if (p === "/api/bookings/full-day/config") return json({ enabled: true, priceCents: 49900, currency: "usd", approximateHours: 8, holdMinutes: 30, cancellationPhone: "631-599-1363" });
+    if (p === "/api/bookings/full-day/availability") {
+      const from = u.searchParams.get("from");
+      const to = u.searchParams.get("to") || from;
+      const days = [];
+      for (let i = 0; i < 70; i++) {
+        const d = ymd(i);
+        if (d < from || d > to) continue;
+        days.push({ date: d, available: i >= 3, startTime: "08:00", endTime: "16:00", reason: i >= 3 ? "" : "Too soon" });
+      }
+      return json({ days });
     }
     if (p === "/api/bookings" && m === "POST") {
       const t = text();
@@ -401,18 +452,197 @@ async function fillAddress(scope, { line1, city, zip }) {
       await page.waitForURL(/\/book\/handyman/, { timeout: 10000 });
       const booker = page.locator("[data-handyman-booker]");
       await booker.waitFor({ timeout: 10000 });
-      // Everything is already there, so it goes straight to the account step.
-      await booker.locator("[data-auth-step]").waitFor({ timeout: 5000 });
-      check(`${tag}: switching skips to the account step with the details shown`, /40 Birch Ln/.test(await booker.innerText()));
+      // Everything is already there - job, address, time and the contact typed on the Free Visit - so it goes straight to how to book.
+      await page.locator("[data-option='one_time']").waitFor({ timeout: 8000 });
+      check(`${tag}: switching skips to how to book with the details shown (no account wall)`, (await booker.getAttribute("data-step")) === "4" && /40 Birch Ln/.test(await booker.innerText()));
       check(`${tag}: nothing was booked as a free visit`, state.freeVisits.length === 0);
       await page.waitForTimeout(400);
-      check(`${tag}: reaching the account step holds their time`, state.holds.length === 1 && state.holds[0].requestedDate === day && state.holds[0].requestedTime === "13:00", JSON.stringify(state.holds));
-      await booker.locator("[data-auth-step] button:has-text('Back')").click();
+      check(`${tag}: reaching how to book holds their time`, state.holds.length === 1 && state.holds[0].requestedDate === day && state.holds[0].requestedTime === "13:00", JSON.stringify(state.holds));
+      check(`${tag}: a guest can pay for the One-Time Visit right here`, (await page.locator("[data-option='one_time'][aria-pressed=true]").count()) === 1 && /Continue to payment/.test(await booker.locator("[data-action='book-handyman']").innerText()));
+      await booker.locator("[data-summary] button:has-text('Change')").first().click();
       await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
       check(`${tag}: the time carried over`, (await page.locator(`[data-day='${day}'][aria-pressed=true]`).count()) === 1 && (await page.locator("[data-time='13:00'][aria-pressed=true]").count()) === 1);
       await booker.locator("button:has-text('Back')").first().click();
       check(`${tag}: the job and address carried over`, (await booker.locator("textarea[name=task]").inputValue()) === "Mount a TV and hang two shelves" && (await booker.locator("input[placeholder='Street address']").inputValue()) === "40 Birch Ln");
       await shot(page, `${tag}-handy-00-from-free-visit`);
+      await ctx.close();
+    }
+
+    /* =============== Book a Handyman: a guest pays with no account (2026-11-17) =============== */
+    {
+      const { ctx, page, state, errors } = await open(browser, { width, height });
+      await page.goto(`${BASE}/book/handyman`, { waitUntil: "load" });
+      const booker = page.locator("[data-handyman-booker]");
+      await booker.waitFor({ timeout: 20000 });
+      check(`${tag}: the address field says how it works before Continue`, /If suggestions appear, tap yours/.test(await booker.locator("[data-address-hint]").innerText()));
+      await booker.locator("[data-shortcut='Replace faucet']").click();
+      // A street with no city or ZIP: the message says what is missing, the field is brought into focus, nothing typed is lost.
+      await booker.locator("input[placeholder='Street address']").first().fill("9 Pine Ct");
+      await booker.locator("[data-action='to-step-2']").click();
+      await page.waitForTimeout(400);
+      const addrErr = await booker.locator("[data-address-field] .bk-error").innerText().catch(() => "");
+      await shot(page, `${tag}-handy-guest-01-address-error`);
+      check(`${tag}: a half-typed address says exactly what is missing`, /street, city and a 5-digit ZIP/.test(addrErr), addrErr);
+      check(`${tag}: the address error is brought to focus`, await page.evaluate(() => !!document.activeElement?.closest("[data-address-field]")));
+      check(`${tag}: the job typed so far is kept`, (await booker.locator("textarea[name=task]").inputValue()) === "Replace an existing faucet.");
+      check(`${tag}: still on the job step (no jump)`, (await booker.getAttribute("data-step")) === "1");
+      await fillAddress(booker, { line1: "9 Pine Ct", city: "Farmingdale", zip: "11735" });
+      await booker.locator("[data-action='to-step-2']").click();
+      await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
+      const day = await page.locator(".bk-day[data-day]").first().getAttribute("data-day");
+      await page.locator("[data-time='10:00']").click();
+      await booker.locator("[data-action='to-step-3']").click();
+      await booker.locator("[data-guest-details]").waitFor({ timeout: 5000 });
+      for (const [n, v] of [["name", "Sam Ortiz"], ["phone", "631-555-0144"], ["email", "sam@mailbox.org"]]) {
+        await booker.locator(`[data-guest-details] input[name=${n}]`).click();
+        await booker.locator(`[data-guest-details] input[name=${n}]`).fill(v);
+      }
+      await booker.locator("[data-action='guest-continue']").click();
+      await page.locator("[data-option='one_time'][aria-pressed=true]").waitFor({ timeout: 5000 });
+      await shot(page, `${tag}-handy-guest-04-pay`);
+      // The first press is refused (Stripe down): it says so and keeps everything.
+      state.guestReplies.push({ status: 503, body: { code: "STRIPE_NOT_CONFIGURED", message: "Secure checkout is temporarily unavailable. Please try again shortly." } });
+      await booker.locator("[data-action='book-handyman']").click();
+      await page.locator(".bk-banner--warn").waitFor({ timeout: 8000 });
+      check(`${tag}: a refused checkout says why and keeps everything`, /temporarily unavailable/.test(await page.locator(".bk-banner--warn").innerText()) && (await booker.getAttribute("data-step")) === "4");
+      await booker.locator("[data-action='book-handyman']").dblclick();
+      await page.waitForURL(/checkout\.stripe\.test\/cs_guest_1/, { timeout: 10000 });
+      check(`${tag}: a double tap opens one guest checkout`, state.guestCheckouts.length === 2, String(state.guestCheckouts.length));
+      const g = state.guestCheckouts[1] || {};
+      check(`${tag}: the guest checkout carries no sign-in, the contact, address, day, time and hold`, !g.auth && g.name === "Sam Ortiz" && g.phone === "6315550144" && g.email === "sam@mailbox.org" && g.line1 === "9 Pine Ct" && g.zip === "11735" && g.requestedDate === day && g.requestedTime === "10:00" && !!g.holdToken && !!g.clientRequestId, JSON.stringify(g));
+      check(`${tag}: it carries exactly the consent line the page showed`, g.consentText === GUEST_CHECKOUT_LINE);
+      const names = state.clarity.filter((c) => c[0] === "event").map((c) => c[1]);
+      check(`${tag}: Clarity: started, details completed, request submitted - once each`, ["booking_started_handyman", "booking_details_completed_handyman", "booking_request_submitted_handyman"].every((n) => names.filter((x) => x === n).length === 1), names.join(","));
+      check(`${tag}: Clarity never receives personal details`, !JSON.stringify(state.clarity).match(/Sam|Ortiz|6315550144|mailbox|Pine|faucet/i), JSON.stringify(state.clarity));
+      // Back from Stripe with "cancel": the held time is released with the press's own id.
+      await page.goto(`${BASE}/book/handyman?canceled=1&booking_id=g-held-1`, { waitUntil: "load" });
+      await booker.waitFor({ timeout: 15000 });
+      await page.locator(".bk-banner").first().waitFor({ timeout: 8000 });
+      await page.waitForTimeout(400);
+      check(`${tag}: canceling on Stripe releases the time with the press's own id`, state.guestAbandons.length === 1 && state.guestAbandons[0].bookingId === "g-held-1" && state.guestAbandons[0].clientRequestId === g.clientRequestId, JSON.stringify(state.guestAbandons));
+      check(`${tag}: back from a canceled checkout: told so, everything kept, ready to pay`, /Checkout canceled/.test(await page.locator(".bk-banner").first().innerText()) && (await booker.getAttribute("data-step")) === "4" && /9 Pine Ct/.test(await booker.locator("[data-summary]").innerText()));
+      // A press the server says is already paid (Back from the success page): its status, never a second checkout.
+      state.guestReplies.push({ status: 200, body: { alreadyPaid: true, bookingId: "g-held-1", sessionId: "cs_test_paidguest1" } });
+      state.statusQueue = [{ kind: "one_time", status: "pending_approval", bookingNumber: "55501234", date: day, time: "10:00", guest: true }];
+      await booker.locator("[data-action='book-handyman']").click();
+      await page.waitForURL(/\/book\/confirmation\?booking_id=g-held-1&session_id=cs_test_paidguest1/, { timeout: 10000 });
+      await page.locator("[data-paid-status='pending_approval']").waitFor({ timeout: 10000 });
+      check(`${tag}: an already-paid press lands on its status, not a second checkout`, !/checkout\.stripe\.test/.test(page.url()));
+      check(`${tag}: guest handyman has no page errors`, errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
+
+    /* ======== After paying: the status page says only what the server has said (2026-11-17) ======== */
+    {
+      const { ctx, page, state, errors } = await open(browser, { width, height });
+      const base = { kind: "one_time", bookingNumber: "55501234", date: ymd(3), time: "10:00", guest: true };
+      state.statusQueue = [{ ...base, status: "awaiting_payment" }, { ...base, status: "payment_processing" }, { ...base, status: "pending_approval" }];
+      await page.goto(`${BASE}/book/confirmation?booking_id=g1&session_id=cs_test_statusflow1`, { waitUntil: "load" });
+      await page.evaluate(() => localStorage.setItem("pf_handyman_draft", JSON.stringify({ task: "Replace an existing faucet.", updatedAt: Date.now() })));
+      await page.locator("[data-paid-status]").waitFor({ timeout: 15000 });
+      await shot(page, `${tag}-paid-01-confirming`);
+      const before = await page.locator("[data-paid-status]").innerText();
+      check(`${tag}: before the server records the payment, it says confirming - never received`, /Confirming your payment/.test(before) && !/Payment received/.test(before), before.slice(0, 120));
+      await page.locator("[data-paid-status='pending_approval']").waitFor({ timeout: 20000 });
+      await shot(page, `${tag}-paid-02-pending-approval-guest`);
+      const paid = (await page.locator("[data-paid-status]").innerText()).replace(/\s+/g, " ");
+      check(`${tag}: once recorded: paid and pending approval, with visit type, day and time, booking number`, /Payment received\. Your request is pending approval\./.test(paid) && /One-Time Visit/.test(paid) && /10:00 AM/.test(paid) && /#55501234/.test(paid), paid.slice(0, 300));
+      check(`${tag}: a guest is offered an account with the same phone or email to manage it`, (await page.locator("[data-action='create-account-after-payment']").count()) === 1 && /same mobile number or email/.test(paid));
+      check(`${tag}: no competing ways to book on the success screen`, !/See membership plans|Ways to book/.test(await page.locator("main").innerText()));
+      check(`${tag}: the booking draft is cleared once paid, so Back cannot start it again`, (await page.evaluate(() => localStorage.getItem("pf_handyman_draft"))) === null);
+      const confirmedEvents = () => state.clarity.filter((c) => c[0] === "event" && c[1] === "booking_payment_confirmed_handyman").length;
+      check(`${tag}: Clarity: payment confirmed once`, confirmedEvents() === 1);
+      await page.reload({ waitUntil: "load" });
+      await page.locator("[data-paid-status='pending_approval']").waitFor({ timeout: 15000 });
+      check(`${tag}: a reload of the success page is not a second payment event`, confirmedEvents() === 1);
+      state.statusQueue = [{ ...base, kind: "full_day", time: null, status: "not_completed" }];
+      await page.goto(`${BASE}/book/confirmation?booking_id=g2&session_id=cs_test_notpaid1`, { waitUntil: "load" });
+      await page.locator("[data-paid-status='not_completed']").waitFor({ timeout: 15000 });
+      await shot(page, `${tag}-paid-03-not-completed`);
+      check(`${tag}: an unpaid checkout says nothing was charged, with the way back to that booking`, /Nothing was charged/.test(await page.locator("[data-paid-status]").innerText()) && (await page.locator("[data-paid-status] a[href='/book?visit=full-day']").count()) === 1);
+      state.me = customer({});
+      await page.evaluate(() => localStorage.setItem("token", "ui-token"));
+      state.statusQueue = [{ ...base, guest: false, status: "confirmed" }];
+      await page.goto(`${BASE}/book/confirmation?booking_id=g3&session_id=cs_test_member1`, { waitUntil: "load" });
+      await page.locator("[data-paid-status='confirmed']").waitFor({ timeout: 15000 });
+      check(`${tag}: signed in: confirmed, managed from My Visits`, /Your visit is confirmed/.test(await page.locator("[data-paid-status]").innerText()) && (await page.locator("[data-paid-status] a[href='/book#your-visits']").count()) === 1);
+      check(`${tag}: status page has no page errors`, errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
+
+    /* ====================== Full Day: a guest pays with no account ====================== */
+    {
+      const { ctx, page, state, errors } = await open(browser, { width, height });
+      await page.goto(`${BASE}/book?visit=full-day`, { waitUntil: "load" });
+      const panel = page.locator("[data-full-day-panel]");
+      await panel.waitFor({ timeout: 20000 });
+      check(`${tag}: Full Day: no sign-in wall for a guest`, (await page.getByText("Log in to book your Full Day").count()) === 0 && (await panel.locator("[data-full-day-guest]").count()) === 1);
+      await panel.locator(".pg-cal__day.is-open").first().waitFor({ timeout: 15000 });
+      await panel.locator(".pg-cal__day.is-open").first().click();
+      const chosen = await panel.locator(".pg-cal__day.is-selected").innerText();
+      await panel.locator("button:has-text('Continue to payment')").click();
+      await page.waitForTimeout(400);
+      await shot(page, `${tag}-fullday-01-errors`);
+      check(`${tag}: Full Day: each missing detail is named, the day is kept`, (await panel.locator(".pg-error").count()) >= 4 && (await panel.locator(".pg-cal__day.is-selected").innerText()) === chosen);
+      for (const [n, v] of [["name", "Ana Ruiz"], ["phone", "516-555-0166"], ["email", "ana@mailbox.org"]]) {
+        await panel.locator(`[data-full-day-guest] input[name=${n}]`).click();
+        await panel.locator(`[data-full-day-guest] input[name=${n}]`).fill(v);
+      }
+      await fillAddress(panel, { line1: "5 Maple Rd", city: "Massapequa", zip: "11758" });
+      await panel.locator("textarea").first().fill("Hang shelves, fix two doors and patch the hall");
+      await shot(page, `${tag}-fullday-02-filled`);
+      check(`${tag}: Full Day: the guest consent line is shown`, ((await panel.locator("[data-contact-consent]").innerText()) || "").startsWith(GUEST_CHECKOUT_LINE));
+      await panel.locator("button:has-text('Continue to payment')").click();
+      await page.waitForURL(/checkout\.stripe\.test\/cs_guest_fd/, { timeout: 10000 });
+      const fd = state.guestFullDays[0] || {};
+      check(`${tag}: Full Day guest checkout: no sign-in, contact, address, day, list, consent`, state.guestFullDays.length === 1 && !fd.auth && fd.name === "Ana Ruiz" && fd.phone === "5165550166" && fd.zip === "11758" && /^\d{4}-\d{2}-\d{2}$/.test(fd.date) && /Hang shelves/.test(fd.note) && fd.consentText === GUEST_CHECKOUT_LINE, JSON.stringify(fd));
+      check(`${tag}: Full Day: Clarity request submitted once`, state.clarity.filter((c) => c[0] === "event" && c[1] === "booking_request_submitted_full_day").length === 1);
+      check(`${tag}: Full Day guest has no page errors`, errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
+
+    /* =========== Homepage: after a request, its confirmation stands alone (2026-11-17) =========== */
+    {
+      const { ctx, page, state, errors } = await open(browser, { width, height });
+      await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+      const form = page.locator("[data-home-booking] [data-free-visit-form]");
+      await form.waitFor({ timeout: 20000 });
+      check(`${tag}: home: ways to book are shown before a request`, await page.locator("[data-ways-to-book]").isVisible());
+      for (const [n, v] of [["name", "Kim Lee"], ["phone", "(516) 555-0199"], ["email", "kim@mailbox.org"]]) {
+        await form.locator(`input[name=${n}]`).click();
+        await form.locator(`input[name=${n}]`).fill(v);
+      }
+      await fillAddress(form, { line1: "3 Cedar St", city: "Farmingdale", zip: "11735" });
+      await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
+      await form.locator("[data-action='add-details']").click();
+      await form.locator("input[type=file]").first().setInputFiles({ name: "door.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64") }).catch(() => {});
+      await page.locator("[data-home-booking] [data-action='review-free-visit']").click();
+      const sheet = page.locator("[data-free-visit-sheet]");
+      await sheet.waitFor({ timeout: 5000 });
+      await page.waitForTimeout(500);
+      // The photo cannot be used: a clear way on without it, nothing else lost.
+      state.fvReplies.push({ status: 400, body: { code: "PHOTO_REJECTED", field: "photos", message: "That file isn't a photo we can use." } });
+      await sheet.locator("[data-action='confirm-free-visit']").click();
+      await page.locator("[data-photo-error]").waitFor({ timeout: 8000 });
+      await shot(page, `${tag}-home-01-photo-refused`);
+      check(`${tag}: home: a refused photo says so, offers to continue without it, keeps the rest`, /isn't a photo we can use/.test(await page.locator("[data-photo-error]").innerText()) && (await form.locator("input[name=name]").inputValue()) === "Kim Lee");
+      check(`${tag}: home: no success is shown before the server accepts`, (await page.locator("[data-free-visit-done]").count()) === 0);
+      await page.locator("[data-action='send-without-photos']").click();
+      await page.locator("[data-home-booking] [data-action='review-free-visit']").click();
+      await sheet.waitFor({ timeout: 5000 });
+      await page.waitForTimeout(500);
+      await sheet.locator("[data-action='confirm-free-visit']").click();
+      await page.locator("[data-free-visit-done]").waitFor({ timeout: 8000 });
+      await shot(page, `${tag}-home-02-success`);
+      const doneText = (await page.locator("[data-free-visit-done]").innerText()).replace(/\s+/g, " ");
+      check(`${tag}: home: success states the visit, when, its status and what happens next`, /Free Visit/.test(doneText) && /Reserved - waiting for our confirmation/.test(doneText) && /To change or cancel, call or text/.test(doneText), doneText.slice(0, 300));
+      check(`${tag}: home: the other ways to book and the tabs are gone from the success state`, !(await page.locator("[data-ways-to-book]").isVisible()) && !(await page.locator("[data-home-tab='handyman']").isVisible()));
+      check(`${tag}: home: Clarity request submitted once for the free visit`, state.clarity.filter((c) => c[0] === "event" && c[1] === "booking_request_submitted_free_visit").length === 1);
+      const posts = state.freeVisits.length;
+      await page.reload({ waitUntil: "networkidle" });
+      await page.locator("[data-free-visit-done]").waitFor({ timeout: 10000 });
+      check(`${tag}: home: a refresh shows the same success, sends nothing, keeps the other ways hidden`, state.freeVisits.length === posts && !(await page.locator("[data-ways-to-book]").isVisible()));
+      check(`${tag}: home: no page errors`, errors.length === 0, errors.join(" | "));
       await ctx.close();
     }
 
@@ -457,17 +687,30 @@ async function fillAddress(scope, { line1, city, zip }) {
       await page.locator("[data-time='08:00']").click();
       await shot(page, `${tag}-handy-02-time`);
       await booker.locator("[data-action='to-step-3']").click();
-      await booker.locator("[data-auth-step]").waitFor({ timeout: 5000 });
-      check(`${tag}: signed out, it asks to sign in or create an account (not payment)`, (await booker.locator("[data-action='create-account']").count()) === 1 && (await booker.locator("[data-action='sign-in']").count()) === 1);
+      await booker.locator("[data-guest-details]").waitFor({ timeout: 5000 });
+      check(`${tag}: signed out, it asks for contact details - no account wall`, (await booker.locator("[data-guest-details] input[name=name]").count()) === 1 && (await booker.locator("[data-action='create-account']").count()) === 0 && (await booker.locator("[data-guest-details] [data-action='sign-in']").count()) === 1);
       const firstHold = state.holds[0]?.issued;
-      check(`${tag}: the chosen time is held at the sign-in step (new hold, no token yet)`, state.holds.length === 1 && state.holds[0].requestedDate === day && state.holds[0].requestedTime === "08:00" && !state.holds[0].token && !!firstHold, JSON.stringify(state.holds));
+      check(`${tag}: the chosen time is held at the details step (new hold, no token yet)`, state.holds.length === 1 && state.holds[0].requestedDate === day && state.holds[0].requestedTime === "08:00" && !state.holds[0].token && !!firstHold, JSON.stringify(state.holds));
       // The hold countdown (2026-11-03): "Held for you · 29:58".
-      check(`${tag}: the account step says the time is held`, /Held for you · \d+:\d\d/.test(await booker.locator("[data-hold-note]").innerText()));
+      check(`${tag}: the details step says the time is held`, /Held for you · \d+:\d\d/.test(await booker.locator("[data-hold-note]").innerText()));
       check(`${tag}: the hold token is saved with the draft`, (await page.evaluate(() => JSON.parse(localStorage.getItem("pf_handyman_draft") || "{}").holdToken)) === firstHold);
-      await shot(page, `${tag}-handy-03-account`);
-      await booker.locator("[data-action='create-account']").click();
+      await shot(page, `${tag}-handy-03-details`);
+      await booker.locator("[data-action='guest-continue']").click();
+      check(`${tag}: the details step names each missing field`, (await booker.locator("[data-guest-details] .bk-error").count()) === 3);
+      for (const [n, v] of [["name", "Sam Ortiz"], ["phone", "631-555-0144"], ["email", "sam@mailbox.org"]]) {
+        await booker.locator(`[data-guest-details] input[name=${n}]`).click();
+        await booker.locator(`[data-guest-details] input[name=${n}]`).fill(v);
+      }
+      await booker.locator("[data-action='guest-continue']").click();
+      await page.locator("[data-option='one_time']").waitFor({ timeout: 5000 });
+      check(`${tag}: guest how-to-book: One-Time chosen, Membership offered, no member option`, (await page.locator("[data-option='one_time'][aria-pressed=true]").count()) === 1 && (await page.locator("[data-option='membership']").count()) === 1 && (await page.locator("[data-option='member']").count()) === 0);
+      check(`${tag}: the consent line for a guest payment is shown word for word`, ((await booker.locator("[data-contact-consent]").innerText()) || "").startsWith(GUEST_CHECKOUT_LINE));
+      await page.locator("[data-option='membership']").click();
+      check(`${tag}: a membership asks for the account at this step, with everything kept`, /Create account and continue/.test(await booker.locator("[data-action='book-handyman']").innerText()) && (await page.locator("[data-membership-needs-account]").count()) === 1);
+      await booker.locator("[data-action='book-handyman']").click();
       await page.waitForURL(/\/signup\?next=%2Fbook%2Fhandyman/, { timeout: 10000 });
       check(`${tag}: sends them to Registration 2.0 with a way back`, true);
+      check(`${tag}: no guest checkout was opened for a membership`, state.guestCheckouts.length === 0);
       // They create an account (Registration 2.0 stores the token) and come back: a new customer, inside the welcome window.
       state.me = customer({ addresses: [] });
       state.offer = { expiresAt: new Date(Date.now() + 9.5 * 60000) };
@@ -566,9 +809,9 @@ async function fillAddress(scope, { line1, city, zip }) {
       check(`${tag}: ...and the next opening is chosen for them`, (await page.locator("[data-time='08:00'][aria-pressed=true]").count()) === 1);
       await page.locator("[data-time='13:00']").click();
       await booker.locator("[data-action='to-step-3']").click();
-      await booker.locator("[data-auth-step]").waitFor({ timeout: 5000 });
+      await booker.locator("[data-guest-details]").waitFor({ timeout: 5000 });
       check(`${tag}: another time is held and they go on`, state.holds.length === 2 && state.holds[1].requestedTime === "13:00");
-      await booker.locator("[data-auth-step] button:has-text('Back')").click();
+      await booker.locator("[data-guest-details] button:has-text('Back')").click();
       await page.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
       check(`${tag}: back on When, their own held time is still shown as chosen`, (await page.locator("[data-time='13:00'][aria-pressed=true]").count()) === 1);
       await shot(page, `${tag}-handy-07-taken`);

@@ -30,6 +30,12 @@ type Props = {
    * entry included), so this field does not add a second one.
    */
   hideUnit?: boolean;
+  /**
+   * What is typed but not yet a usable address ("" once one is picked or
+   * complete). A form uses it to say "pick your address from the list"
+   * instead of "enter your address" to somebody who has typed it.
+   */
+  onPendingText?: (text: string, mode: "lookup" | "manual") => void;
 };
 
 export type ServiceAreaState = "unknown" | "checking" | "inside" | "outside";
@@ -41,7 +47,7 @@ export type ServiceAreaState = "unknown" | "checking" | "inside" | "outside";
  */
 const DEBOUNCE_MS = 260;
 
-export default function AddressField({ value, onChange, onServiceArea, placeholder, hideUnit = false }: Props) {
+export default function AddressField({ value, onChange, onServiceArea, placeholder, hideUnit = false, onPendingText }: Props) {
   const [query, setQuery] = useState(value?.formatted || "");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -168,6 +174,7 @@ export default function AddressField({ value, onChange, onServiceArea, placehold
 
   const handleType = (text: string) => {
     setQuery(text);
+    onPendingText?.(text.trim(), manual ? "manual" : "lookup");
     /*
      * THE STATE MACHINE, AND THE WHOLE POINT OF THIS FIELD.
      *
@@ -198,6 +205,7 @@ export default function AddressField({ value, onChange, onServiceArea, placehold
     }
 
     setQuery(resolved.formatted);
+    onPendingText?.("", "lookup");
     /*
      * resolved.unit, not "". Google returns a subpremise for an address entered
      * with one - "apt 2" - and blanking it here threw away something the
@@ -233,8 +241,10 @@ export default function AddressField({ value, onChange, onServiceArea, placehold
     if (!complete) {
       onChange(null);
       report("unknown");
+      onPendingText?.([next.line1, next.city, next.zip].join(" ").trim(), "manual");
       return;
     }
+    onPendingText?.("", "manual");
     /*
      * Manual entry is marked verified so Continue can proceed, but it carries no
      * placeId and no coordinates, which is exactly how the server tells the two
