@@ -208,6 +208,60 @@ const shot = async (page, name) => {
     await ctx.close();
   }
 
+  /* ===================== A NEW visitor (signed out): the plan survives sign-up (2026-11-18) ===================== */
+  {
+    const { ctx, page, state, errors } = await open(browser, { me: null });
+    await page.goto(`${BASE}/membership/plans?utm_source=facebook&utm_medium=paid_social`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".plan-box", { timeout: 20000 });
+    await page.click("#plan-tab-Plus");
+    await page.waitForTimeout(400);
+    await page.click(".plan-box__cta");
+    await page.waitForURL(/\/book\/handyman/, { timeout: 20000 });
+    const booker = page.locator("[data-handyman-booker]");
+    await booker.waitFor({ timeout: 15000 });
+    const banner = booker.locator("[data-chosen-plan]");
+    check("new visitor: step 1 names the plan they chose and when they pay", (await banner.getAttribute("data-chosen-plan").catch(() => null)) === "plus" && /Plus membership · \$249\/mo/.test(await banner.innerText().catch(() => "")) && /pay on the last step/.test(await banner.innerText().catch(() => "")), await banner.innerText().catch(() => "(none)"));
+    await page.locator("[data-shortcut='Replace faucet']").click();
+    // Typed in one go, then the lookup cannot load (Maps blocked): what was typed carries into the boxes.
+    const lookup = booker.locator("#pf-address");
+    if (await lookup.count()) await lookup.fill("27 Bayview Ave, Massapequa, NY 11758");
+    const street = booker.locator("input[aria-label='Street address']");
+    await street.waitFor({ timeout: 12000 });
+    const carried = [await street.inputValue(), await booker.locator("input[aria-label='City']").inputValue(), await booker.locator("input[aria-label='ZIP code']").inputValue()];
+    check("new visitor: an address typed before the lookup failed is kept, split into street, city and ZIP", carried.join("|") === "27 Bayview Ave|Massapequa|11758", carried.join("|"));
+    if (!carried[0]) {
+      await street.fill("27 Bayview Ave");
+      await booker.locator("input[aria-label='City']").fill("Massapequa");
+      await booker.locator("input[aria-label='ZIP code']").fill("11758");
+    }
+    await page.locator("[data-action='to-step-2']").click();
+    await booker.locator(".bk-day[aria-pressed=true]").waitFor({ timeout: 10000 });
+    await page.locator("[data-action='to-step-3']").click();
+    await booker.locator("[data-auth-step]").waitFor({ timeout: 8000 });
+    check("new visitor: the plan is still named at sign-in time", /Plus membership/.test(await booker.locator("[data-chosen-plan]").innerText().catch(() => "")));
+    const before = await page.evaluate(() => JSON.parse(localStorage.getItem("pf_handyman_draft") || "{}"));
+    check("new visitor: the saved draft carries the membership, Plus, monthly", before.choice === "membership" && before.plan === "plus" && before.cycle === "monthly", JSON.stringify({ c: before.choice, p: before.plan, y: before.cycle }));
+    await shot(page, "new-visitor-step3");
+    await page.locator("[data-action='create-account']").click();
+    await page.waitForURL(/\/signup/, { timeout: 15000 });
+    await page.waitForSelector("[data-signup-carry]", { timeout: 10000 }).catch(() => null);
+    const carry = await page.locator("[data-signup-carry]").innerText().catch(() => "");
+    check("new visitor: sign-up shows their plan", /Your plan/.test(carry) && /Plus membership, monthly/.test(carry), carry);
+    check("new visitor: sign-up does not promise a free visit to someone buying a plan", !/Free visit available/.test(await page.locator("body").innerText()));
+    await shot(page, "new-visitor-signup");
+    // Signed up by phone: an account with no name or email yet.
+    state.me = customer({ name: "", email: "", addresses: [] });
+    await page.evaluate(() => localStorage.setItem("token", "ui-token"));
+    await page.goto(`${BASE}/book/handyman`, { waitUntil: "networkidle" });
+    await booker.locator("[data-option='membership']").waitFor({ timeout: 15000 });
+    check("new visitor: back from sign-up, Membership, Plus, monthly are still chosen", (await booker.locator("[data-option='membership']").getAttribute("aria-pressed")) === "true" && (await booker.locator("[data-plan='plus']").getAttribute("aria-checked")) === "true" && (await booker.locator("[data-cycle='monthly']").getAttribute("aria-checked")) === "true");
+    check("new visitor: the button is ready (not \"Choose an option\")", !/Choose an option/.test(await booker.locator("[data-action='book-handyman']").innerText()) && !(await booker.locator("[data-action='book-handyman']").isDisabled()), await booker.locator("[data-action='book-handyman']").innerText());
+    check("new visitor: told before the button that name and email come next", /your name and an email for receipts/.test(await booker.locator("[data-contact-next]").innerText().catch(() => "")), await booker.locator("[data-contact-next]").innerText().catch(() => "(none)"));
+    await shot(page, "new-visitor-step4");
+    check("new visitor: no page errors", errors.length === 0, errors.join(" | "));
+    await ctx.close();
+  }
+
   /* ===================== /book?visit=membership is the same flow ===================== */
   {
     const { ctx, page, errors } = await open(browser, { me: customer() });

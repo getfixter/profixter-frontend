@@ -23,8 +23,8 @@ const BASE = (process.argv[2] || "http://localhost:3111").replace(/\/$/, "");
 const SHOTS = process.env.SHOTS_DIR || path.join(__dirname, "..", "..", "reports", "shots", "visit-upgrade");
 fs.mkdirSync(SHOTS, { recursive: true });
 
-/* The public site loads its tag manager and pixel; here they are blocked (aborted), never fetched. */
-const TAGS = /^https:\/\/(www\.googletagmanager\.com|connect\.facebook\.net|www\.google-analytics\.com)\//;
+/* The public site loads its tag manager and pixels (the ChatGPT Ads SDK too, 2026-11-17); here they are blocked (aborted), never fetched. */
+const TAGS = /^https:\/\/(www\.googletagmanager\.com|connect\.facebook\.net|www\.google-analytics\.com|bzrcdn\.openai\.com)\//;
 const TZ = "America/New_York";
 const ymdNY = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(d);
 const TODAY = ymdNY(new Date());

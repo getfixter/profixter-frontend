@@ -315,8 +315,10 @@ export default function ConfirmationClient() {
             </h1>
 
             <p className="mx-auto mb-6 max-w-[420px] text-[15px] leading-[1.6] text-[color:var(--ui-text-2)]">
-              Your Membership is active. Book your first Member visit and we&apos;ll start
-              learning your home, your priorities, and your running list.
+              {/* From Book a Handyman they already chose the job and the time: say so, not "book your first visit". */}
+              {fromHandyman
+                ? "Your Membership is active. We're booking the visit you chose - taking you there now."
+                : "Your Membership is active. Book your first Member visit and we'll start learning your home, your priorities, and your running list."}
             </p>
 
             {/*
@@ -350,9 +352,18 @@ export default function ConfirmationClient() {
             <div className="mb-5 rounded-[var(--ui-r-md)] bg-[color:var(--ui-bg-soft)] p-4 text-left">
               <h3 className="mb-2 text-[14px] font-semibold text-[color:var(--ui-ink)]">What&apos;s next</h3>
               <ul className="space-y-1.5 text-[14px] text-[color:var(--ui-text-2)]">
-                <li>1. Choose your first visit time</li>
-                <li>2. Add notes and photos for the work</li>
-                <li>3. Profixter confirms the appointment</li>
+                {fromHandyman ? (
+                  <>
+                    <li>1. Your first visit is requested for the time you chose</li>
+                    <li>2. Profixter reviews it and confirms the appointment</li>
+                  </>
+                ) : (
+                  <>
+                    <li>1. Choose your first visit time</li>
+                    <li>2. Add notes and photos for the work</li>
+                    <li>3. Profixter confirms the appointment</li>
+                  </>
+                )}
               </ul>
             </div>
 
@@ -360,7 +371,7 @@ export default function ConfirmationClient() {
               onClick={handleBookClick}
               className="ui-btn ui-btn--primary ui-btn--lg ui-btn--block"
             >
-              Book your Fixter
+              {fromHandyman ? "See my visit" : "Book your Fixter"}
             </button>
 
             {/*

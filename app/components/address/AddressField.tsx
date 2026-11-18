@@ -251,6 +251,24 @@ export default function AddressField({ value, onChange, onServiceArea, placehold
     void checkServiceArea(zip);
   };
 
+  /*
+   * Switched to typing it out (the lookup could not load, or "Can't find your
+   * address?"): keep what they had already typed instead of handing them empty
+   * boxes. "27 Oak Ave, Massapequa, NY 11758" fills all three; anything else
+   * goes in the street box for them to finish.
+   */
+  useEffect(() => {
+    if (!manual) return;
+    const typed = query.trim();
+    if (!typed || manualFields.line1 || manualFields.city || manualFields.zip) return;
+    const parts = typed.split(",").map((p) => p.trim()).filter(Boolean);
+    const zip = (typed.match(/\b(\d{5})(?:-\d{4})?\b/) || [])[1] || "";
+    const city = parts.length > 1 ? parts[1].replace(/\b\d{5}(?:-\d{4})?\b/, "").replace(/\b(NY|New York)\b/i, "").trim() : "";
+    commitManual({ ...manualFields, line1: parts[0] || typed, city, zip });
+    // Once, when the form switches; later typing is theirs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manual]);
+
   /* The shared auth input. See the auth block in globals.css. */
   const inputBase = "auth-input";
 
