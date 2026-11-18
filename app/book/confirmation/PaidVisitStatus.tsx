@@ -94,7 +94,10 @@ export default function PaidVisitStatus({ sessionId }: { sessionId?: string }) {
 
   const manage = st?.guest && !user ? (
     <>
-      <p className="ui-body mt-4 text-[15px]">
+      <p className="ui-body mt-4 text-[15px]" data-visit-link-note>
+        We&apos;ve emailed you a <b>private link</b> to check this visit or ask to cancel it - no account needed.
+      </p>
+      <p className="ui-body mt-2 text-[15px]">
         To see and manage this visit online, create an account or sign in with the <b>same mobile number or email</b> you just used - it appears under My Visits.
       </p>
       <div className="pg-actions pg-actions--stack">

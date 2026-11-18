@@ -131,7 +131,7 @@ export type CheckoutStatus = {
 
 /* Where a paid visit stands, by the Stripe session it came back with. Null when the server cannot say. */
 export async function getCheckoutStatus(sessionId: string): Promise<CheckoutStatus | null> {
-  if (!/^cs_(live|test)_[A-Za-z0-9]{6,200}$/.test(sessionId)) return null;
+  if (!/^cs_(live|test)_[A-Za-z0-9_]{6,200}$/.test(sessionId)) return null;
   try {
     const res = await fetch(`${API_BASE}/api/bookings/guest/status?session_id=${encodeURIComponent(sessionId)}`, { cache: "no-store" });
     if (!res.ok) return null;
