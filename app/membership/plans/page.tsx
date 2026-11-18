@@ -31,6 +31,11 @@ import { absoluteUrl } from "@/lib/seo";
 import PlanComparisonTable from "@/app/components/membership/PlanComparisonTable";
 import { buttonClass } from "@/app/components/ui/Button";
 import Reveal from "@/app/components/ui/Reveal";
+import { plans } from "@/app/data/content";
+import { trackStep } from "@/lib/meta";
+
+/* The lowest monthly price, from the same plan data the selector and checkout use. */
+const FROM_PRICE = Math.min(...plans.map((plan) => plan.price));
 
 export default function MembershipPlansPage() {
   const { user } = useAuth();
@@ -44,6 +49,10 @@ export default function MembershipPlansPage() {
    */
   const compareRef = useRef<HTMLDetailsElement>(null);
   const [compareOpen, setCompareOpen] = useState(false);
+  /* The membership path's server-side step (once per browser per day, by first-touch source). */
+  useEffect(() => {
+    trackStep("plans_view");
+  }, []);
   useEffect(() => {
     // Opening the element fires onToggle, which records it in state.
     if (compareRef.current && window.matchMedia("(min-width: 768px)").matches) compareRef.current.open = true;
@@ -79,7 +88,11 @@ export default function MembershipPlansPage() {
               <p className="ui-lede">
                 {isMember
                   ? "Your current plan is marked. Move up or down at any time; the change follows your normal billing."
-                  : "Book as often as you need. Labor included."}
+                  : (
+                    <>
+                      Plans from <span className="ui-num">${FROM_PRICE}</span> a month. Book as often as you need. Labor included.
+                    </>
+                  )}
               </p>
 
               {isMember && (
@@ -96,7 +109,7 @@ export default function MembershipPlansPage() {
               {/* Wide screens only: the column beside the selector would otherwise be empty. */}
               <div className="pg-plans__aside">
                 <ul className="ui-checks">
-                  <li>90-minute visits for any home task</li>
+                  <li>90-minute visits for small repairs, maintenance and installations</li>
                   <li>The same local team every time</li>
                   <li>Month to month, or 12 months for the price of 10</li>
                 </ul>

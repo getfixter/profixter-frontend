@@ -29,6 +29,7 @@ import GoogleRatingCompact from "@/app/components/home/GoogleRatingCompact";
 import WhatWeDo from "@/app/components/whatwedo/WhatWeDo";
 import Reveal from "@/app/components/ui/Reveal";
 import { trackEvent } from "@/lib/analytics";
+import { trackStep } from "@/lib/meta";
 import { HOME_FAQ as FAQ } from "@/lib/home-faq";
 import { BOOKING_LINKS } from "@/lib/site-architecture";
 
@@ -64,6 +65,36 @@ const FACTS: Array<[string, string]> = [
   ["Local", "Nassau & Suffolk"],
 ];
 
+/*
+ * The hero's membership line (2026-11-18), in /membership's own words. Most
+ * search clicks land on this page, and the plans link used to sit under the
+ * whole booking form - on a phone, a screen and a half down.
+ *
+ * One line, two places, one shown at a time: on a phone and tablet it sits just
+ * above the form; from 1024px it sits at the top of the photo column, beside the
+ * headline and form, where it costs the form nothing - above the form it pushed
+ * the Free Visit button out of a 900px-tall first screen, and under the photo
+ * the floating chat button covered it. The hidden copy is display:none, so it is
+ * never focused, read out or tapped.
+ */
+function MembershipIntro({ place, onPlans }: { place: "inline" | "aside"; onPlans: () => void }) {
+  return (
+    <p className={`hm-hero__member hm-hero__member--${place}`} data-home-membership={place}>
+      <b>One trusted team for the home list that never ends.</b>{" "}
+      {/* Left out on a short phone screen, so the Free Visit button stays in the first screen there. */}
+      <span className="hm-hero__member-why">
+        Small repairs, maintenance and installations when you need them, without searching for a new contractor every time.
+      </span>{" "}
+      <span>
+        Memberships from <span className="ui-num">$149/month</span>.
+      </span>{" "}
+      <Link href={BOOKING_LINKS.memberships.href} className="hm-inline-link" onClick={onPlans}>
+        See plans
+      </Link>
+    </p>
+  );
+}
+
 function Arrow() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
@@ -85,7 +116,16 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
   const success = useBookingSucceeded();
   const booked = Boolean(success.now || success.recent);
 
-  const plansClick = (placement: string) => () => trackEvent("see_plans_clicked", { placement });
+  /*
+   * Every plans link on the homepage. see_plans_clicked goes to the dataLayer as
+   * before; the funnel step is the server's own count (once per browser per day,
+   * under its first-touch source), so the Admin can follow organic Google
+   * visitors from here to a paid membership.
+   */
+  const plansClick = (placement: string) => () => {
+    trackEvent("see_plans_clicked", { placement });
+    trackStep("home_plans_click");
+  };
 
   return (
     <main className="hm">
@@ -111,19 +151,14 @@ export default function HomeLanding({ signedIn = false }: { signedIn?: boolean }
             <p className="ui-lede hm-hero__lede ui-rise" style={{ animationDelay: "120ms" }}>
               Local Fixters for the small jobs around your house. Nassau &amp; Suffolk.
             </p>
+            {/* Hidden once a booking succeeds, like the other ways to book. */}
+            {!booked && <MembershipIntro place="inline" onPlans={plansClick("home_hero")} />}
             {/* Not .ui-rise: its lasting transform would trap the forms' full-screen confirmation sheet. */}
             <div className="hm-book" data-hero-choices>
               <HomeBookingPanel />
             </div>
-            <p className="hm-hero__offer ui-rise" style={{ animationDelay: "240ms" }}>
-              <span>
-                Memberships from $149/month.{" "}
-                <Link href={BOOKING_LINKS.memberships.href} className="hm-inline-link" onClick={plansClick("home_hero")}>
-                  Explore plans
-                </Link>
-              </span>
-            </p>
           </div>
+          {!booked && <MembershipIntro place="aside" onPlans={plansClick("home_hero")} />}
         </div>
       </section>
 

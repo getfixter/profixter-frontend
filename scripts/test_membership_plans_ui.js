@@ -43,7 +43,7 @@ const CATALOG = {
  *   priority no backend entitlement at all; copy is the whole definition
  */
 const MATRIX = [
-  { on: { Basic: 1, Plus: 1, Premium: 1, Elite: 1 }, text: "90-minute visits, any home task" },
+  { on: { Basic: 1, Plus: 1, Premium: 1, Elite: 1 }, text: "90-minute visits for small repairs" },
   { on: { Basic: 1, Plus: 1, Premium: 1, Elite: 1 }, text: "The same local team every time" },
   {
     on: { Basic: 1, Plus: 1, Premium: 1, Elite: 1 },

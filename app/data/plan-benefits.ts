@@ -52,8 +52,15 @@ export type BenefitRow = {
 export const BENEFIT_ROWS: BenefitRow[] = [
   {
     id: "visits",
-    off: "90-minute visits, any home task",
-    on: "90-minute visits, any home task",
+    /*
+     * What a visit is for, not "any home task": appliance repair, whole-room
+     * painting, panels and re-piping, renovations and multi-day work are not
+     * handyman visits (lib/business NOT_HANDYMAN_WORK). The detail is the
+     * everyday list from /membership.
+     */
+    off: "90-minute visits for small repairs",
+    on: "90-minute visits for small repairs",
+    detail: "Maintenance, mounting, fixtures, drywall, doors and caulking.",
   },
   {
     id: "team",

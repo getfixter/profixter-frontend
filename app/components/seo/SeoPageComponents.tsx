@@ -479,7 +479,7 @@ export function LocationDetailPage({
                     <div className="rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line)] px-3.5 py-2.5">
                       <dt className="text-[12px] font-medium text-[color:var(--ui-text-3)]">In {area.name}</dt>
                       <dd className="mt-0.5 text-[15px] font-medium text-[color:var(--ui-ink)]">
-                        {record.visits}+ completed visits for {record.customers} customers
+                        {record.visits}+ completed visits
                       </dd>
                     </div>
                   ) : null}

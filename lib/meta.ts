@@ -671,7 +671,11 @@ export type FunnelStepName =
   | "signup_view"
   /* The server accepted a free-visit request / refused it or never got it (from 2026-11-17). */
   | "request_submitted"
-  | "request_failed";
+  | "request_failed"
+  /* The membership path (from 2026-11-18): homepage plans link, plans page shown, plan chosen. */
+  | "home_plans_click"
+  | "plans_view"
+  | "plan_selected";
 
 /**
  * One anonymous step of the free-visit funnel (booker shown -> started -> time

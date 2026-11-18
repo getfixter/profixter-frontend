@@ -34,7 +34,7 @@ import { useAuth } from "@/lib/useAuth";
 import { can, PERM } from "@/lib/admin-access";
 import MaybeLink from "./MaybeLink";
 import OverviewDrawer, { type DrawerState } from "./OverviewDrawer";
-import { AcquisitionCostPanel, AcquisitionFunnelPanel, MetaEventsPanel, MetaReportedPanel } from "./AcquisitionPanels";
+import { AcquisitionCostPanel, AcquisitionFunnelPanel, MembershipPathPanel, MetaEventsPanel, MetaReportedPanel } from "./AcquisitionPanels";
 import { isAdminUser } from "@/lib/auth-routing";
 import CustomerMap from "./CustomerMap";
 
@@ -907,6 +907,7 @@ function AcquisitionCard({ o, onOpen, setDrawer, canSetFee, onReload }: { o: Ove
           <AcquisitionFunnelPanel o={o} />
           <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-3">
             <AcquisitionCostPanel o={o} canSetFee={canSetFee} onSaved={onReload} />
+            <MembershipPathPanel o={o} />
             <MetaEventsPanel o={o} />
           </div>
         </div>

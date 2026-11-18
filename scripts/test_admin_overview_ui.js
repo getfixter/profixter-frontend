@@ -272,6 +272,14 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
     connected.spend = { connected: true, status: "ok", lastSuccessAt: new Date(Date.now() - 2 * 86400000).toISOString(), stale: true, partial: false, totalCents: 76300, accountTimezone: "America/Los_Angeles", attributionSettings: ["7-day click or 1-day view"], reported: { impressions: 50000, clicks: 1400, outboundClicks: null, landingPageViews: 610, websiteLeads: 7, leads: 7, websitePurchases: 0, websiteSubscribes: 0, websiteSchedules: 2 } };
     connected.metaEfficiency = { ...base.metaEfficiency, spendCents: 76300, costPerInquiryCents: 19075, costPerConfirmedBookingCents: 38150, costPerNewPayingCustomerCents: null, firstPaymentRoas: 0 };
     connected.metaEvents = { measuredFrom: "2026-10-01T04:00:00.000Z", measured: true, partial: false, events: [{ eventName: "Lead", leadType: "account", sent: 3, failed: 0, fromServer: 3, fromBrowserRelay: 0, distinctEventIds: 3 }] };
+    /* The membership path (2026-11-18): "connected" is a backend that sends it, "disconnected" an older one that does not. */
+    Object.assign(connected.funnel.steps, {
+      home_plans_click: { all: 40, meta: 4, googleOrganic: 25, measuredFromYmd: "2026-11-18", measured: true, partial: true },
+      plans_view: { all: 90, meta: 30, googleOrganic: 20, measuredFromYmd: "2026-11-18", measured: true, partial: true },
+      plan_selected: { all: 12, meta: 3, googleOrganic: 5, measuredFromYmd: "2026-11-18", measured: true, partial: true },
+    });
+    connected.funnel.firstPaidMemberships = 3;
+    Object.assign(connected.sources.find((r) => r.key === "google_organic"), { visitors: 400, firstPaidMemberships: 2 });
     const fees = [];
     for (const [label, payload, width] of [["disconnected", base, 1440], ["connected", connected, 390]]) {
       const { ctx, page, errors } = await open(browser, OWNER, {
@@ -289,6 +297,12 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
       const reported = (await page.locator("[data-meta-reported]").innerText().catch(() => "")).replace(/\s+/g, " ");
       const cost = (await page.locator("[data-acquisition-cost]").innerText().catch(() => "")).replace(/\s+/g, " ");
       const events = (await page.locator("[data-meta-events]").innerText().catch(() => "")).replace(/\s+/g, " ");
+      const path = (await page.locator("[data-membership-path]").innerText().catch(() => "")).replace(/\s+/g, " ");
+      if (label === "disconnected") {
+        check("membership path: an older backend reads Not measured, never 0", /Homepage plans link Not measured in this period/.test(path) && /First paid membership Not measured yet/.test(path), path.slice(0, 300));
+      } else {
+        check("membership path: Google Organic column from visitors to first paid membership", /Activity counts, not a funnel/.test(path) && /Visitors \(new browsers\) 400 1,548/.test(path) && /Homepage plans link measured from Nov 18, 2026 25 40 /.test(path) && /Plans page shown measured from Nov 18, 2026 20 90 /.test(path) && /Plan chosen measured from Nov 18, 2026 5 12 /.test(path) && /First paid membership customers 2 3 /.test(path) && !/%/.test(path.split("Each row")[0]), path.slice(0, 400));
+      }
       check(`${label}: every funnel rate names numerator and denominator`, /2\.2% of form started|of booking form shown \(13 of 585\)/.test(funnel) && /\(13 of 585\)/.test(funnel), funnel.slice(0, 200));
       check(`${label}: an unmeasured step says Not measured, not 0`, /Submitted Not measured in this period/.test(funnel));
       check(`${label}: a partly measured step says from when`, /measured from Oct 10, 2026/.test(funnel));

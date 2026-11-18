@@ -7,7 +7,6 @@ import {
   COMMUNITIES_PHRASE,
   COMPLETED_VISITS_ROUNDED,
   COUNTY_SPLIT_PHRASE,
-  CUSTOMERS_ROUNDED,
   DATA_AS_OF,
   DATA_SINCE,
   TOWNS_WITH_COMPLETED_WORK,
@@ -69,7 +68,7 @@ export default function LocationsPage() {
         <HubHero
           eyebrow="Locations"
           title="Handyman help across Nassau and Suffolk."
-          description={`Based in Lindenhurst, Profixter has completed more than ${COMPLETED_VISITS_ROUNDED} visits for about ${CUSTOMERS_ROUNDED} customers in ${COMMUNITIES_PHRASE} since ${DATA_SINCE}, ${COUNTY_SPLIT_PHRASE}.`}
+          description={`Based in Lindenhurst, Profixter has completed more than ${COMPLETED_VISITS_ROUNDED} visits in ${COMMUNITIES_PHRASE} since ${DATA_SINCE}, ${COUNTY_SPLIT_PHRASE}.`}
           primaryCta={{ label: "Book a free visit", href: "/book/free" }}
           secondaryCta={{ label: "Compare membership plans", href: "/membership/plans" }}
           breadcrumb={{ label: "Locations", href: "/locations" }}
@@ -96,7 +95,7 @@ export default function LocationsPage() {
                         <span className="mt-1 block text-[13px] font-semibold text-[color:var(--ui-text-3)]">{area.municipality}</span>
                         {record ? (
                           <span className="mt-3 block text-[14px] text-[color:var(--ui-text-2)]">
-                            {record.visits}+ completed visits, {record.customers} customers
+                            {record.visits}+ completed visits
                           </span>
                         ) : null}
                       </Link>
@@ -118,7 +117,7 @@ export default function LocationsPage() {
         <section className="px-4 pb-4 sm:px-6 lg:px-8">
           <p className="mx-auto max-w-[1180px] text-[12px] text-[color:var(--ui-text-3)]">
             Figures from Profixter&apos;s completed-visit records, {DATA_SINCE} to {DATA_AS_OF}. Town figures are shown
-            only where at least three customers are behind them.
+            only where repeated work is behind them.
           </p>
         </section>
 

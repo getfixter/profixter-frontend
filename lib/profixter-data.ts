@@ -23,6 +23,11 @@ export const DATA_SINCE = "August 2025";
 
 /** Completed visits and households, rounded down so the copy never overstates. */
 export const COMPLETED_VISITS_ROUNDED = 800; // 847 exact
+/*
+ * Kept for internal use only: customer counts are no longer published on any
+ * page (owner decision 2026-11-18). Visits and communities still are. The town
+ * records keep `customers` only to enforce the three-customer rule above.
+ */
 export const CUSTOMERS_ROUNDED = 100; // 102 distinct customer accounts
 /*
  * 60 town strings in the data, but one is "(unknown)" and one is a ZIP code

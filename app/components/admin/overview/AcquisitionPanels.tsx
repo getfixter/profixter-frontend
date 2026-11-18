@@ -207,6 +207,88 @@ export function AcquisitionFunnelPanel({ o }: { o: Overview }) {
 /* Cost                                                                */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/* Recorded by Profixter: the membership path                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Membership activity, Google Organic beside all sources (2026-11-18). Every
+ * row is Profixter's own count under the browser's or the customer's first
+ * touch; nothing here comes from Google or the agency's tags.
+ *
+ * ACTIVITY COUNTS, NOT A FUNNEL (owner decision). The plans page opens from the
+ * menu, the footer, other pages and ads, not only the homepage link, so one row
+ * is not a subset of the one above it. No row is shown as a rate of another.
+ */
+export function MembershipPathPanel({ o }: { o: Overview }) {
+  const f = o.funnel;
+  const st = f.steps || {};
+  const google = (o.sources || []).find((s) => s.key === "google_organic");
+  type Row = { label: string; google: number | null; all: number | null; note?: string; def: string };
+  const step = (key: string, label: string, def: string): Row => {
+    const s = st[key];
+    if (!s || !s.measured) return { label, google: null, all: null, note: "Not measured in this period", def };
+    return { label, google: s.googleOrganic ?? null, all: s.all, note: s.partial ? `measured from ${ymd(s.measuredFromYmd)}` : undefined, def };
+  };
+  const rows: Row[] = [
+    { label: "Visitors (new browsers)", google: f.visitors === null ? null : google?.visitors ?? 0, all: f.visitors, def: "Browsers seen for the first time in the period." },
+    step("home_plans_click", "Homepage plans link", "A plans link on the homepage was tapped (once per browser per day)."),
+    step("plans_view", "Plans page shown", "/membership/plans was shown, from any page (once per browser per day)."),
+    step("plan_selected", "Plan chosen", "A new member pressed a plan's Choose button (once per browser per day)."),
+    {
+      label: "First paid membership",
+      google: f.firstPaidMemberships === null ? null : google?.firstPaidMemberships ?? 0,
+      all: f.firstPaidMemberships,
+      note: f.firstPaidMemberships === null ? "Not measured yet" : "customers",
+      def: "Customers whose first paid membership began in the period, even if they paid for a visit before. Renewals, a second home and gifts are not counted.",
+    },
+  ];
+  const cell = (v: number | null) => (
+    <td className="px-2 py-2 text-right align-top">
+      <div className={`text-[15px] font-semibold tabular-nums ${v === null ? "text-adm-text-3" : "text-adm-ink"}`}>{v === null ? "—" : num(v)}</div>
+    </td>
+  );
+  return (
+    <section className={box} data-membership-path>
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="text-[14px] font-semibold text-adm-ink">Membership activity</h3>
+        <span className="rounded-full bg-adm-sunk px-2 py-0.5 text-[11px] font-semibold text-adm-text-2">Activity counts, not a funnel</span>
+        <span className="text-[12px] text-adm-text-3">
+          {o.period.fromYmd} to {o.period.toYmd} · New York days · first-touch source
+        </span>
+      </div>
+      <div className="-mx-2 mt-2 overflow-x-auto">
+        <table className="w-full min-w-[420px] text-left">
+          <thead>
+            <tr className="text-[12px] font-semibold uppercase tracking-[0.08em] text-adm-text-3">
+              <th className="px-2 pb-1">Step</th>
+              <th className="px-2 pb-1 text-right">Google Organic</th>
+              <th className="px-2 pb-1 text-right">All sources</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.label} className="border-t border-adm-line" title={r.def}>
+                <td className="px-2 py-2 align-top">
+                  <div className="text-[13px] font-semibold text-adm-text-2">{r.label}</div>
+                  {r.note ? <div className="text-[11px] leading-4 text-adm-text-3">{r.note}</div> : null}
+                </td>
+                {cell(r.google)}
+                {cell(r.all)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[12px] leading-5 text-adm-text-3">
+        Each row is counted on its own, not as a share of the row above: people open the plans page from the menu, other pages and ads as well as the
+        homepage link. Visitors are new browsers; the three page steps count each browser once a day; First paid membership counts customers whose first
+        paid membership began in the period, including those who paid for a visit before. All are credited to where the browser or customer first came from.
+      </p>
+    </section>
+  );
+}
+
 export function AcquisitionCostPanel({ o, canSetFee, onSaved }: { o: Overview; canSetFee: boolean; onSaved: () => void }) {
   const e = o.metaEfficiency;
   const [month, setMonth] = useState("");

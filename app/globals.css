@@ -1636,6 +1636,26 @@ select:-webkit-autofill:active {
 .plan-box__tab.is-active {
   color: #0b1628;
 }
+/* Name over price: the strip shows every plan's price, so the cheapest is never a tap away. */
+.plan-box__tab {
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 2px;
+}
+.plan-box__tabname {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.plan-box__tabprice {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5b6577;
+  white-space: nowrap;
+}
+.plan-box__tab.is-active .plan-box__tabprice {
+  color: #2456c4;
+}
 
 /* Popular, quietly: a dot on the strip, and the word only once Plus is open. */
 .plan-box__dot {
@@ -1886,6 +1906,9 @@ select:-webkit-autofill:active {
 @media (max-width: 359px) {
   .plan-box__tab {
     font-size: 12px;
+  }
+  .plan-box__tabprice {
+    font-size: 11px;
   }
   .plan-box__chip {
     padding: 2px 5px;

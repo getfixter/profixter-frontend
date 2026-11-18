@@ -13,6 +13,7 @@ import { afterLayout, keepInView } from "@/lib/form-guide";
 import type { PlanType } from "@/lib/stripe-links";
 import type { Address } from "@/lib/auth-service";
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
+import { trackStep } from "@/lib/meta";
 import WelcomeOfferBanner from "@/app/components/membership/WelcomeOfferBanner";
 import { WELCOME_OFFER_ERROR_CODES, formatCents, offerPrice, rememberedCampaign, rememberCampaign, campaignOpen, HALLOWEEN_CAMPAIGN, useWelcomeOffer, type WelcomeOffer } from "@/lib/welcome-offer";
 
@@ -232,6 +233,15 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   /* Back from signup with a plan already chosen: confirm it in one step. */
   const [resumeRequested, setResumeRequested] = useState(false);
   const [resumeOpen, setResumeOpen] = useState(false);
+  /* Set while the page leaves for the booker with a plan (see handleSubscribe). */
+  const leavingWithPlan = useRef(false);
+  useEffect(() => {
+    const onShow = () => {
+      leavingWithPlan.current = false;
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
 
   /* The funnel step between "See plans" and "plan_selected". Once per mount. */
   useEffect(() => {
@@ -747,13 +757,21 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
      */
     const isMember = Boolean(user?.addresses?.some((a) => a.hasActiveSubscription));
     if (!isMember) {
+      /*
+       * One plan_selected per choice: a second tap while the booker loads would
+       * report the same choice twice. Cleared when Back restores this page.
+       */
+      if (leavingWithPlan.current) return;
+      leavingWithPlan.current = true;
       trackEvent("plan_selected", { plan: planType, billing_cycle: billing, signed_in: Boolean(user), flow: "book_first" });
+      trackStep("plan_selected");
       window.location.href = `/book/handyman?membership=${encodeURIComponent(planType)}&cycle=${encodeURIComponent(billing)}`;
       return;
     }
 
     if (!isAuthenticated || !user) {
       trackEvent("plan_selected", { plan: planType, billing_cycle: billing, signed_in: false });
+      trackStep("plan_selected");
       sendToSignupWithPlan(planType, billing, planName);
       return;
     }
@@ -1025,15 +1043,27 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 onKeyDown={onTabKeyDown}
                 className={`plan-box__tab${isActive ? " is-active" : ""}`}
               >
-                {plan.displayName}
+                <span className="plan-box__tabname">
+                  {plan.displayName}
+                  {/*
+                    Popular, quietly. A dot marks Plus from the strip; the word
+                    itself only appears once Plus is open, so the recommendation
+                    never shouts over the other three.
+                  */}
+                  {plan.name === "Plus" && !isActive ? (
+                    <span className="plan-box__dot" aria-hidden="true" />
+                  ) : null}
+                </span>
                 {/*
-                  Popular, quietly. A dot marks Plus from the strip; the word
-                  itself only appears once Plus is open, so the recommendation
-                  never shouts over the other three.
+                  Every plan's price on the strip (2026-11-18). The box opens on
+                  Plus, so Basic's $149 - the "from" price the homepage quotes -
+                  used to be one tap away and invisible. The regular price for
+                  the cycle shown; the box below carries any offer.
                 */}
-                {plan.name === "Plus" && !isActive ? (
-                  <span className="plan-box__dot" aria-hidden="true" />
-                ) : null}
+                <span className="plan-box__tabprice ui-num" data-tab-price>
+                  ${formatMoney(getPlanPricing(plan, billing).amount)}
+                  {billing === "annual" ? "/yr" : "/mo"}
+                </span>
               </button>
             );
           })}

@@ -57,6 +57,8 @@ export type SourceRow = {
   /* Spend / first-time paying customers (members or paid visits) in the period. */
   cacCents?: number | null;
   newPayingCustomers?: number;
+  /* Customers whose first-ever payment in the period was a paid membership. Null before the backend sends it. */
+  firstPaidMemberships?: number | null;
 } & InquiryFields;
 
 /*
@@ -75,7 +77,15 @@ export type InquiryFields = {
   repeatRevenueCents: number;
 };
 
-export type FunnelStepCount = { all: number | null; meta: number | null; measuredFromYmd: string | null; measured: boolean; partial: boolean };
+export type FunnelStepCount = {
+  all: number | null;
+  meta: number | null;
+  /* First touch Google Organic. Undefined from a backend older than 2026-11-18. */
+  googleOrganic?: number | null;
+  measuredFromYmd: string | null;
+  measured: boolean;
+  partial: boolean;
+};
 
 export type MetaReported = {
   impressions: number;
@@ -249,6 +259,7 @@ export type Overview = {
     freeVisitCompleted: number;
     members: number;
     newPayingCustomers: number;
+    firstPaidMemberships: number | null;
     requestOutcomes: Record<string, number> | null;
     steps: Record<string, FunnelStepCount> | null;
   };
@@ -376,6 +387,7 @@ const REVENUE_SERIES: Shape = { granularity: "day", points: [{ key: "", from: ""
 const SOURCE_SHAPE: Shape = {
   key: "other", label: "Other", group: null, visitors: 0, registrations: 0, freeVisits: 0, members: 0, revenueCents: 0,
   firstFreeVisits: 0, freeVisitRequests: 0, inquiries: 0, confirmed: 0, completedVisits: 0, firstPaymentRevenueCents: 0, repeatRevenueCents: 0, newPayingCustomers: 0,
+  firstPaidMemberships: null,
   spendCents: null, conversion: null, share: null, costPerRegistrationCents: null, costPerMemberCents: null, roas: null,
 };
 const OVERVIEW_SHAPE: Shape = {
@@ -407,7 +419,7 @@ const OVERVIEW_SHAPE: Shape = {
   funnel: {
     visitors: null, prevVisitors: null, prevVisitorsPartial: false, visitorsTrackingSince: null, visitorsPartial: false, staffPagesExcluded: 0,
     registered: 0, freeVisitBooked: 0, freeVisitRequests: 0, inquiries: 0, confirmed: 0, completed: 0, freeVisitCompleted: 0, members: 0,
-    newPayingCustomers: 0, requestOutcomes: null, steps: null,
+    newPayingCustomers: 0, firstPaidMemberships: null, requestOutcomes: null, steps: null,
   },
   sources: [SOURCE_SHAPE],
   sourceGroups: [{ key: "", label: "", sources: [], visitors: 0, registrations: 0, freeVisits: 0, members: 0, revenueCents: 0, conversion: null, share: null, firstFreeVisits: 0, freeVisitRequests: 0, inquiries: 0, confirmed: 0, completedVisits: 0, firstPaymentRevenueCents: 0, repeatRevenueCents: 0, newPayingCustomers: 0, }],

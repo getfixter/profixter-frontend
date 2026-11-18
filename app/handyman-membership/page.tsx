@@ -14,7 +14,6 @@ import {
   COMMUNITIES_PHRASE,
   COMPLETED_VISITS_ROUNDED,
   COUNTY_SPLIT_PHRASE,
-  CUSTOMERS_ROUNDED,
   DATA_AS_OF,
   DATA_SINCE,
   MULTI_TASK_REQUEST_PHRASE,
@@ -252,8 +251,8 @@ export default async function HandymanMembershipPage() {
                 <Fold title="How the Profixter membership works">
                   <p>
                     Profixter is a Long Island home-services company based in Lindenhurst, serving homeowners across Nassau and
-                    Suffolk Counties. Since {DATA_SINCE} it has completed more than {COMPLETED_VISITS_ROUNDED} visits for about{" "}
-                    {CUSTOMERS_ROUNDED} customers in {COMMUNITIES_PHRASE} (as of {DATA_AS_OF}). Its handyman
+                    Suffolk Counties. Since {DATA_SINCE} it has completed more than {COMPLETED_VISITS_ROUNDED} visits in{" "}
+                    {COMMUNITIES_PHRASE} (as of {DATA_AS_OF}). Its handyman
                     offering is built around a membership rather than one-off dispatch, though a one-time visit is still
                     available for people who want exactly one thing done.
                   </p>
