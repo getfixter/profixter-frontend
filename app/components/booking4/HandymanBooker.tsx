@@ -960,12 +960,13 @@ export default function HandymanBooker({
               Need a whole day? <Link href="/book?visit=full-day">Book a Full Day</Link>
             </p>
           </section>
-          {serviceTextsOptIn ? <div className="bk-texts">{serviceTextsOptIn}</div> : null}
           {/*
             An account made with a phone code has no name or email yet, and a
             booking needs both: the press below asks for them (the email with a
             code) before Stripe. Said here, so it is not a surprise after a
-            button showing a price.
+            button showing a price. Above the texts box, which must stay
+            directly above the button (A2P evidence, BackEnd
+            test_a2p_public_evidence).
           */}
           {user && choice && choice !== "member" && (missingContact(user).name || missingContact(user).email) ? (
             <p className="bk-note" style={{ marginTop: 12 }} data-contact-next>
@@ -973,6 +974,7 @@ export default function HandymanBooker({
               {missingContact(user).email ? " (we'll email you a code)" : ""}, then secure payment.
             </p>
           ) : null}
+          {serviceTextsOptIn ? <div className="bk-texts">{serviceTextsOptIn}</div> : null}
           <div className="bk-actions">
             <button type="button" className="bk-btn bk-btn--primary bk-btn--block" onClick={submit} disabled={!choice || busy} data-action="book-handyman">
               {busy ? <span className="bk-spinner" aria-hidden="true" /> : null}
