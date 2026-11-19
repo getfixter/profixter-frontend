@@ -67,14 +67,16 @@ async function context(browser, opts = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   await ctx.addInitScript(FBQ_RECORDER);
   await ctx.addInitScript(
-    ({ token, gpc }) => {
+    ({ token, gpc, allowHost }) => {
       try {
+        /* Opt in to the pixel on localhost (lib/chatgpt-ads-config.ts OAIQ_HOST_GUARD); the SDK is fake and bzr.openai.com is blocked. */
+        if (allowHost) localStorage.setItem("pf_oaiq_allow_host", "1");
         if (token) localStorage.setItem("token", token);
         localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
       } catch {}
       if (gpc) Object.defineProperty(Navigator.prototype, "globalPrivacyControl", { get: () => true, configurable: true });
     },
-    { token: opts.signedIn ? TOKEN : "", gpc: !!opts.gpc }
+    { token: opts.signedIn ? TOKEN : "", gpc: !!opts.gpc, allowHost: opts.allowHost !== false }
   );
   const sdkMode = () => (typeof opts.sdk === "function" ? opts.sdk() : opts.sdk || "load");
   const state = { sdkRequests: 0, posts: {}, me: opts.signedIn ? { ...USER } : null };
@@ -181,6 +183,27 @@ const field = (body, name) => (body.match(new RegExp(`name="${name}"\\r\\n\\r\\n
     const { ctx, page, state } = await context(browser);
     await go(page, path, 2000);
     check(`no pixel on ${path}`, (await page.evaluate(() => typeof window.oaiq)) === "undefined" && state.sdkRequests === 0);
+    await ctx.close();
+  }
+
+  /* ============ not a production host (localhost, a preview) ============ */
+  /*
+   * Without the test opt-in a local build must not load the pixel at all: this
+   * is what stops browser tests sending real lead_created events to OpenAI.
+   * Every OpenAI request is counted here, even ones the routes below abort.
+   */
+  {
+    const { ctx, page, state } = await context(browser, { allowHost: false, api: { "POST /api/free-visit-requests": () => [201, { success: true }] } });
+    let openai = 0;
+    page.on("request", (r) => { if (/openai\.com/.test(r.url())) openai += 1; });
+    await go(page, "/");
+    check("localhost without opt-in: no ChatGPT pixel stub, no SDK request", (await page.evaluate(() => typeof window.oaiq)) === "undefined" && state.sdkRequests === 0);
+    check("localhost without opt-in: Meta still initialises (unchanged)", (await fbq(page)).filter((c) => c[0] === "init").length === 1);
+    const sheet = await fillFreeVisit(page);
+    await sheet.locator("[data-action='confirm-free-visit']").click();
+    await page.locator("[data-free-visit-done]").waitFor({ timeout: 8000 });
+    await page.waitForTimeout(800);
+    check("localhost without opt-in: a saved free-visit request sends nothing to OpenAI", (state.posts["POST /api/free-visit-requests"] || []).length === 1 && openai === 0 && (await page.evaluate(() => typeof window.oaiq)) === "undefined", `openai requests=${openai}`);
     await ctx.close();
   }
 

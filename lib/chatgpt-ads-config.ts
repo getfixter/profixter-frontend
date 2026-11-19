@@ -68,6 +68,28 @@ export const OAIQ_GUARD = `if(/^\\/(${OAIQ_EXCLUDED_PREFIXES.map((p) => p.slice(
 export const OAIQ_GPC_GUARD = `try{if(navigator.globalPrivacyControl===true)return;}catch(e){}`;
 
 /*
+ * PRODUCTION HOSTS ONLY. The pixel runs on www.profixter.com (and the apex,
+ * which redirects there) and nowhere else: not on localhost, not on a Vercel
+ * preview, not in a browser test of a local production build.
+ *
+ * Why: a `next build` is NODE_ENV=production, so before this guard a local
+ * build loaded the real SDK with the real pixel id, and every browser test that
+ * submitted a (stubbed) free-visit request or callback sent a genuine
+ * lead_created to OpenAI, with test_session_id null and a localhost source
+ * URL. The repo's suites block Meta and GTM but not OpenAI; one run of
+ * test_cx4_ui alone sent six lead_created events. On 2026-11-18 Ads Manager
+ * showed 77 lead_created in 24 hours while production saved no lead at all.
+ *
+ * The one deliberate exception: a test that checks what the site hands the
+ * pixel (scripts/test_chatgpt_ads_browser.js) sets localStorage
+ * pf_oaiq_allow_host=1 and answers bzrcdn.openai.com with a fake SDK, and
+ * blocks bzr.openai.com, so nothing leaves the machine. On a production host
+ * the flag changes nothing.
+ */
+export const OAIQ_HOSTS = ["www.profixter.com", "profixter.com"] as const;
+export const OAIQ_HOST_GUARD = `if(${JSON.stringify(OAIQ_HOSTS)}.indexOf(location.hostname)<0){var ok=0;try{ok=localStorage.getItem("pf_oaiq_allow_host")==="1"}catch(e){}if(!ok)return;}`;
+
+/*
  * Delivery signals for lib/chatgpt-ads.ts. __pfOaiqReady: the SDK file loaded,
  * so it has taken over the queue. __pfOaiqFailed: it could not load (blocked,
  * offline). Only a loaded SDK lets an event be remembered as sent, so one that
@@ -75,7 +97,7 @@ export const OAIQ_GPC_GUARD = `try{if(navigator.globalPrivacyControl===true)retu
  */
 const OAIQ_SIGNALS = `js.onload=function(){w.__pfOaiqReady=1;var r=w.__pfOaiqOnReady||[];w.__pfOaiqOnReady=[];for(var i=0;i<r.length;i++){try{r[i]()}catch(e){}}};js.onerror=function(){w.__pfOaiqFailed=1;w.__pfOaiqOnReady=[]};`;
 
-export const OAIQ_LOADER_SCRIPT = `(function(w,d,s,u){${OAIQ_GUARD}${OAIQ_GPC_GUARD}if(w.oaiq)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;w.__pfOaiq=1;w.__pfOaiqOnReady=[];var js=d.createElement(s);js.async=true;js.src=u;${OAIQ_SIGNALS}var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(js,f);
+export const OAIQ_LOADER_SCRIPT = `(function(w,d,s,u){${OAIQ_GUARD}${OAIQ_HOST_GUARD}${OAIQ_GPC_GUARD}if(w.oaiq)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;w.__pfOaiq=1;w.__pfOaiqOnReady=[];var js=d.createElement(s);js.async=true;js.src=u;${OAIQ_SIGNALS}var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(js,f);
 w.oaiq("init",{pixelId:${JSON.stringify(OAIQ_PIXEL_ID)}${OAIQ_DEBUG ? ",debug:true" : ""}});
 w.oaiq("measure","page_viewed",{type:"contents",contents:[{id:location.pathname,name:d.title||location.pathname,content_type:"page"}]});
 })(window,document,"script",${JSON.stringify(OAIQ_SDK_URL)});`;
