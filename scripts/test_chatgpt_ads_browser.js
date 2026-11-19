@@ -2,10 +2,14 @@
 /*
  * What the ChatGPT Ads pixel actually receives in a real browser.
  *
- * NOTHING LEAVES THE MACHINE. bzrcdn.openai.com is either blocked (the SDK
- * "cannot load") or answered with a FAKE SDK that drains the documented stub
- * queue (window.oaiq.q) into window.__oaiqSent and records later calls there
- * too - standing in for a real SDK that loaded. bzr.openai.com is blocked.
+ * NOTHING LEAVES THE MACHINE. On localhost the loader only runs with the test
+ * opt-in (localStorage pf_oaiq_allow_host=1), and then asks for the SDK at
+ * /__oaiq-test-sdk.js on this origin with a fake pixel id - never
+ * bzrcdn.openai.com. That path is either blocked (the SDK "cannot load") or
+ * answered with a FAKE SDK that drains the documented stub queue
+ * (window.oaiq.q) into window.__oaiqSent and records later calls there too -
+ * standing in for a real SDK that loaded. Every *.openai.com request is
+ * aborted AND counted; the run fails if there was even one.
  * Every /api/ call is answered by the mock below, as the BackEnd routes do;
  * Meta, GTM and Google Maps are blocked.
  *
@@ -20,6 +24,9 @@ const { chromium } = require("playwright");
 
 const BASE = process.argv[2] || "http://localhost:3000";
 const PIXEL = "RTqbVHz1coRZKU6LyhJo3b";
+const TEST_PIXEL = "test-pixel-not-real";
+/* Every request to any openai.com host, across all contexts. Must stay 0. */
+let openaiRequests = 0;
 const SESSION = "cs_test_a1B2c3D4e5F6g7H8i9J0";
 const TOKEN = "chatgpt-ads-test-token";
 
@@ -69,7 +76,7 @@ async function context(browser, opts = {}) {
   await ctx.addInitScript(
     ({ token, gpc, allowHost }) => {
       try {
-        /* Opt in to the pixel on localhost (lib/chatgpt-ads-config.ts OAIQ_HOST_GUARD); the SDK is fake and bzr.openai.com is blocked. */
+        /* Opt in to the pixel on localhost (lib/chatgpt-ads-config.ts OAIQ_HOST_GUARD); the SDK is fake and every openai.com request is blocked. */
         if (allowHost) localStorage.setItem("pf_oaiq_allow_host", "1");
         if (token) localStorage.setItem("token", token);
         localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
@@ -80,11 +87,14 @@ async function context(browser, opts = {}) {
   );
   const sdkMode = () => (typeof opts.sdk === "function" ? opts.sdk() : opts.sdk || "load");
   const state = { sdkRequests: 0, posts: {}, me: opts.signedIn ? { ...USER } : null };
-  await ctx.route("**bzrcdn.openai.com/**", (r) => {
+  await ctx.route("**/__oaiq-test-sdk.js", (r) => {
     state.sdkRequests += 1;
-    return sdkMode() === "load" ? r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE_SDK }) : r.abort();
+    return sdkMode() === "load" && opts.fakeSdk !== false ? r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE_SDK }) : r.abort();
   });
-  await ctx.route("**bzr.openai.com/**", (r) => r.abort());
+  await ctx.route(/^https?:\/\/([a-z0-9-]+\.)*openai\.com\//, (r) => {
+    openaiRequests += 1;
+    return r.abort();
+  });
   await ctx.route("**connect.facebook.net/**", (r) => r.abort());
   await ctx.route("**googletagmanager.com/**", (r) => r.abort());
   await ctx.route("**facebook.com/tr**", (r) => r.abort());
@@ -159,7 +169,8 @@ const field = (body, name) => (body.match(new RegExp(`name="${name}"\\r\\n\\r\\n
     const all = await handed(page);
     const inits = all.filter((c) => c[0] === "init");
     check("one init on the homepage", inits.length === 1, JSON.stringify(inits));
-    check("init uses the Profixter pixel id", inits[0]?.[1]?.pixelId === PIXEL);
+    check("off a production host, init uses the fake test pixel id, never the real one", inits[0]?.[1]?.pixelId === TEST_PIXEL);
+    check("off a production host, the SDK comes from the test path on this origin", (await page.evaluate(() => Array.from(document.scripts).map((x) => x.src).filter((u) => /oaiq/.test(u)))).every((u) => u.endsWith("/__oaiq-test-sdk.js")));
     check("debug is off in a production build", inits[0]?.[1]?.debug === undefined);
     const views = await measures(page, "page_viewed");
     check("one page_viewed on load, contents shape", views.length === 1 && views[0]?.[2]?.type === "contents" && views[0]?.[2]?.contents?.[0]?.id === "/", JSON.stringify(views));
@@ -205,6 +216,28 @@ const field = (body, name) => (body.match(new RegExp(`name="${name}"\\r\\n\\r\\n
     await page.waitForTimeout(800);
     check("localhost without opt-in: a saved free-visit request sends nothing to OpenAI", (state.posts["POST /api/free-visit-requests"] || []).length === 1 && openai === 0 && (await page.evaluate(() => typeof window.oaiq)) === "undefined", `openai requests=${openai}`);
     await ctx.close();
+  }
+
+  /* ===== opt-in set but no fake SDK: still nothing can reach OpenAI ===== */
+  {
+    const { ctx, page, state } = await context(browser, { fakeSdk: false, api: { "POST /api/free-visit-requests": () => [201, { success: true }] } });
+    const before = openaiRequests;
+    await go(page, "/");
+    const sheet = await fillFreeVisit(page);
+    await sheet.locator("[data-action='confirm-free-visit']").click();
+    await page.locator("[data-free-visit-done]").waitFor({ timeout: 8000 });
+    await page.waitForTimeout(800);
+    check("opt-in without the fake SDK: only the same-origin test path was asked for, no OpenAI request", state.sdkRequests >= 1 && openaiRequests === before, `sdk=${state.sdkRequests} openai=${openaiRequests - before}`);
+    await ctx.close();
+  }
+
+  /* ============ production domains: the real pixel, as before ============ */
+  {
+    const html = await (await fetch(`${BASE}/`)).text();
+    const loader = (html.match(/<script id="oaiq-pixel"[^>]*>([\s\S]*?)<\/script>/) || [])[1] || "";
+    check("loader allows exactly www.profixter.com and profixter.com", loader.includes('["www.profixter.com","profixter.com"].indexOf(location.hostname)>=0'));
+    check("on those hosts the loader uses the real SDK URL and the real pixel id", loader.includes('prod?u:') && loader.includes('"https://bzrcdn.openai.com/sdk/oaiq.min.js"') && loader.includes(`prod?"${PIXEL}":"${TEST_PIXEL}"`));
+    check("the real pixel id and SDK URL appear nowhere else in the loader", loader.split(PIXEL).length === 2 && loader.split("bzrcdn.openai.com").length === 2);
   }
 
   /* ======================= Global Privacy Control ======================= */
@@ -616,6 +649,7 @@ const field = (body, name) => (body.match(new RegExp(`name="${name}"\\r\\n\\r\\n
     check("rejected estimate: no lead_created", failed.leads.length === 0);
   }
 
+  check("the whole run made ZERO requests to any openai.com host", openaiRequests === 0, `openai requests=${openaiRequests}`);
   await browser.close();
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);

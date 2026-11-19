@@ -82,12 +82,18 @@ export const OAIQ_GPC_GUARD = `try{if(navigator.globalPrivacyControl===true)retu
  *
  * The one deliberate exception: a test that checks what the site hands the
  * pixel (scripts/test_chatgpt_ads_browser.js) sets localStorage
- * pf_oaiq_allow_host=1 and answers bzrcdn.openai.com with a fake SDK, and
- * blocks bzr.openai.com, so nothing leaves the machine. On a production host
- * the flag changes nothing.
+ * pf_oaiq_allow_host=1. Even then the opt-in can NEVER reach OpenAI: off a
+ * production host the loader asks for OAIQ_TEST_SDK_PATH on the page's own
+ * origin (never served, so a 404 unless the test answers it with its fake
+ * SDK) instead of bzrcdn.openai.com, and inits OAIQ_TEST_PIXEL_ID instead of
+ * the real id. A test that sets the flag and forgets the fake SDK just gets no
+ * pixel. On a production host the flag changes nothing.
  */
 export const OAIQ_HOSTS = ["www.profixter.com", "profixter.com"] as const;
-export const OAIQ_HOST_GUARD = `if(${JSON.stringify(OAIQ_HOSTS)}.indexOf(location.hostname)<0){var ok=0;try{ok=localStorage.getItem("pf_oaiq_allow_host")==="1"}catch(e){}if(!ok)return;}`;
+export const OAIQ_TEST_SDK_PATH = "/__oaiq-test-sdk.js";
+export const OAIQ_TEST_PIXEL_ID = "test-pixel-not-real";
+/* Sets `prod` (a production host); off one, stops unless the test opt-in is set. */
+export const OAIQ_HOST_GUARD = `var prod=${JSON.stringify(OAIQ_HOSTS)}.indexOf(location.hostname)>=0;if(!prod){var ok=0;try{ok=localStorage.getItem("pf_oaiq_allow_host")==="1"}catch(e){}if(!ok)return;}`;
 
 /*
  * Delivery signals for lib/chatgpt-ads.ts. __pfOaiqReady: the SDK file loaded,
@@ -97,7 +103,7 @@ export const OAIQ_HOST_GUARD = `if(${JSON.stringify(OAIQ_HOSTS)}.indexOf(locatio
  */
 const OAIQ_SIGNALS = `js.onload=function(){w.__pfOaiqReady=1;var r=w.__pfOaiqOnReady||[];w.__pfOaiqOnReady=[];for(var i=0;i<r.length;i++){try{r[i]()}catch(e){}}};js.onerror=function(){w.__pfOaiqFailed=1;w.__pfOaiqOnReady=[]};`;
 
-export const OAIQ_LOADER_SCRIPT = `(function(w,d,s,u){${OAIQ_GUARD}${OAIQ_HOST_GUARD}${OAIQ_GPC_GUARD}if(w.oaiq)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;w.__pfOaiq=1;w.__pfOaiqOnReady=[];var js=d.createElement(s);js.async=true;js.src=u;${OAIQ_SIGNALS}var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(js,f);
-w.oaiq("init",{pixelId:${JSON.stringify(OAIQ_PIXEL_ID)}${OAIQ_DEBUG ? ",debug:true" : ""}});
+export const OAIQ_LOADER_SCRIPT = `(function(w,d,s,u){${OAIQ_GUARD}${OAIQ_HOST_GUARD}${OAIQ_GPC_GUARD}if(w.oaiq)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;w.__pfOaiq=1;w.__pfOaiqOnReady=[];var js=d.createElement(s);js.async=true;js.src=prod?u:${JSON.stringify(OAIQ_TEST_SDK_PATH)};${OAIQ_SIGNALS}var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(js,f);
+w.oaiq("init",{pixelId:prod?${JSON.stringify(OAIQ_PIXEL_ID)}:${JSON.stringify(OAIQ_TEST_PIXEL_ID)}${OAIQ_DEBUG ? ",debug:true" : ""}});
 w.oaiq("measure","page_viewed",{type:"contents",contents:[{id:location.pathname,name:d.title||location.pathname,content_type:"page"}]});
 })(window,document,"script",${JSON.stringify(OAIQ_SDK_URL)});`;
