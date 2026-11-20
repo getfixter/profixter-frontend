@@ -1,0 +1,5 @@
+/* After a one-code purchase: confirm the receipt email (ConfirmEmailOffer). */
+.bk-confirm-email { display: grid; gap: 6px; margin-top: var(--ui-s4, 16px); padding: var(--ui-s4, 16px); border: 1px solid var(--ui-line); border-radius: var(--ui-r-md, 12px); background: var(--ui-bg-soft); text-align: left; }
+.bk-confirm-email__title { margin: 0; font-size: 15px; font-weight: 700; color: var(--ui-ink); }
+.bk-confirm-email__text { margin: 0 0 4px; font-size: 14px; line-height: 1.5; color: var(--ui-text-2); overflow-wrap: anywhere; }
+.bk-confirm-email .ui-btn { min-height: var(--tap, 44px); }

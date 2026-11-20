@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import ConfirmEmailOffer from "@/app/components/auth/ConfirmEmailOffer";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { trackSubscribe } from "@/lib/meta";
 import { confirmPaidConversion } from "@/lib/chatgpt-ads";
@@ -373,6 +374,9 @@ export default function ConfirmationClient() {
             >
               {fromHandyman ? "See my visit" : "Book your Fixter"}
             </button>
+
+            {/* Bought with one code: offer to confirm the receipt email (from Book a Handyman it is offered after the visit is booked). */}
+            {!fromHandyman ? <ConfirmEmailOffer /> : null}
 
             {/*
               Introduced right after the first booking action: the member has just

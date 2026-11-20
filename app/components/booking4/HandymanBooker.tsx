@@ -8,6 +8,7 @@ import API from "@/lib/api";
 import { checkoutTracking } from "@/lib/meta";
 import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
+import ConfirmEmailOffer from "@/app/components/auth/ConfirmEmailOffer";
 import { useAuth } from "@/lib/useAuth";
 import { addHome, missingContact } from "@/lib/auth2";
 import { createBooking, createOneTimeVisitCheckout, getOneTimeVisitConfig } from "@/lib/booking-service";
@@ -876,6 +877,8 @@ export default function HandymanBooker({
               </Link>
             )}
           </div>
+          {/* Bought with one code: offer to confirm the receipt email (2026-11-20). */}
+          {done.kind === "membership_first" ? <ConfirmEmailOffer /> : null}
         </div>
       </div>
     );

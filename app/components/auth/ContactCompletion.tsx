@@ -144,7 +144,10 @@ function ContactSheet({
   const [stage, setStage] = useState<Stage>(firstStage);
   const [name, setName] = useState(change === "name" ? String(user?.name || "") : String(prefill?.name || ""));
   const [phone, setPhone] = useState(change ? "" : String(prefill?.phone || ""));
-  const [email, setEmail] = useState(change ? "" : String(prefill?.email || ""));
+  // Confirming an email the account has but never proved (one code to buy, 2026-11-20): start with that address, still editable.
+  const [email, setEmail] = useState(
+    change === "email" ? (user?.email && !user.emailVerified ? String(user.email) : "") : change ? "" : String(prefill?.email || "")
+  );
   const [masked, setMasked] = useState("");
   const [resendAt, setResendAt] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -248,7 +251,8 @@ function ContactSheet({
     e.preventDefault();
     if (loading) return;
     if (!isValidEmail(email)) return fail("Enter a valid email address.");
-    if (change === "email" && email.trim().toLowerCase() === String(user?.email || "").toLowerCase()) return fail("That is the email already on your account.");
+    // The same address is refused only once it is confirmed: an unconfirmed one is exactly what this code confirms (2026-11-20).
+    if (change === "email" && user?.emailVerified && email.trim().toLowerCase() === String(user?.email || "").toLowerCase()) return fail("That is the email already on your account.");
     setLoading(true);
     setError("");
     try {
@@ -340,6 +344,8 @@ function ContactSheet({
     }
   };
 
+  // An email the account has but never proved: this sheet confirms it (or a corrected one).
+  const confirmingEmail = change === "email" && Boolean(user?.email) && !user?.emailVerified;
   const title =
     stage === "confirm" || stage === "confirm-code"
       ? "Confirm it's you"
@@ -354,7 +360,9 @@ function ContactSheet({
               ? "Change your mobile number"
               : "Add your mobile number"
             : change === "email"
-              ? "Change your email"
+              ? confirmingEmail
+                ? "Confirm your email"
+                : "Change your email"
               : "Add your email";
 
   return (
@@ -498,7 +506,11 @@ function ContactSheet({
       {stage === "email" ? (
         <form onSubmit={sendEmail} noValidate className="mt-2 space-y-3">
           <p className="text-[14.5px] text-[#5b6577]">
-            {change === "email" ? "We'll email a code to the new address. Your current email stays until you enter it." : "We send your booking confirmation and receipts here."}
+            {confirmingEmail
+              ? "We'll email a code to this address. If it isn't right, correct it first."
+              : change === "email"
+                ? "We'll email a code to the new address. Your current email stays until you enter it."
+                : "We send your booking confirmation and receipts here."}
           </p>
           <label htmlFor="contact-email" className="sr-only">
             Email address

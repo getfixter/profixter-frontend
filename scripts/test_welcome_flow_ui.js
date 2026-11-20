@@ -138,6 +138,17 @@ async function open(browser, { width = 390, height = 844, me = null, welcome = t
       state.memberships.push(JSON.parse(req.postData() || "{}"));
       return json({ url: "https://checkout.stripe.test/cs_member", sessionId: "cs_member" });
     }
+    if (p === "/api/subscriptions/my") return json({ subscriptions: [{ _id: "s1", status: "active", plan: "premium", billingCycle: "annual", startDate: new Date().toISOString(), addressId: "a-new" }] });
+    if (p === "/api/auth/otp/email/start" && m === "POST") {
+      state.emailCodes = [...(state.emailCodes || []), JSON.parse(req.postData() || "{}")];
+      return json({ ok: true, emailMasked: "da•••@mailbox.org", resendAfterSeconds: 30, expiresInSeconds: 600 });
+    }
+    if (p === "/api/auth/otp/email/verify" && m === "POST") {
+      const body = JSON.parse(req.postData() || "{}");
+      state.emailVerifies = [...(state.emailVerifies || []), body];
+      state.me = { ...state.me, email: body.email, emailVerified: true };
+      return json({ status: "attached", user: state.me });
+    }
     if (p.startsWith("/api/recent-work")) return json({ photos: [], page: 1, limit: 24, total: 0, hasMore: false });
     if (m !== "GET") state.unexpected.push(`${m} ${p}`);
     return json([]);
@@ -430,15 +441,75 @@ async function main() {
       check("signed in: the customer tab bar steps aside, nothing covers Continue", !tabbar && payBar && payBar.bottom <= (await page.evaluate(() => window.innerHeight)) / 0.82 + 2, JSON.stringify(payBar));
       const pay = await page.locator(".wf-main").innerText();
       check("pay: the plan, its limit, the price and the first visit", /Premium membership/.test(pay) && /Book up to 2 visits at a time/.test(pay) && /\$3,490/.test(pay) && /Mount a TV/.test(pay), pay.slice(0, 300));
+      // The email they typed, on the final screen, with Edit (2026-11-20).
+      const receipt = await page.locator("[data-receipt-value]").innerText().catch(() => "");
+      check("pay: the typed email is shown for receipts, with Edit", receipt === "dana@mailbox.org" && (await visible(page, "[data-receipt-edit]")), receipt);
+      await page.click("[data-receipt-edit]");
+      await page.fill("#wf-receipt-email", "dana.lopez@mailbox");
+      await page.click("[data-receipt-save]");
+      check("Edit: a malformed email is refused in place", /valid email/.test(await page.locator("[data-receipt-email] .bk-error").innerText().catch(() => "")));
+      await page.fill("#wf-receipt-email", "dana.lopez@mailbox.org");
+      await page.click("[data-receipt-save]");
+      await page.waitForTimeout(200);
+      check("Edit: the corrected email is shown; nothing saved yet (the account has none)", (await page.locator("[data-receipt-value]").innerText().catch(() => "")) === "dana.lopez@mailbox.org" && state.contactEmail.length === 0);
+      const editBox = await rect(page, "[data-receipt-edit]");
+      check("Edit is a full tap target", editBox && editBox.height >= 43, JSON.stringify(editBox));
       await page.click(".wf-continue");
       await page.waitForURL(/checkout\.stripe\.test/, { timeout: 8000 }).catch(() => undefined);
-      check("one code was enough: the typed name and email were saved, no email code asked", state.contactEmail.length === 1 && state.contactEmail[0] === "dana@mailbox.org" && state.names[0] === "Dana Lopez" && (await page.locator("[role='dialog']:visible").count()) === 0, JSON.stringify({ e: state.contactEmail, n: state.names }));
+      check("one code was enough: the typed name and email were saved, no email code asked", state.contactEmail.length === 1 && state.contactEmail[0] === "dana.lopez@mailbox.org" && state.names[0] === "Dana Lopez" && (await page.locator("[role='dialog']:visible").count()) === 0, JSON.stringify({ e: state.contactEmail, n: state.names }));
       const fv = state.firstVisit[0] || {};
       const mc = state.memberships[0] || {};
       check("the visit is saved on the server first (book-first)", fv.addressId === "a-new" && fv.requestedTime === SCHEDULE[2] && Boolean(fv.holdToken), JSON.stringify(fv));
       check("the existing membership checkout, returnTo welcome, with the first visit", mc.plan === "premium" && mc.billingCycle === "annual" && mc.returnTo === "welcome" && mc.firstVisit?.draftId === "fvd1", JSON.stringify(mc));
       check("no request to any outside host", state.outside.length === 0, state.outside.join(","));
+
+      // Back from Stripe without paying: the account now holds the typed (unconfirmed) email. Edit corrects it on the server.
+      state.me = { ...state.me, email: "dana.lopez@mailbox.org", emailVerified: false };
+      await page.goto(BASE + "/start?resume=pay", { waitUntil: "networkidle" });
+      await page.waitForTimeout(400);
+      check("back again: the account email is the one shown", (await page.locator("[data-receipt-value]").innerText().catch(() => "")) === "dana.lopez@mailbox.org");
+      await page.click("[data-receipt-edit]");
+      await page.fill("#wf-receipt-email", "dana.l@mailbox.org");
+      await page.click("[data-receipt-save]");
+      await page.waitForTimeout(400);
+      check("Edit on an unconfirmed account email saves it at once, no code", state.contactEmail.at(-1) === "dana.l@mailbox.org" && (await page.locator("[data-receipt-value]").innerText().catch(() => "")) === "dana.l@mailbox.org" && (await page.locator("[role='dialog']:visible").count()) === 0, JSON.stringify(state.contactEmail));
+
+      // A confirmed email changes with a code, in the usual sheet.
+      state.me = { ...state.me, emailVerified: true };
+      await page.goto(BASE + "/start?resume=pay", { waitUntil: "networkidle" });
+      await page.waitForTimeout(400);
+      await page.click("[data-receipt-edit]");
+      await page.waitForTimeout(400);
+      check("Edit on a confirmed email opens the code sheet instead", (await page.locator("[role='dialog']:visible").count()) === 1 && (await page.locator("#wf-receipt-email").count()) === 0);
       await ctx.close();
+    }
+
+    /* ------------------------------------------------ after purchase: confirm the email */
+    {
+      const { ctx, page, state } = await open(browser, { me: { ...ME, email: "dana.l@mailbox.org", emailVerified: false }, welcome: false });
+      await page.goto(BASE + "/confirmationpage?session_id=cs_member", { waitUntil: "networkidle" });
+      await page.waitForTimeout(1200);
+      const offer = await page.locator("[data-confirm-email='offer']").innerText().catch(() => "");
+      check("after purchase: offered to confirm the email, naming it", /Confirm your email/.test(offer) && /dana\.l@mailbox\.org/.test(offer), offer.slice(0, 160));
+      await page.click("[data-confirm-email-start]");
+      await page.waitForTimeout(400);
+      const input = page.locator("[role='dialog'] input[type='email']");
+      check("the code sheet starts with that address, still editable", (await input.inputValue().catch(() => "")) === "dana.l@mailbox.org");
+      await page.locator("[role='dialog'] button[type='submit']").first().click();
+      await page.waitForTimeout(500);
+      check("a code is sent to it (attach mode, signed in)", state.emailCodes?.[0]?.email === "dana.l@mailbox.org" && state.emailCodes[0].mode === "attach", JSON.stringify(state.emailCodes));
+      await page.locator("[role='dialog'] input[autocomplete='one-time-code']").first().fill("123456");
+      await page.waitForTimeout(1200);
+      const verified = state.emailVerifies?.[0];
+      check("the code confirms it", verified?.code === "123456" && verified?.mode === "attach", JSON.stringify(verified));
+      check("then: Email confirmed", (await page.locator("[data-confirm-email='done']").count()) === 1);
+      await ctx.close();
+
+      const confirmed = await open(browser, { me: { ...ME, email: "dana@mailbox.org", emailVerified: true }, welcome: false });
+      await confirmed.page.goto(BASE + "/confirmationpage?session_id=cs_member", { waitUntil: "networkidle" });
+      await confirmed.page.waitForTimeout(1200);
+      check("an already confirmed email is not offered", (await confirmed.page.locator("[data-confirm-email]").count()) === 0 && /taken care of/.test(await confirmed.page.locator("main").innerText()));
+      await confirmed.ctx.close();
     }
 
     /* ------------------------------------------------ canceled at Stripe */

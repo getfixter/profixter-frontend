@@ -144,7 +144,7 @@ function planLines(name: Plan["name"]) {
 export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
-  const { ensureContact, contactSheet } = useContactCompletion();
+  const { ensureContact, editContact, contactSheet } = useContactCompletion();
   const { serviceTextsOptIn, applyServiceTextsOptIn } = useServiceTextsOptIn();
 
   /* The server renders the first screen; on the homepage CSS shows it only when the pre-paint script chose it. */
@@ -163,6 +163,8 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<{ tone: "info" | "warn"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  // The receipt email being edited on the final screen (null: not editing).
+  const [emailEdit, setEmailEdit] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   /* In a browser (after hydration): see the first question's heading below. */
   const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
@@ -554,6 +556,51 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
     return ensureContact({ prefill });
   };
 
+  /*
+   * The email on the final screen, with Edit (2026-11-20). Bought with one code,
+   * this is where the receipt and billing notices go, so they see it before
+   * paying. Still unconfirmed, it is simply replaced (it cannot open the
+   * account either way); a confirmed one changes with a code, in the usual sheet.
+   */
+  const receiptEmail = (user?.email || draft.email || "").trim();
+  const startEmailEdit = () => {
+    if (user?.email && user.emailVerified) {
+      void editContact("email");
+      return;
+    }
+    setErrors((e) => ({ ...e, receiptEmail: "" }));
+    setEmailEdit(receiptEmail);
+  };
+  const saveEmailEdit = async (e?: FormEvent) => {
+    e?.preventDefault();
+    const next = (emailEdit || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(next)) {
+      setErrors((x) => ({ ...x, receiptEmail: "Enter a valid email." }));
+      return;
+    }
+    if (user?.email && user.email.trim().toLowerCase() !== next.toLowerCase()) {
+      setBusy(true);
+      try {
+        await API.post("/api/auth/contact/email", { email: next });
+        await refreshUser();
+      } catch (error) {
+        const f = readApiError(error);
+        if (f.code === "IDENTIFIER_IN_USE" || f.code === "INVALID_EMAIL") {
+          setErrors((x) => ({ ...x, receiptEmail: f.code === "INVALID_EMAIL" ? "Enter a valid email." : "That email is used by another Profixter account." }));
+          return;
+        }
+        // An older email on the account changes with a code, in the usual sheet.
+        setEmailEdit(null);
+        void editContact("email");
+        return;
+      } finally {
+        setBusy(false);
+      }
+    }
+    update({ email: next });
+    setEmailEdit(null);
+  };
+
   const payMembership = async () => {
     if (pressing.current) return;
     if (!user) {
@@ -718,6 +765,38 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
       <div><dt>Where</dt><dd>{addressLine}</dd></div>
       <div><dt>Job</dt><dd>{draft.task.length > 90 ? `${draft.task.slice(0, 90)}…` : draft.task}</dd></div>
       {!user && draft.name ? <div><dt>Contact</dt><dd>{draft.name} <button type="button" className="bk-link" onClick={() => go("contact")}>Change</button></dd></div> : null}
+      {receiptEmail ? (
+        <div data-receipt-email>
+          <dt>Receipts</dt>
+          <dd>
+            {emailEdit !== null ? (
+              <form className="wf-email-edit" onSubmit={saveEmailEdit} noValidate>
+                <label className="sr-only" htmlFor="wf-receipt-email">Email for receipts</label>
+                <input
+                  id="wf-receipt-email"
+                  className="bk-input"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  enterKeyHint="done"
+                  value={emailEdit}
+                  onChange={(ev) => setEmailEdit(ev.target.value)}
+                  autoFocus
+                />
+                <button type="submit" className="bk-btn bk-btn--secondary" disabled={busy} data-receipt-save>Save</button>
+                {err("receiptEmail")}
+              </form>
+            ) : (
+              <>
+                <span data-receipt-value>{receiptEmail}</span>{" "}
+                <button type="button" className="bk-link" onClick={() => (user ? startEmailEdit() : go("contact"))} data-receipt-edit>Edit</button>
+              </>
+            )}
+          </dd>
+        </div>
+      ) : null}
     </dl>
   );
 
