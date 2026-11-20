@@ -96,12 +96,14 @@ async function walk(browserType, deviceName) {
     await look("nudge");
     await page.tap("[data-pick='nudge-one-time']");
     await page.waitForTimeout(200);
-    await look("address");
-    await fillAddress(page);
-    await page.tap(".wf-continue");
+    // 2026-11-20: the calendar first, then the address.
     await page.waitForSelector("[data-welcome] [data-slot-picker] .bk-time", { timeout: 8000 });
     await look("time");
     await page.locator(`[data-welcome] .bk-time[data-time='${SCHEDULE[1]}']`).first().tap();
+    await page.tap(".wf-continue");
+    await page.waitForTimeout(400);
+    await look("address");
+    await fillAddress(page);
     await page.tap(".wf-continue");
     await page.waitForTimeout(400);
     await page.fill("#wf-task", "Fix the sticking back door");

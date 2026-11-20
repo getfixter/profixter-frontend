@@ -93,7 +93,8 @@ async function open(browser, { width = 390, height = 844, me = null, welcome = t
     }
     if (p === "/api/calendar/slots") {
       const date = u.searchParams.get("date");
-      return json({ date, available: true, slots: SCHEDULE, candidateSlots: SCHEDULE.map((time) => ({ time, available: true })), taken: {}, capacityPerSlot: 1 });
+      // state.slotGone: a time taken by someone else after this visitor chose it (2026-11-20).
+      return json({ date, available: true, slots: SCHEDULE, candidateSlots: SCHEDULE.map((time) => ({ time, available: time !== state.slotGone })), taken: {}, capacityPerSlot: 1 });
     }
     if (p === "/api/calendar/config") return json({ engine: "reservation", timezone: "America/New_York", visitDurationMinutes: 90, minLeadDays: 2, closedWeekdays: [0, 1], defaultHours: SCHEDULE });
     if (p === "/api/stripe/checkout/welcome-offer") return json({ eligible: false, serverNow: new Date().toISOString(), percentOff: 20 });
@@ -202,7 +203,11 @@ async function main() {
       const picks = (await page.locator(".wf-pick").allInnerTexts()).map((t) => t.trim());
       check("exactly two answers, membership first", JSON.stringify(picks) === JSON.stringify(["A handyman membership", "A one-time visit"]), JSON.stringify(picks));
       const body = await page.locator(".wf-main").innerText();
-      check("no prices, descriptions or steps on the first screen", body.replace(/\s+/g, " ").trim() === "I’m looking for… A handyman membership A one-time visit", body);
+      check("no prices, descriptions or steps on the first screen: just the question", body.replace(/\s+/g, " ").trim() === "I’m looking for…", body);
+      const head = await rect(page, ".wf-head");
+      const title = await rect(page, "[data-welcome] .wf-title");
+      check("the question sits directly under the header (2026-11-20)", head && title && title.top - head.bottom < 40, JSON.stringify({ head, title }));
+      check("the two answers are in the bottom bar", (await page.locator(".wf-bar .wf-pick").count()) === 2);
       check("no progress bar and no footer", !(await visible(page, ".bk-steps")) && !(await visible(page, "footer, .ft")));
       check("logo top left", Boolean(await rect(page, ".wf-head .hd__brand")) && (await rect(page, ".wf-head .hd__brand")).left < 60);
       const login = await page.locator(".wf-head a[href='/signin']").innerText().catch(() => "");
@@ -267,29 +272,28 @@ async function main() {
       await shot(page, "02-nudge");
       check("one-time: the nudge", (await screenOf(page)) === "nudge");
       const nudgeText = (await page.locator(".wf-main").innerText()).replace(/\s+/g, " ").trim();
-      check("the nudge copy, exactly", nudgeText === "Members can book as many visits as they need. Show me membership Continue with one visit", nudgeText);
+      check("the nudge copy, exactly, under the header", nudgeText === "Members can book as many visits as they need.", nudgeText);
+      const nudgeBar = (await page.locator(".wf-bar .wf-pick").allInnerTexts()).map((t) => t.trim());
+      check("the two choices at the bottom, Show me membership first", JSON.stringify(nudgeBar) === JSON.stringify(["Show me membership", "Continue with one visit"]), JSON.stringify(nudgeBar));
+      check("Show me membership is the primary blue button", await page.locator("[data-pick='nudge-membership']").evaluate((el) => el.classList.contains("wf-pick--primary")));
+      const second = await page.locator("[data-pick='nudge-one-time']").evaluate((el) => { const cs = getComputedStyle(el); const r = el.getBoundingClientRect(); return { border: cs.borderTopColor, h: r.height, visible: cs.visibility === "visible" && cs.opacity === "1" }; });
+      check("Continue with one visit: clearly visible, a full-size target", second.visible && second.h >= 44 && second.border !== "rgba(0, 0, 0, 0)", JSON.stringify(second));
+      check("the step slid in forward", (await page.getAttribute(".wf-step", "data-dir")) === "fwd");
       await page.click("[data-pick='nudge-membership']");
       await page.waitForTimeout(200);
-      check("Show me membership: the membership flow", (await screenOf(page)) === "address" && (await pathOf(page)) === "membership");
+      check("Show me membership: the membership flow, the calendar first", (await screenOf(page)) === "time" && (await pathOf(page)) === "membership");
       await page.goBack();
       await page.waitForTimeout(200);
-      check("browser Back returns to the nudge", (await screenOf(page)) === "nudge");
+      check("browser Back returns to the nudge, sliding back", (await screenOf(page)) === "nudge" && (await page.getAttribute(".wf-step", "data-dir")) === "back");
       await page.click("[data-pick='nudge-one-time']");
       await page.waitForTimeout(200);
-      check("Continue with one visit: the one-time flow", (await screenOf(page)) === "address" && (await pathOf(page)) === "one_time");
+      check("Continue with one visit: the one-time flow, the calendar first", (await screenOf(page)) === "time" && (await pathOf(page)) === "one_time");
       const st = await steps(page);
       check("taps and nudge choices counted", ["welcome_tap_one_time", "welcome_nudge_membership", "welcome_nudge_one_time"].every((s) => st.includes(s)), st.join(","));
       check("the hidden homepage underneath counts nothing of its own", !st.includes("booking_page_view") && !st.includes("slot_selected"), st.join(","));
 
-      // Address: out of area first.
-      await fillAddress(page, "10001");
-      await cont(page);
-      await page.waitForTimeout(200);
-      check("an address outside the area stays on the address screen", (await screenOf(page)) === "address");
-      await fillAddress(page, "11735");
-      await cont(page);
       await page.waitForSelector("[data-welcome] [data-slot-picker] .bk-time", { timeout: 8000 });
-      check("address accepted: the real calendar", (await screenOf(page)) === "time");
+      check("the real calendar first, with what happens next", (await screenOf(page)) === "time" && /confirm it is still open after your address/i.test(await page.locator("[data-time-note]").innerText()));
       await shot(page, "03-time");
 
       // The calendar scrolls; the bar stays.
@@ -305,11 +309,21 @@ async function main() {
       const chatRect = await rect(page, "[data-support-chat] > button");
       check("call and chat never cover Continue", !overlaps(callRect, contRect) && !overlaps(chatRect, contRect), JSON.stringify({ callRect, chatRect, contRect }));
 
-      // Choosing a time holds nothing yet: a visitor who leaves here blocks nobody.
+      // Choosing a time holds nothing: it is tentative until the address is in.
       await page.locator(`[data-welcome] .bk-time[data-time='${SCHEDULE[0]}']`).first().click().catch(() => undefined);
       await cont(page);
       await page.waitForTimeout(400);
-      check("the time is checked, not held, and the job comes next", (await screenOf(page)) === "job" && state.holds.length === 0, String(state.holds.length));
+      check("the address next, the time tentative: nothing held", (await screenOf(page)) === "address" && state.holds.length === 0, String(state.holds.length));
+      check("the address screen names the chosen time, with Change", /For .+\. Change/.test((await page.locator("[data-address-note]").innerText()).replace(/\s+/g, " ")));
+      // Address: out of area first.
+      await fillAddress(page, "10001");
+      await cont(page);
+      await page.waitForTimeout(200);
+      check("an address outside the area stays on the address screen", (await screenOf(page)) === "address");
+      await fillAddress(page, "11735");
+      await cont(page);
+      await page.waitForTimeout(400);
+      check("address accepted and the time re-checked: the job comes next", (await screenOf(page)) === "job" && state.holds.length === 0, String(state.holds.length));
       const jobText = await page.locator(".wf-main").innerText();
       check("the job screen says what a visit is and asks for photos briefly", /up to 90 minutes/i.test(jobText) && /Photos help us come prepared\./.test(jobText));
 
@@ -339,6 +353,10 @@ async function main() {
       check("keyboard open: chat launcher hidden", chatVis === "hidden" || chatVis === "none", chatVis);
       check("keyboard open: call button hidden", /hidden|none/.test(callVis), callVis);
       check("keyboard open: Continue still on screen", await page.locator(".wf-continue").isVisible());
+      check("keyboard open: call and chat stay one tap away, in the bar", (await page.locator(".wf-bar [data-bar-call]").isVisible()) && (await page.locator(".wf-bar [data-bar-chat]").isVisible()));
+      const barIcons = await rect(page, ".wf-bar [data-bar-chat]");
+      const nameField = await rect(page, "input[name='name']");
+      check("keyboard open: nothing covers the field being typed in", !overlaps(barIcons, nameField), JSON.stringify({ barIcons, nameField }));
       await page.evaluate(() => document.documentElement.removeAttribute("data-keyboard"));
 
       await page.fill("input[name='name']", "Sam Rivera");
@@ -352,6 +370,9 @@ async function main() {
       await page.locator(`[data-welcome] .bk-time[data-time='${SCHEDULE[1]}']`).first().click();
       await cont(page);
       await page.waitForTimeout(300);
+      check("another time, then the address again, still filled in", (await screenOf(page)) === "address");
+      await cont(page);
+      await page.waitForTimeout(400);
       check("another time: the job is still there", (await screenOf(page)) === "job" && (await page.inputValue("#wf-task")) === "Fix the sticking back door");
       await cont(page);
       await page.waitForTimeout(200);
@@ -382,6 +403,61 @@ async function main() {
       await ctx.close();
     }
 
+    /* ------------------------------------------------ taken while typing the address (2026-11-20) */
+    {
+      const { ctx, page, state, errors } = await open(browser);
+      await page.goto(BASE + "/start", { waitUntil: "networkidle" });
+      await page.click("[data-pick='one_time']");
+      await page.click("[data-pick='nudge-one-time']");
+      await page.waitForSelector("[data-welcome] [data-slot-picker] .bk-time", { timeout: 8000 });
+      await page.locator(`[data-welcome] .bk-time[data-time='${SCHEDULE[3]}']`).first().click();
+      await cont(page);
+      await page.waitForTimeout(300);
+      state.slotGone = SCHEDULE[3];
+      await fillAddress(page, "11735");
+      await cont(page);
+      await page.waitForTimeout(500);
+      const msg = await page.locator("[data-welcome] .bk-error").first().innerText().catch(() => "");
+      check("taken meanwhile: back to the calendar, told why, the address saved", (await screenOf(page)) === "time" && /taken/i.test(msg) && /address/i.test(msg), msg);
+      await page.locator(`[data-welcome] .bk-time[data-time='${SCHEDULE[2]}']`).first().click();
+      await cont(page);
+      await page.waitForTimeout(300);
+      const kept = await page.locator('[data-welcome] input[placeholder="Street address"]').inputValue().catch(() => "");
+      check("another time, then the address is still filled in", (await screenOf(page)) === "address" && /12 Elm St/.test(kept), kept);
+      await cont(page);
+      await page.waitForTimeout(400);
+      check("…and on to the job", (await screenOf(page)) === "job");
+      check("no page errors", errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open(browser);
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.goto(BASE + "/start", { waitUntil: "networkidle" });
+      await page.click("[data-pick='membership']");
+      await page.waitForTimeout(100);
+      const anim = await page.locator(".wf-step").evaluate((el) => getComputedStyle(el).animationName);
+      check("reduced motion: screens change without the slide", anim === "none", anim);
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open(browser);
+      await page.goto(BASE + "/start", { waitUntil: "networkidle" });
+      let loads = 0;
+      page.on("load", () => (loads += 1));
+      const head = await page.locator(".wf-head").evaluate((el) => el.getBoundingClientRect().top);
+      await page.click("[data-pick='one_time']");
+      await page.waitForTimeout(80);
+      const mid = await page.locator(".wf-step").evaluate((el) => getComputedStyle(el).animationName);
+      const headAfter = await page.locator(".wf-head").evaluate((el) => el.getBoundingClientRect().top);
+      const barBottom = await page.locator(".wf-bar").evaluate((el) => Math.round(el.getBoundingClientRect().bottom));
+      await page.click("[data-pick='nudge-one-time']");
+      await page.waitForTimeout(400);
+      check("a screen change is a short slide-in, not a page load; the header holds still", /wf-in-fwd/.test(mid) && loads === 0 && head === headAfter, `${mid} loads=${loads}`);
+      check("the bar stays on the bottom edge across screens", Math.abs((await page.locator(".wf-bar").evaluate((el) => Math.round(el.getBoundingClientRect().bottom))) - barBottom) <= 1);
+      await ctx.close();
+    }
+
     /* ------------------------------------------------ membership path */
     {
       const { ctx, page, state, errors } = await open(browser);
@@ -390,10 +466,12 @@ async function main() {
       const canonical = await page.getAttribute("link[rel='canonical']", "href");
       check("/start: noindex, canonical the homepage", /noindex/.test(robots || "") && /^https:\/\/www\.profixter\.com\/?$/.test(canonical || ""), `${robots} ${canonical}`);
       await page.click("[data-pick='membership']");
-      await fillAddress(page);
-      await cont(page);
       await page.waitForSelector("[data-welcome] [data-slot-picker] .bk-time", { timeout: 8000 });
+      check("membership: the calendar first", (await screenOf(page)) === "time");
       await page.locator(`[data-welcome] .bk-time[data-time='${SCHEDULE[2]}']`).first().click();
+      await cont(page);
+      await page.waitForTimeout(300);
+      await fillAddress(page);
       await cont(page);
       await page.waitForTimeout(400);
       await page.fill("#wf-task", "Mount a TV and patch two holes");

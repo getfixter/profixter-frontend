@@ -212,6 +212,13 @@ function SupportChatInner({ bottomOffset }: SupportChatProps) {
     trackEvent("support_chat_opened");
   }, []);
 
+  /* Opened from elsewhere on the page (the welcome flow's bar, while a keyboard hides this launcher), 2026-11-20. */
+  useEffect(() => {
+    const onOpen = () => openChat();
+    window.addEventListener("pf:open-support-chat", onOpen);
+    return () => window.removeEventListener("pf:open-support-chat", onOpen);
+  }, [openChat]);
+
   const closeChat = useCallback(() => {
     setOpen(false);
     window.setTimeout(() => launcherRef.current?.focus(), 0);

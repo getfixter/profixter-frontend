@@ -9,6 +9,7 @@ import API from "@/lib/api";
 import Header from "@/app/components/sections/Header";
 import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
 import SlotPicker, { formatWhen } from "@/app/components/booking4/SlotPicker";
+import { BUSINESS_PHONE_E164 } from "@/lib/seo";
 import PhotoPicker from "@/app/components/booking4/PhotoPicker";
 import HoldCountdown from "@/app/components/booking4/HoldCountdown";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
@@ -49,9 +50,10 @@ import {
  *   choice    I'm looking for…  [A handyman membership] [A one-time visit]
  *   nudge     one-time only: Members can book as many visits as they need.
  *             [Show me membership] (the membership path) [Continue with one visit]
- *   address   existing AddressField + service-area check
- *   time      existing SlotPicker; Continue re-checks the time is still open (nothing is
- *             held yet: a visitor who leaves here blocks nobody's slot)
+ *   time      existing SlotPicker, first after the choice (2026-11-20): a tentative time,
+ *             nothing held (a visitor who leaves here blocks nobody's slot)
+ *   address   existing AddressField + service-area check; then the tentative time is
+ *             re-checked (taken meanwhile: back to the calendar, address and answers kept)
  *   job       the job, optional photos, what a visit is
  *   contact   name, mobile, email in one form (native autofill); signed in: skipped
  *   plans     membership: the existing plans and prices, each plan's limit on
@@ -79,10 +81,11 @@ import {
  */
 
 const noopSubscribe = () => () => {};
+const CALL_HREF = `tel:${BUSINESS_PHONE_E164.replace(/[^+\d]/g, "")}`;
 
 const ORDER: Record<WelcomePath, WelcomeScreen[]> = {
-  membership: ["choice", "address", "time", "job", "contact", "plans", "pay"],
-  one_time: ["choice", "nudge", "address", "time", "job", "contact", "review"],
+  membership: ["choice", "time", "address", "job", "contact", "plans", "pay"],
+  one_time: ["choice", "nudge", "time", "address", "job", "contact", "review"],
 };
 
 const TITLES: Record<WelcomeScreen, string> = {
@@ -171,6 +174,8 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
   const pressing = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const depth = useRef(0);
+  /* Which way the last screen change went: forward slides in from the right, Back from the left. */
+  const [direction, setDirection] = useState<"none" | "fwd" | "back">("none");
   const shownSent = useRef(false);
   const plansSent = useRef(false);
 
@@ -283,6 +288,7 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
       const s = (e.state?.wf as WelcomeScreen | undefined) || "choice";
       depth.current = Math.max(0, depth.current - 1);
       setErrors({});
+      setDirection("back");
       setScreen(s);
       if (e.state?.wfPath !== undefined) setPath(e.state.wfPath);
     };
@@ -304,21 +310,28 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
     }
   }, [screen, ready]);
 
-  /* The Continue bar is on screen: the floating call and chat buttons sit above it (ui-shell.css). */
-  const showBar = active && screen !== "choice" && screen !== "nudge";
+  /*
+   * The bottom bar is on every screen (2026-11-20): the two choices on the
+   * question screens ("tall"), Back + Continue on the rest. The floating call
+   * and chat buttons sit above it (welcome.css), so neither covers an action.
+   */
+  const showBar = active;
+  const tallBar = screen === "choice" || screen === "nudge";
   useEffect(() => {
     const root = document.documentElement;
     if (active && (entry === "start" || welcomeShowing())) root.setAttribute("data-wf-active", "1");
-    root.toggleAttribute("data-wf-bar", showBar);
+    if (showBar) root.setAttribute("data-wf-bar", tallBar ? "tall" : "short");
+    else root.removeAttribute("data-wf-bar");
     return () => {
       root.removeAttribute("data-wf-active");
       root.removeAttribute("data-wf-bar");
     };
-  }, [active, showBar, entry]);
+  }, [active, showBar, tallBar, entry]);
 
   const go = (next: WelcomeScreen, nextPath: WelcomePath | "" = path) => {
     setErrors({});
     setBanner(null);
+    setDirection("fwd");
     setPath(nextPath);
     setScreen(next);
     depth.current += 1;
@@ -333,6 +346,7 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
     const i = order.indexOf(screen);
     const prev = i > 0 ? order[i - 1] : "choice";
     setErrors({});
+    setDirection("back");
     setScreen(prev === "contact" && user ? "job" : prev);
     if (prev === "choice") setPath("");
   };
@@ -365,15 +379,16 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
   const pick = (p: WelcomePath) => {
     trackStep(p === "membership" ? "welcome_tap_membership" : "welcome_tap_one_time");
     update({ choice: p });
-    go(p === "membership" ? "address" : "nudge", p);
+    go(p === "membership" ? "time" : "nudge", p);
   };
   const nudge = (p: WelcomePath) => {
     trackStep(p === "membership" ? "welcome_nudge_membership" : "welcome_nudge_one_time");
     update({ choice: p });
-    go("address", p);
+    go("time", p);
   };
 
-  const continueAddress = () => {
+  const continueAddress = async () => {
+    if (busy) return;
     const found: Record<string, string> = {};
     if (!typedAddress?.line1 || !typedAddress.city || !typedAddress.zip) {
       found.address = addressText
@@ -386,7 +401,27 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
     if (Object.keys(found).length || !typedAddress) return;
     update({ address: { line1: typedAddress.line1, unit: typedAddress.unit, city: typedAddress.city, state: typedAddress.state || "NY", zip: typedAddress.zip, placeId: typedAddress.placeId, lat: typedAddress.lat, lng: typedAddress.lng }, addressId: "" });
     trackStep("welcome_address_done");
-    go("time");
+    /*
+     * The time chosen first was tentative (2026-11-20): with the address in,
+     * confirm it is still open. Taken meanwhile: back to the calendar, the
+     * address and every other answer kept. (Times are the company's calendar,
+     * the same for every address in the service area.)
+     */
+    if (!draft.date || !draft.time) {
+      go("time");
+      return;
+    }
+    setBusy(true);
+    const open = await stillOpen(draft.date, draft.time);
+    setBusy(false);
+    if (!open) {
+      update({ time: "", timeConfirmed: false });
+      go("time");
+      setErrors({ when: "That time was just taken. Pick another - your address and answers are saved." });
+      return;
+    }
+    update({ timeConfirmed: true });
+    go("job");
   };
 
   const onWhen = useCallback(
@@ -441,9 +476,9 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
       setErrors({ when: "That time was just taken. Pick another - everything else is saved." });
       return;
     }
-    update({ timeConfirmed: true });
     trackStep("welcome_slot_done");
-    go("job");
+    // Tentative until the address is in (continueAddress confirms it).
+    go(nextAfter("time"));
   };
   /*
    * Hold the time now that they are going on to the price (2026-11-20): taken
@@ -832,39 +867,30 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
       </div>
       <main className="wf-main">
         <div className={`bk wf-body wf-body--${screen}`}>
+          <div key={`${screen}:${path}`} className="wf-step" data-dir={direction}>
           {banner ? <div className={`bk-banner bk-banner--${banner.tone}`} role="status">{banner.text}</div> : null}
 
-          {screen === "choice" ? (
-            <section className="wf-ask" aria-labelledby="wf-q">
-              {/*
-                The homepage's server HTML (what crawlers index) keeps its own single
-                h1: here the question is plain text until the page is live in a
-                browser, then the screen's heading.
-              */}
-              {mounted ? (
-                <h1 id="wf-q" ref={headingRef} tabIndex={-1} className="wf-q">{TITLES.choice}</h1>
-              ) : (
-                <p id="wf-q" className="wf-q">{TITLES.choice}</p>
-              )}
-              <div className="wf-picks">
-                <button type="button" className="wf-pick wf-pick--primary" data-pick="membership" onClick={() => pick("membership")}>A handyman membership</button>
-                <button type="button" className="wf-pick" data-pick="one_time" onClick={() => pick("one_time")}>A one-time visit</button>
-              </div>
-            </section>
-          ) : null}
+          {/*
+            One layout for every screen (2026-11-20): the heading and what it asks
+            directly under the header; every action in the bar at the bottom.
+            The homepage's server HTML (what crawlers index) keeps its own single
+            h1: the opening question is plain text until the page is live in a
+            browser, then the screen's heading.
+          */}
+          {screen === "choice" && !mounted ? (
+            <p id="wf-q" className="wf-title">{TITLES.choice}</p>
+          ) : (
+            <h1 id="wf-q" ref={headingRef} tabIndex={-1} className="wf-title">{TITLES[screen]}</h1>
+          )}
 
-          {screen === "nudge" ? (
-            <section className="wf-ask" aria-labelledby="wf-q">
-              <h1 id="wf-q" ref={headingRef} tabIndex={-1} className="wf-q wf-q--nudge">{TITLES.nudge}</h1>
-              <div className="wf-picks">
-                <button type="button" className="wf-pick" data-pick="nudge-membership" onClick={() => nudge("membership")}>Show me membership</button>
-                <button type="button" className="wf-pick wf-pick--primary" data-pick="nudge-one-time" onClick={() => nudge("one_time")}>Continue with one visit</button>
-              </div>
-            </section>
+          {screen === "time" ? (
+            <p className="wf-lead" data-time-note>Pick a day and time that work for you. We confirm it is still open after your address.</p>
           ) : null}
-
-          {screen !== "choice" && screen !== "nudge" ? (
-            <h1 ref={headingRef} tabIndex={-1} className="wf-title">{TITLES[screen]}</h1>
+          {screen === "address" && draft.date && draft.time ? (
+            <p className="wf-lead" data-address-note>
+              For <b>{formatWhen(draft.date, draft.time)}</b>.{" "}
+              <button type="button" className="bk-link" onClick={() => go("time")}>Change</button>
+            </p>
           ) : null}
 
           {screen === "address" ? (
@@ -1034,18 +1060,44 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
               ) : null}
             </section>
           ) : null}
+          </div>
         </div>
       </main>
 
-      {showBar && bar ? (
-        <div className="wf-bar" data-wf-bar-el>
-          <button type="button" className="wf-back" onClick={back} aria-label="Back">
-            <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><path d="M8 2 2 8l6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </button>
-          <button type="button" className="bk-btn bk-btn--primary wf-continue" onClick={bar.onClick} disabled={busy} aria-busy={busy || undefined} data-action={`wf-${bar.action}`}>
-            {busy && screen !== "time" ? <span className="bk-spinner" aria-hidden="true" /> : null}
-            {bar.label}
-          </button>
+      {showBar ? (
+        <div className={`wf-bar${tallBar ? " wf-bar--picks" : ""}`} data-wf-bar-el>
+          {screen === "choice" ? (
+            <div className="wf-picks">
+              <button type="button" className="wf-pick wf-pick--primary" data-pick="membership" onClick={() => pick("membership")}>A handyman membership</button>
+              <button type="button" className="wf-pick" data-pick="one_time" onClick={() => pick("one_time")}>A one-time visit</button>
+            </div>
+          ) : screen === "nudge" ? (
+            <div className="wf-picks">
+              <button type="button" className="wf-pick wf-pick--primary" data-pick="nudge-membership" onClick={() => nudge("membership")}>Show me membership</button>
+              <button type="button" className="wf-pick" data-pick="nudge-one-time" onClick={() => nudge("one_time")}>Continue with one visit</button>
+            </div>
+          ) : bar ? (
+            <>
+              <button type="button" className="wf-back" onClick={back} aria-label="Back">
+                <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><path d="M8 2 2 8l6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+              <button type="button" className="bk-btn bk-btn--primary wf-continue" onClick={bar.onClick} disabled={busy} aria-busy={busy || undefined} data-action={`wf-${bar.action}`}>
+                {busy && screen !== "time" ? <span className="bk-spinner" aria-hidden="true" /> : null}
+                {bar.label}
+              </button>
+              {/*
+                While the keyboard is open the floating call and chat buttons step
+                aside (they would sit on the field); here they stay one tap away,
+                in the bar, covering nothing.
+              */}
+              <a className="wf-bar-icon" href={CALL_HREF} aria-label="Call Profixter" data-bar-call>
+                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>
+              </a>
+              <button type="button" className="wf-bar-icon" aria-label="Chat with us" data-bar-chat onClick={() => window.dispatchEvent(new Event("pf:open-support-chat"))}>
+                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>
+              </button>
+            </>
+          ) : null}
         </div>
       ) : null}
       {contactSheet}
