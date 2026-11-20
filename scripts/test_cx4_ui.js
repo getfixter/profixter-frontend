@@ -78,6 +78,12 @@ async function open(browser, { width, height, me = null }) {
   await ctx.addInitScript(() => {
     try {
       Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false });
+      // 2026-11-19: this suite tests the homepage itself, not the welcome entry (lib/welcome-entry), and its
+      // funnel beacons go to the mock below, which off profixter.com needs the test opt-in (lib/tracking-scope).
+      try {
+        localStorage.setItem("pf_welcome", "home");
+        localStorage.setItem("pf_trackers_allow_host", "1");
+      } catch {}
     } catch {}
     const calls = [];
     window.__fbqCalls = calls;

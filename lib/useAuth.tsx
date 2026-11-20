@@ -22,6 +22,36 @@ interface AuthContextType {
   refreshUser: (tokenOverride?: string) => Promise<User | null>;
 }
 
+/*
+ * localStorage that never throws (2026-11-19). With storage blocked (some
+ * private modes, locked-down browsers) a bare read threw inside the provider
+ * every page sits under, and with no error boundary the whole site failed.
+ * Blocked storage now just means signed out.
+ */
+const safeStorage = {
+  getItem(key: string): string | null {
+    try {
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem(key: string, value: string): void {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      /* not remembered */
+    }
+  },
+  removeItem(key: string): void {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      /* nothing to remove */
+    }
+  },
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -30,15 +60,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const persist = useCallback((t: string | null, u: User | null) => {
-    if (t) localStorage.setItem('token', t);
-    else localStorage.removeItem('token');
+    if (t) safeStorage.setItem('token', t);
+    else safeStorage.removeItem('token');
 
-    if (u) localStorage.setItem('user', JSON.stringify(u));
-    else localStorage.removeItem('user');
+    if (u) safeStorage.setItem('user', JSON.stringify(u));
+    else safeStorage.removeItem('user');
   }, []);
 
   const refreshUser = useCallback(async (tokenOverride?: string): Promise<User | null> => {
-    const t = tokenOverride || localStorage.getItem('token');
+    const t = tokenOverride || safeStorage.getItem('token');
     if (!t) {
       setToken(null);
       setUser(null);
@@ -46,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    localStorage.setItem('token', t);
+    safeStorage.setItem('token', t);
 
     try {
       const fresh = await getCurrentUser();
@@ -59,14 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(null);
       setUser(null);
       persist(null, null);
-      localStorage.removeItem('rememberedEmail');
+      safeStorage.removeItem('rememberedEmail');
       return null;
     }
   }, [persist]);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    localStorage.removeItem('user');
+    const storedToken = safeStorage.getItem('token');
+    safeStorage.removeItem('user');
 
     if (storedToken) {
       refreshUser(storedToken).finally(() => setIsLoading(false));
@@ -97,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      * answers 404, which changes nothing here. fetch, not the axios instance,
      * so a 401 can never trigger the sign-in redirect from inside sign-out.
      */
-    const current = localStorage.getItem('token');
+    const current = safeStorage.getItem('token');
     if (current) {
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/auth/logout`, {
         method: 'POST',
@@ -109,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     persist(null, null);
-    localStorage.removeItem('rememberedEmail');
+    safeStorage.removeItem('rememberedEmail');
   }, [persist]);
 
   const updateUser = useCallback((updatedUser: User) => {

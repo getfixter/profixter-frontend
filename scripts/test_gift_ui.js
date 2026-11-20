@@ -246,7 +246,11 @@ test("THE CLAIM TOKEN SURVIVES SIGN-IN AND REGISTRATION", () => {
    * The single most important redirect in the feature: losing the token means
    * the recipient has to find the email again.
    */
-  assert.match(code(claim), /const returnTo = `\/gift\/claim\/\$\{encodeURIComponent\(token\)\}`/);
+  // 2026-11-19: the token waits in this browser and sign-in returns to /gift/claim/resume, so no URL the sign-in pages' trackers see carries it.
+  assert.match(code(claim), /const returnTo = GIFT_CLAIM_RETURN_PATH/);
+  assert.match(code(claim), /rememberGiftClaimToken\(urlToken\)/);
+  assert.match(code(claim), /recallGiftClaimToken\(\)/);
+  assert.match(read("lib", "gift-claim-return.ts"), /GIFT_CLAIM_RETURN_PATH = `\/gift\/claim\/\$\{GIFT_CLAIM_RESUME\}`/);
   assert.match(code(claim), /\/signin\?next=\$\{encodeURIComponent\(returnTo\)\}/);
   assert.match(code(claim), /\/signup\?next=\$\{encodeURIComponent\(returnTo\)\}/);
 });

@@ -78,6 +78,8 @@ async function context(browser, opts = {}) {
       try {
         /* Opt in to the pixel on localhost (lib/chatgpt-ads-config.ts OAIQ_HOST_GUARD); the SDK is fake and every openai.com request is blocked. */
         if (allowHost) localStorage.setItem("pf_oaiq_allow_host", "1");
+        /* The same opt-in for GTM and the Meta loader (lib/tracking-scope.ts TRACKER_HOST_GUARD, 2026-11-19); fbq is a recorder here. */
+        if (allowHost) localStorage.setItem("pf_trackers_allow_host", "1");
         if (token) localStorage.setItem("token", token);
         localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
       } catch {}
@@ -209,7 +211,8 @@ const field = (body, name) => (body.match(new RegExp(`name="${name}"\\r\\n\\r\\n
     page.on("request", (r) => { if (/openai\.com/.test(r.url())) openai += 1; });
     await go(page, "/");
     check("localhost without opt-in: no ChatGPT pixel stub, no SDK request", (await page.evaluate(() => typeof window.oaiq)) === "undefined" && state.sdkRequests === 0);
-    check("localhost without opt-in: Meta still initialises (unchanged)", (await fbq(page)).filter((c) => c[0] === "init").length === 1);
+    // 2026-11-19: Meta and GTM are host-guarded too now, so a local build sends nothing to Meta either.
+    check("localhost without opt-in: Meta does not initialise either (host guard)", (await fbq(page)).filter((c) => c[0] === "init").length === 0);
     const sheet = await fillFreeVisit(page);
     await sheet.locator("[data-action='confirm-free-visit']").click();
     await page.locator("[data-free-visit-done]").waitFor({ timeout: 8000 });

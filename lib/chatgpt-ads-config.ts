@@ -43,7 +43,7 @@ export function isOaiqExcluded(pathname: string | null | undefined): boolean {
 }
 
 /* First statement of the loader in <head>: stop on an excluded page. */
-export const OAIQ_GUARD = `if(/^\\/(${OAIQ_EXCLUDED_PREFIXES.map((p) => p.slice(1)).join("|")})(\\/|$)/.test(location.pathname))return;`;
+export const OAIQ_GUARD = `if(/^\\/(${OAIQ_EXCLUDED_PREFIXES.map((p) => p.slice(1).replace(/\//g, "\\/")).join("|")})(\\/|$)/.test(location.pathname))return;`;
 
 /**
  * The loader: the excluded-page and GPC guards, the documented stub

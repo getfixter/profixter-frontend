@@ -27,7 +27,13 @@ const noopSubscribe = () => () => {};
  * - member: Home, Book, Projects, Account, and the logo goes to their home.
  * Staff never get here as staff: RoleEntryGate routes them first.
  */
-export default function Header() {
+/**
+ * `entry` (2026-11-19): the header of the welcome entry (components/welcome).
+ * Logo top left, Log in and Menu top right at every width (the inline nav and
+ * "Book free visit" step aside), and every link in it - the logo above all -
+ * means "show me the site": `onLeave` remembers that before it navigates.
+ */
+export default function Header({ entry = false, onLeave }: { entry?: boolean; onLeave?: (event: { brand: boolean; preventDefault: () => void }) => void } = {}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
@@ -189,7 +195,13 @@ export default function Header() {
   };
 
   return (
-    <header className="site-header hd">
+    <header
+      className={entry ? "site-header hd hd--entry" : "site-header hd"}
+      onClickCapture={entry ? (e) => {
+        const link = (e.target as HTMLElement | null)?.closest?.("a");
+        if (link) onLeave?.({ brand: link.classList.contains("hd__brand"), preventDefault: () => e.preventDefault() });
+      } : undefined}
+    >
       <div className="hd__bar ui-container">
         <Link href={homeHref} aria-label="Profixter home" className="hd__brand">
           <Wordmark className="hd__mark" title="Profixter" />
@@ -263,11 +275,13 @@ export default function Header() {
           ) : (
             <>
               <Link href="/signin" className="hd__textlink">
-                Sign in
+                {entry ? "Log in" : "Sign in"}
               </Link>
-              <Link href={freeVisitHref} className="ui-btn ui-btn--primary ui-btn--sm hd__desk">
-                Book free visit
-              </Link>
+              {entry ? null : (
+                <Link href={freeVisitHref} className="ui-btn ui-btn--primary ui-btn--sm hd__desk">
+                  Book free visit
+                </Link>
+              )}
             </>
           )}
 
@@ -293,7 +307,16 @@ export default function Header() {
         ? createPortal(
           <div className={`hd-sheet ${isMenuOpen ? "is-open" : ""}`} inert={!isMenuOpen} aria-hidden={!isMenuOpen}>
             <button type="button" className="hd-sheet__scrim" aria-label="Close menu background" tabIndex={-1} onClick={closeMenu} />
-            <div id={sheetId} className="hd-sheet__panel" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+            <div
+              id={sheetId}
+              className="hd-sheet__panel"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Mobile navigation"
+              onClickCapture={entry ? (e) => {
+                if ((e.target as HTMLElement | null)?.closest?.("a")) onLeave?.({ brand: false, preventDefault: () => undefined });
+              } : undefined}
+            >
               <div className="hd-sheet__top">
                 <Link href={homeHref} aria-label="Profixter home" className="hd__brand" onClick={closeMenu}>
                   <Wordmark className="hd__mark" title="Profixter" />

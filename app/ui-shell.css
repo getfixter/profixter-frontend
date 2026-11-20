@@ -113,6 +113,12 @@
     background: var(--ui-bg-soft);
   }
 
+  /* The welcome entry's header (Header entry): logo, Log in, Menu at every width. */
+  .hd--entry .hd__nav { display: none; }
+  @media (min-width: 1024px) {
+    .hd--entry .hd__menu { display: inline-flex; }
+  }
+
   /* The narrowest phones: wordmark, "Account" and Menu must still fit in 320px. */
   @media (max-width: 359px) {
     .hd__bar {

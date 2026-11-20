@@ -44,9 +44,26 @@
  */
 export { META_PIXEL_ID } from "./meta-config";
 import { META_PIXEL_ID } from "./meta-config";
-import { isTrackerFree } from "./tracking-scope";
+import { isProductionHost, isTrackerFree, redactTrackerFreePath } from "./tracking-scope";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+
+/*
+ * Our own counters (the visit and funnel-step beacons) are production data
+ * too: a local or preview build pointed at api.profixter.com counted as real
+ * visitors (2026-11-19). They send only from profixter.com, or to a backend on
+ * this machine.
+ */
+function firstPartyBeaconAllowed(): boolean {
+  if (isProductionHost()) return true;
+  try {
+    // A browser test that stubs the whole API opts in, as for the loaders (lib/tracking-scope).
+    if (window.localStorage.getItem("pf_trackers_allow_host") === "1") return true;
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(API_BASE);
+  } catch {
+    return false;
+  }
+}
 
 type Params = Record<string, string | number | boolean | null | undefined>;
 
@@ -227,6 +244,11 @@ function readJson<T>(key: string): T | null {
   }
 }
 
+/** This browser's random visitor id ("" when storage is blocked): sent with a guest checkout so the sale is counted against how they arrived. */
+export function currentVisitorId(): string {
+  return visitorId();
+}
+
 function visitorId(): string {
   let id = "";
   try {
@@ -313,7 +335,7 @@ function touchFromLegacy(first: { firstLandingPath?: string; firstReferrer?: str
  */
 function recordFirstVisit(touch: Attribution) {
   try {
-    if (!API_BASE || window.localStorage.getItem(VISIT_SENT_KEY)) return;
+    if (!API_BASE || !firstPartyBeaconAllowed() || window.localStorage.getItem(VISIT_SENT_KEY)) return;
     if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;
     // A staff tool or token page is not a visit (the server refuses these too); try again on a public page.
     if (isTrackerFree(touch.landingPath || window.location.pathname)) return;
@@ -344,7 +366,7 @@ function captureMetaClick() {
   }
   if (!Object.values(incoming).some(Boolean)) return;
   if (incoming.fbclid) incoming.fbclidAt = Date.now();
-  incoming.landingPath = window.location.pathname;
+  incoming.landingPath = redactTrackerFreePath(window.location.pathname);
   incoming.referrer = document.referrer || undefined;
   const existing = readJson<Attribution>(ATTRIBUTION_KEY) || {};
   if (Object.values(existing).some(Boolean)) return;
@@ -385,7 +407,8 @@ export function captureAttribution(): void {
         touch = {
           ...tags,
           ...(tags.fbclid ? { fbclidAt: Date.now() } : {}),
-          landingPath: window.location.pathname,
+          // A token page lands as its prefix only (a gift claim link is the gift).
+          landingPath: redactTrackerFreePath(window.location.pathname),
           referrer: externalReferrer(document.referrer),
           firstSeenAt: Date.now(),
         };
@@ -488,7 +511,8 @@ function pushDataLayer(name: string, params?: Params) {
  */
 function relayToServer(payload: Record<string, unknown>) {
   try {
-    if (typeof window === "undefined" || !API_BASE) return;
+    // The relay ends at Meta: never from a local or preview build (2026-11-19).
+    if (typeof window === "undefined" || !API_BASE || !firstPartyBeaconAllowed()) return;
     const token = (() => {
       try {
         return window.localStorage.getItem("token") || "";
@@ -675,7 +699,20 @@ export type FunnelStepName =
   /* The membership path (from 2026-11-18): homepage plans link, plans page shown, plan chosen. */
   | "home_plans_click"
   | "plans_view"
-  | "plan_selected";
+  | "plan_selected"
+  /* The welcome entry on profixter.com (from 2026-11-19; BackEnd models/FunnelStep). */
+  | "welcome_shown"
+  | "welcome_tap_membership"
+  | "welcome_tap_one_time"
+  | "welcome_exit_home"
+  | "welcome_nudge_membership"
+  | "welcome_nudge_one_time"
+  | "welcome_address_done"
+  | "welcome_slot_done"
+  | "welcome_job_done"
+  | "welcome_contact_done"
+  | "welcome_plans_view"
+  | "welcome_checkout_started";
 
 /**
  * One anonymous step of the free-visit funnel (booker shown -> started -> time
@@ -684,7 +721,19 @@ export type FunnelStepName =
  */
 export function trackStep(step: FunnelStepName): void {
   try {
-    if (!API_BASE) return;
+    /*
+     * While the welcome entry covers the homepage (lib/welcome-entry), the
+     * homepage underneath is mounted but unseen: its own steps (the booker
+     * shown, a time it picked) are not things this visitor did.
+     */
+    if (!step.startsWith("welcome_") && step !== "plan_selected" && document.documentElement.getAttribute("data-pf-welcome") === "1" && window.location.pathname === "/") return;
+    // Seen in the page only (browser tests listen for it); nothing leaves the browser here.
+    window.dispatchEvent(new CustomEvent("pf:step", { detail: step }));
+  } catch {
+    /* no document: nothing to check */
+  }
+  try {
+    if (!API_BASE || !firstPartyBeaconAllowed()) return;
     if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;
     const id = visitorId();
     if (!id) return;
