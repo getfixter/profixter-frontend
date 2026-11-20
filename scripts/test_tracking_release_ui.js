@@ -27,6 +27,9 @@ const { chromium } = require("playwright");
 const PORT = Number(process.argv[2] || 3123);
 const API = "https://api.profixter.com";
 const TOKEN = "giftTok9Q7xZsecretVALUE42";
+const PAY_TOKEN = "payTok5Rr8secretVALUE77";
+const TIP_TOKEN = "tipTok3Kq1secretVALUE19";
+const SIGN_TOKEN = "signTok8Lm2secretVALUE64";
 const SESSION = "sess-tracking-release";
 const HOSTS = ["www.profixter.com", "profixter.com", "preview.profixter.com"];
 const UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
@@ -81,6 +84,16 @@ async function fresh(browser, { trackersOptIn = false } = {}) {
         return json(200, { message: "ok", gift: { plan: "plus", durationMonths: 3, from: "Ann", startAt: new Date().toISOString(), endAt: new Date(Date.now() + 90 * 864e5).toISOString(), activeThrough: new Date(Date.now() + 90 * 864e5).toISOString(), queued: false } });
       }
       if (p.startsWith("/api/service-area")) return json(200, { inServiceArea: true, serviceable: true, supported: true });
+      // The other token pages (2026-11-20): a payment link, a tip link, a signing link.
+      if (p === `/api/pay/${PAY_TOKEN}` && req.method() === "GET") return json(200, { status: "open", kind: "extra_charge", itemLabel: "Faucet parts", expiresAt: new Date(Date.now() + 864e5).toISOString() });
+      if (p === `/api/pay/${PAY_TOKEN}/checkout`) return json(200, { url: "https://checkout.stripe.com/c/pay/cs_test_pay" });
+      if (p === "/api/tips/session") {
+        log.tipBodies = [...(log.tipBodies || []), entry.body];
+        // Answered after a pause, so the page can be inspected before it moves on to Stripe.
+        await new Promise((r) => setTimeout(r, 3000));
+        return json(200, { url: "https://checkout.stripe.com/c/pay/cs_test_tip" });
+      }
+      if (p === `/api/sign/${SIGN_TOKEN}`) return json(200, { state: "expired", message: "This signing link has expired." });
       return json(200, {});
     }
     // Any vendor or other outside host: answered here, empty. Recorded, never sent.
@@ -212,6 +225,71 @@ async function pageState(page) {
     check("no first-visit record carries the token", !visit || !visit.body.includes(TOKEN), visit ? visit.body.slice(0, 200) : "none sent (landing page is tracker-free)");
     await ctx.close();
   }
+
+  /* ------------------------------------- 5. the other token pages: /pay, /tip, /sign (2026-11-20) */
+  const tokenPage = async ({ label, path, secret, act, expect }) => {
+    const { ctx, page, log } = await fresh(browser);
+    await open(page, at("www.profixter.com", path), "https://mail.example.com/");
+    const st = await pageState(page);
+    check(`${label}: the link still works`, await expect(page), (await page.locator("main, body").first().innerText().catch(() => "")).slice(0, 120));
+    check(`${label}: no tracker loader requested`, log.vendor.length === 0, log.vendor.map((r) => r.url).join(" | "));
+    check(`${label}: no first-party beacon`, log.beacons.length === 0, log.beacons.map((r) => r.url).join(" | "));
+    const meta = await page.evaluate(() => document.querySelector('meta[name="referrer"]')?.getAttribute("content") || "");
+    check(`${label}: sends no referrer`, meta === "no-referrer", meta);
+    const stored = JSON.stringify({ ...st.local, ...st.session }) + st.cookie;
+    check(`${label}: the token is stored nowhere in the browser`, !stored.includes(secret), Object.keys({ ...st.local, ...st.session }).join(","));
+    // A full-page move from the token page itself to an ordinary page on the live site, where the trackers run.
+    await page.evaluate((u) => location.assign(u), at("www.profixter.com", "/membership/plans"));
+    await page.waitForLoadState("load").catch(() => undefined);
+    await page.waitForTimeout(1500);
+    const after = await pageState(page);
+    check(`${label}: the move reached a tracked page`, /membership\/plans/.test(after.href) && log.vendor.some((r) => r.url.startsWith("https://www.googletagmanager.com/gtm.js")), after.href);
+    check(`${label}: the next tracked page sees no token (referrer, dataLayer, fbq, storage)`, !after.referrer.includes(secret) && !JSON.stringify(after.dataLayer).includes(secret) && !JSON.stringify(after.fbq).includes(secret) && !JSON.stringify(after.local).includes(secret), JSON.stringify(after.referrer));
+    const leaks = log.requests.filter((r) => {
+      if (r.url.startsWith(`${API}/api/`) && !r.url.includes("/api/track")) return false;
+      if (HOSTS.includes(r.host) || r.host === "127.0.0.1") return !new URL(r.url).href.includes(path) && (r.url.includes(secret) || r.body.includes(secret));
+      return r.url.includes(secret) || r.body.includes(secret) || r.referer.includes(secret);
+    });
+    if (act) {
+      await open(page, at("www.profixter.com", path), "https://mail.example.com/");
+      await act(page, log);
+    }
+    check(`${label}: no tracker, beacon or outside request carries the token (URL, body or Referer)`, leaks.length === 0, leaks.map((r) => `${r.url.slice(0, 90)} ref=${r.referer.slice(0, 60)}`).join(" | "));
+    await ctx.close();
+  };
+
+  await tokenPage({
+    label: "/pay",
+    path: `/pay/${PAY_TOKEN}`,
+    secret: PAY_TOKEN,
+    expect: async (page) => /Faucet parts/.test(await page.locator("body").innerText()),
+    act: async (page, log) => {
+      const button = page.locator("button", { hasText: /Pay securely/ }).first();
+      await button.click({ timeout: 5000 }).catch(() => undefined);
+      await page.waitForTimeout(1500);
+      const toStripe = log.requests.find((r) => r.host === "checkout.stripe.com");
+      check("/pay: paying opens the Stripe page", Boolean(toStripe), page.url());
+      check("/pay: Stripe is not told the payment link (no Referer)", toStripe && !toStripe.referer.includes(PAY_TOKEN), toStripe ? JSON.stringify(toStripe.referer) : "");
+    },
+  });
+  await tokenPage({
+    label: "/tip",
+    path: `/tip?t=${TIP_TOKEN}`,
+    secret: TIP_TOKEN,
+    expect: async () => true,
+    act: async (page, log) => {
+      await page.waitForTimeout(3500);
+      const toStripe = log.requests.find((r) => r.host === "checkout.stripe.com");
+      check("/tip: the tip link opens the Stripe page with its token sent to our API", Boolean(toStripe) && (log.tipBodies || []).some((b) => b.includes(TIP_TOKEN)), page.url());
+      check("/tip: Stripe is not told the tip link (no Referer)", toStripe && !toStripe.referer.includes(TIP_TOKEN), toStripe ? JSON.stringify(toStripe.referer) : "");
+    },
+  });
+  await tokenPage({
+    label: "/sign",
+    path: `/sign/${SIGN_TOKEN}`,
+    secret: SIGN_TOKEN,
+    expect: async (page) => /Link expired/i.test(await page.locator("body").innerText()),
+  });
 
   /* ------------------------------- 4. a browser that stored the token under an earlier build */
   {

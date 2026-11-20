@@ -12,6 +12,8 @@ import SigningClient from "./SigningClient";
 export const metadata: Metadata = {
   title: "Sign Document | Premium Island Homes",
   robots: { index: false, follow: false, nocache: true },
+  /* 2026-11-20: the URL is the signing credential; nothing it opens is told it. */
+  referrer: "no-referrer",
 };
 
 /** Rendered per-request: a signing token must never be cached or prerendered. */
