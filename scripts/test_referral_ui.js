@@ -64,6 +64,7 @@ function adminReward(over = {}) {
     flags: [{ code: "existing_account", strength: "review", text: "The friend's account existed before the referral was recorded. Check that the referrer really brought them in.", at: "2026-11-02T12:00:00Z", reviewed: false }],
     flagsReview: null, payee: null, approval: null, check: null, lastRecheck: null,
     history: [{ at: "2026-11-02T12:00:00Z", event: "eligible", by: "system", detail: "Ready: $134.10." }], canApprove: false,
+    rule: "monthly", qualifiesAt: null, membership: null,
     ...over,
   };
 }
@@ -234,7 +235,8 @@ const zoom = (page) => page.evaluate(() => parseFloat(getComputedStyle(document.
       await wait(200);
       const rules = await page.locator("[data-referral-rules]").innerText();
       check("How it works: qualifying plans, one-time visit excluded", /Basic, Plus, Premium or Elite/.test(rules) && /one-time visit doesn.t qualify/i.test(rules));
-      check("How it works: Pending after the first payment, ready after the second, mailed check", /Pending/.test(rules) && /second membership payment clears/.test(rules) && /mail you a check/.test(rules));
+      check("How it works: Pending after the first payment, ready after the second monthly payment, mailed check", /Pending/.test(rules) && /second monthly payment clears/.test(rules) && /mail you a check/.test(rules));
+      check("How it works: annual plans after 60 days of active membership, the payment has to stand", /60 days of active membership on an annual plan/.test(rules) && /annual payment has to stand/.test(rules), rules);
       check("How it works: the lesser of $149 or what was paid, after discounts and refunds, tax excluded, with the two examples", /lesser of \$149/.test(rules) && /discounts, promo codes and refunds/.test(rules) && /Tax/.test(rules) && /\$149\.00/.test(rules) && /\$134\.10/.test(rules));
       check("How it works: one per new household, not yourself", /One reward per new household/.test(rules) && /own account or home/.test(rules));
       check("How it works is announced as expanded", (await page.getAttribute("[data-referral-how]", "aria-expanded")) === "true");
@@ -416,6 +418,19 @@ const zoom = (page) => page.evaluate(() => parseFloat(getComputedStyle(document.
       const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       check("Admin on a phone: no sideways scroll", over <= 1, String(over));
       check("no page errors (admin)", errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
+    {
+      // An annual referral in Admin: the 60-day rule, its date and the membership as Stripe has it - no "2nd payment".
+      const { ctx, page, state, errors } = await open(browser, { viewport: { width: 1280, height: 900 }, me: OWNER });
+      state.admin.reward = adminReward({ status: "pending", statusLabel: "Pending", rule: "annual", cycle: "annual", amountCents: 14900, second: null, secondPaidAt: null, flagCount: 0, flags: [], qualifiesAt: "2027-01-19T12:00:00Z", membership: { status: "active", endedAt: null, checkedAt: new Date().toISOString() } });
+      await page.goto(`${BASE}/admin/referrals/rw1`, { waitUntil: "networkidle" });
+      await page.waitForSelector("[data-referral-detail]", { timeout: 10000 });
+      const t = await page.locator("[data-referral-detail]").innerText();
+      check("Admin, annual: ready after 60 days of active membership, its date and the Stripe membership status", /60 days of active membership/.test(t) && /Jan 19, 2027/.test(t) && /Membership in Stripe/.test(t) && /active/.test(await page.locator("[data-referral-annual]").innerText()), t.slice(0, 400));
+      check("Admin, annual: no waiting for a 2nd payment", !/2nd payment/.test(t));
+      await shot(page, "13-admin-annual-desktop");
+      check("no page errors (admin annual)", errors.length === 0, errors.join(" | "));
       await ctx.close();
     }
   } finally {

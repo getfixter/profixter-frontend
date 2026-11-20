@@ -65,6 +65,10 @@ export type RewardDetail = RewardRow & {
   approval: { at: string; amountCents: number } | null;
   check: { reference: string; mailedAt: string; note: string } | null;
   lastRecheck: { at: string; ok: boolean; changes: string[] } | null;
+  /** Which rule decides: monthly - the second paid invoice; annual - 60 days of active membership. */
+  rule: "monthly" | "annual";
+  qualifiesAt: string | null;
+  membership: { status: string | null; endedAt: string | null; checkedAt: string } | null;
   history: { at: string; event: string; by: string; detail: string }[];
   canApprove: boolean;
 };

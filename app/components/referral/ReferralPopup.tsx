@@ -156,7 +156,7 @@ function PopupBody({ onClose, data, loading = false, error = "", onRetry }: Prop
             <li>Share your link with a friend.</li>
             <li>They join any Profixter membership through it: Basic, Plus, Premium or Elite. A one-time visit doesn&rsquo;t qualify.</li>
             <li>After their first membership payment, your reward shows as Pending in your account.</li>
-            <li>When their second membership payment clears, it&rsquo;s ready. You confirm the name and mailing address, and we mail you a check.</li>
+            <li>It&rsquo;s ready when their second monthly payment clears, or after 60 days of active membership on an annual plan. You confirm the name and mailing address, and we mail you a check.</li>
           </ol>
 
           <h3>Your reward</h3>
@@ -180,7 +180,7 @@ function PopupBody({ onClose, data, loading = false, error = "", onRetry }: Prop
             <li>One reward per new household. Your friend must be new to Profixter memberships and live at a different address.</li>
             <li>Your own account or home doesn&rsquo;t qualify.</li>
             <li>If a payment is refunded, the reward is reduced or canceled.</li>
-            <li>On an annual plan, the second payment is the renewal a year later.</li>
+            <li>On an annual plan, the annual payment has to stand: a refund or chargeback reduces or cancels the reward.</li>
             <li>We check every payment again before the check is mailed.</li>
           </ul>
         </div>

@@ -272,7 +272,9 @@ export function ReferralRewardDetail({ id }: { id: string }) {
           ]}
           footer={
             r.status === "pending"
-              ? "Waiting for the friend's second paid membership payment."
+              ? r.rule === "annual"
+                ? `Annual plan: ready after 60 days of active membership (${day(r.qualifiesAt)}), if the payment still stands.`
+                : "Waiting for the friend's second paid membership payment."
               : r.reason
                 ? r.reason
                 : r.lastRecheck
@@ -284,7 +286,25 @@ export function ReferralRewardDetail({ id }: { id: string }) {
 
       <div className="grid gap-3 lg:grid-cols-2">
         <InvoiceRows label="1st payment" inv={r.first} />
-        <InvoiceRows label="2nd payment" inv={r.second} />
+        {r.rule === "annual" ? (
+          <Card title="Annual plan: 60 days of active membership">
+            <dl className="grid gap-1 text-[14px]" data-referral-annual="">
+              <div className="flex justify-between gap-3">
+                <dt className="text-adm-text-2">Qualifies on</dt>
+                <dd className="adm-num font-medium text-adm-ink">{day(r.qualifiesAt)}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-adm-text-2">Membership in Stripe</dt>
+                <dd className="font-medium text-adm-ink">
+                  {r.membership ? `${r.membership.status || "unknown"}${r.membership.endedAt ? `, ended ${day(r.membership.endedAt)}` : ""}` : "Not read yet"}
+                </dd>
+              </div>
+              {r.membership ? <p className="text-[12px] text-adm-text-3">Read {when(r.membership.checkedAt)}. Read again before you approve and before you mark the check mailed.</p> : null}
+            </dl>
+          </Card>
+        ) : (
+          <InvoiceRows label="2nd payment" inv={r.second} />
+        )}
       </div>
 
       {r.flags.length ? (
