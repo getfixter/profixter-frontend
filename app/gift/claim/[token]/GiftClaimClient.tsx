@@ -10,10 +10,10 @@
  * can be issued. Telling somebody their gift expired when it has not would be
  * both false and upsetting, so that case has its own state and its own copy.
  *
- * Authentication preserves the token. Signing in or registering carries
- * ?next=/gift/claim/<token>, which both auth pages already honour through
- * safeReturnPath — so the link survives the round trip and nobody has to find
- * the email again.
+ * Authentication preserves the token without putting it in a URL (2026-11-19):
+ * the token waits in this browser (lib/gift-claim-return) and sign-in carries
+ * ?next=/gift/claim/resume, so the trackers on the sign-in pages never see it
+ * and nobody has to find the email again.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 
 import DigitalGiftHero from "@/app/components/gift/DigitalGiftHero";
 import { useAuth } from "@/lib/useAuth";
+import { GIFT_CLAIM_RESUME, GIFT_CLAIM_RETURN_PATH, forgetGiftClaimToken, recallGiftClaimToken, rememberGiftClaimToken } from "@/lib/gift-claim-return";
 import {
   GiftError,
   claimGift,
@@ -123,11 +124,25 @@ function errorPhase(error: unknown): Phase {
   return { kind: "error", code, ...chosen };
 }
 
-export default function GiftClaimClient({ token }: { token: string }) {
+export default function GiftClaimClient({ token: urlToken }: { token: string }) {
   const router = useRouter();
+  /* "" while /gift/claim/resume reads the remembered token. */
+  const [token, setToken] = useState<string>(urlToken === GIFT_CLAIM_RESUME ? "" : urlToken);
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
 
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
+  useEffect(() => {
+    if (urlToken !== GIFT_CLAIM_RESUME) {
+      rememberGiftClaimToken(urlToken);
+      return;
+    }
+    // Read after mount (storage is the browser's), applied like the other loads here: asynchronously.
+    const remembered = recallGiftClaimToken();
+    void Promise.resolve().then(() => {
+      if (remembered) setToken(remembered);
+      else setPhase(errorPhase(new GiftError("INVALID", "Open the gift link from your email again.")));
+    });
+  }, [urlToken]);
   const [chosenAddressId, setChosenAddressId] = useState<string>("");
   const [claimError, setClaimError] = useState<string | null>(null);
 
@@ -142,9 +157,10 @@ export default function GiftClaimClient({ token }: { token: string }) {
   const [claiming, setClaiming] = useState(false);
   const claimLock = useRef(false);
 
-  const returnTo = `/gift/claim/${encodeURIComponent(token)}`;
+  const returnTo = GIFT_CLAIM_RETURN_PATH;
 
   useEffect(() => {
+    if (!token) return undefined;
     let cancelled = false;
     (async () => {
       try {
@@ -169,7 +185,7 @@ export default function GiftClaimClient({ token }: { token: string }) {
    * which property the purchaser had in mind.
    */
   useEffect(() => {
-    if (!isAuthenticated) return undefined;
+    if (!isAuthenticated || !token) return undefined;
     let cancelled = false;
     (async () => {
       const found = await getClaimDetails(token);
@@ -236,6 +252,7 @@ export default function GiftClaimClient({ token }: { token: string }) {
 
     try {
       const result = await claimGift(token, addressId);
+      forgetGiftClaimToken();
       setPhase({ kind: "claimed", result: result.gift });
       // The claim button sits far down a long page; the short result screen
       // that replaces it would otherwise open on the footer.
@@ -436,7 +453,7 @@ export default function GiftClaimClient({ token }: { token: string }) {
                 , so use that address.
               </p>
               <div className="mt-5 flex flex-col gap-3">
-                {/* The token rides along in ?next=, so the link survives sign-in. */}
+                {/* ?next=/gift/claim/resume: the token waits in this browser, never in the URL. */}
                 <Link
                   href={
                     gift.hasAccount

@@ -33,6 +33,10 @@ function check(name, pass, detail) {
  */
 const RECORDER = () => {
   const w = window;
+  // Off profixter.com the loaders stop unless a test opts in (lib/tracking-scope); even then they fetch only never-served same-origin paths.
+  try {
+    localStorage.setItem("pf_trackers_allow_host", "1");
+  } catch {}
   w.__fbq_calls = [];
   w.fbq = function (...args) {
     w.__fbq_calls.push(args);

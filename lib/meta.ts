@@ -44,9 +44,26 @@
  */
 export { META_PIXEL_ID } from "./meta-config";
 import { META_PIXEL_ID } from "./meta-config";
-import { isTrackerFree } from "./tracking-scope";
+import { isProductionHost, isTrackerFree, redactTrackerFreePath } from "./tracking-scope";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+
+/*
+ * Our own counters (the visit and funnel-step beacons) are production data
+ * too: a local or preview build pointed at api.profixter.com counted as real
+ * visitors (2026-11-19). They send only from profixter.com, or to a backend on
+ * this machine.
+ */
+function firstPartyBeaconAllowed(): boolean {
+  if (isProductionHost()) return true;
+  try {
+    // A browser test that stubs the whole API opts in, as for the loaders (lib/tracking-scope).
+    if (window.localStorage.getItem("pf_trackers_allow_host") === "1") return true;
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(API_BASE);
+  } catch {
+    return false;
+  }
+}
 
 type Params = Record<string, string | number | boolean | null | undefined>;
 
@@ -313,7 +330,7 @@ function touchFromLegacy(first: { firstLandingPath?: string; firstReferrer?: str
  */
 function recordFirstVisit(touch: Attribution) {
   try {
-    if (!API_BASE || window.localStorage.getItem(VISIT_SENT_KEY)) return;
+    if (!API_BASE || !firstPartyBeaconAllowed() || window.localStorage.getItem(VISIT_SENT_KEY)) return;
     if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;
     // A staff tool or token page is not a visit (the server refuses these too); try again on a public page.
     if (isTrackerFree(touch.landingPath || window.location.pathname)) return;
@@ -344,7 +361,7 @@ function captureMetaClick() {
   }
   if (!Object.values(incoming).some(Boolean)) return;
   if (incoming.fbclid) incoming.fbclidAt = Date.now();
-  incoming.landingPath = window.location.pathname;
+  incoming.landingPath = redactTrackerFreePath(window.location.pathname);
   incoming.referrer = document.referrer || undefined;
   const existing = readJson<Attribution>(ATTRIBUTION_KEY) || {};
   if (Object.values(existing).some(Boolean)) return;
@@ -385,7 +402,8 @@ export function captureAttribution(): void {
         touch = {
           ...tags,
           ...(tags.fbclid ? { fbclidAt: Date.now() } : {}),
-          landingPath: window.location.pathname,
+          // A token page lands as its prefix only (a gift claim link is the gift).
+          landingPath: redactTrackerFreePath(window.location.pathname),
           referrer: externalReferrer(document.referrer),
           firstSeenAt: Date.now(),
         };
@@ -488,7 +506,8 @@ function pushDataLayer(name: string, params?: Params) {
  */
 function relayToServer(payload: Record<string, unknown>) {
   try {
-    if (typeof window === "undefined" || !API_BASE) return;
+    // The relay ends at Meta: never from a local or preview build (2026-11-19).
+    if (typeof window === "undefined" || !API_BASE || !firstPartyBeaconAllowed()) return;
     const token = (() => {
       try {
         return window.localStorage.getItem("token") || "";
@@ -684,7 +703,7 @@ export type FunnelStepName =
  */
 export function trackStep(step: FunnelStepName): void {
   try {
-    if (!API_BASE) return;
+    if (!API_BASE || !firstPartyBeaconAllowed()) return;
     if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;
     const id = visitorId();
     if (!id) return;

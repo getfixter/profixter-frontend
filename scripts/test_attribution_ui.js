@@ -37,6 +37,10 @@ async function fresh(browser, { seed } = {}) {
   const ctx = await browser.newContext({ userAgent: UA, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await ctx.addInitScript((seedState) => {
     Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false });
+      // 2026-11-19: the funnel beacons go to the mock below, which off profixter.com needs the test opt-in (lib/tracking-scope).
+      try {
+        localStorage.setItem("pf_trackers_allow_host", "1");
+      } catch {}
     try {
       localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
       if (seedState && !sessionStorage.getItem("__seeded")) {

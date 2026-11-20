@@ -15,7 +15,42 @@
  * simply never load them. Plain module (no "use client"): the root layout
  * inlines TRACKER_GUARD into <head>.
  */
-export const TRACKER_FREE_PREFIXES = ["/admin", "/sign", "/pay", "/tip", "/visit"] as const;
+export const TRACKER_FREE_PREFIXES = ["/admin", "/sign", "/pay", "/tip", "/visit", "/gift/claim"] as const;
+/* /gift/claim/<token> (2026-11-19): the token is the gift. Its sign-in detour carries no token either (lib/gift-claim-return). */
+
+/**
+ * A tracker-free path with its secret part removed, for anything that is
+ * stored or sent (the first-touch landing path): "/gift/claim/abc" -> "/gift/claim".
+ */
+export function redactTrackerFreePath(pathname: string | null | undefined): string {
+  const p = String(pathname || "");
+  const prefix = TRACKER_FREE_PREFIXES.find((x) => p === x || p.startsWith(`${x}/`));
+  return prefix || p;
+}
+
+/**
+ * Production hosts (2026-11-19). GTM (and Clarity, GA4, Google Ads inside it),
+ * the Meta Pixel and our own visit/step counters run only here, as the ChatGPT
+ * pixel already did (lib/chatgpt-ads-config). A local or Vercel preview build
+ * is NODE_ENV=production and used to send real events to every one of them.
+ */
+export const PRODUCTION_HOSTS = ["www.profixter.com", "profixter.com"] as const;
+
+export function isProductionHost(hostname?: string): boolean {
+  const h = hostname ?? (typeof window !== "undefined" ? window.location.hostname : "");
+  return (PRODUCTION_HOSTS as readonly string[]).includes(h);
+}
+
+/*
+ * Browser tests that need the loaders to run set localStorage
+ * pf_trackers_allow_host=1. Even then nothing can reach a vendor: off a
+ * production host the loaders fetch same-origin paths that are never served
+ * (TRACKER_TEST_GTM_PATH, TRACKER_TEST_FBEVENTS_PATH), so the stub queues the
+ * calls and no SDK ever sends them.
+ */
+export const TRACKER_TEST_GTM_PATH = "/__gtm-test.js";
+export const TRACKER_TEST_FBEVENTS_PATH = "/__fbevents-test.js";
+export const TRACKER_HOST_GUARD = `var pfProd=${JSON.stringify(PRODUCTION_HOSTS)}.indexOf(location.hostname)>=0;if(!pfProd){var pfOk=0;try{pfOk=localStorage.getItem("pf_trackers_allow_host")==="1"}catch(e){}if(!pfOk)return;}`;
 
 export function isTrackerFree(pathname: string | null | undefined): boolean {
   const p = String(pathname || "");
@@ -26,4 +61,4 @@ export function isTrackerFree(pathname: string | null | undefined): boolean {
  * The first statement of every tracker loader in <head>: stop if this page is
  * tracker-free. The regex is built from the same list as isTrackerFree.
  */
-export const TRACKER_GUARD = `if(/^\\/(${TRACKER_FREE_PREFIXES.map((p) => p.slice(1)).join("|")})(\\/|$)/.test(location.pathname))return;`;
+export const TRACKER_GUARD = `if(/^\\/(${TRACKER_FREE_PREFIXES.map((p) => p.slice(1).replace(/\//g, "\\/")).join("|")})(\\/|$)/.test(location.pathname))return;`;

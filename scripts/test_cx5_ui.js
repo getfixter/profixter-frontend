@@ -55,6 +55,10 @@ async function open(browser, { width = 390, height = 844, me = null, draft = nul
     ({ signedIn, draftJson, hideWebdriver }) => {
       try {
         if (hideWebdriver) Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false });
+      // 2026-11-19: the funnel beacons go to the mock below, which off profixter.com needs the test opt-in (lib/tracking-scope).
+      try {
+        localStorage.setItem("pf_trackers_allow_host", "1");
+      } catch {}
         if (signedIn) localStorage.setItem("token", "ui-token");
         localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
         localStorage.setItem("pf_vid", "v_testvisitor00000001");

@@ -30,7 +30,7 @@ import ChatGPTPageView from "./components/ChatGPTPageView";
 import { OAIQ_LOADER_SCRIPT } from "@/lib/chatgpt-ads-config";
 import SurfaceMarker from "./components/SurfaceMarker";
 import TrackerBoundary from "./components/TrackerBoundary";
-import { TRACKER_GUARD } from "@/lib/tracking-scope";
+import { TRACKER_GUARD, TRACKER_HOST_GUARD, TRACKER_TEST_FBEVENTS_PATH, TRACKER_TEST_GTM_PATH } from "@/lib/tracking-scope";
 import { AUTH_PENDING_SCRIPT, IOS_VIEWPORT_SCRIPT, SURFACE_SCRIPT } from "@/lib/surface";
 
 /*
@@ -215,15 +215,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/*
           Google Tag Manager, a plain head script like the pixel below, so the
           tracker-free guard (lib/tracking-scope.ts) runs before anything loads:
-          /admin and the token pages (/sign, /pay, /tip) never fetch it.
+          /admin and the token pages (/sign, /pay, /tip, /gift/claim) never fetch it,
+          and neither does any host but profixter.com (TRACKER_HOST_GUARD).
         */}
         <script
           id="gtm-head"
           dangerouslySetInnerHTML={{
-            __html: `(function(w,d,s,l,i){${TRACKER_GUARD}w.__pfTrackers=1;w[l]=w[l]||[];w[l].push({'gtm.start':
+            __html: `(function(w,d,s,l,i){${TRACKER_GUARD}${TRACKER_HOST_GUARD}w.__pfTrackers=1;w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=pfProd?
+'https://www.googletagmanager.com/gtm.js?id='+i+dl:'${TRACKER_TEST_GTM_PATH}';f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-KFPSD2P6');`,
           }}
         />
@@ -250,7 +251,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <script
           id="meta-pixel"
           dangerouslySetInnerHTML={{
-            __html: `(function(){${TRACKER_GUARD}
+            __html: `(function(){${TRACKER_GUARD}${TRACKER_HOST_GUARD}
               !function(f,b,e,v,n,t,s)
               {if(f.fbq)return;f.__pfTrackers=1;n=f.fbq=function(){n.callMethod?
               n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -258,7 +259,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               n.queue=[];t=b.createElement(e);t.async=!0;
               t.src=v;s=b.getElementsByTagName(e)[0];
               s.parentNode.insertBefore(t,s)}(window, document,'script',
-              'https://connect.facebook.net/en_US/fbevents.js');
+              pfProd?'https://connect.facebook.net/en_US/fbevents.js':'${TRACKER_TEST_FBEVENTS_PATH}');
               fbq.disablePushState = true;
               fbq.allowDuplicatePageViews = true;
               fbq('init', '${FB_PIXEL_ID}');
