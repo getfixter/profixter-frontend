@@ -255,7 +255,7 @@ export function CustomerProfile({ id }: { id: string }) {
         ? { label: "Open in Stripe", icon: <ArrowTopRightOnSquareIcon />, href: stripeUrl, external: true }
         : { label: "Open in Stripe", icon: <ArrowTopRightOnSquareIcon />, disabled: true, hint: billingQ.isFetching || !billing ? "Loading…" : "Stripe is not reachable right now" }
       : null,
-    a.resendAccess ? { label: "Resend sign-in details", hint: "They have not set a password yet", icon: <KeyIcon />, onSelect: () => setSheet({ kind: "resend" }) } : null,
+    a.resendAccess ? { label: "Resend sign-in details", hint: "They have not signed in yet", icon: <KeyIcon />, onSelect: () => setSheet({ kind: "resend" }) } : null,
     a.unblock ? { label: "Unblock", icon: <ArrowUturnLeftIcon />, onSelect: () => setSheet({ kind: "unblock" }) } : null,
     a.unarchive ? { label: "Restore from archive", icon: <ArrowUturnLeftIcon />, onSelect: () => setSheet({ kind: "unarchive" }) } : null,
     a.block ? { label: "Block", hint: "Needs a reason", icon: <NoSymbolIcon />, tone: "destructive" as const, onSelect: () => setSheet({ kind: "block" }) } : null,
@@ -417,7 +417,7 @@ export function CustomerProfile({ id }: { id: string }) {
         open={sheet?.kind === "resend"}
         onClose={close}
         title="Resend sign-in details?"
-        consequence={`${c.name || "The customer"} gets ${phone ? "a text with a new temporary password (their phone number) and " : ""}an email saying how to sign in: their mobile number and a code, then the temporary password. Only works while they have not set their own password.`}
+        consequence={`${c.name || "The customer"} gets ${phone ? "a text and " : ""}an email saying how to sign in: their mobile number and a code. Only until they have signed in.`}
         confirmLabel="Resend sign-in details"
         onConfirm={async () => {
           const result = await resendCustomerAccess(c.id);

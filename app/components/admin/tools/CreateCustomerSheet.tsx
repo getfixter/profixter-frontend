@@ -9,10 +9,9 @@ import { createCustomer, readFailure, type CommunicationKey, type CreatedCustome
 /*
  * Admin → Create Customer, for someone on the phone.
  *
- * The account is active at once; the customer gets a text with their
- * temporary password (their phone number) and an email saying how to sign in
- * (never the password: staff typed the address, 2026-11-20). They sign in with
- * their mobile number and a code, enter the temporary password, and set their own. Email switches start on (marketing email is opt-out, with an
+ * The account is active at once; the customer gets a text and an email saying
+ * how to sign in: their mobile number and a code (2026-11-20). No password is
+ * issued - the number staff typed on the call is the way in. Email switches start on (marketing email is opt-out, with an
  * unsubscribe link in every one). Texts are different (2026-11-03): service
  * texts are a Yes/No staff must ask on the call - nothing pre-selected - and
  * marketing texts start off, because a spoken yes never qualifies for them
@@ -93,7 +92,7 @@ export default function CreateCustomerSheet({
     <AdminSheet
       eyebrow="New customer"
       title="Create customer"
-      subtitle="Active right away · sign-in steps by email, temporary password by text"
+      subtitle="Active right away · they sign in with their mobile number and a code"
       onClose={onClose}
       busy={saving}
       testId="create-customer"
@@ -140,7 +139,7 @@ export default function CreateCustomerSheet({
         <span className={labelClass}>Phone</span>
         <input name="phone" type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="off" className={inputClass} />
         <FieldError message={errors.phone} />
-        <span className="mt-1 block text-xs text-slate-500">Also their temporary password.</span>
+        <span className="mt-1 block text-xs text-slate-500">They sign in with a code to this number.</span>
       </label>
       <label className="block">
         <span className={labelClass}>Email</span>
