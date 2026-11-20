@@ -389,11 +389,20 @@ export function captureAttribution(): void {
     if (!firstSeen) {
       window.localStorage.setItem(
         FIRST_SEEN_KEY,
-        JSON.stringify({ firstLandingPath: window.location.pathname, firstReferrer: document.referrer || undefined, firstSeenAt: Date.now() })
+        // A token page is kept as its prefix only, as for the touch below (2026-11-20).
+        JSON.stringify({ firstLandingPath: redactTrackerFreePath(window.location.pathname), firstReferrer: document.referrer || undefined, firstSeenAt: Date.now() })
       );
+    } else if (firstSeen.firstLandingPath && redactTrackerFreePath(firstSeen.firstLandingPath) !== firstSeen.firstLandingPath) {
+      // Stored by an earlier build with the token in it: keep only the prefix.
+      firstSeen.firstLandingPath = redactTrackerFreePath(firstSeen.firstLandingPath);
+      window.localStorage.setItem(FIRST_SEEN_KEY, JSON.stringify(firstSeen));
     }
 
     let touch = readJson<Attribution>(TOUCH_KEY);
+    if (touch?.landingPath && redactTrackerFreePath(touch.landingPath) !== touch.landingPath) {
+      touch.landingPath = redactTrackerFreePath(touch.landingPath);
+      window.localStorage.setItem(TOUCH_KEY, JSON.stringify(touch));
+    }
     if (!touch) {
       if (firstSeen) {
         touch = touchFromLegacy(firstSeen);

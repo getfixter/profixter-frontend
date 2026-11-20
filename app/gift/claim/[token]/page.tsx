@@ -14,6 +14,12 @@ import GiftClaimClient from "./GiftClaimClient";
 export const metadata: Metadata = {
   title: "Claim your gift | ProFixter",
   robots: { index: false, follow: false, nocache: true },
+  /*
+   * 2026-11-20: no Referer from this page. A full-page move to the sign-in
+   * pages (which load GTM and the Meta Pixel) would otherwise hand them this
+   * URL, token included, as the page referrer - as /visit already prevents.
+   */
+  referrer: "no-referrer",
 };
 
 /** Rendered per-request: a claim token must never be cached or prerendered. */
