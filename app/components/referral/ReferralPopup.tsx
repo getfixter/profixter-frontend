@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import "./referral.css";
 import { writeToClipboard } from "@/lib/utils/clipboard";
-import { shareMessage, type MyReferrals } from "@/lib/referral";
+import Link from "next/link";
+import { shareMessage, SIGNED_OUT_REFERRAL_HREF, type MyReferrals } from "@/lib/referral";
 
 /**
  * The referral popup (owner's copy, 2026-11-20):
@@ -26,6 +27,10 @@ type Props = {
   loading?: boolean;
   error?: string;
   onRetry?: () => void;
+  /** A signed-out visitor: the button is "Get my referral link" (sign in or create an account, then the referral card). */
+  signedOut?: boolean;
+  /** The signed-out button was used (the popup is remembered as seen). */
+  onGetLink?: () => void;
 };
 
 /* Mounted only while open, so every opening starts fresh (rules folded, no "copied"). */
@@ -33,7 +38,7 @@ export default function ReferralPopup(props: Props) {
   return props.open ? <PopupBody {...props} /> : null;
 }
 
-function PopupBody({ onClose, data, loading = false, error = "", onRetry }: Props) {
+function PopupBody({ onClose, data, loading = false, error = "", onRetry, signedOut = false, onGetLink }: Props) {
   const [how, setHow] = useState(false);
   const [state, setState] = useState<ShareState>("idle");
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -84,9 +89,11 @@ function PopupBody({ onClose, data, loading = false, error = "", onRetry }: Prop
     >
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="rf-sheet">
         <div className="rf-handle" aria-hidden="true" />
-        <button type="button" className="rf-close" aria-label="Close" onClick={onClose} data-referral-close="">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+        {/* An obvious Close (owner 2026-11-20): a word and the cross, not only an icon. */}
+        <button type="button" className="rf-close" onClick={onClose} data-referral-close="">
+          <span>Close</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
 
@@ -97,6 +104,11 @@ function PopupBody({ onClose, data, loading = false, error = "", onRetry }: Prop
         <p className="rf-lead">Refer a friend to Profixter. The Basic plan qualifies, too.</p>
 
         <div className="rf-actions">
+          {signedOut ? (
+            <Link href={SIGNED_OUT_REFERRAL_HREF} className="ui-btn ui-btn--accent rf-share" onClick={onGetLink} data-referral-get-link="">
+              Get my referral link
+            </Link>
+          ) : (
           <button
             type="button"
             className="ui-btn ui-btn--accent rf-share"
@@ -110,6 +122,7 @@ function PopupBody({ onClose, data, loading = false, error = "", onRetry }: Prop
             </svg>
             Share my link
           </button>
+          )}
 
           {error && !url ? (
             <p className="rf-status rf-status--err" role="alert">

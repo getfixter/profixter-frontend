@@ -125,6 +125,37 @@ export async function savePayee(id: string, payee: PayeeInput, reauthToken?: str
 
 export const money = (cents: number) => `$${(Math.round(cents) / 100).toFixed(2)}`;
 
+/* ------------------------------------------------------------------ the site-wide popup's memory */
+
+/** Shown or dismissed in this browser: not again for 30 days (owner 2026-11-20). */
+const POPUP_KEY = "pf_referral_popup_at";
+export const POPUP_QUIET_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** May the popup open by itself now? False when storage is blocked (it would open on every page otherwise). */
+export function popupDue(now = Date.now()): boolean {
+  try {
+    // Automated browsers (navigator.webdriver) never get it by surprise, like the welcome entry (lib/welcome-entry):
+    // the site's own browser suites keep testing their pages; a test of this popup opts in.
+    if (navigator.webdriver && window.localStorage.getItem("pf_referral_popup_test") !== "1") return false;
+    const at = Number(window.localStorage.getItem(POPUP_KEY) || 0);
+    return !(at > 0 && now - at < POPUP_QUIET_MS);
+  } catch {
+    return false;
+  }
+}
+
+export function rememberPopup(now = Date.now()): void {
+  try {
+    window.localStorage.setItem(POPUP_KEY, String(now));
+  } catch {
+    /* not remembered */
+  }
+}
+
+/** Where a signed-out visitor's "Get my referral link" goes: sign in (or create an account), then the referral card. */
+export const REFERRAL_CARD_PATH = "/account?referrals=1";
+export const SIGNED_OUT_REFERRAL_HREF = `/signin?next=${encodeURIComponent(REFERRAL_CARD_PATH)}`;
+
 /** The message the share sheet and Copy link carry. */
 export function shareMessage(url: string): string {
   return `I use Profixter for handyman help at home. Here's my link if you want to try a membership: ${url}`;

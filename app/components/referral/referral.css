@@ -30,8 +30,10 @@
 }
 
 /* Focus moves to the dialog itself on open (for screen readers): no ring around the whole card. */
-.rf-sheet:focus,
-.rf-sheet:focus-visible { outline: none; box-shadow: var(--ui-shadow-3); }
+/* (beats the site-wide [tabindex]:focus-visible ring in ui.css, which is :root[data-surface] scoped) */
+:root .rf-sheet:focus,
+:root .rf-sheet:focus-visible,
+:root[data-surface="site"] .rf-sheet[tabindex]:focus-visible { outline: none; box-shadow: var(--ui-shadow-3); }
 
 /* The grab handle a phone user expects on a sheet. Decorative. */
 .rf-handle {
@@ -44,15 +46,20 @@
 
 .rf-close {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  display: flex;
+  top: 10px;
+  right: 14px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: calc(44px / var(--site-zoom, 1));
-  height: calc(44px / var(--site-zoom, 1));
+  gap: 6px;
+  min-height: calc(44px / var(--site-zoom, 1));
+  padding: 0 14px;
+  border: 1px solid var(--ui-line-2);
   border-radius: 999px;
-  color: var(--ui-text-3);
+  background: var(--ui-bg);
+  color: var(--ui-ink);
+  font-size: var(--ui-fs-small);
+  font-weight: 600;
   transition: background-color var(--ui-dur-1) var(--ui-ease);
 }
 .rf-close:hover { background: var(--ui-bg-soft); color: var(--ui-ink); }
@@ -61,7 +68,7 @@
 /* "Get up to $149 per referral": one heading, the amount drawn as the hero. */
 .rf-title {
   margin: 14px 0 0;
-  padding-right: 36px;
+  padding-right: 96px;
   color: var(--ui-ink);
   font-weight: 600;
   letter-spacing: var(--ui-track-head);
@@ -105,6 +112,7 @@
   font-size: 1.0625rem;
 }
 .rf-share[aria-busy="true"] { opacity: 0.7; }
+a.rf-share { text-decoration: none; }
 
 .rf-how {
   display: inline-flex;

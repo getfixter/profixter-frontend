@@ -69,15 +69,17 @@ function adminReward(over = {}) {
   };
 }
 
-async function open(browser, { device = null, viewport = { width: 390, height: 844 }, me = null, share = "native", welcome = false, initial = {}, rewards = rewardsFixture() } = {}) {
+async function open(browser, { device = null, viewport = { width: 390, height: 844 }, me = null, share = "native", welcome = false, initial = {}, rewards = rewardsFixture(), gift = false, member = false } = {}) {
   const mobile = viewport.width < 700;
   const ctx = await browser.newContext(device ? { ...device } : { viewport, isMobile: mobile, hasTouch: mobile });
   await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: BASE }).catch(() => {});
-  await ctx.addInitScript(({ signedIn, share: mode, welcome: w, initial: init }) => {
+  await ctx.addInitScript(({ signedIn, share: mode, welcome: w, initial: init, gift: g }) => {
     try {
       if (signedIn) localStorage.setItem("token", "ui-token");
       if (w) localStorage.setItem("pf_welcome_test", "1");
-      localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
+      // This suite tests the referral popup: opt in (automated browsers never get it by surprise).
+      localStorage.setItem("pf_referral_popup_test", "1");
+      if (!g) localStorage.setItem("profixter_promotion_popup_dismissed_date", new Date().toISOString().slice(0, 10));
       for (const [k, v] of Object.entries(init || {})) if (!sessionStorage.getItem(`__init_${k}`)) {
         localStorage.setItem(k, v);
         sessionStorage.setItem(`__init_${k}`, "1");
@@ -99,7 +101,7 @@ async function open(browser, { device = null, viewport = { width: 390, height: 8
         delete Navigator.prototype.canShare;
       } catch {}
     }
-  }, { signedIn: Boolean(me), share, welcome, initial });
+  }, { signedIn: Boolean(me), share, welcome, initial, gift });
 
   const state = { me, rewards, claims: [], payees: [], verifies: [], checkouts: [], outside: [], admin: { reward: adminReward(), calls: [] } };
   await ctx.route("**/*", async (route) => {
@@ -147,7 +149,8 @@ async function open(browser, { device = null, viewport = { width: 390, height: 8
       state.checkouts.push(body());
       return json({ url: `${BASE}/__stripe_test`, sessionId: "cs_test" });
     }
-    if (p === "/api/subscriptions/my") return json({ subscriptions: [] });
+    if (p === "/api/subscriptions/my") return json({ subscriptions: member ? [{ _id: "s1", status: "active", plan: "basic", subscriptionType: "basic", billingCycle: "monthly", addressId: "a1", startDate: "2026-10-01T12:00:00Z", currentPeriodEnd: "2026-12-01T12:00:00Z" }] : [] });
+    if (p === "/api/promotion-popup/active") return json(gift ? { popup: { title: "Give the Gift of Handyman Help", message: "Gift a membership.", ctaText: "Give a Membership", ctaUrl: "/gift", target: "all_public", eyebrow: "", promoCode: "", secondaryText: "", secondaryUrl: "" } } : { popup: null });
     if (p === "/api/stripe/checkout/welcome-offer") return json({ eligible: false, serverNow: new Date().toISOString(), percentOff: 20 });
     // Admin
     if (p === "/api/admin/needs-action") return json({ generatedAt: new Date().toISOString(), total: 1, sections: [], items: [] });
@@ -361,6 +364,122 @@ const zoom = (page) => page.evaluate(() => parseFloat(getComputedStyle(document.
       await page.goto(`${BASE}/membership/plans`, { waitUntil: "networkidle" });
       await wait(800);
       check("a failed claim keeps the code for later", (await page.evaluate(() => JSON.parse(localStorage.getItem("pf_referral") || "{}").code)) === CODE);
+      await ctx.close();
+    }
+
+    /* ------------------------------------------- the popup for EVERYONE on the public site (2026-11-20) */
+    for (const [label, dev] of [["phone", { device: devices["Pixel 7"] }], ["desktop", { viewport: { width: 1366, height: 860 } }]]) {
+      const { ctx, page, errors, state } = await open(browser, { ...dev, share: "none" });
+      await page.goto(`${BASE}/services`, { waitUntil: "networkidle" });
+      await page.waitForSelector("[data-referral-popup]", { timeout: 8000 }).catch(() => {});
+      check(`${label}, fresh signed-out visitor: the popup opens by itself`, await page.locator("[data-referral-popup]").isVisible().catch(() => false));
+      const title = (await page.locator("[data-referral-title]").innerText().catch(() => "")).replace(/\s+/g, " ").trim();
+      check(`${label}, signed out: same heading and line`, title === "Get up to $149 per referral" && (await page.locator(".rf-lead").innerText()).trim() === "Refer a friend to Profixter. The Basic plan qualifies, too.");
+      const btn = page.locator("[data-referral-get-link]");
+      check(`${label}, signed out: "Get my referral link" goes through sign-in to the referral card`, (await btn.innerText()).trim() === "Get my referral link" && (await btn.getAttribute("href")) === "/signin?next=%2Faccount%3Freferrals%3D1" && !(await page.locator("[data-referral-share]").count()));
+      const close = page.locator("[data-referral-close]");
+      const cb = await close.boundingBox();
+      check(`${label}: an obvious Close button (the word Close, a full tap target)`, (await close.innerText()).trim() === "Close" && cb && cb.height >= 36, JSON.stringify(cb));
+      await shot(page, `20-public-signed-out-${label}`);
+      await close.click();
+      await wait(300);
+      check(`${label}: Close dismisses it`, !(await page.locator("[data-referral-popup]").count()));
+      const at = Number(await page.evaluate(() => localStorage.getItem("pf_referral_popup_at")));
+      check(`${label}: dismissal remembered for 30 days`, at > Date.now() - 60000);
+      await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
+      await wait(2800);
+      check(`${label}: not again on the next page or visit`, !(await page.locator("[data-referral-popup]").count()));
+      await page.evaluate(() => localStorage.setItem("pf_referral_popup_at", String(Date.now() - 31 * 86400000)));
+      await page.goto(`${BASE}/services`, { waitUntil: "networkidle" });
+      await page.waitForSelector("[data-referral-popup]", { timeout: 8000 }).catch(() => {});
+      check(`${label}: after 30 days it can show again`, await page.locator("[data-referral-popup]").isVisible().catch(() => false));
+      check(`${label}: no page errors (public)`, errors.length === 0, errors.join(" | "));
+      check(`${label}: nothing left the machine (public; the page's own YouTube embed is blocked too)`, state.outside.filter((h) => !/(^|.)youtube.com$/.test(h)).length === 0, [...new Set(state.outside)].join(","));
+      await ctx.close();
+    }
+    {
+      // Never in the way: booking, plans/checkout, sign-in; never over the welcome flow (after it, yes).
+      const { ctx, page } = await open(browser, { device: devices["Pixel 7"], welcome: true });
+      for (const path of ["/book/handyman", "/book/free", "/membership/plans", "/signin"]) {
+        await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+        await wait(2800);
+        check(`not on ${path}`, !(await page.locator("[data-referral-popup]").count()));
+      }
+      await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+      await wait(3000);
+      check("never over the welcome flow", (await page.locator("[data-welcome]").isVisible().catch(() => false)) && !(await page.locator("[data-referral-popup]").count()));
+      await page.click(".wf-head .hd__brand");
+      await page.waitForSelector("[data-referral-popup]", { timeout: 8000 }).catch(() => {});
+      check("after the welcome flow (the visitor chose the homepage), it shows", await page.locator("[data-referral-popup]").isVisible().catch(() => false));
+      await ctx.close();
+    }
+    {
+      // Somebody already using the homepage booking form is never interrupted.
+      const { ctx, page } = await open(browser, { viewport: { width: 1366, height: 860 }, initial: { pf_welcome: "home" } });
+      await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+      await page.waitForSelector("[data-home-booking]", { timeout: 15000 });
+      await page.locator("[data-home-booking]").click({ position: { x: 20, y: 20 } }).catch(() => {});
+      await wait(3500);
+      check("a visitor already using the booking form is not interrupted", !(await page.locator("[data-referral-popup]").count()));
+      await ctx.close();
+    }
+    {
+      // Another popup first (the gift promotion): the referral popup waits and opens after it closes.
+      const { ctx, page } = await open(browser, { viewport: { width: 1366, height: 860 }, gift: true });
+      await page.goto(`${BASE}/services`, { waitUntil: "networkidle" });
+      await page.waitForSelector("#promotion-popup-title", { timeout: 8000 }).catch(() => {});
+      await wait(2500);
+      check("with the gift popup open, the referral popup waits", (await page.locator("#promotion-popup-title").isVisible().catch(() => false)) && !(await page.locator("[data-referral-popup]").count()));
+      await page.click("button[aria-label='Close promotion']");
+      await page.waitForSelector("[data-referral-popup]", { timeout: 8000 }).catch(() => {});
+      check("and opens after the gift popup closes", await page.locator("[data-referral-popup]").isVisible().catch(() => false));
+      await ctx.close();
+    }
+    {
+      // Signed-out button: sign-in (here, a new account by phone code) and then straight to the referral card.
+      const { ctx, page } = await open(browser, { device: devices["Pixel 7"] });
+      await page.goto(`${BASE}/services`, { waitUntil: "networkidle" });
+      await page.waitForSelector("[data-referral-get-link]", { timeout: 8000 });
+      await page.click("[data-referral-get-link]");
+      await page.waitForURL(/\/signin/, { timeout: 8000 });
+      check("Get my referral link opens sign-in with the way back to the referral card", new URL(page.url()).searchParams.get("next") === "/account?referrals=1", page.url());
+      await page.click(".auth-method--primary");
+      await page.fill("#phone", "6315550199");
+      await page.click(".auth-submit");
+      await page.waitForSelector(".auth-otp");
+      await page.fill(".auth-otp", "123456");
+      await wait(400);
+      if (await page.locator(".auth-submit").isVisible().catch(() => false)) await page.click(".auth-submit").catch(() => {});
+      await page.waitForURL(/\/account/, { timeout: 15000 }).catch(() => {});
+      await page.waitForSelector("[data-account-referrals]", { timeout: 15000 }).catch(() => {});
+      await wait(1500);
+      const card = await page.locator("[data-account-referrals]").boundingBox().catch(() => null);
+      const vh = await page.evaluate(() => window.innerHeight);
+      check("after signing up it lands on the account with the referral card in view", /\/account\?referrals=1/.test(page.url()) && card && card.y < vh && card.y + card.height > 0, `${page.url()} ${JSON.stringify(card)}`);
+      check("and the popup doesn't open again over the card", !(await page.locator("[data-referral-popup]").count()));
+      check("the new account (no membership) can share: Share my link in the card", await page.locator("[data-open-referral]").isVisible());
+      await shot(page, "21-signed-out-to-card-phone");
+      await ctx.close();
+    }
+    for (const [label, member] of [["member", true], ["non-member", false]]) {
+      const { ctx, page, errors } = await open(browser, { device: devices["Pixel 7"], me: CUSTOMER, member, share: "native" });
+      await page.goto(`${BASE}/services`, { waitUntil: "networkidle" });
+      await page.waitForSelector("[data-referral-popup]", { timeout: 8000 }).catch(() => {});
+      check(`signed-in ${label}: the popup opens on a public page`, await page.locator("[data-referral-popup]").isVisible().catch(() => false));
+      await page.waitForFunction(() => !document.querySelector("[data-referral-share]")?.hasAttribute("disabled"), null, { timeout: 8000 }).catch(() => {});
+      await page.click("[data-referral-share]");
+      await wait(400);
+      const shares = await page.evaluate(() => window.__shares);
+      check(`signed-in ${label}: Share my link opens sharing with their link`, shares.length === 1 && shares[0].url === URL_, JSON.stringify(shares));
+      await shot(page, `22-public-${label}-phone`);
+      check(`signed-in ${label}: no page errors`, errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open(browser, { viewport: { width: 1366, height: 860 }, me: OWNER });
+      await page.goto(`${BASE}/services`, { waitUntil: "networkidle" });
+      await wait(3000);
+      check("staff (the owner) never get the customer popup", !(await page.locator("[data-referral-popup]").count()));
       await ctx.close();
     }
 

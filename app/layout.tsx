@@ -25,6 +25,7 @@ import { DEFAULT_OG_IMAGE, PROFIXTER_STRUCTURED_DATA, SITE_NAME, SITE_URL } from
 import { META_PIXEL_ID } from "@/lib/meta-config";
 import AttributionCapture from "./components/AttributionCapture";
 import ReferralClaim from "./components/referral/ReferralClaim";
+import SiteReferralPopup from "./components/referral/SiteReferralPopup";
 import PhoneClickTracker from "./components/PhoneClickTracker";
 import MetaPageView from "./components/MetaPageView";
 import ChatGPTPageView from "./components/ChatGPTPageView";
@@ -338,6 +339,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=pfProd?
           <KeyboardAware />
           {/* A friend's referral link, recorded for a signed-in account (lib/referral). */}
           <ReferralClaim />
+          {/* "Get up to $149 per referral" for everyone on the public site, once per browser (2026-11-20). */}
+          <SiteReferralPopup />
         </Providers>
       </body>
     </html>

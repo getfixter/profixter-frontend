@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import "./referral.css";
 import ReferralPopup from "./ReferralPopup";
-import { getMyReferrals, money, savePayee, type MyReferrals, type PayeeInput, type ReferralReward } from "@/lib/referral";
+import { getMyReferrals, money, rememberPopup, savePayee, type MyReferrals, type PayeeInput, type ReferralReward } from "@/lib/referral";
 import { readApiError, startReauth, verifyReauth } from "@/lib/auth2";
 
 /**
@@ -13,42 +13,20 @@ import { readApiError, startReauth, verifyReauth } from "@/lib/auth2";
  * check. Saving that needs a fresh "confirm it's you" code, like changing a
  * verified email or phone (BackEnd routes/referrals.js).
  *
- * The popup also opens by itself once in a while on the account overview
- * (AUTO_KEY): a customer who never scrolls this far still hears about it.
- * Any signed-in customer, member or not.
+ * The popup opens by itself site-wide once per browser (SiteReferralPopup);
+ * here it opens only from the card. Any signed-in customer, member or not.
  */
 
-const AUTO_KEY = "pf_referral_popup_at";
-const AUTO_EVERY_MS = 30 * 24 * 60 * 60 * 1000;
-const AUTO_DELAY_MS = 1200;
-
 const PILL: Record<string, string> = { pending: "rf-pill--pending", eligible: "rf-pill--ready", approved: "rf-pill--ready", mailed: "rf-pill--done" };
-
-function readAuto(): number {
-  try {
-    return Number(window.localStorage.getItem(AUTO_KEY) || 0);
-  } catch {
-    return Date.now(); // storage blocked: never auto-open (it would open on every visit)
-  }
-}
-function markAuto() {
-  try {
-    window.localStorage.setItem(AUTO_KEY, String(Date.now()));
-  } catch {
-    /* not remembered */
-  }
-}
 
 const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "");
 
 export default function AccountReferrals({
   defaultName = "",
   defaultAddress = null,
-  autoOpen = true,
 }: {
   defaultName?: string;
   defaultAddress?: { line1?: string; unit?: string; city?: string; state?: string; zip?: string } | null;
-  autoOpen?: boolean;
 }) {
   const [data, setData] = useState<MyReferrals | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,26 +58,9 @@ export default function AccountReferrals({
     }
   }, []);
 
-  useEffect(() => {
-    if (!autoOpen || !data?.eligible || !data.url) return;
-    if (new URLSearchParams(window.location.search).get("referrals") === "1") return;
-    if (Date.now() - readAuto() < AUTO_EVERY_MS) return;
-    const t = window.setTimeout(() => {
-      // Never on top of another OPEN dialog (Manage plan, the phone gate); the closed menu sheet stays in the page, hidden.
-      const shown = [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')].some((d) => {
-        const r = d.getBoundingClientRect();
-        const cs = getComputedStyle(d);
-        return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none" && Number(cs.opacity) > 0.05 && d.closest("[inert], [aria-hidden='true']") === null;
-      });
-      if (shown) return;
-      markAuto();
-      setOpen(true);
-    }, AUTO_DELAY_MS);
-    return () => window.clearTimeout(t);
-  }, [autoOpen, data]);
 
   const close = useCallback(() => {
-    markAuto();
+    rememberPopup();
     setOpen(false);
   }, []);
 
