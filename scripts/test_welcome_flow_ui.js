@@ -47,9 +47,9 @@ function ymd(offset) {
 }
 const ME = { _id: "u1", userId: "40000001", name: "Dana Lopez", email: "dana@mailbox.org", phone: "+15165550123", phoneVerified: true, emailVerified: true, role: "customer", permissions: [], addresses: [] };
 
-async function open(browser, { width = 390, height = 844, me = null, welcome = true, ua, takenTime = "" } = {}) {
+async function open(browser, { width = 390, height = 844, me = null, welcome = true, ua, takenTime = "", device = null } = {}) {
   const mobile = width < 700;
-  const ctx = await browser.newContext({ viewport: { width, height }, isMobile: mobile, hasTouch: mobile, ...(ua ? { userAgent: ua } : {}) });
+  const ctx = await browser.newContext(device ? { ...device } : { viewport: { width, height }, isMobile: mobile, hasTouch: mobile, ...(ua ? { userAgent: ua } : {}) });
   await ctx.addInitScript(({ signedIn, welcome: w }) => {
     try {
       if (signedIn) localStorage.setItem("token", "ui-token");
@@ -59,7 +59,7 @@ async function open(browser, { width = 390, height = 844, me = null, welcome = t
       window.addEventListener("pf:step", (e) => window.__steps.push(e.detail));
     } catch {}
   }, { signedIn: Boolean(me), welcome });
-  const state = { me, holds: [], guest: [], firstVisit: [], memberships: [], outside: [], unexpected: [], urls: [] };
+  const state = { me, holds: [], guest: [], firstVisit: [], memberships: [], outside: [], unexpected: [], urls: [], contactEmail: [], names: [] };
   await ctx.route("**/*", async (route) => {
     const req = route.request();
     const u = new URL(req.url());
@@ -110,6 +110,18 @@ async function open(browser, { width = 390, height = 844, me = null, welcome = t
       const t = text();
       state.guest.push({ returnTo: field(t, "returnTo"), visitorId: field(t, "visitorId"), consentText: field(t, "consentText"), name: field(t, "name"), phone: field(t, "phone"), email: field(t, "email"), note: field(t, "note"), requestedTime: field(t, "requestedTime"), holdToken: field(t, "holdToken"), zip: field(t, "zip") });
       return json({ url: "https://checkout.stripe.test/cs_guest", bookingId: "b-guest-1", holdExpiresAt: new Date(Date.now() + 1800000).toISOString() });
+    }
+    if (p === "/api/auth/contact/email" && m === "POST") {
+      const body = JSON.parse(req.postData() || "{}");
+      state.contactEmail.push(body.email);
+      state.me = { ...state.me, email: body.email };
+      return json({ status: "saved", user: state.me });
+    }
+    if (p === "/api/users/me/profile" && m === "PATCH") {
+      const body = JSON.parse(req.postData() || "{}");
+      state.names.push(body.name);
+      state.me = { ...state.me, name: body.name };
+      return json({ user: state.me });
     }
     if (p === "/api/users/me/addresses" && m === "POST") {
       const body = JSON.parse(req.postData() || "{}");
@@ -282,16 +294,11 @@ async function main() {
       const chatRect = await rect(page, "[data-support-chat] > button");
       check("call and chat never cover Continue", !overlaps(callRect, contRect) && !overlaps(chatRect, contRect), JSON.stringify({ callRect, chatRect, contRect }));
 
-      // A taken time: picked again, nothing else lost.
+      // Choosing a time holds nothing yet: a visitor who leaves here blocks nobody.
       await page.locator(`[data-welcome] .bk-time[data-time='${SCHEDULE[0]}']`).first().click().catch(() => undefined);
       await cont(page);
       await page.waitForTimeout(400);
-      const errText = await page.locator("[data-welcome] .bk-error").first().innerText().catch(() => "");
-      check("a taken time: still on the calendar, told why", (await screenOf(page)) === "time" && /taken/i.test(errText), errText);
-      await page.locator(`[data-welcome] .bk-time[data-time='${SCHEDULE[1]}']`).first().click();
-      await cont(page);
-      await page.waitForTimeout(400);
-      check("another time is held and the job comes next", (await screenOf(page)) === "job" && state.holds.length >= 2);
+      check("the time is checked, not held, and the job comes next", (await screenOf(page)) === "job" && state.holds.length === 0, String(state.holds.length));
       const jobText = await page.locator(".wf-main").innerText();
       check("the job screen says what a visit is and asks for photos briefly", /up to 90 minutes/i.test(jobText) && /Photos help us come prepared\./.test(jobText));
 
@@ -326,9 +333,21 @@ async function main() {
       await page.fill("input[name='name']", "Sam Rivera");
       await page.fill("input[name='phone']", "(516) 555-0177");
       await page.fill("input[name='email']", "sam@mailbox.org");
+      // Going on to the price holds the time; it was taken meanwhile.
+      await cont(page);
+      await page.waitForTimeout(500);
+      const errText = await page.locator("[data-welcome] .bk-error").first().innerText().catch(() => "");
+      check("held only on the way to the price; taken meanwhile: back to the calendar, told why", state.holds.length === 1 && (await screenOf(page)) === "time" && /taken/i.test(errText), `${state.holds.length} ${errText}`);
+      await page.locator(`[data-welcome] .bk-time[data-time='${SCHEDULE[1]}']`).first().click();
+      await cont(page);
+      await page.waitForTimeout(300);
+      check("another time: the job is still there", (await screenOf(page)) === "job" && (await page.inputValue("#wf-task")) === "Fix the sticking back door");
       await cont(page);
       await page.waitForTimeout(200);
-      check("one-time review next", (await screenOf(page)) === "review");
+      check("the details are still there", (await screenOf(page)) === "contact" && (await page.inputValue("input[name='email']")) === "sam@mailbox.org");
+      await cont(page);
+      await page.waitForTimeout(400);
+      check("one-time review next, the new time held", (await screenOf(page)) === "review" && state.holds.length === 2 && state.holds[1].requestedTime === SCHEDULE[1]);
       await shot(page, "04-review");
       const review = await page.locator(".wf-main").innerText();
       check("review: the visit, $99, 90 minutes, owner review, consent", /One-Time Visit/.test(review) && /\$99/.test(review) && /90 minutes/.test(review) && /review every visit request/i.test(review) && /By booking, you agree/.test(review), review.slice(0, 300));
@@ -385,8 +404,10 @@ async function main() {
       check("annual prices", /\$1,490/.test(await page.locator(".wf-plan").first().innerText()));
       await page.click("[data-plan='premium']");
       check("plans_view counted", (await steps(page)).includes("welcome_plans_view"));
+      check("nothing held while choosing a time and a plan", state.holds.length === 0, String(state.holds.length));
       await cont(page);
       await page.waitForURL(/\/signup/, { timeout: 8000 });
+      check("the time is held as they go to verify their phone", state.holds.length === 1 && state.holds[0].requestedTime === SCHEDULE[2], JSON.stringify(state.holds));
       const url = new URL(page.url());
       check("verification: the existing passwordless sign-up, back to /start?resume=pay", url.searchParams.get("next") === "/start?resume=pay", page.url());
       await page.waitForTimeout(500);
@@ -396,8 +417,8 @@ async function main() {
       check("the plan, time and job travel in the draft", draft.plan === "premium" && draft.cycle === "annual" && draft.time === SCHEDULE[2] && /TV/.test(draft.task), JSON.stringify({ plan: draft.plan, cycle: draft.cycle, time: draft.time }));
       check("no page errors", errors.length === 0, errors.join(" | "));
 
-      // Signed in now (as the sign-up page would leave it): back to pay.
-      state.me = { ...ME };
+      // Signed in now by phone code, as the sign-up page leaves a new account: a verified phone, no name, no email.
+      state.me = { ...ME, name: "", email: "", emailVerified: false };
       await page.evaluate(() => localStorage.setItem("token", "ui-token"));
       await page.goto(BASE + "/start?resume=pay", { waitUntil: "networkidle" });
       await page.waitForTimeout(500);
@@ -411,6 +432,7 @@ async function main() {
       check("pay: the plan, its limit, the price and the first visit", /Premium membership/.test(pay) && /Book up to 2 visits at a time/.test(pay) && /\$3,490/.test(pay) && /Mount a TV/.test(pay), pay.slice(0, 300));
       await page.click(".wf-continue");
       await page.waitForURL(/checkout\.stripe\.test/, { timeout: 8000 }).catch(() => undefined);
+      check("one code was enough: the typed name and email were saved, no email code asked", state.contactEmail.length === 1 && state.contactEmail[0] === "dana@mailbox.org" && state.names[0] === "Dana Lopez" && (await page.locator("[role='dialog']:visible").count()) === 0, JSON.stringify({ e: state.contactEmail, n: state.names }));
       const fv = state.firstVisit[0] || {};
       const mc = state.memberships[0] || {};
       check("the visit is saved on the server first (book-first)", fv.addressId === "a-new" && fv.requestedTime === SCHEDULE[2] && Boolean(fv.holdToken), JSON.stringify(fv));
@@ -476,7 +498,11 @@ async function main() {
   if (passed !== results.length) process.exit(1);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
+/* Shared with scripts/test_welcome_devices.js: the same mocked API and helpers. */
+module.exports = { open, fillAddress, SCHEDULE, rect, overlaps, screenOf, visible };

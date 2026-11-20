@@ -84,6 +84,9 @@ html[data-pf-welcome="1"] .wf-home-hide { display: none !important; }
 .wf-summary div { display: grid; grid-template-columns: 72px 1fr; gap: var(--ui-s2); }
 .wf-summary dt { font-size: var(--ui-fs-small); color: var(--ui-text-3); }
 .wf-summary dd { margin: 0; font-size: var(--ui-fs-small); font-weight: 600; overflow-wrap: anywhere; }
+/* "Change" is a full tap target, not a word-sized one. */
+.wf-summary .bk-link,
+.wf-paycard .bk-link { display: inline-flex; align-items: center; min-height: var(--tap, 44px); padding: 0 6px; margin: -12px 0; }
 
 .wf-plans { display: grid; gap: var(--ui-s2); margin-top: var(--ui-s3); }
 .wf-plan,

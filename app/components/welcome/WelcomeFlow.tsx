@@ -14,8 +14,9 @@ import HoldCountdown from "@/app/components/booking4/HoldCountdown";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
 import { useServiceTextsOptIn } from "@/app/components/booking/ServiceTextsOptIn";
 import { useAuth } from "@/lib/useAuth";
-import { addHome, formatPhoneInput } from "@/lib/auth2";
-import { createOneTimeVisitCheckout, getOneTimeVisitConfig } from "@/lib/booking-service";
+import { addHome, formatPhoneInput, missingContact, readApiError, updateProfileName } from "@/lib/auth2";
+import { createOneTimeVisitCheckout, getOneTimeVisitConfig, getTimeSlots } from "@/lib/booking-service";
+import { normalizeDayAvailability } from "@/lib/booking-calendar-availability";
 import { PLAN_DETAILS } from "@/lib/stripe-links";
 import { BENEFIT_ROWS, benefitIncluded, benefitLabel, ANNUAL_MONTHS_CHARGED } from "@/app/data/plan-benefits";
 import type { Plan } from "@/app/data/content";
@@ -49,11 +50,16 @@ import {
  *   nudge     one-time only: Members can book as many visits as they need.
  *             [Show me membership] (the membership path) [Continue with one visit]
  *   address   existing AddressField + service-area check
- *   time      existing SlotPicker; the time is held on Continue (POST /api/bookings/hold)
+ *   time      existing SlotPicker; Continue re-checks the time is still open (nothing is
+ *             held yet: a visitor who leaves here blocks nobody's slot)
  *   job       the job, optional photos, what a visit is
  *   contact   name, mobile, email in one form (native autofill); signed in: skipped
  *   plans     membership: the existing plans and prices, each plan's limit on
  *             visits booked at once - before verification and payment
+ *   (hold)    the time is held (POST /api/bookings/hold, 30 minutes) only when they go on
+ *             to the price: the one-time review, or from the plans to verification;
+ *             the checkout re-holds it for the Stripe page. Taken by then: back to the
+ *             calendar, every other answer kept.
  *   pay       membership, signed in: review, then the existing membership
  *             book-first checkout (first-visit draft + Stripe; the webhook books it)
  *   review    one-time: the visit, price and terms, then the existing guest checkout
@@ -338,6 +344,11 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
   /* The logo or a menu link: the current homepage (or that page), remembered. */
   const leave = (event?: { brand: boolean; preventDefault: () => void }) => {
     trackStep("welcome_exit_home");
+    // Leaving the flow: a time they were holding goes back on the calendar now, not in 30 minutes.
+    if (draft.holdToken) {
+      API.post("/api/bookings/hold/release", { token: draft.holdToken }).catch(() => undefined);
+      update({ holdToken: "", holdFor: "", holdExpiresAt: "" });
+    }
     chooseHomepage();
     if (entry === "home") {
       // Already on the homepage: the logo just shows it (no navigation, the ad's URL kept).
@@ -402,6 +413,17 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
       return true;
     }
   };
+  /* Is the chosen time still open? (Read only. The visitor's own hold counts as theirs; an unanswered check goes on - the hold re-checks.) */
+  const stillOpen = async (date: string, time: string): Promise<boolean> => {
+    if (draft.holdToken && draft.holdFor === `${date} ${time}`) return true;
+    try {
+      const day = normalizeDayAvailability(await getTimeSlots(date));
+      const slot = day?.slots?.find((x) => x.time === time);
+      return !slot || slot.available === true;
+    } catch {
+      return true;
+    }
+  };
   const continueTime = async () => {
     if (busy) return;
     if (!draft.date || !draft.time) {
@@ -410,12 +432,31 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
     }
     setErrors({});
     setBusy(true);
-    const held = await holdTime(draft.date, draft.time, draft.holdToken);
+    const open = await stillOpen(draft.date, draft.time);
     setBusy(false);
-    if (!held) return;
+    if (!open) {
+      update({ time: "", timeConfirmed: false });
+      setErrors({ when: "That time was just taken. Pick another - everything else is saved." });
+      return;
+    }
     update({ timeConfirmed: true });
     trackStep("welcome_slot_done");
     go("job");
+  };
+  /*
+   * Hold the time now that they are going on to the price (2026-11-20): taken
+   * meanwhile sends them back to the calendar with everything else kept.
+   */
+  const holdBeforePrice = async (): Promise<boolean> => {
+    setBusy(true);
+    const held = await holdTime(draft.date, draft.time, draft.holdToken);
+    setBusy(false);
+    if (!held) {
+      setScreen("time");
+      depth.current += 1;
+      window.history.pushState({ ...(window.history.state || {}), wf: "time", wfPath: path }, "", window.location.href);
+    }
+    return held;
   };
   /* The time was lost after it was held (taken at checkout): back to the calendar, nothing else re-entered. */
   const timeTaken = () => {
@@ -426,27 +467,33 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
     setErrors({ when: "That time was just taken. Pick another - everything else is saved." });
   };
 
-  const continueJob = () => {
+  const continueJob = async () => {
     if (words(draft.task) < 3) {
       setErrors({ task: "Tell us in a few words what needs doing." });
       return;
     }
     trackStep("welcome_job_done");
-    go(nextAfter("job"));
+    const next = nextAfter("job");
+    if (next === "review" && !(await holdBeforePrice())) return;
+    go(next);
   };
 
-  const continueContact = (e?: FormEvent) => {
+  const continueContact = async (e?: FormEvent) => {
     e?.preventDefault();
     const found = contactErrors(draft);
     setErrors(found);
     if (Object.keys(found).length) return;
     update({ name: draft.name.trim(), email: draft.email.trim(), phone: phoneDigits(draft.phone) });
     trackStep("welcome_contact_done");
-    go(nextAfter("contact"));
+    const next = nextAfter("contact");
+    if (next === "review" && !(await holdBeforePrice())) return;
+    go(next);
   };
 
-  const continuePlans = () => {
+  const continuePlans = async () => {
+    if (busy) return;
     update({ choice: "membership", plan, cycle });
+    if (!(await holdBeforePrice())) return;
     trackStep("plan_selected");
     if (user) {
       go("pay");
@@ -478,6 +525,34 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
   const chosenPlan = PLAN_DETAILS.find((p) => p.id === plan) || PLAN_DETAILS[0];
   const regularCents = (id: string, monthly: number) => (cycle === "annual" ? (offer.plans[id]?.annualCents ?? monthly * ANNUAL_MONTHS_CHARGED * 100) : (offer.plans[id]?.monthlyCents ?? monthly * 100));
   const prefill = { name: draft.name, phone: draft.phone ? formatPhoneInput(draft.phone) : "", email: draft.email };
+  /*
+   * One code to buy (2026-11-20). They proved their phone at sign-up and typed
+   * their name and email in this flow: those are saved to the account without a
+   * second code (BackEnd POST /api/auth/contact/email - a receipt address that
+   * cannot open the account until verified). Anything this cannot do (an email
+   * another account uses, no verified phone) falls back to the usual contact
+   * step, prefilled.
+   */
+  const completeContactFromFlow = async (): Promise<typeof user> => {
+    if (!user) return user;
+    const missing = missingContact(user);
+    try {
+      if (missing.name && draft.name.trim().split(/\s+/).length >= 2) await updateProfileName(draft.name.trim());
+      if (missing.email && draft.email.trim() && user.phoneVerified !== false) {
+        await API.post("/api/auth/contact/email", { email: draft.email.trim() });
+      }
+    } catch (error) {
+      void readApiError(error);
+    }
+    return missing.name || missing.email ? (await refreshUser()) || user : user;
+  };
+  /* The contact step only for what is still missing after that (read from the fresh account, not the last render). */
+  const contactComplete = async (): Promise<boolean> => {
+    const fresh = await completeContactFromFlow();
+    const still = missingContact(fresh);
+    if (!still.name && !still.phone && !still.email) return true;
+    return ensureContact({ prefill });
+  };
 
   const payMembership = async () => {
     if (pressing.current) return;
@@ -489,7 +564,7 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
     setBusy(true);
     setBanner(null);
     try {
-      if (!(await ensureContact({ prefill }))) return;
+      if (!(await contactComplete())) return;
       const addressId = await resolveAddressId();
       if (!addressId) {
         go("address");
@@ -524,7 +599,10 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
     } catch (error) {
       const f = failure(error, "Something went wrong. Please try again.");
       if (f.code === "SLOT_UNAVAILABLE") timeTaken();
-      else if (WELCOME_OFFER_ERROR_CODES.includes(f.code)) {
+      else if (f.code === "OUT_OF_SERVICE_AREA") {
+        go("address");
+        setErrors({ address: f.message });
+      } else if (WELCOME_OFFER_ERROR_CODES.includes(f.code)) {
         offer.refresh();
         setBanner({ tone: "warn", text: f.message });
       } else if (f.code === "ADDRESS_ALREADY_SUBSCRIBED") {
@@ -549,7 +627,7 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
     trackInitiateCheckout({ content_name: "one_time_visit", value: price ?? undefined, currency: "USD" });
     try {
       if (user) {
-        if (!(await ensureContact({ prefill }))) return;
+        if (!(await contactComplete())) return;
         const addressId = await resolveAddressId();
         if (!addressId) {
           go("address");
