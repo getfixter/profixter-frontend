@@ -37,8 +37,10 @@ async function fresh(browser, { seed } = {}) {
   const ctx = await browser.newContext({ userAgent: UA, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await ctx.addInitScript((seedState) => {
     Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false });
-      // 2026-11-19: the funnel beacons go to the mock below, which off profixter.com needs the test opt-in (lib/tracking-scope).
+      // 2026-11-19: this suite tests the homepage itself, not the welcome entry (lib/welcome-entry), and its
+      // funnel beacons go to the mock below, which off profixter.com needs the test opt-in (lib/tracking-scope).
       try {
+        localStorage.setItem("pf_welcome", "home");
         localStorage.setItem("pf_trackers_allow_host", "1");
       } catch {}
     try {

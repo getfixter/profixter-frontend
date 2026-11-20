@@ -275,6 +275,9 @@ export function otpErrorMessage(err: AuthApiError, channel: "phone" | "email"): 
       return channel === "phone"
         ? "This number already belongs to another Profixter account."
         : "This email already belongs to another Profixter account.";
+    case "SIGN_IN_WITH_PHONE":
+      // An email typed at checkout opens nothing until it is confirmed (BackEnd utils/auth/accounts inboxOpensAccount).
+      return "That email isn't confirmed on its Profixter account yet. Sign in with your mobile number instead.";
     case "NETWORK":
       return "We couldn't reach Profixter. Check your connection and try again.";
     case "REAUTH_REQUIRED":

@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { getCheckoutStatus, type CheckoutStatus } from "@/lib/guest-checkout";
 import { clearHandymanDraft } from "@/lib/handyman-draft";
+import { WELCOME_CHOICE_KEY, WELCOME_FLOW_KEY } from "@/lib/welcome-entry";
 import { clarityBookingEvent } from "@/lib/clarity";
 import { announceBookingSucceeded } from "@/lib/booking-events";
 
@@ -85,6 +86,13 @@ export default function PaidVisitStatus({ sessionId }: { sessionId?: string }) {
     clarityBookingEvent("booking_payment_confirmed", type, sessionId);
     announceBookingSucceeded(type);
     if (st.kind === "one_time") void clearHandymanDraft();
+    // A paying customer is not asked the welcome question again (lib/welcome-entry); the flow's own screen is done.
+    try {
+      window.localStorage.setItem(WELCOME_CHOICE_KEY, "home");
+      window.localStorage.removeItem(WELCOME_FLOW_KEY);
+    } catch {
+      /* private mode */
+    }
     try {
       window.sessionStorage.removeItem("pf_full_day_guest");
     } catch {

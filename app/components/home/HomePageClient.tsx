@@ -5,6 +5,7 @@ import Footer from "@/app/components/sections/Footer";
 import HomeMarketing from "@/app/components/sections/HomeMarketing";
 import HomeLanding from "@/app/components/home/HomeLanding";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
+import WelcomeFlow from "@/app/components/welcome/WelcomeFlow";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { hasActiveMembership } from "@/lib/auth-routing";
@@ -38,7 +39,13 @@ export default function HomePageClient() {
 
   return (
     <RoleEntryGate>
-      <div className="min-h-screen bg-white">
+      {/*
+        The welcome entry (2026-11-19, lib/welcome-entry): a new visitor sees
+        it first; the pre-paint script hides the homepage below (wf-home-hide)
+        for them. Everyone else, and every crawler, gets the homepage as before.
+      */}
+      <WelcomeFlow entry="home" />
+      <div className="min-h-screen bg-white wf-home-hide">
         <div className="sticky top-0 z-50">
           <Header />
         </div>

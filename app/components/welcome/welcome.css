@@ -1,0 +1,177 @@
+/*
+ * The welcome entry (app/components/welcome/WelcomeFlow, 2026-11-19).
+ * On the site's own tokens (app/ui.css) and the booker's controls
+ * (booking4.css). Drawn through the site zoom like every page, so sizes are
+ * design sizes; every control is at least --tap (44 screen pixels).
+ */
+
+/* ---- who sees what on "/" (lib/welcome-entry WELCOME_SCRIPT) ------------ */
+/* The server renders both; the pre-paint attribute picks one, so nothing flashes. */
+.wf[data-entry="home"] { display: none; }
+html[data-pf-welcome="1"] .wf[data-entry="home"] { display: flex; }
+html[data-pf-welcome="1"] .wf-home-hide { display: none !important; }
+
+.wf {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh / var(--site-zoom, 1));
+  background: var(--ui-bg);
+  color: var(--ui-ink);
+}
+.wf-head { position: sticky; top: 0; z-index: 50; }
+.wf-main { flex: 1; display: flex; flex-direction: column; }
+.wf-body {
+  --bk-field-h: max(56px, var(--tap, 48px));
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: var(--ui-s4) var(--ui-gutter) calc(var(--ui-s16) + 56px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- the question screens: the answers low, in the right thumb's reach ---- */
+.wf-body--choice,
+.wf-body--nudge { flex: 1; padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+.wf-ask { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: var(--ui-s6); }
+.wf-q {
+  margin: 0;
+  font-size: var(--ui-fs-h2);
+  line-height: var(--ui-lh-head);
+  letter-spacing: var(--ui-track-head);
+  font-weight: 700;
+  outline: none;
+}
+.wf-q--nudge { font-size: var(--ui-fs-h3); line-height: 1.35; font-weight: 650; }
+.wf-picks { display: grid; gap: var(--ui-s3); }
+.wf-pick {
+  width: 100%;
+  min-height: max(64px, var(--tap, 44px));
+  padding: 0 var(--ui-s5);
+  border: 1.5px solid var(--ui-line-2);
+  border-radius: var(--ui-r-md);
+  background: var(--ui-bg);
+  color: var(--ui-ink);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--ui-dur-1, 120ms), background-color var(--ui-dur-1, 120ms);
+}
+.wf-pick--primary { border-color: var(--ui-accent); background: var(--ui-accent); color: #fff; }
+.wf-pick:active { transform: translateY(1px); }
+.wf-pick:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
+@media (min-width: 1024px) {
+  .wf-ask { justify-content: center; }
+  .wf-body--choice, .wf-body--nudge { padding-bottom: var(--ui-s16); }
+}
+
+/* ---- the step screens ---------------------------------------------------- */
+.wf-title {
+  margin: 0 0 var(--ui-s4);
+  font-size: var(--ui-fs-h3);
+  line-height: var(--ui-lh-head);
+  font-weight: 700;
+  outline: none;
+}
+.wf-note { margin: var(--ui-s2) 0 var(--ui-s3); font-size: var(--ui-fs-small); line-height: 1.45; color: var(--ui-text-2); }
+.wf-note--tight { margin-top: 0; }
+.wf-subhead { margin: var(--ui-s5) 0 var(--ui-s2); font-size: var(--ui-fs-small); font-weight: 700; color: var(--ui-text-2); }
+.wf-form { display: grid; gap: 0; }
+
+.wf-summary { margin: 0; display: grid; gap: var(--ui-s2); padding: var(--ui-s4); border: 1px solid var(--ui-line); border-radius: var(--ui-r-md); background: var(--ui-bg-soft); }
+.wf-summary div { display: grid; grid-template-columns: 72px 1fr; gap: var(--ui-s2); }
+.wf-summary dt { font-size: var(--ui-fs-small); color: var(--ui-text-3); }
+.wf-summary dd { margin: 0; font-size: var(--ui-fs-small); font-weight: 600; overflow-wrap: anywhere; }
+/* "Change" is a full tap target, not a word-sized one. */
+.wf-summary .bk-link,
+.wf-paycard .bk-link { display: inline-flex; align-items: center; min-height: var(--tap, 44px); padding: 0 6px; margin: -12px 0; }
+
+.wf-plans { display: grid; gap: var(--ui-s2); margin-top: var(--ui-s3); }
+.wf-plan,
+.wf-paycard {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: var(--ui-s3) var(--ui-s4);
+  border: 1.5px solid var(--ui-line-2);
+  border-radius: var(--ui-r-md);
+  background: var(--ui-bg);
+  color: var(--ui-ink);
+  font: inherit;
+  text-align: left;
+}
+.wf-plan { cursor: pointer; min-height: var(--tap, 44px); }
+.wf-plan[aria-checked="true"] { border-color: var(--ui-accent); box-shadow: 0 0 0 1px var(--ui-accent) inset; background: var(--ui-accent-soft); }
+.wf-paycard { margin-bottom: var(--ui-s2); border-color: var(--ui-line); }
+.wf-plan-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ui-s3); font-size: 16px; }
+.wf-plan-price { font-weight: 700; font-size: 17px; white-space: nowrap; }
+.wf-plan-price small { font-weight: 500; color: var(--ui-text-3); }
+/* The plan's limit on visits booked at once: always shown, never small print. */
+.wf-plan-pace { margin: 0; font-size: var(--ui-fs-small); font-weight: 650; color: var(--ui-ink); }
+.wf-plan-extras { font-size: 13px; color: var(--ui-text-2); }
+.wf-price-line { margin: 0; font-size: var(--ui-fs-small); color: var(--ui-text-2); }
+
+/* ---- the Continue bar ------------------------------------------------------ */
+/*
+ * Fixed to the bottom, full width, Continue on the right for the right thumb,
+ * Back as a small square on the left. On iPhone the keyboard lays over the
+ * page, so the bar rides on top of it (--kb-inset from KeyboardAware, in screen
+ * pixels, divided back into the zoomed page). Android resizes the page: 0.
+ */
+.wf-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--kb-inset, 0px) / var(--site-zoom, 1));
+  z-index: 45;
+  display: flex;
+  gap: var(--ui-s2);
+  align-items: center;
+  padding: 10px var(--ui-gutter) calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--ui-line);
+  background: rgba(255, 255, 255, 0.97);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+html[data-keyboard="open"] .wf-bar { padding-bottom: 10px; }
+.wf-back {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: max(48px, var(--tap, 44px));
+  height: max(52px, var(--tap, 44px));
+  border: 1.5px solid var(--ui-line-2);
+  border-radius: var(--ui-r-sm);
+  background: var(--ui-bg);
+  color: var(--ui-ink);
+  cursor: pointer;
+}
+.wf-continue { flex: 1; min-height: max(52px, var(--tap, 44px)); font-size: 17px; }
+@media (min-width: 1024px) {
+  .wf-bar { justify-content: center; }
+  .wf-continue { flex: 0 1 520px; }
+}
+
+/*
+ * The floating Call (left) and chat (right) buttons sit above the bar while
+ * it shows, so neither covers Continue; while a field has the keyboard, both
+ * step aside (the call button already does, ui-shell.css).
+ */
+/* The signed-in customer's tab bar would sit on the Continue bar: a focused flow does without it. */
+html[data-wf-active] .csn { display: none !important; }
+:root[data-surface="site"][data-wf-active][data-wf-bar] {
+  --pf-support-chat-bottom-mobile: calc(84px + env(safe-area-inset-bottom, 0px) + 10px);
+  --pf-support-chat-bottom: 96px;
+}
+html[data-wf-active][data-keyboard="open"] [data-support-chat] > button:first-child {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* The question takes focus on each new screen for screen readers; it is not a control, so no focus ring. */
+.wf .wf-q:focus,
+.wf .wf-q:focus-visible,
+.wf .wf-title:focus,
+.wf .wf-title:focus-visible { outline: none; box-shadow: none; }

@@ -134,6 +134,7 @@ export default function SignUpPage() {
     const params = new URLSearchParams(window.location.search);
     const next = safeReturnPath(params.get("next")) || "";
     let nextCarry: Carry = null;
+    let welcomePhone = "";
     if (next.startsWith("/book/free")) {
       const draft = loadDraft();
       if (hasBookableDraft(draft)) {
@@ -156,6 +157,18 @@ export default function SignUpPage() {
         const name = `${handyman.plan.charAt(0).toUpperCase()}${handyman.plan.slice(1)}`;
         nextCarry = { kind: "plan", label: `${name} membership, ${handyman.cycle === "annual" ? "annual" : "monthly"}` };
       }
+    } else if (next.startsWith("/start")) {
+      /*
+       * The welcome entry (2026-11-19): they already typed their name, mobile
+       * and email and chose a plan, so the page names the plan and the number
+       * is filled in - one tap sends the code.
+       */
+      const handyman = loadHandymanDraft();
+      if (handyman?.plan) {
+        const name = `${handyman.plan.charAt(0).toUpperCase()}${handyman.plan.slice(1)}`;
+        nextCarry = { kind: "plan", label: `${name} membership, ${handyman.cycle === "annual" ? "annual" : "monthly"}` };
+      }
+      if (handyman?.phone) welcomePhone = formatPhoneInput(handyman.phone);
     } else if (next.startsWith("/membership/plans") || next.startsWith("/book?visit=membership")) {
       try {
         const pending = JSON.parse(sessionStorage.getItem("pendingCheckoutPlan") || "null");
@@ -184,6 +197,9 @@ export default function SignUpPage() {
         /* An expired code is not worth returning to: go back to where it is asked for. */
         const expired = flow.screen === "code" && flow.expiresAt && flow.expiresAt < Date.now();
         setScreen(expired ? (flow.channel === "email" ? "email" : "phone") : flow.screen);
+      } else if (welcomePhone) {
+        setPhone(welcomePhone);
+        setScreen("phone");
       }
       restored.current = true;
     });

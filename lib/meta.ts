@@ -244,6 +244,11 @@ function readJson<T>(key: string): T | null {
   }
 }
 
+/** This browser's random visitor id ("" when storage is blocked): sent with a guest checkout so the sale is counted against how they arrived. */
+export function currentVisitorId(): string {
+  return visitorId();
+}
+
 function visitorId(): string {
   let id = "";
   try {
@@ -703,7 +708,20 @@ export type FunnelStepName =
   /* The membership path (from 2026-11-18): homepage plans link, plans page shown, plan chosen. */
   | "home_plans_click"
   | "plans_view"
-  | "plan_selected";
+  | "plan_selected"
+  /* The welcome entry on profixter.com (from 2026-11-19; BackEnd models/FunnelStep). */
+  | "welcome_shown"
+  | "welcome_tap_membership"
+  | "welcome_tap_one_time"
+  | "welcome_exit_home"
+  | "welcome_nudge_membership"
+  | "welcome_nudge_one_time"
+  | "welcome_address_done"
+  | "welcome_slot_done"
+  | "welcome_job_done"
+  | "welcome_contact_done"
+  | "welcome_plans_view"
+  | "welcome_checkout_started";
 
 /**
  * One anonymous step of the free-visit funnel (booker shown -> started -> time
@@ -711,6 +729,18 @@ export type FunnelStepName =
  * Fire-and-forget; skipped for automation and when storage is blocked.
  */
 export function trackStep(step: FunnelStepName): void {
+  try {
+    /*
+     * While the welcome entry covers the homepage (lib/welcome-entry), the
+     * homepage underneath is mounted but unseen: its own steps (the booker
+     * shown, a time it picked) are not things this visitor did.
+     */
+    if (!step.startsWith("welcome_") && step !== "plan_selected" && document.documentElement.getAttribute("data-pf-welcome") === "1" && window.location.pathname === "/") return;
+    // Seen in the page only (browser tests listen for it); nothing leaves the browser here.
+    window.dispatchEvent(new CustomEvent("pf:step", { detail: step }));
+  } catch {
+    /* no document: nothing to check */
+  }
   try {
     if (!API_BASE || !firstPartyBeaconAllowed()) return;
     if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;

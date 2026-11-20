@@ -118,7 +118,10 @@ function ContactSheet({
   onCancel,
   required = false,
   change = null,
+  prefill = null,
 }: {
+  /* What the customer already typed in this flow (the welcome entry): the boxes start filled, still checked as usual. */
+  prefill?: { name?: string; phone?: string; email?: string } | null;
   open: boolean;
   needs: { name: boolean; phone: boolean; email: boolean };
   onDone: () => void;
@@ -139,9 +142,9 @@ function ContactSheet({
     return needs.name ? "name" : needs.phone ? "phone" : "email";
   };
   const [stage, setStage] = useState<Stage>(firstStage);
-  const [name, setName] = useState(change === "name" ? String(user?.name || "") : "");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState(change === "name" ? String(user?.name || "") : String(prefill?.name || ""));
+  const [phone, setPhone] = useState(change ? "" : String(prefill?.phone || ""));
+  const [email, setEmail] = useState(change ? "" : String(prefill?.email || ""));
   const [masked, setMasked] = useState("");
   const [resendAt, setResendAt] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -589,7 +592,7 @@ function ContactSheet({
  * `editContact("email")` opens the sheet to change a detail the account has.
  */
 export function useContactCompletion(): {
-  ensureContact: (options?: { fields?: ContactField[] }) => Promise<boolean>;
+  ensureContact: (options?: { fields?: ContactField[]; prefill?: { name?: string; phone?: string; email?: string } }) => Promise<boolean>;
   editContact: (field: ContactField) => Promise<boolean>;
   contactSheet: ReactNode;
 } {
@@ -600,10 +603,11 @@ export function useContactCompletion(): {
   }, [user]);
   const [needs, setNeeds] = useState<{ name: boolean; phone: boolean; email: boolean } | null>(null);
   const [change, setChange] = useState<ContactField | null>(null);
+  const [prefill, setPrefill] = useState<{ name?: string; phone?: string; email?: string } | null>(null);
   const [sheetKey, setSheetKey] = useState(0);
   const resolver = useRef<((ok: boolean) => void) | null>(null);
 
-  const ensureContact = useCallback(async (options?: { fields?: ContactField[] }) => {
+  const ensureContact = useCallback(async (options?: { fields?: ContactField[]; prefill?: { name?: string; phone?: string; email?: string } }) => {
     /* Anonymous flows collect contact details themselves. */
     if (!isAuthenticated || !userRef.current) return true;
     const wanted = options?.fields ?? ["name", "phone", "email"];
@@ -617,6 +621,7 @@ export function useContactCompletion(): {
     resolver.current?.(false);
     setSheetKey((k) => k + 1);
     setChange(null);
+    setPrefill(options?.prefill || null);
     setNeeds(missing);
     return new Promise<boolean>((resolve) => {
       resolver.current = resolve;
@@ -628,6 +633,7 @@ export function useContactCompletion(): {
     resolver.current?.(false);
     setSheetKey((k) => k + 1);
     setChange(field);
+    setPrefill(null);
     setNeeds({ name: field === "name", phone: field === "phone", email: field === "email" });
     return new Promise<boolean>((resolve) => {
       resolver.current = resolve;
@@ -642,7 +648,7 @@ export function useContactCompletion(): {
   };
 
   const contactSheet = needs ? (
-    <ContactSheet key={sheetKey} open needs={needs} change={change} onDone={() => settle(true)} onCancel={() => settle(false)} />
+    <ContactSheet key={sheetKey} open needs={needs} change={change} prefill={prefill} onDone={() => settle(true)} onCancel={() => settle(false)} />
   ) : null;
 
   return { ensureContact, editContact, contactSheet };

@@ -30,6 +30,7 @@ import ChatGPTPageView from "./components/ChatGPTPageView";
 import { OAIQ_LOADER_SCRIPT } from "@/lib/chatgpt-ads-config";
 import SurfaceMarker from "./components/SurfaceMarker";
 import TrackerBoundary from "./components/TrackerBoundary";
+import { WELCOME_SCRIPT } from "@/lib/welcome-entry";
 import { TRACKER_GUARD, TRACKER_HOST_GUARD, TRACKER_TEST_FBEVENTS_PATH, TRACKER_TEST_GTM_PATH } from "@/lib/tracking-scope";
 import { AUTH_PENDING_SCRIPT, IOS_VIEWPORT_SCRIPT, SURFACE_SCRIPT } from "@/lib/surface";
 
@@ -195,6 +196,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: IOS_VIEWPORT_SCRIPT }} />
         {/* Homepage with a saved session: no visitor-page flash - see lib/surface.ts. */}
         <script dangerouslySetInnerHTML={{ __html: AUTH_PENDING_SCRIPT }} />
+        {/* A new visitor on profixter.com: the welcome entry, decided before paint - see lib/welcome-entry.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: WELCOME_SCRIPT }} />
         {/* Title and status bar style come from metadata.appleWebApp, so /admin can set its own. */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         {/*

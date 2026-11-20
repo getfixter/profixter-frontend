@@ -104,7 +104,7 @@ export interface OneTimeCheckoutData {
   /** One id per press of Pay: a retry reopens the same checkout instead of holding a second slot. */
   clientRequestId?: string;
   /** "handyman": a canceled checkout returns to /book/handyman with the draft. */
-  returnTo?: "handyman";
+  returnTo?: "handyman" | "welcome";
   /** The customer's own sign-in hold on this time, which gives way to the booking. */
   holdToken?: string;
 }

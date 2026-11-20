@@ -67,7 +67,7 @@ type Common = {
   tracking: { fbp: string; fbc: string; sourceUrl: string };
 };
 
-export function guestOneTimeCheckout(input: Common & { selectedTask: string; requestedDate: string; requestedTime: string; holdToken?: string }) {
+export function guestOneTimeCheckout(input: Common & { selectedTask: string; requestedDate: string; requestedTime: string; holdToken?: string; returnTo?: "welcome"; visitorId?: string }) {
   return post(
     "/api/bookings/guest/one-time/checkout",
     formFor(
@@ -79,6 +79,8 @@ export function guestOneTimeCheckout(input: Common & { selectedTask: string; req
         requestedDate: input.requestedDate,
         requestedTime: input.requestedTime,
         holdToken: input.holdToken,
+        returnTo: input.returnTo,
+        visitorId: input.visitorId,
         clientRequestId: input.clientRequestId,
         consentText: GUEST_CHECKOUT_CONSENT_TEXT,
         ...input.tracking,
