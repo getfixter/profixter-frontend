@@ -151,6 +151,7 @@ async function open(browser, { width = 390, height = 844, me = null, welcome = t
       return json({ status: "attached", user: state.me });
     }
     if (p.startsWith("/api/recent-work")) return json({ photos: [], page: 1, limit: 24, total: 0, hasMore: false });
+    if (p === "/api/referrals/claim" && m === "POST") return state.failClaim ? json({ message: "down" }, 503) : json({ recorded: false, reason: "no_code" });
     if (m !== "GET") state.unexpected.push(`${m} ${p}`);
     return json([]);
   });
@@ -511,7 +512,12 @@ async function main() {
 
       // Signed in now by phone code, as the sign-up page leaves a new account: a verified phone, no name, no email.
       state.me = { ...ME, name: "", email: "", emailVerified: false };
-      await page.evaluate(() => localStorage.setItem("token", "ui-token"));
+      // A friend's referral the browser still holds (the claim failed): the checkout must carry it (2026-11-20).
+      state.failClaim = true;
+      await page.evaluate(() => {
+        localStorage.setItem("token", "ui-token");
+        localStorage.setItem("pf_referral", JSON.stringify({ code: "maria-7k2m", capturedAt: new Date().toISOString() }));
+      });
       await page.goto(BASE + "/start?resume=pay", { waitUntil: "networkidle" });
       await page.waitForTimeout(500);
       check("back from sign-up: the payment screen", (await screenOf(page)) === "pay");
@@ -542,6 +548,7 @@ async function main() {
       const mc = state.memberships[0] || {};
       check("the visit is saved on the server first (book-first)", fv.addressId === "a-new" && fv.requestedTime === SCHEDULE[2] && Boolean(fv.holdToken), JSON.stringify(fv));
       check("the existing membership checkout, returnTo welcome, with the first visit", mc.plan === "premium" && mc.billingCycle === "annual" && mc.returnTo === "welcome" && mc.firstVisit?.draftId === "fvd1", JSON.stringify(mc));
+      check("the membership checkout carries the friend's referral (promotion codes stay on Stripe's page)", mc.referral?.code === "maria-7k2m", JSON.stringify(mc.referral || null));
       check("no request to any outside host", state.outside.length === 0, state.outside.join(","));
 
       // Back from Stripe without paying: the account now holds the typed (unconfirmed) email. Edit corrects it on the server.

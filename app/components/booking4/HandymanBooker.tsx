@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import API from "@/lib/api";
 import { checkoutTracking } from "@/lib/meta";
+import { referralField } from "@/lib/referral";
 import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
 import ConfirmEmailOffer from "@/app/components/auth/ConfirmEmailOffer";
@@ -787,6 +788,7 @@ export default function HandymanBooker({
         welcomeOffer: Boolean(chosenOffer),
         firstVisit: { draftId: firstVisitDraftId, holdToken: draft.holdToken || "", requestedDate: draft.date, requestedTime: draft.time },
         ...checkoutTracking(),
+        ...referralField(),
       });
       // An expired hold is renewed under a new token: keep the one that now holds the time.
       if (res.data?.holdToken) update({ holdToken: res.data.holdToken, holdFor: `${draft.date} ${draft.time}`, holdExpiresAt: res.data.holdExpiresAt || draft.holdExpiresAt });

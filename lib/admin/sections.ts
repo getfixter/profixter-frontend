@@ -35,6 +35,7 @@ export type SectionId =
   | "sales-requests"
   | "sales-intake"
   | "sales-desk"
+  | "referrals"
   | "more";
 
 export type SectionIcon =
@@ -57,6 +58,7 @@ export type SectionIcon =
   | "requests"
   | "intake"
   | "salesdesk"
+  | "referrals"
   | "more";
 
 export type Section = {
@@ -90,6 +92,7 @@ export const SECTIONS: Record<SectionId, Section> = {
   "sales-requests": { id: "sales-requests", href: "/admin/sales-requests", label: "Credit requests", description: "Sales credit you asked for", icon: "requests" },
   "sales-intake": { id: "sales-intake", href: "/admin/sales-intake", label: "Submitted leads", description: "Leads you added, waiting for the owner", icon: "intake" },
   "sales-desk": { id: "sales-desk", href: "/admin/sales-desk", label: "Sales desk", description: "Telemarketers, leads, credit and payouts", icon: "salesdesk" },
+  referrals: { id: "referrals", href: "/admin/referrals", label: "Referrals", description: "Referral rewards to approve and checks to mail", icon: "referrals" },
   more: { id: "more", href: "/admin/more", label: "More", description: "Everything else", icon: "more" },
 };
 
@@ -163,6 +166,7 @@ export function canOpen(user: User | null | undefined, id: SectionId): boolean {
     case "sales-intake":
       return false;
     case "sales-desk":
+    case "referrals":
       return owner;
     case "more":
       return true;
@@ -192,6 +196,7 @@ const MORE_ORDER: SectionId[] = [
   "activity",
   "assistant",
   "sales-desk",
+  "referrals",
 ];
 
 export type Navigation = {

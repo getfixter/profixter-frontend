@@ -53,6 +53,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import GiftCallout from "@/app/components/gift/GiftCallout";
+import AccountReferrals from "@/app/components/referral/AccountReferrals";
 import { buttonClass } from "@/app/components/ui/Button";
 import ManagePlanModal from "./ManagePlanModal";
 import { AddHomeCard, NamePromptCard } from "./ProfilePrompts";
@@ -671,6 +672,15 @@ export default function AccountOverview({
           written here. Keeping the account and the homepage on one component
           is what stops them drifting into selling slightly different products.
         */}
+        {/*
+          Referrals (2026-11-20): any signed-in customer, member or not. The
+          card opens the referral popup and lists what the link has earned.
+        */}
+        <AccountReferrals
+          defaultName={String(formData.name || "")}
+          defaultAddress={address ? { line1: address.line1, unit: (address as { unit?: string }).unit, city: address.city, state: address.state, zip: address.zip } : null}
+        />
+
         <GiftCallout variant="bar" audience={covered ? "member" : "public"} headingId="acct-gift" />
 
         {/* ───────────────────────── Account tools ──────────────────────── */}

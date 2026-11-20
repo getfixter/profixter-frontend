@@ -1,4 +1,5 @@
 import {
+  GiftIcon,
   BanknotesIcon,
   BriefcaseIcon,
   CalendarDaysIcon,
@@ -42,6 +43,7 @@ const ICONS: Record<SectionIcon, typeof BriefcaseIcon> = {
   requests: DocumentCheckIcon,
   intake: UserPlusIcon,
   salesdesk: PresentationChartLineIcon,
+  referrals: GiftIcon,
   more: EllipsisHorizontalIcon,
 };
 

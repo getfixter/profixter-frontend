@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { captureAttribution } from "@/lib/meta";
+import { captureReferral } from "@/lib/referral";
 
 /**
  * Remember the ad that brought this visitor, before they navigate away from it.
@@ -25,6 +26,8 @@ export default function AttributionCapture() {
 
   useEffect(() => {
     captureAttribution();
+    // A friend's referral link (/r/<code>), kept apart from first-touch attribution.
+    captureReferral();
   }, [pathname, searchParams]);
 
   return null;

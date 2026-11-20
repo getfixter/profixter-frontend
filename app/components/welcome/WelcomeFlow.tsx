@@ -22,6 +22,7 @@ import { PLAN_DETAILS } from "@/lib/stripe-links";
 import { BENEFIT_ROWS, benefitIncluded, benefitLabel, ANNUAL_MONTHS_CHARGED } from "@/app/data/plan-benefits";
 import type { Plan } from "@/app/data/content";
 import { checkoutTracking, currentVisitorId, trackStep } from "@/lib/meta";
+import { referralField } from "@/lib/referral";
 import { trackInitiateCheckout } from "@/lib/analytics";
 import { GUEST_CHECKOUT_CONSENT_TEXT, GuestCheckoutError, abandonGuestCheckout, guestOneTimeCheckout } from "@/lib/guest-checkout";
 import { WELCOME_OFFER_ERROR_CODES, formatCents, offerPrice, useWelcomeOffer } from "@/lib/welcome-offer";
@@ -673,6 +674,7 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
         welcomeOffer: Boolean(chosenOffer),
         firstVisit: { draftId: firstVisitDraftId, holdToken: draft.holdToken || "", requestedDate: draft.date, requestedTime: draft.time },
         ...checkoutTracking(),
+        ...referralField(),
       });
       if (res.data?.holdToken) update({ holdToken: res.data.holdToken, holdFor: `${draft.date} ${draft.time}`, holdExpiresAt: res.data.holdExpiresAt || draft.holdExpiresAt });
       trackStep("welcome_checkout_started");

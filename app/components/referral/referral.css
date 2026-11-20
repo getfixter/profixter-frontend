@@ -1,0 +1,248 @@
+/* Referral popup and the account's referral card (2026-11-20).
+ * Website 3.0 tokens (app/ui.css). The site draws at --site-zoom, so touch
+ * targets are sized against it and viewport heights are divided back up. */
+
+.rf-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(11, 22, 40, 0.42);
+  animation: rf-fade var(--ui-dur-2) var(--ui-ease-out) both;
+}
+
+.rf-sheet {
+  position: relative;
+  width: 100%;
+  max-height: calc(92dvh / var(--site-zoom, 1));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--ui-r-lg) var(--ui-r-lg) 0 0;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+  box-shadow: var(--ui-shadow-3);
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+  outline: none;
+  animation: rf-rise var(--ui-dur-2) var(--ui-ease-out) both;
+}
+
+/* Focus moves to the dialog itself on open (for screen readers): no ring around the whole card. */
+.rf-sheet:focus,
+.rf-sheet:focus-visible { outline: none; box-shadow: var(--ui-shadow-3); }
+
+/* The grab handle a phone user expects on a sheet. Decorative. */
+.rf-handle {
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 6px;
+  border-radius: 999px;
+  background: var(--ui-line-2);
+}
+
+.rf-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(44px / var(--site-zoom, 1));
+  height: calc(44px / var(--site-zoom, 1));
+  border-radius: 999px;
+  color: var(--ui-text-3);
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+.rf-close:hover { background: var(--ui-bg-soft); color: var(--ui-ink); }
+.rf-close:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+
+/* "Get up to $149 per referral": one heading, the amount drawn as the hero. */
+.rf-title {
+  margin: 14px 0 0;
+  padding-right: 36px;
+  color: var(--ui-ink);
+  font-weight: 600;
+  letter-spacing: var(--ui-track-head);
+}
+.rf-title__lead,
+.rf-title__tail {
+  display: block;
+  font-size: 1.125rem;
+  line-height: 1.3;
+}
+.rf-title__amount {
+  display: block;
+  margin: 2px 0 0;
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  color: var(--ui-accent-ink);
+  font-variant-numeric: tabular-nums;
+}
+.rf-title__tail { margin-top: 4px; }
+
+.rf-lead {
+  margin: 12px 0 0;
+  font-size: var(--ui-fs-body);
+  line-height: 1.5;
+  color: var(--ui-text-2);
+}
+
+.rf-actions {
+  margin-top: 20px;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.rf-share {
+  width: 100%;
+  min-height: calc(48px / var(--site-zoom, 1));
+  gap: 8px;
+  font-size: 1.0625rem;
+}
+.rf-share[aria-busy="true"] { opacity: 0.7; }
+
+.rf-how {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: calc(44px / var(--site-zoom, 1));
+  padding: 0 10px;
+  font-size: var(--ui-fs-body);
+  font-weight: 500;
+  color: var(--ui-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rf-how svg { transition: transform var(--ui-dur-1) var(--ui-ease); }
+.rf-how[aria-expanded="true"] svg { transform: rotate(180deg); }
+.rf-how:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; border-radius: 6px; }
+
+.rf-status {
+  margin: 4px 0 0;
+  font-size: var(--ui-fs-small);
+  line-height: 1.45;
+  color: var(--ui-text-2);
+  text-align: center;
+}
+.rf-status--ok { color: var(--ui-success); font-weight: 500; }
+.rf-status--err { color: #b4342b; }
+
+.rf-link {
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid var(--ui-line-2);
+  border-radius: var(--ui-r-sm);
+  background: var(--ui-bg-soft);
+  padding: 10px 12px;
+  font: 500 var(--ui-fs-small) / 1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--ui-ink);
+}
+
+/* How it works */
+.rf-rules {
+  margin-top: 14px;
+  border-top: 1px solid var(--ui-line);
+  padding-top: 14px;
+  font-size: var(--ui-fs-small);
+  line-height: 1.55;
+  color: var(--ui-text-2);
+}
+.rf-rules h3 {
+  margin: 14px 0 6px;
+  font-size: var(--ui-fs-body);
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+.rf-rules h3:first-child { margin-top: 0; }
+.rf-rules ol { margin: 0; padding: 0; list-style: none; counter-reset: rf; display: grid; gap: 8px; }
+.rf-rules ol li { counter-increment: rf; display: grid; grid-template-columns: 24px 1fr; gap: 8px; }
+.rf-rules ol li::before {
+  content: counter(rf);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.rf-rules ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; list-style: disc; }
+.rf-rules ul li::marker { color: var(--ui-text-3); }
+.rf-example {
+  margin-top: 8px;
+  display: grid;
+  gap: 4px;
+  border-radius: var(--ui-r-sm);
+  background: var(--ui-bg-soft);
+  padding: 10px 12px;
+}
+.rf-example div { display: flex; justify-content: space-between; gap: 12px; }
+.rf-example b { color: var(--ui-ink); font-variant-numeric: tabular-nums; }
+
+/* Desktop and tablet: a centred card instead of a sheet. */
+@media (min-width: 640px) {
+  .rf-scrim { align-items: center; padding: 24px; }
+  .rf-sheet {
+    max-width: 440px;
+    border-radius: var(--ui-r-lg);
+    padding: 22px 28px 24px;
+    animation-name: rf-pop;
+  }
+  .rf-handle { display: none; }
+  .rf-title { margin-top: 0; }
+}
+
+@keyframes rf-fade { from { opacity: 0; } }
+@keyframes rf-rise { from { transform: translateY(24px); opacity: 0.6; } }
+@keyframes rf-pop { from { transform: translateY(8px) scale(0.98); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rf-scrim, .rf-sheet { animation: none; }
+  .rf-how svg { transition: none; }
+}
+
+/* ------------------------------------------------ the account's card */
+.rf-card__amount { color: var(--ui-accent-ink); font-variant-numeric: tabular-nums; }
+.rf-list { margin: 14px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--ui-line); }
+.rf-item { padding: 12px 0; border-bottom: 1px solid var(--ui-line); }
+.rf-item__top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.rf-item__name { font-size: 15px; font-weight: 600; color: var(--ui-ink); }
+.rf-item__amount { font-size: 15px; font-weight: 600; color: var(--ui-ink); font-variant-numeric: tabular-nums; }
+.rf-item__meta { margin-top: 2px; font-size: 13px; line-height: 1.45; color: var(--ui-text-3); }
+.rf-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-right: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--ui-bg-sunk);
+  color: var(--ui-text-2);
+}
+.rf-pill--pending { background: #fbf3e6; color: #7a4f14; }
+.rf-pill--ready { background: var(--ui-accent-soft); color: var(--ui-accent-ink); }
+.rf-pill--done { background: #e8f5ee; color: #1f6b3e; }
+
+.rf-form { margin-top: 10px; display: grid; gap: 10px; }
+.rf-form label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; color: var(--ui-text-2); }
+.rf-form input {
+  min-height: calc(44px / var(--site-zoom, 1));
+  border: 1px solid var(--ui-line-2);
+  border-radius: var(--ui-r-sm);
+  padding: 8px 12px;
+  font-size: 16px;
+  color: var(--ui-ink);
+  background: #fff;
+}
+.rf-form input:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; border-color: var(--ui-accent); }
+.rf-form__row { display: grid; grid-template-columns: minmax(0, 1fr) 72px 104px; gap: 8px; }
+@media (max-width: 380px) { .rf-form__row { grid-template-columns: minmax(0, 1fr) 64px; } .rf-form__row label:last-child { grid-column: 1 / -1; } }

@@ -24,6 +24,7 @@ import "./site-scale.css";
 import { DEFAULT_OG_IMAGE, PROFIXTER_STRUCTURED_DATA, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { META_PIXEL_ID } from "@/lib/meta-config";
 import AttributionCapture from "./components/AttributionCapture";
+import ReferralClaim from "./components/referral/ReferralClaim";
 import PhoneClickTracker from "./components/PhoneClickTracker";
 import MetaPageView from "./components/MetaPageView";
 import ChatGPTPageView from "./components/ChatGPTPageView";
@@ -335,6 +336,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=pfProd?
           {/* A new account verifies a mobile number before anything else (customer pages only). */}
           <PhoneRequiredGate />
           <KeyboardAware />
+          {/* A friend's referral link, recorded for a signed-in account (lib/referral). */}
+          <ReferralClaim />
         </Providers>
       </body>
     </html>

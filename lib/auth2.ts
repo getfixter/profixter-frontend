@@ -10,6 +10,7 @@ import API from "./api";
 import type { User } from "./auth-service";
 import { extractUSNationalPhoneDigits, isValidUSNationalPhoneDigits } from "./phone";
 import { getAttribution, getFbCookies, type Attribution } from "./meta";
+import { referralField, type StoredReferral } from "./referral";
 
 /* ------------------------------------------------------------------ types */
 
@@ -57,11 +58,13 @@ export type ConversionFields = {
   fbp: string;
   fbc: string;
   attribution: Attribution;
+  /* A friend's referral link (lib/referral): the server records it on the new account. */
+  referral?: StoredReferral;
 };
 
 export function conversionFields(metaEventId: string): ConversionFields {
   const { fbp, fbc } = getFbCookies();
-  return { metaEventId, fbp, fbc, attribution: getAttribution() };
+  return { metaEventId, fbp, fbc, attribution: getAttribution(), ...referralField() };
 }
 
 /* ------------------------------------------------------------------ calls */
