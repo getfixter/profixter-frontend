@@ -304,7 +304,11 @@ async function fillAddress(scope, { line1, city, zip }) {
     const title = await inFirstScreen(page, "#hm-title");
     const size = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector("#hm-title")).fontSize));
     check(`${name}: headline on screen and readable`, title.ok && size >= 22, `font ${size}`);
-    check(`${name}: Free Visit is open first, with the real form`, (await page.getAttribute("[data-home-tab='free']", "aria-selected")) === "true" && (await page.locator("[data-home-booking] [data-free-visit-form].bk--embedded").count()) === 1);
+    // 2026-11-20 (owner): Book a Handyman on the left, open first; Free Visit's real form opens when chosen.
+    check(`${name}: Book a Handyman is open first, with the real booker`, (await page.getAttribute("[data-home-tab='handyman']", "aria-selected")) === "true" && (await page.locator("[data-home-booking] [data-handyman-booker]").isVisible()));
+    await page.locator("[data-home-tab='free']").click();
+    await page.locator("[data-home-booking] [data-free-visit-form].bk--embedded").waitFor({ timeout: 10000 });
+    check(`${name}: Free Visit opens its real form when chosen`, (await page.getAttribute("[data-home-tab='free']", "aria-selected")) === "true" && (await page.locator("[data-home-booking] [data-free-visit-form].bk--embedded").count()) === 1);
     check(`${name}: no sideways scroll`, await noSideScroll(page));
     check(`${name}: no page errors`, errors.length === 0, errors.join(" | "));
     await shot(page, `home-${name}`);
@@ -611,6 +615,7 @@ async function fillAddress(scope, { line1, city, zip }) {
     {
       const { ctx, page, state, errors } = await open(browser, { width, height });
       await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+      await page.locator("[data-home-tab='free']").click();
       const form = page.locator("[data-home-booking] [data-free-visit-form]");
       await form.waitFor({ timeout: 20000 });
       check(`${tag}: home: ways to book are shown before a request`, await page.locator("[data-ways-to-book]").isVisible());

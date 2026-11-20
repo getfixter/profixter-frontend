@@ -173,17 +173,45 @@ async function centerOf(page, selector) {
   const box = await page.locator(selector).first().boundingBox();
   return { x: box.x + box.width / 2, y: box.y + box.height / 2, box };
 }
-async function ready(page) {
+/* The homepage as it opens: Book a Handyman, the default tab (owner, 2026-11-20). */
+async function readyHome(page) {
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
   await page.locator("[data-home-booking]").waitFor({ timeout: 20000 });
-  await page.locator("[data-home-booking] .bk-day[aria-pressed=true]").waitFor({ timeout: 15000 });
+  await page.locator("[data-home-booking] [data-handyman-booker]").waitFor({ timeout: 15000 });
+  await page.waitForTimeout(500);
+}
+/* ...then Free Visit chosen, its form ready (most of this suite is about that form). */
+async function ready(page) {
+  await readyHome(page);
+  await page.locator("[data-home-tab='free']").click();
+  await page.locator("[data-home-booking] [data-free-visit-form] .bk-day[aria-pressed=true]").waitFor({ timeout: 15000 });
   await page.waitForTimeout(500);
 }
 
 (async () => {
   const browser = await chromium.launch();
 
-  /* ============================== First screen ============================== */
+  /* ================== Opens on Book a Handyman (owner, 2026-11-20) ================== */
+  for (const [w, h] of [[360, 740], [390, 844], [1280, 900]]) {
+    const { ctx, page, state, errors } = await open(browser, { width: w, height: h });
+    await readyHome(page);
+    const order = await page.locator("[data-home-tab]").evaluateAll((els) => els.map((e) => ({ key: e.getAttribute("data-home-tab"), left: e.getBoundingClientRect().left })));
+    check(`${w}: Book a Handyman on the left, Free Visit on the right`, order.length === 2 && order[0].key === "handyman" && order[1].key === "free" && order[0].left < order[1].left, JSON.stringify(order));
+    check(`${w}: Book a Handyman selected on first load, its panel showing`, (await tabOf(page)) === "handyman" && (await page.getAttribute("[data-home-tab='handyman']", "aria-selected")) === "true" && (await page.locator("[data-home-booking] [data-handyman-booker]").isVisible()));
+    check(`${w}: Free Visit not loaded until chosen`, (await page.locator("[data-home-booking] [data-free-visit-form]").count()) === 0);
+    check(`${w}: Book a Handyman loaded once`, state.configAsks === 1, String(state.configAsks));
+    await page.locator("[data-home-tab='free']").click();
+    await page.locator("[data-home-booking] [data-free-visit-form]").waitFor({ timeout: 10000 });
+    check(`${w}: tap Free Visit: its form opens in place`, (await tabOf(page)) === "free" && !(await page.locator("[data-home-booking] [data-handyman-booker]").isVisible()));
+    await page.locator("[data-home-tab='handyman']").click();
+    await page.waitForTimeout(300);
+    check(`${w}: and back to Book a Handyman`, (await tabOf(page)) === "handyman" && (await page.locator("[data-home-booking] [data-handyman-booker]").isVisible()));
+    check(`${w}: no page errors`, errors.length === 0, errors.join(" | "));
+    await shot(page, `home-default-${w}`);
+    await ctx.close();
+  }
+
+  /* ============================== Free Visit's first screen ============================== */
   for (const [w, h] of [[360, 740], [390, 844], [430, 932]]) {
     const { ctx, page, state, errors } = await open(browser, { width: w, height: h });
     await ready(page);
@@ -199,8 +227,8 @@ async function ready(page) {
         vh: innerHeight,
         title: inView(box("#hm-title")),
         tabs: inView(box(".hb-tabs")),
-        days: inView(box("[data-home-booking] .bk-days")),
-        times: inView(box("[data-home-booking] .bk-times")),
+        days: inView(box("[data-home-booking] [data-free-visit-form] .bk-days")),
+        times: inView(box("[data-home-booking] [data-free-visit-form] .bk-times")),
         submit: box("[data-action='review-free-visit']")?.bottom,
         photoAfter: box(".hm-hero__media").top >= box("[data-home-booking]").bottom,
         h1: document.querySelectorAll("h1").length,
@@ -210,11 +238,11 @@ async function ready(page) {
     check(`${w}: headline, switch, days and times in the first screen`, m.title && m.tabs && m.days && m.times, JSON.stringify(m));
     check(`${w}: the Request button in the first screen`, m.submit <= m.vh, `${Math.round(m.submit)} of ${m.vh}`);
     check(`${w}: the photo comes after the panel`, m.photoAfter);
-    check(`${w}: Free Visit open first`, (await tabOf(page)) === "free" && (await page.getAttribute("[data-home-tab='free']", "aria-selected")) === "true");
+    check(`${w}: Free Visit, once chosen, opens its real form`, (await tabOf(page)) === "free" && (await page.getAttribute("[data-home-tab='free']", "aria-selected")) === "true");
     check(`${w}: one h1 on the page (the forms bring none)`, m.h1 === 1, `h1=${m.h1}`);
     check(`${w}: every control in the panel at least 44px tall`, m.smallest >= 43.5, `smallest ${m.smallest.toFixed(1)}`);
     check(`${w}: no sideways scroll`, await noSideScroll(page));
-    check(`${w}: Book a Handyman not loaded until chosen`, state.configAsks === 0 && (await page.locator("[data-handyman-booker]").count()) === 0);
+    check(`${w}: Book a Handyman stays loaded behind it (what was typed is kept)`, (await page.locator("[data-handyman-booker]").count()) === 1);
     check(`${w}: no page errors`, errors.length === 0, errors.join(" | "));
     await shot(page, `home-${w}`);
     await ctx.close();
@@ -230,7 +258,7 @@ async function ready(page) {
     await page.locator("[data-home-tab='handyman']").tap();
     await page.locator("[data-handyman-booker]").waitFor({ timeout: 10000 });
     check("tap: Book a Handyman opens in place", (await tabOf(page)) === "handyman" && page.url().replace(/\/$/, "") === BASE.replace(/\/$/, "") && !(await fv.isVisible()));
-    check("Book a Handyman loads once chosen", state.configAsks === 1);
+    check("Book a Handyman loaded once (not again on switching)", state.configAsks === 1);
     await page.locator("[data-shortcut='Fix door']").tap();
     await page.locator("#bk-task").fill("Fix a door that sticks, and hang two shelves");
     await page.locator("[data-home-tab='free']").tap();
@@ -239,21 +267,22 @@ async function ready(page) {
 
     // A swipe in the panel's open space (the tab strip) switches tabs.
     const tabs = await centerOf(page, ".hb-tabs");
-    await swipe(page, { x: tabs.box.x + tabs.box.width * 0.8, y: tabs.y }, { x: tabs.box.x + tabs.box.width * 0.15, y: tabs.y + 6 });
-    check("swipe left: Book a Handyman", (await tabOf(page)) === "handyman");
+    // Book a Handyman is on the left now: a swipe to the right reveals it.
+    await swipe(page, { x: tabs.box.x + tabs.box.width * 0.15, y: tabs.y }, { x: tabs.box.x + tabs.box.width * 0.85, y: tabs.y + 6 });
+    check("swipe right: Book a Handyman", (await tabOf(page)) === "handyman");
     check("swipe: the job description survived", (await page.locator("#bk-task").inputValue()) === "Fix a door that sticks, and hang two shelves");
     // A sideways drag on the job shortcuts scrolls them, never the tabs.
     const chips = await centerOf(page, ".bk-chips");
     await swipe(page, { x: chips.box.x + chips.box.width * 0.8, y: chips.y }, { x: chips.box.x + chips.box.width * 0.1, y: chips.y });
     check("swipe on the job shortcuts does not switch tabs", (await tabOf(page)) === "handyman");
-    await swipe(page, { x: tabs.box.x + tabs.box.width * 0.15, y: tabs.y }, { x: tabs.box.x + tabs.box.width * 0.85, y: tabs.y });
-    check("swipe right: back to Free Visit", (await tabOf(page)) === "free");
+    await swipe(page, { x: tabs.box.x + tabs.box.width * 0.85, y: tabs.y }, { x: tabs.box.x + tabs.box.width * 0.15, y: tabs.y });
+    check("swipe left: back to Free Visit", (await tabOf(page)) === "free");
 
     // The day strip scrolls under a sideways drag, and the tab stays.
-    const strip = await centerOf(page, "[data-home-booking] .bk-days");
-    const before = await page.locator("[data-home-booking] .bk-days").evaluate((e) => e.scrollLeft);
+    const strip = await centerOf(page, "[data-home-booking] [data-free-visit-form] .bk-days");
+    const before = await page.locator("[data-home-booking] [data-free-visit-form] .bk-days").evaluate((e) => e.scrollLeft);
     await swipe(page, { x: strip.box.x + strip.box.width * 0.85, y: strip.y }, { x: strip.box.x + strip.box.width * 0.1, y: strip.y }, 12);
-    const after = await page.locator("[data-home-booking] .bk-days").evaluate((e) => e.scrollLeft);
+    const after = await page.locator("[data-home-booking] [data-free-visit-form] .bk-days").evaluate((e) => e.scrollLeft);
     check("swipe on the day strip scrolls the days, not the tabs", (await tabOf(page)) === "free" && after > before, `scrollLeft ${before} -> ${after}`);
     // A drag that starts in a field never switches.
     const nameBox = await centerOf(page, "[data-home-booking] input[name=email]");
@@ -266,10 +295,10 @@ async function ready(page) {
 
     // Keyboard: arrows move between tabs.
     await page.locator("[data-home-tab='free']").focus();
-    await page.keyboard.press("ArrowRight");
-    check("ArrowRight selects Book a Handyman and moves focus", (await tabOf(page)) === "handyman" && (await page.evaluate(() => document.activeElement?.getAttribute("data-home-tab"))) === "handyman");
     await page.keyboard.press("ArrowLeft");
-    check("ArrowLeft returns to Free Visit", (await tabOf(page)) === "free");
+    check("ArrowLeft selects Book a Handyman (on the left) and moves focus", (await tabOf(page)) === "handyman" && (await page.evaluate(() => document.activeElement?.getAttribute("data-home-tab"))) === "handyman");
+    await page.keyboard.press("ArrowRight");
+    check("ArrowRight returns to Free Visit", (await tabOf(page)) === "free");
     check("tablist semantics", (await page.locator("[role=tablist] [role=tab]").count()) === 2 && (await page.getAttribute("#hb-tab-free", "aria-controls")) === "hb-pane-free");
 
     // Keyboard Next inside the embedded form still moves name -> phone without submitting.
@@ -396,6 +425,9 @@ async function ready(page) {
     const { ctx, page, state, errors } = await open(browser, { width: 390, height: 844, me: customer() });
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await page.locator("[data-home-booking]").waitFor({ timeout: 20000 });
+    await page.locator("[data-home-tab='free']").click();
+    await page.locator("[data-home-booking] input[name=name]").waitFor({ timeout: 10000 });
+    await page.waitForTimeout(300);
     check(`signed in (${option}): Free Visit knows who they are`, (await page.locator("[data-home-booking] input[name=name]").inputValue()) === "Dana Lopez");
     await page.locator("[data-home-tab='handyman']").tap();
     const booker = page.locator("[data-home-booking] [data-handyman-booker]");

@@ -93,7 +93,8 @@ async function scrollThrough(page) {
         noLaborPromise: !/first 90-minute visit|90 minutes are on us/i.test(t),
         freeVisitFirstScreen: onScreen("[data-home-tab='free']"),
         handymanFirstScreen: onScreen("[data-home-tab='handyman']"),
-        formOpen: !!document.querySelector("[data-home-booking] [data-free-visit-form]"),
+        // 2026-11-20 (owner): Book a Handyman is the open tab.
+        formOpen: !!document.querySelector("[data-home-booking] [data-handyman-booker]") && document.querySelector("[data-home-tab='handyman']")?.getAttribute("aria-selected") === "true",
         noStartScreen: !document.querySelector(".start-screen"),
         noSignupWall: !document.querySelector('a[href^="/signup"]'),
         oldAnchor: !!document.getElementById("book"),
@@ -103,7 +104,7 @@ async function scrollThrough(page) {
     check("no free-labor promise on Home", s.noLaborPromise, "");
     check("Free Visit on the first screen (390px)", s.freeVisitFirstScreen, "");
     check("Book a Handyman on the first screen (390px)", s.handymanFirstScreen, "");
-    check("the Free Visit form is open on Home", s.formOpen, "");
+    check("Book a Handyman is open on Home", s.formOpen, "");
     check("old links to /#book still land on the ways to start", s.oldAnchor, "");
     check("old start screen removed", s.noStartScreen, "");
     check("no signup link anywhere on Home", s.noSignupWall, "");
