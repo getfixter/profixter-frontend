@@ -316,7 +316,7 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
    * and chat buttons sit above it (welcome.css), so neither covers an action.
    */
   const showBar = active;
-  const tallBar = screen === "choice" || screen === "nudge";
+  const tallBar = screen === "choice";
   useEffect(() => {
     const root = document.documentElement;
     if (active && (entry === "start" || welcomeShowing())) root.setAttribute("data-wf-active", "1");
@@ -883,6 +883,17 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
             <h1 id="wf-q" ref={headingRef} tabIndex={-1} className="wf-title">{TITLES[screen]}</h1>
           )}
 
+          {/*
+            One-time screen (owner, 2026-11-20): "Continue with one visit" sits up
+            here, right under the sentence and out of the thumb's easy reach;
+            only "Show me membership" is in the bottom bar.
+          */}
+          {screen === "nudge" ? (
+            <div className="wf-nudge-alt">
+              <button type="button" className="wf-pick wf-pick--alt" data-pick="nudge-one-time" onClick={() => nudge("one_time")}>Continue with one visit</button>
+            </div>
+          ) : null}
+
           {screen === "time" ? (
             <p className="wf-lead" data-time-note>Pick a day and time that work for you. We confirm it is still open after your address.</p>
           ) : null}
@@ -1065,7 +1076,7 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
       </main>
 
       {showBar ? (
-        <div className={`wf-bar${tallBar ? " wf-bar--picks" : ""}`} data-wf-bar-el>
+        <div className={`wf-bar${tallBar || screen === "nudge" ? " wf-bar--picks" : ""}`} data-wf-bar-el>
           {screen === "choice" ? (
             <div className="wf-picks">
               <button type="button" className="wf-pick wf-pick--primary" data-pick="membership" onClick={() => pick("membership")}>A handyman membership</button>
@@ -1074,7 +1085,6 @@ export default function WelcomeFlow({ entry }: { entry: "home" | "start" }) {
           ) : screen === "nudge" ? (
             <div className="wf-picks">
               <button type="button" className="wf-pick wf-pick--primary" data-pick="nudge-membership" onClick={() => nudge("membership")}>Show me membership</button>
-              <button type="button" className="wf-pick" data-pick="nudge-one-time" onClick={() => nudge("one_time")}>Continue with one visit</button>
             </div>
           ) : bar ? (
             <>

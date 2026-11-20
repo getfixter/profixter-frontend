@@ -272,9 +272,12 @@ async function main() {
       await shot(page, "02-nudge");
       check("one-time: the nudge", (await screenOf(page)) === "nudge");
       const nudgeText = (await page.locator(".wf-main").innerText()).replace(/\s+/g, " ").trim();
-      check("the nudge copy, exactly, under the header", nudgeText === "Members can book as many visits as they need.", nudgeText);
+      check("the nudge copy, exactly, under the header, then Continue with one visit", nudgeText === "Members can book as many visits as they need. Continue with one visit", nudgeText);
       const nudgeBar = (await page.locator(".wf-bar .wf-pick").allInnerTexts()).map((t) => t.trim());
-      check("the two choices at the bottom, Show me membership first", JSON.stringify(nudgeBar) === JSON.stringify(["Show me membership", "Continue with one visit"]), JSON.stringify(nudgeBar));
+      check("only Show me membership in the bottom bar", JSON.stringify(nudgeBar) === JSON.stringify(["Show me membership"]), JSON.stringify(nudgeBar));
+      const alt = await rect(page, "[data-pick='nudge-one-time']");
+      const sentence = await rect(page, "[data-welcome] .wf-title");
+      check("Continue with one visit sits right under the sentence, at the top (owner, 2026-11-20)", alt && sentence && alt.top - sentence.bottom < 40 && alt.top < 844 * 0.82 * 0.4, JSON.stringify({ alt, sentence }));
       check("Show me membership is the primary blue button", await page.locator("[data-pick='nudge-membership']").evaluate((el) => el.classList.contains("wf-pick--primary")));
       const second = await page.locator("[data-pick='nudge-one-time']").evaluate((el) => { const cs = getComputedStyle(el); const r = el.getBoundingClientRect(); return { border: cs.borderTopColor, h: r.height, visible: cs.visibility === "visible" && cs.opacity === "1" }; });
       check("Continue with one visit: clearly visible, a full-size target", second.visible && second.h >= 44 && second.border !== "rgba(0, 0, 0, 0)", JSON.stringify(second));
