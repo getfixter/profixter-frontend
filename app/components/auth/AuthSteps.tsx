@@ -159,6 +159,8 @@ export function EmailStep({
 export function LinkRequiredStep({
   maskedEmail,
   hasPassword,
+  emailCodeOpens = true,
+  temporaryPassword = false,
   loading,
   onEmailCode,
   onPassword,
@@ -166,6 +168,10 @@ export function LinkRequiredStep({
 }: {
   maskedEmail: string | null;
   hasPassword: boolean;
+  /* False when the account's email was typed by staff or at checkout and never proved: a code to it cannot confirm it's them (2026-11-20). */
+  emailCodeOpens?: boolean;
+  /* The account has the temporary password Admin texted them. */
+  temporaryPassword?: boolean;
   loading: boolean;
   onEmailCode: () => void;
   onPassword: () => void;
@@ -173,14 +179,20 @@ export function LinkRequiredStep({
 }) {
   return (
     <div className="auth-options">
-      <button type="button" className="auth-option" onClick={onEmailCode} disabled={loading}>
-        <b>Confirm with email code</b>
-        <span>{maskedEmail ? `We'll email a code to ${maskedEmail}.` : "We'll email a code to the address on the account."}</span>
-      </button>
+      {emailCodeOpens ? (
+        <button type="button" className="auth-option" onClick={onEmailCode} disabled={loading}>
+          <b>Confirm with email code</b>
+          <span>{maskedEmail ? `We'll email a code to ${maskedEmail}.` : "We'll email a code to the address on the account."}</span>
+        </button>
+      ) : null}
       {hasPassword ? (
-        <button type="button" className="auth-option" onClick={onPassword} disabled={loading}>
-          <b>Sign in with password</b>
-          <span>Use the email and password you already have.</span>
+        <button type="button" className="auth-option" onClick={onPassword} disabled={loading} data-link-password>
+          <b>{temporaryPassword ? "Enter your temporary password" : "Sign in with password"}</b>
+          <span>
+            {temporaryPassword
+              ? `The one we texted you, with the email on your account${maskedEmail ? ` (${maskedEmail})` : ""}.`
+              : "Use the email and password you already have."}
+          </span>
         </button>
       ) : null}
       <button type="button" className="auth-option auth-option--quiet" onClick={onNewAccount} disabled={loading}>

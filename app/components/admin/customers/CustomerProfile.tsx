@@ -417,7 +417,7 @@ export function CustomerProfile({ id }: { id: string }) {
         open={sheet?.kind === "resend"}
         onClose={close}
         title="Resend sign-in details?"
-        consequence={`${c.name || "The customer"} gets an email${phone ? " and a text" : ""} with a new temporary password (their phone number). Only works while they have not set their own password.`}
+        consequence={`${c.name || "The customer"} gets ${phone ? "a text with a new temporary password (their phone number) and " : ""}an email saying how to sign in: their mobile number and a code, then the temporary password. Only works while they have not set their own password.`}
         confirmLabel="Resend sign-in details"
         onConfirm={async () => {
           const result = await resendCustomerAccess(c.id);

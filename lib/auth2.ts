@@ -32,7 +32,7 @@ export type SignedInResult = {
 export type LinkRequiredResult = {
   status: "link_required";
   linkToken: string;
-  hint: { maskedEmail: string | null; hasPassword: boolean };
+  hint: { maskedEmail: string | null; hasPassword: boolean; emailCodeOpens?: boolean; temporaryPassword?: boolean };
 };
 
 export type AttachedResult = {

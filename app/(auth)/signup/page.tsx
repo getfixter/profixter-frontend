@@ -788,6 +788,8 @@ export default function SignUpPage() {
           <LinkRequiredStep
             maskedEmail={hint?.maskedEmail || null}
             hasPassword={Boolean(hint?.hasPassword)}
+            emailCodeOpens={hint?.emailCodeOpens !== false}
+            temporaryPassword={Boolean(hint?.temporaryPassword)}
             loading={loading}
             onEmailCode={() => {
               setEmail("");

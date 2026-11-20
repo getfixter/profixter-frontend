@@ -9,9 +9,10 @@ import { createCustomer, readFailure, type CommunicationKey, type CreatedCustome
 /*
  * Admin → Create Customer, for someone on the phone.
  *
- * The account is active at once; the customer gets an email and a text with
- * their temporary password (their phone number) and must set their own on
- * first sign-in. Email switches start on (marketing email is opt-out, with an
+ * The account is active at once; the customer gets a text with their
+ * temporary password (their phone number) and an email saying how to sign in
+ * (never the password: staff typed the address, 2026-11-20). They sign in with
+ * their mobile number and a code, enter the temporary password, and set their own. Email switches start on (marketing email is opt-out, with an
  * unsubscribe link in every one). Texts are different (2026-11-03): service
  * texts are a Yes/No staff must ask on the call - nothing pre-selected - and
  * marketing texts start off, because a spoken yes never qualifies for them
@@ -92,7 +93,7 @@ export default function CreateCustomerSheet({
     <AdminSheet
       eyebrow="New customer"
       title="Create customer"
-      subtitle="Active right away · sign-in details sent by email and text"
+      subtitle="Active right away · sign-in steps by email, temporary password by text"
       onClose={onClose}
       busy={saving}
       testId="create-customer"
